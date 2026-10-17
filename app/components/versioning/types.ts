@@ -1,0 +1,141 @@
+export const CURRENT_USER = "Tú";
+
+export interface Branch {
+  name: string;
+  author: string;
+  /** Rama desde la que se creó; null para la rama principal. */
+  base: string | null;
+}
+
+/** Una diferencia concreta en un elemento del diseño (un nodo y una propiedad). */
+export interface Change {
+  node: string;
+  property: string;
+  before: string;
+  after: string;
+}
+
+/** Valor de una propiedad del diseño en un momento dado (p. ej. Titular · Tamaño = 48px). */
+export interface SnapshotEntry {
+  node: string;
+  property: string;
+  value: string;
+}
+
+/** Foto del diseño: propiedades indexadas por una clave estable. */
+export type DesignSnapshot = Record<string, SnapshotEntry>;
+
+/** Cambio sin guardar: lo que difiere entre el diseño actual y la última versión guardada. */
+export interface WorkingChange extends Change {
+  key: string;
+  /** Valor actual de la propiedad; null si ya no existe (p. ej. se quitó una imagen). */
+  current: SnapshotEntry | null;
+}
+
+export interface Release {
+  id: string;
+  commitId: string;
+  branch: string;
+  message: string;
+  author: string;
+  /** Fecha y hora en formato ISO. */
+  at: string;
+}
+
+/** Quién hizo un cambio, cuándo y en qué versión (commit). */
+export interface Attribution {
+  author: string;
+  /** Fecha y hora en formato ISO. */
+  at: string;
+  commitId: string;
+}
+
+export type AttributedChange = Change & Attribution;
+
+export interface Commit {
+  id: string;
+  branch: string;
+  message: string;
+  author: string;
+  /** Fecha y hora en formato ISO. */
+  at: string;
+  changes: Change[];
+}
+
+/** Mismo nodo y misma propiedad modificados en las dos ramas. */
+export interface Conflict {
+  node: string;
+  property: string;
+  base: string;
+  into: string;
+  from: string;
+  resolution: "into" | "from" | null;
+}
+
+export type PullRequestStatus = "open" | "merged" | "closed";
+
+export interface PullRequest {
+  number: number;
+  title: string;
+  from: string;
+  into: string;
+  author: string;
+  status: PullRequestStatus;
+  approvals: string[];
+  requiredApprovals: number;
+  changes: AttributedChange[];
+  conflicts: Conflict[];
+}
+
+export type LabelTone = "neutral" | "accent" | "success" | "danger" | "warning";
+
+/** Etiqueta de issue. Las de fábrica y las personalizadas comparten la misma forma. */
+export interface Label {
+  name: string;
+  tone: LabelTone;
+}
+
+export interface Issue {
+  number: number;
+  title: string;
+  /** Nombre de una etiqueta registrada en `VersioningState.labels`. */
+  label: string;
+  author: string;
+  /** Miembros del equipo a cargo del issue (puede haber varios o ninguno). */
+  assignees: string[];
+  open: boolean;
+}
+
+export interface VersioningState {
+  branches: Branch[];
+  current: string;
+  /** De más reciente a más antiguo. */
+  commits: Commit[];
+  pullRequests: PullRequest[];
+  issues: Issue[];
+  labels: Label[];
+  members: string[];
+  /** Diseño tal como quedó en la última versión guardada. */
+  baseline: DesignSnapshot;
+  /** Claves de los cambios añadidos para la próxima versión (el «git add»). */
+  staged: string[];
+  /** Publicaciones a la página oficial, de más reciente a más antigua. */
+  releases: Release[];
+}
+
+export type VersioningAction =
+  | { type: "branch/create"; name: string }
+  | { type: "branch/switch"; name: string }
+  | { type: "branch/delete"; name: string }
+  | { type: "stage/toggle"; key: string }
+  | { type: "stage/set"; keys: string[] }
+  | { type: "commit"; message: string; changes: WorkingChange[]; at: string }
+  | { type: "publish"; at: string }
+  | { type: "pr/open"; title: string; from: string; into: string }
+  | { type: "pr/approve"; number: number }
+  | { type: "pr/resolve"; number: number; index: number; resolution: "into" | "from" }
+  | { type: "pr/merge"; number: number; at: string }
+  | { type: "pr/close"; number: number }
+  | { type: "issue/create"; title: string; label: Label; assignees: string[] }
+  | { type: "issue/toggle"; number: number }
+  | { type: "issue/toggle-assignee"; number: number; member: string };
