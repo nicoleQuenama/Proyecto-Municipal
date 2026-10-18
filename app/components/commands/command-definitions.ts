@@ -30,11 +30,12 @@ export interface CommandActions {
   setTool: (tool: Tool) => void;
   setDevice: (device: Device) => void;
   setZoom: (zoom: number) => void;
+  fitToWindow: () => void;
   stepZoom: (direction: 1 | -1) => void;
   toggleDialog: (dialog: Dialog) => void;
   pickImages: () => void;
   setMode: (mode: NavMode) => void;
-  toggleAllPages: () => void;
+  openCode: () => void;
 }
 
 export const toolCommandId = (tool: Tool) => `tool.${tool}`;
@@ -64,9 +65,16 @@ const DEVICE_SHORTCUTS: Record<Device, string> = {
 
 /** Registro único de comandos: la paleta, los atajos y los tooltips salen de aquí. */
 export function createCommands(actions: CommandActions): Command[] {
-  const { setTool, setDevice, setZoom, stepZoom, toggleDialog, pickImages, setMode, toggleAllPages } = actions;
+  const { setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openCode } = actions;
 
   return [
+    {
+      id: "code.open",
+      label: "Abrir el editor de código",
+      group: "General",
+      defaultShortcut: "ctrl+e",
+      run: openCode,
+    },
     {
       id: "app.palette",
       label: "Buscar comandos",
@@ -95,13 +103,6 @@ export function createCommands(actions: CommandActions): Command[] {
       group: "Navegación",
       defaultShortcut: "p",
       run: () => setMode("preview"),
-    },
-    {
-      id: "mode.connect",
-      label: "Conectar con flechas",
-      group: "Navegación",
-      defaultShortcut: "k",
-      run: () => setMode("connect"),
     },
     {
       id: "mode.edit",
@@ -150,14 +151,6 @@ export function createCommands(actions: CommandActions): Command[] {
     })),
 
     {
-      id: "view.all-pages",
-      label: "Ver todas las páginas lado a lado",
-      group: "Vista",
-      defaultShortcut: "g",
-      run: toggleAllPages,
-    },
-
-    {
       id: "zoom.in",
       label: "Acercar",
       group: "Zoom",
@@ -170,6 +163,13 @@ export function createCommands(actions: CommandActions): Command[] {
       group: "Zoom",
       defaultShortcut: "alt+arrowdown",
       run: () => stepZoom(-1),
+    },
+    {
+      id: "zoom.fit",
+      label: "Ajustar a la ventana",
+      group: "Zoom",
+      defaultShortcut: "shift+1",
+      run: fitToWindow,
     },
     {
       id: "zoom.reset",

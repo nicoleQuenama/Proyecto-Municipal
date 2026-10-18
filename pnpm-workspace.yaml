@@ -1,0 +1,4 @@
+# Scripts de instalación de dependencias: ninguno se ejecuta (esbuild y unrs-resolver funcionan sin ellos).
+allowBuilds:
+  esbuild: false
+  unrs-resolver: false

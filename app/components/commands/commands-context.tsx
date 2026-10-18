@@ -10,15 +10,19 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import type { BuilderTarget } from "../builder/component-builder";
 import { useMedia } from "../media/media-context";
 import { useNavigation } from "../navigation/navigation-context";
-import { useAllPages } from "../viewport/use-all-pages";
+import { useSite, useSiteDispatch } from "../site/site-context";
 import { useViewport } from "../viewport/viewport-context";
+import { useWorkbench } from "../workbench/workbench-context";
 import {
   createCommands,
   type Command,
   type Dialog,
 } from "./command-definitions";
+import { scrollToTarget } from "./scroll-to-target";
+import type { SlashContext } from "./slash/types";
 import {
   eventToCombo,
   formatShortcut,
@@ -44,6 +48,12 @@ interface CommandsContextValue {
   dialog: Dialog | null;
   openDialog: (dialog: Dialog) => void;
   closeDialog: () => void;
+  /** El constructor de componentes: qué está abierto, o null si está cerrado. */
+  builder: BuilderTarget | null;
+  openBuilder: (target: BuilderTarget) => void;
+  closeBuilder: () => void;
+  /** Lo que necesitan los comandos que se escriben con «/». */
+  slash: SlashContext;
   runCommand: (commandId: string) => void;
   /** Texto listo para tooltips, p. ej. "Mano (H)". */
   withShortcut: (label: string, commandId: string) => string;
@@ -63,11 +73,14 @@ export function useCommands() {
 }
 
 export function CommandsProvider({ children }: { children: ReactNode }) {
-  const { setTool, setDevice, setZoom, stepZoom } = useViewport();
-  const { pickImages } = useMedia();
+  const { setTool, setDevice, setZoom, fitToWindow, stepZoom } = useViewport();
+  const { pickImages, remove: removeMedia } = useMedia();
+  const site = useSite();
+  const siteDispatch = useSiteDispatch();
   const { setMode } = useNavigation();
-  const { toggle: toggleAllPages } = useAllPages();
+  const { openFile } = useWorkbench();
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [builder, setBuilder] = useState<BuilderTarget | null>(null);
 
   const rawOverrides = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const overrides = useMemo(() => parseOverrides(rawOverrides), [rawOverrides]);
@@ -77,16 +90,31 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
     [],
   );
   const closeDialog = useCallback(() => setDialog(null), []);
+  const closeBuilder = useCallback(() => setBuilder(null), []);
+
+  const goTo = useCallback(
+    (pageId: string, blockId?: string) => {
+      siteDispatch({ type: "page/select", id: pageId });
+      if (blockId) siteDispatch({ type: "block/select", id: blockId });
+      requestAnimationFrame(() => scrollToTarget(pageId, blockId));
+    },
+    [siteDispatch],
+  );
+
+  const slash = useMemo<SlashContext>(
+    () => ({ site, dispatch: siteDispatch, openBuilder: setBuilder, goTo, removeMedia }),
+    [site, siteDispatch, goTo, removeMedia],
+  );
 
   const commands = useMemo<ResolvedCommand[]>(
     () =>
-      createCommands({ setTool, setDevice, setZoom, stepZoom, toggleDialog, pickImages, setMode, toggleAllPages }).map(
+      createCommands({ setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openCode: () => openFile() }).map(
         (command) => ({
           ...command,
           shortcut: command.id in overrides ? overrides[command.id] : command.defaultShortcut,
         }),
       ),
-    [setTool, setDevice, setZoom, stepZoom, toggleDialog, pickImages, setMode, toggleAllPages, overrides],
+    [setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openFile, overrides],
   );
 
   useEffect(() => {
@@ -129,6 +157,10 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
       dialog,
       openDialog: setDialog,
       closeDialog,
+      builder,
+      openBuilder: setBuilder,
+      closeBuilder,
+      slash,
       runCommand: (id) => byId(id)?.run(),
       shortcutOf,
       withShortcut: (label, id) => {
@@ -144,7 +176,7 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
       },
       resetAll: () => saveOverrides({}),
     };
-  }, [commands, dialog, closeDialog, overrides]);
+  }, [commands, dialog, closeDialog, builder, closeBuilder, slash, overrides]);
 
   return <CommandsContext value={value}>{children}</CommandsContext>;
 }

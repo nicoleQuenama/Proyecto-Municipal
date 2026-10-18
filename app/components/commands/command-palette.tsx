@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { SearchIcon } from "../viewport/icons";
 import { useCommands } from "./commands-context";
 import { Kbd } from "./kbd";
 import { Modal } from "../ui/modal";
-
-/** Minúsculas y sin tildes, para que "angulo" encuentre "Ángulo". */
-const normalize = (text: string) =>
-  text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+import { usePalette } from "./use-palette";
 
 export function CommandPalette() {
   const { dialog, closeDialog } = useCommands();
@@ -22,99 +19,105 @@ export function CommandPalette() {
 }
 
 function PaletteContent() {
-  const { commands, closeDialog, openDialog } = useCommands();
-  const [query, setQuery] = useState("");
-  const [index, setIndex] = useState(0);
+  const { openDialog } = useCommands();
+  const { query, setQuery, trail, step, rows, activeIndex, setIndex, error, choose, submit, back } = usePalette();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isPrompt = step?.kind === "prompt";
 
-  const results = useMemo(() => {
-    const needle = normalize(query.trim());
-    return commands.filter((c) => normalize(`${c.label} ${c.group}`).includes(needle));
-  }, [commands, query]);
+  // Al pasar de un paso a otro, el texto inicial (si lo hay) queda seleccionado para sobrescribirlo.
+  useEffect(() => inputRef.current?.select(), [trail.length]);
 
-  const activeIndex = Math.min(index, results.length - 1);
+  const move = (direction: 1 | -1) => setIndex(rows.length ? (activeIndex + direction + rows.length) % rows.length : 0);
 
-  const runCommand = (position: number) => {
-    const command = results[position];
-    if (!command) return;
-    closeDialog();
-    command.run();
+  /** Qué hace cada tecla en la paleta. */
+  const keyActions: Record<string, (e: KeyboardEvent) => void> = {
+    ArrowDown: (e) => {
+      e.preventDefault();
+      move(1);
+    },
+    ArrowUp: (e) => {
+      e.preventDefault();
+      move(-1);
+    },
+    Enter: (e) => {
+      e.preventDefault();
+      if (isPrompt) submit();
+      else choose(activeIndex);
+    },
+    Backspace: (e) => {
+      if (query !== "" || trail.length === 0) return;
+      e.preventDefault();
+      back();
+    },
   };
-
-  const onKeyDown = (e: KeyboardEvent) => {
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setIndex(results.length ? (activeIndex + 1) % results.length : 0);
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setIndex(results.length ? (activeIndex - 1 + results.length) % results.length : 0);
-        break;
-      case "Enter":
-        e.preventDefault();
-        runCommand(activeIndex);
-        break;
-    }
-  };
+  const onKeyDown = (e: KeyboardEvent) => keyActions[e.key]?.(e);
 
   return (
     <div onKeyDown={onKeyDown}>
       <div className="flex items-center gap-3 border-b border-line px-4">
         <span className="text-ink-dim"><SearchIcon /></span>
+        {trail.length > 0 && (
+          <span className="shrink-0 rounded bg-accent/25 px-2 py-0.5 text-xs text-accent">
+            {trail.map((item) => item.label).join(" › ")}
+          </span>
+        )}
         <input
+          ref={inputRef}
           autoFocus
           role="combobox"
-          aria-expanded
+          aria-expanded={rows.length > 0}
           aria-controls="command-list"
-          aria-activedescendant={results[activeIndex] && `command-${results[activeIndex].id}`}
-          placeholder="Busca una herramienta, vista o acción…"
+          aria-invalid={error !== null}
+          aria-activedescendant={rows[activeIndex] && `command-${rows[activeIndex].id}`}
+          placeholder={step?.placeholder ?? "Busca, o escribe / para ver los comandos…"}
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setIndex(0);
-          }}
+          onChange={(e) => setQuery(e.target.value)}
           className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-dim"
         />
       </div>
 
+      {error && <p role="alert" className="border-b border-line px-4 py-2 text-xs text-red-400">{error}</p>}
+
       <ul id="command-list" role="listbox" className="max-h-80 overflow-y-auto p-2">
-        {results.map((command, position) => {
+        {rows.map((row, position) => {
           const active = position === activeIndex;
-          const startsGroup = command.group !== results[position - 1]?.group;
+          const startsGroup = row.group !== undefined && row.group !== rows[position - 1]?.group;
 
           return (
-            <li key={command.id} role="presentation">
+            <li key={row.id} role="presentation">
               {startsGroup && (
                 <p className="px-2 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-ink-dim uppercase">
-                  {command.group}
+                  {row.group}
                 </p>
               )}
               <div
-                id={`command-${command.id}`}
+                id={`command-${row.id}`}
                 role="option"
                 aria-selected={active}
-                onClick={() => runCommand(position)}
+                onClick={() => choose(position)}
                 onMouseMove={() => setIndex(position)}
                 ref={(el) => {
                   if (active) el?.scrollIntoView({ block: "nearest" });
                 }}
-                className={`flex h-9 cursor-pointer items-center justify-between rounded-md px-2 text-[13px] ${
+                className={`flex h-9 cursor-pointer items-center justify-between gap-3 rounded-md px-2 text-[13px] ${
                   active ? "bg-accent/25" : ""
                 }`}
               >
-                {command.label}
-                <Kbd combo={command.shortcut} />
+                <span className="min-w-0 truncate">{row.label}</span>
+                {row.hint && <span className="ml-auto min-w-0 truncate text-xs text-ink-dim">{row.hint}</span>}
+                {row.shortcut !== undefined && <Kbd combo={row.shortcut} />}
               </div>
             </li>
           );
         })}
-        {results.length === 0 && (
+        {!isPrompt && rows.length === 0 && (
           <li className="py-8 text-center text-[13px] text-ink-dim">Sin resultados</li>
         )}
+        {isPrompt && <li className="px-2 py-3 text-xs text-ink-dim">Escribe y pulsa Enter para continuar.</li>}
       </ul>
 
       <div className="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-ink-dim">
-        <span>↑↓ navegar · Enter ejecutar · Esc cerrar</span>
+        <span>↑↓ navegar · Enter elegir · Retroceso vuelve · Esc cierra</span>
         <button
           type="button"
           onClick={() => openDialog("settings")}

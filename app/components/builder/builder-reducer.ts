@@ -71,103 +71,111 @@ export function initialBuilderState(def?: ComponentDef): BuilderState {
   };
 }
 
-export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
-  const edit = (id: string, change: (element: CanvasElement) => CanvasElement): BuilderState => ({
+/** Cambia un elemento y lo deja ajustado al lienzo. */
+const edit = (state: BuilderState, id: string, change: (element: CanvasElement) => CanvasElement): BuilderState => ({
+  ...state,
+  elements: state.elements.map((element) =>
+    element.id === id ? fitToCanvas(change(element), state.width, state.height) : element,
+  ),
+});
+
+/** Dónde queda un elemento al reordenarlo. */
+const REORDER: Record<"front" | "back", (others: CanvasElement[], target: CanvasElement) => CanvasElement[]> = {
+  front: (others, target) => [...others, target],
+  back: (others, target) => [target, ...others],
+};
+
+/** Un manejador por tipo de acción: añadir una acción nueva es añadir una entrada aquí. */
+type Handlers = {
+  [K in BuilderAction["type"]]: (state: BuilderState, action: Extract<BuilderAction, { type: K }>) => BuilderState;
+};
+
+const HANDLERS: Handlers = {
+  "meta": (state, action) => {
+    const { patch } = action;
+    return {
+      ...state,
+      ...patch,
+      width: clamp(Math.round(patch.width ?? state.width), MIN_CANVAS_SIZE, MAX_CANVAS_SIZE),
+      height: clamp(Math.round(patch.height ?? state.height), MIN_CANVAS_SIZE, MAX_CANVAS_SIZE),
+    };
+  },
+
+  "template": (state, action) => {
+    const template = templateById(action.templateId);
+    const elements = template.build(action.nextId);
+    const links = Object.fromEntries(
+      Object.entries(template.links?.(elements) ?? {}).filter(
+        ([, link]) => link.kind !== "page" || action.pageIds.includes(link.pageId),
+      ),
+    );
+    return { ...state, width: template.width, height: template.height, elements, links, selectedId: null };
+  },
+
+  "link": (state, action) => {
+    const links = { ...state.links };
+    if (action.link) links[action.id] = action.link;
+    else delete links[action.id];
+    return { ...state, links };
+  },
+
+  "add": (state, action) => ({
     ...state,
-    elements: state.elements.map((element) =>
-      element.id === id ? fitToCanvas(change(element), state.width, state.height) : element,
-    ),
-  });
+    elements: [...state.elements, fitToCanvas(action.element, state.width, state.height)],
+    selectedId: action.element.id,
+  }),
 
-  switch (action.type) {
-    case "meta": {
-      const { patch } = action;
-      return {
-        ...state,
-        ...patch,
-        width: clamp(Math.round(patch.width ?? state.width), MIN_CANVAS_SIZE, MAX_CANVAS_SIZE),
-        height: clamp(Math.round(patch.height ?? state.height), MIN_CANVAS_SIZE, MAX_CANVAS_SIZE),
-      };
-    }
+  "update": (state, action) => edit(state, action.id, (element) => ({ ...element, ...action.patch })),
 
-    case "template": {
-      const template = templateById(action.templateId);
-      const elements = template.build(action.nextId);
-      const links = Object.fromEntries(
-        Object.entries(template.links?.(elements) ?? {}).filter(
-          ([, link]) => link.kind !== "page" || action.pageIds.includes(link.pageId),
-        ),
-      );
-      return { ...state, width: template.width, height: template.height, elements, links, selectedId: null };
-    }
+  "move": (state, action) => edit(state, action.id, (element) => ({ ...element, x: action.x, y: action.y })),
 
-    case "link": {
-      const links = { ...state.links };
-      if (action.link) links[action.id] = action.link;
-      else delete links[action.id];
-      return { ...state, links };
-    }
+  "nudge": (state, action) =>
+    edit(state, action.id, (element) => ({ ...element, x: element.x + action.dx, y: element.y + action.dy })),
 
-    case "add":
-      return {
-        ...state,
-        elements: [...state.elements, fitToCanvas(action.element, state.width, state.height)],
-        selectedId: action.element.id,
-      };
+  "resize": (state, action) => {
+    return edit(state, action.id, (element) => ({
+      ...element,
+      // No se puede crecer más allá del borde del lienzo.
+      width: Math.min(action.width, state.width - element.x),
+      height: Math.min(action.height, state.height - element.y),
+    }));
+  },
 
-    case "update":
-      return edit(action.id, (element) => ({ ...element, ...action.patch }));
+  "duplicate": (state, action) => {
+    const source = state.elements.find((element) => element.id === action.id);
+    if (!source) return state;
 
-    case "move":
-      return edit(action.id, (element) => ({ ...element, x: action.x, y: action.y }));
+    const copy = fitToCanvas(
+      { ...source, id: action.newId, x: source.x + 12, y: source.y + 12 },
+      state.width,
+      state.height,
+    );
+    return { ...state, elements: [...state.elements, copy], selectedId: copy.id };
+  },
 
-    case "nudge":
-      return edit(action.id, (element) => ({
-        ...element,
-        x: element.x + action.dx,
-        y: element.y + action.dy,
-      }));
+  "reorder": (state, action) => {
+    const target = state.elements.find((element) => element.id === action.id);
+    if (!target) return state;
 
-    case "resize":
-      return edit(action.id, (element) => ({
-        ...element,
-        // No se puede crecer más allá del borde del lienzo.
-        width: Math.min(action.width, state.width - element.x),
-        height: Math.min(action.height, state.height - element.y),
-      }));
+    const others = state.elements.filter((element) => element.id !== action.id);
+    return {
+      ...state,
+      elements: REORDER[action.to](others, target),
+    };
+  },
 
-    case "duplicate": {
-      const source = state.elements.find((element) => element.id === action.id);
-      if (!source) return state;
+  "remove": (state, action) => ({
+    ...state,
+    elements: state.elements.filter((element) => element.id !== action.id),
+    links: Object.fromEntries(Object.entries(state.links).filter(([id]) => id !== action.id)),
+    selectedId: state.selectedId === action.id ? null : state.selectedId,
+  }),
 
-      const copy = fitToCanvas(
-        { ...source, id: action.newId, x: source.x + 12, y: source.y + 12 },
-        state.width,
-        state.height,
-      );
-      return { ...state, elements: [...state.elements, copy], selectedId: copy.id };
-    }
+  "select": (state, action) => ({ ...state, selectedId: action.id }),
+};
 
-    case "reorder": {
-      const target = state.elements.find((element) => element.id === action.id);
-      if (!target) return state;
-
-      const others = state.elements.filter((element) => element.id !== action.id);
-      return {
-        ...state,
-        elements: action.to === "front" ? [...others, target] : [target, ...others],
-      };
-    }
-
-    case "remove":
-      return {
-        ...state,
-        elements: state.elements.filter((element) => element.id !== action.id),
-        links: Object.fromEntries(Object.entries(state.links).filter(([id]) => id !== action.id)),
-        selectedId: state.selectedId === action.id ? null : state.selectedId,
-      };
-
-    case "select":
-      return { ...state, selectedId: action.id };
-  }
+export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
+  // TypeScript no puede relacionar el tipo de la acción con su manejador, pero `Handlers` lo garantiza.
+  const handle = HANDLERS[action.type] as (state: BuilderState, action: BuilderAction) => BuilderState;
+  return handle(state, action);
 }

@@ -1,4 +1,5 @@
 import type { LinkTarget } from "../navigation/types";
+import { CODE_COMPONENT_ID } from "./code-defaults";
 import type { CanvasElement, ComponentDef, ElementKind } from "./types";
 
 /** Valores comunes; cada tipo de elemento ajusta lo que necesita. */
@@ -176,4 +177,15 @@ export const BUILT_IN_COMPONENTS: ComponentDef[] = [
   builtIn("reviews", "Testimonios & Reviews", "Calificación 5 estrellas", "cards", "review"),
   builtIn("hero-banner", "Banner & Hero CTA", "Conversión destacada", "hero", "banner"),
   builtIn("content-section", "Sección de contenido", "Título, texto y botón", "sections", "section"),
+  {
+    id: CODE_COMPONENT_ID,
+    name: "Bloque de código",
+    description: "HTML, CSS, Tailwind y TypeScript",
+    category: "sections",
+    width: 320,
+    height: 120,
+    elements: [],
+    links: {},
+    custom: false,
+  },
 ];

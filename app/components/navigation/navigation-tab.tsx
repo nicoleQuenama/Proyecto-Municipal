@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { Badge } from "../ui/badge";
 import { Collapsible } from "../ui/collapsible";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
@@ -8,50 +7,7 @@ import type { ComponentDef } from "../site/types";
 import { FlowMap } from "./flow-map";
 import { LinkEditor } from "./link-editor";
 import { elementLabel, isLinkable, linkLabel } from "./links";
-import { useNavigation } from "./navigation-context";
 import { TransitionFields } from "./transition-fields";
-import type { NavMode } from "./types";
-
-const MODES: { value: NavMode; label: string; hint: string }[] = [
-  { value: "edit", label: "Editar", hint: "Selecciona y cambia el diseño." },
-  { value: "connect", label: "Conectar", hint: "Mantén pulsado y arrastra una flecha." },
-  { value: "preview", label: "Probar", hint: "Haz clic en los enlaces como un visitante." },
-];
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function ModeSection() {
-  const { mode, setMode } = useNavigation();
-
-  return (
-    <Section title="Modo">
-      <div role="radiogroup" aria-label="Modo de trabajo" className="grid grid-cols-3 gap-1">
-        {MODES.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={mode === option.value}
-            onClick={() => setMode(option.value)}
-            className={`h-8 rounded-md text-xs transition-colors ${
-              mode === option.value ? "bg-accent text-white" : "bg-hover text-ink-dim hover:text-ink"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      <p className="text-xs text-ink-dim">{MODES.find((option) => option.value === mode)?.hint}</p>
-    </Section>
-  );
-}
 
 /** Los elementos de un componente que se pueden marcar como enlace. */
 function ComponentLinks({ def }: { def: ComponentDef }) {
@@ -105,7 +61,10 @@ export function NavigationTab() {
 
   return (
     <div className="flex flex-col gap-5">
-      <ModeSection />
+      <p className="text-xs text-ink-dim">
+        Para enlazar, pasa el cursor sobre cualquier texto, botón o imagen (en una barra, en el contenido o en un
+        pie) y arrastra su ícono de enlace hasta una página. Un clic en el ícono abre más opciones.
+      </p>
 
       <Collapsible title="Transición entre páginas">
         <TransitionFields

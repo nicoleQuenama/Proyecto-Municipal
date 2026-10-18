@@ -1,6 +1,8 @@
 "use client";
 
 import { useNavigation } from "../navigation/navigation-context";
+import { HiddenPlaceholder } from "../site/hidden-placeholder";
+import { VisibilityEye } from "../site/visibility-eye";
 import { useCurrentPage, useSiteDispatch } from "../site/site-context";
 import type { Page } from "../site/types";
 import { TITLE_STYLE_KEYS, titleWithRules } from "../styles/apply";
@@ -53,15 +55,30 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
   const { mode } = useNavigation();
   // Al conectar o probar, o en una página que no es la actual, no se escribe en el titular.
   const shown = interactive && mode === "edit" ? effective : { ...effective, editing: false };
+  const setHidden = (hidden: boolean) =>
+    dispatch({ type: "hidden/set", target: { kind: "title", pageId: page.id }, hidden });
+
+  // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
+  if (page.titleHidden) {
+    return mode === "edit" ? <HiddenPlaceholder label="Titular oculto" onShow={() => setHidden(false)} /> : null;
+  }
 
   return (
-    <div style={effective.applyToSite ? { fontFamily: effective.font } : undefined}>
+    <div className="group relative" style={effective.applyToSite ? { fontFamily: effective.font } : undefined}>
       {/* key: al cambiar de página el titular se vuelve a montar con su texto. */}
       <TitlePreview
         key={page.id}
         state={shown}
         onTextChange={(text) => interactive && dispatch({ type: "title/patch", patch: { text } })}
       />
+      {mode === "edit" && (
+        <VisibilityEye
+          hidden={false}
+          label="el titular"
+          onToggle={() => setHidden(true)}
+          className="absolute top-1 right-1 hidden group-hover:flex focus:flex"
+        />
+      )}
     </div>
   );
 }

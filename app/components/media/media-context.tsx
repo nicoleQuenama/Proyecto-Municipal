@@ -122,6 +122,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       const target = items.find((item) => item.id === id);
       if (target?.local) URL.revokeObjectURL(target.src);
+      if (target?.posterLocal && target.poster) URL.revokeObjectURL(target.poster);
       dispatch({ type: "media/remove", id });
     },
     [items, dispatch],

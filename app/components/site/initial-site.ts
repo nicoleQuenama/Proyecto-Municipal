@@ -43,6 +43,10 @@ export const INITIAL_SITE: SiteState = {
   rules: [],
   currentPageId: "inicio",
   selectedId: TITLE_SELECTION,
+  selectedElementId: null,
+  libraries: [],
+  globalCss: "",
+  functions: [],
   components: BUILT_IN_COMPONENTS,
   pages: [
     page("inicio", "Inicio", {

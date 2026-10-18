@@ -43,7 +43,7 @@ const shortName = (page: Page) => (page.name.length > 11 ? `${page.name.slice(0,
 export function FlowMap() {
   const { pages, components, currentPageId } = useSite();
   const dispatch = useSiteDispatch();
-  const { hotDrop, mode } = useNavigation();
+  const { hotDrop, connecting } = useNavigation();
 
   const points = layout(pages.length);
   const positionOf = new Map(pages.map((page, index) => [page.id, points[index]]));
@@ -106,7 +106,7 @@ export function FlowMap() {
               {...{ [DROP_ATTRIBUTE]: pageDrop(page.id) }}
               role="button"
               tabIndex={0}
-              aria-label={`Página ${page.name}${mode === "connect" ? ": soltar aquí para enlazar" : ""}`}
+              aria-label={`Página ${page.name}${connecting ? ": soltar aquí para enlazar" : ""}`}
               aria-current={isCurrent ? "page" : undefined}
               onClick={select}
               onKeyDown={(e) => e.key === "Enter" && select()}

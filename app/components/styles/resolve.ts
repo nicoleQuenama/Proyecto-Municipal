@@ -13,16 +13,14 @@ import type {
 
 export const GLOBAL_SCOPE: StyleScope = { kind: "global" };
 
-export function scopeKey(scope: StyleScope): string {
-  switch (scope.kind) {
-    case "global":
-      return "global";
-    case "page":
-      return `page:${scope.pageId}`;
-    case "component":
-      return `component:${scope.componentId}`;
-  }
-}
+/** Cómo se identifica cada tipo de ámbito. */
+const SCOPE_KEYS: { [K in StyleScope["kind"]]: (scope: Extract<StyleScope, { kind: K }>) => string } = {
+  global: () => "global",
+  page: (scope) => `page:${scope.pageId}`,
+  component: (scope) => `component:${scope.componentId}`,
+};
+
+export const scopeKey = (scope: StyleScope): string => (SCOPE_KEYS[scope.kind] as (scope: StyleScope) => string)(scope);
 
 export const sameScope = (a: StyleScope, b: StyleScope): boolean => scopeKey(a) === scopeKey(b);
 
@@ -30,17 +28,17 @@ export const sameScope = (a: StyleScope, b: StyleScope): boolean => scopeKey(a) 
 const LEVELS = { global: 0, page: 1, component: 2 } as const;
 export const levelOf = (scope: StyleScope): number => LEVELS[scope.kind];
 
-/** ¿Este ámbito cuenta para el elemento que se está resolviendo? */
-function applies(scope: StyleScope, ctx: StyleContext): boolean {
-  switch (scope.kind) {
-    case "global":
-      return true;
-    case "page":
-      return scope.pageId === ctx.pageId;
-    case "component":
-      return scope.componentId === ctx.componentId;
-  }
-}
+/** ¿Cuenta cada tipo de ámbito para el elemento que se está resolviendo? */
+const SCOPE_APPLIES: {
+  [K in StyleScope["kind"]]: (scope: Extract<StyleScope, { kind: K }>, ctx: StyleContext) => boolean;
+} = {
+  global: () => true,
+  page: (scope, ctx) => scope.pageId === ctx.pageId,
+  component: (scope, ctx) => scope.componentId === ctx.componentId,
+};
+
+const applies = (scope: StyleScope, ctx: StyleContext): boolean =>
+  (SCOPE_APPLIES[scope.kind] as (scope: StyleScope, ctx: StyleContext) => boolean)(scope, ctx);
 
 // ---------- valores y variables ----------
 
@@ -55,24 +53,19 @@ const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 const WEIGHTS = ["400", "500", "600", "700"];
 const ALIGNMENTS = ["left", "center", "right"];
 
+/** Cómo se valida y normaliza cada tipo de valor; `null` si no es válido. */
+const NORMALIZERS: Record<PropKind, (value: string) => string | null> = {
+  size: (value) => (NUMBER.test(value) ? `${value}px` : SIZE.test(value) ? value : null),
+  color: (value) => (HEX_COLOR.test(value) ? value.toLowerCase() : null),
+  weight: (value) => (WEIGHTS.includes(value) ? value : null),
+  align: (value) => (ALIGNMENTS.includes(value) ? value : null),
+  font: (value) => value,
+};
+
 /** Devuelve el valor ya normalizado ("10" → "10px"), o null si no es válido para ese tipo. */
 export function normalizeValue(kind: PropKind, input: string): string | null {
   const value = input.trim();
-  if (!value) return null;
-
-  switch (kind) {
-    case "size":
-      if (NUMBER.test(value)) return `${value}px`;
-      return SIZE.test(value) ? value : null;
-    case "color":
-      return HEX_COLOR.test(value) ? value.toLowerCase() : null;
-    case "weight":
-      return WEIGHTS.includes(value) ? value : null;
-    case "align":
-      return ALIGNMENTS.includes(value) ? value : null;
-    case "font":
-      return value;
-  }
+  return value ? NORMALIZERS[kind](value) : null;
 }
 
 /** Las variables más cercanas ganan: componente > página > global. */
@@ -109,6 +102,19 @@ export function availableVariables(variables: Variable[], ctx: StyleContext): Va
   return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Variables del propio editor: una del usuario con el mismo nombre las pisaría en toda la interfaz. */
+const RESERVED_VARIABLES = new Set([
+  "color-canvas",
+  "color-panel",
+  "color-hover",
+  "color-line",
+  "color-ink",
+  "color-ink-dim",
+  "color-accent",
+  "font-sans",
+  "font-mono",
+]);
+
 interface VariableCandidate {
   id: string;
   scope: StyleScope;
@@ -122,6 +128,7 @@ export function validateVariable(variables: Variable[], candidate: VariableCandi
   if (!/^[a-z][a-z0-9-]*$/.test(candidate.name)) {
     return "Usa minúsculas, números y guiones, empezando por una letra (p. ej. color-primario).";
   }
+  if (RESERVED_VARIABLES.has(candidate.name)) return "Ese nombre lo usa el editor: elige otro.";
   const key = scopeKey(candidate.scope);
   const duplicated = variables.some(
     (v) => v.id !== candidate.id && v.name === candidate.name && scopeKey(v.scope) === key,

@@ -18,12 +18,14 @@ function labelOf(options: { value: string; label: string }[], value: string): st
 }
 
 /** Huella corta del contenido de un componente, para detectar que se editó. */
-function signatureOf(def: ComponentDef): string {
-  const text = JSON.stringify([def.name, def.category, def.width, def.height, def.elements]);
+const hashOf = (value: unknown): string => {
   let hash = 5381;
-  for (const char of text) hash = ((hash * 33) ^ char.charCodeAt(0)) >>> 0;
+  for (const char of JSON.stringify(value)) hash = ((hash * 33) ^ char.charCodeAt(0)) >>> 0;
   return hash.toString(36).slice(0, 5);
-}
+};
+
+const signatureOf = (def: ComponentDef): string =>
+  hashOf([def.name, def.category, def.width, def.height, def.elements]);
 
 type Add = (key: string, node: string, property: string, value: string) => void;
 
@@ -65,15 +67,23 @@ export function snapshotDesign({
     // Crear, renombrar o eliminar una página cambia esta entrada.
     add(`page:${page.id}`, "Página", "Nombre", page.name);
     addTitle(add, page, page.title);
+    if (page.hidden) add(`hidden:page:${page.id}`, "Página", `${page.name} · Visibilidad`, "Oculta");
+    if (page.titleHidden) add(`hidden:title:${page.id}`, `${page.name} · Titular`, "Visibilidad", "Oculto");
 
     for (const block of page.blocks) {
       const def = components.find((c) => c.id === block.componentId);
       if (def) add(`block:${block.id}`, `${page.name} · ${def.name}`, "Presencia", "Agregado");
+      if (def && block.hidden) add(`hidden:block:${block.id}`, `${page.name} · ${def.name}`, "Visibilidad", "Oculto");
+      if (def && (block.box || block.elements)) {
+        add(`format:${block.id}`, `${page.name} · ${def.name}`, "Formato", hashOf([block.box, block.elements]));
+      }
     }
 
     for (const item of page.media) {
       const kind = item.kind === "image" ? "Imagen" : "Video";
       add(`media:${item.id}`, `${page.name} · ${kind} «${item.name}»`, "Presencia", "Agregado");
+      if (item.poster) add(`poster:${item.id}`, `${page.name} · ${kind} «${item.name}»`, "Portada", "Definida");
+      if (item.hidden) add(`hidden:media:${item.id}`, `${page.name} · ${kind} «${item.name}»`, "Visibilidad", "Oculto");
     }
   }
 

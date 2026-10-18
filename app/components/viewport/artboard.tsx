@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, type PointerEvent, type ReactNode } from "react";
+import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { DROP_ATTRIBUTE, pageDrop, useNavigation } from "../navigation/navigation-context";
+import { usePageCode } from "../behaviors/use-page-code";
 import { MediaList } from "../media/media-list";
+import { VisibilityEye } from "../site/visibility-eye";
 import { PageBlocks } from "../site/page-blocks";
 import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
@@ -11,6 +13,7 @@ import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
 import { TitleCanvas } from "../title-editor/title-editor";
 import { CANVAS_SURFACE_ID } from "./fit-zoom";
+import { useAutoFit } from "./use-auto-fit";
 import { DEVICES, useViewport, type Tool } from "./viewport-context";
 
 const CURSORS: Partial<Record<Tool, string>> = {
@@ -21,6 +24,7 @@ const CURSORS: Partial<Record<Tool, string>> = {
 
 export function CanvasSurface({ children }: { children: ReactNode }) {
   const { tool } = useViewport();
+  useAutoFit();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -60,10 +64,17 @@ interface PageArtboardProps {
   active: boolean;
   /** Se ve junto a otras páginas, a un ancho fijo. */
   tiled: boolean;
+  /** Se ve como en producción: sin marco ni etiqueta, a todo el ancho (o al del dispositivo elegido). */
+  production?: boolean;
+  /**
+   * Con `production`: la página cuyas barras de navegación forman la cabecera fija del sitio. Esa cabecera se
+   * dibuja una sola vez y no se vuelve a crear al navegar: conserva su estado, sus estilos y su código.
+   */
+  shellPage?: Page;
 }
 
 /** Un marco de página: su etiqueta y la página con su titular, bloques y medios. */
-function PageArtboard({ page, active, tiled }: PageArtboardProps) {
+function PageArtboard({ page, active, tiled, production = false, shellPage }: PageArtboardProps) {
   const { device, zoom } = useViewport();
   const styles = useStyles(page.id);
   const dispatch = useSiteDispatch();
@@ -71,54 +82,94 @@ function PageArtboard({ page, active, tiled }: PageArtboardProps) {
   const current = DEVICES.find((d) => d.value === device)!;
   const select = () => dispatch({ type: "page/select", id: page.id });
   const scale = zoom / 100;
+  const pageRef = usePageCode(page, mode === "preview" && active);
 
   // Solo se anima al navegar en la vista previa; la clave vuelve a montar la página para reproducirla.
   const animation =
     active && mode === "preview" && transition && transition.kind !== "none" ? transition : null;
 
-  // Al conectar con flechas, cada marco es un destino donde soltarlas.
-  const dropProps = tiled && mode === "connect" ? { [DROP_ATTRIBUTE]: pageDrop(page.id) } : {};
+  // Cada marco es un destino donde soltar la flecha de un enlace.
+  const dropProps = tiled ? { [DROP_ATTRIBUTE]: pageDrop(page.id) } : {};
   const isHot = hotDrop === pageDrop(page.id);
+
+  const setHidden = (hidden: boolean) =>
+    dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden });
+
+  // Oculta: el marco se reduce a una tarjeta con el ojo para volver a mostrarla.
+  if (tiled && page.hidden) {
+    return (
+      <section aria-label={`Página ${page.name} (oculta)`} data-page-id={page.id} className="w-44 shrink-0">
+        <p className="mb-2 px-1 text-sm text-ink-dim">{page.name} · {routeOf(page)}</p>
+        <div className="flex h-24 items-center justify-center gap-2 rounded-md border border-dashed border-ink-dim text-xs text-ink-dim">
+          <VisibilityEye hidden zoomed={false} label={page.name} onToggle={() => setHidden(false)} className="flex" />
+          Página oculta
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
       aria-label={`Página ${page.name}`}
+      data-page-id={page.id}
       {...dropProps}
-      className={tiled ? "shrink-0" : "mx-auto w-full transition-[max-width] duration-200"}
+      className={
+        tiled
+          ? "shrink-0"
+          : `mx-auto w-full transition-[max-width] duration-200 ${production ? "min-h-full bg-white" : ""}`
+      }
       // En fila, el marco ocupa su ancho ya escalado y solo la página se escala; a solas, todo junto.
-      style={tiled ? { width: current.width * scale } : { maxWidth: current.width, zoom: scale }}
+      // En producción, el escritorio ocupa todo el ancho; tablet y móvil, el suyo.
+      style={
+        tiled
+          ? { width: current.width * scale }
+          : { maxWidth: production && device === "desktop" ? undefined : current.width }
+      }
     >
-      <p className={`mb-2 text-ink-dim ${tiled ? "text-sm" : "text-xs"}`}>
+      {!production && (
+      <p className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
         {tiled ? (
-          <button
-            type="button"
-            onClick={select}
-            className={`rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""}`}
-          >
-            {page.name} · {routeOf(page)}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={select}
+              className={`min-w-0 truncate rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""}`}
+            >
+              {page.name} · {routeOf(page)}
+            </button>
+            <VisibilityEye hidden={false} zoomed={false} label={page.name} onToggle={() => setHidden(true)} className="flex shrink-0" />
+          </>
         ) : (
           <>
             {page.name} · {current.label} · {current.width}px
           </>
         )}
       </p>
+      )}
 
       <div className="relative" style={tiled ? { width: current.width, zoom: scale } : undefined}>
         <div
-          key={`${page.id}:${transitionKey}`}
-          className={`min-h-[600px] rounded-sm bg-white px-10 py-12 text-neutral-900 shadow-2xl ${
-            animation ? `nav-anim-${animation.kind}` : ""
+          ref={pageRef}
+          data-site-page
+          className={`bg-white text-neutral-900 ${
+            production ? "min-h-screen px-10 py-12" : "min-h-[600px] rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{
-            ...boxStyle(styles.page),
-            ...(animation ? { animationDuration: `${animation.seconds}s` } : {}),
-          }}
+          style={boxStyle(styles.page)}
         >
-          <PageBlocks page={page} slot="top" interactive={active} />
-          <TitleCanvas page={page} interactive={active} />
-          <PageBlocks page={page} slot="body" interactive={active} />
-          <MediaList page={page} interactive={active} />
+          {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
+          {shellPage && <PageBlocks page={shellPage} slot="top" interactive={false} />}
+
+          {/* Lo que cambia de una página a otra: la clave lo vuelve a montar y reproduce la transición. */}
+          <div
+            key={`${page.id}:${transitionKey}`}
+            className={animation ? `nav-anim-${animation.kind}` : ""}
+            style={animation ? { animationDuration: `${animation.seconds}s` } : undefined}
+          >
+            {!shellPage && <PageBlocks page={page} slot="top" interactive={active} />}
+            <TitleCanvas page={page} interactive={active} />
+            <PageBlocks page={page} slot="body" interactive={active} />
+            <MediaList page={page} interactive={active} />
+          </div>
         </div>
 
         {tiled && !active && mode === "edit" && (
@@ -126,6 +177,10 @@ function PageArtboard({ page, active, tiled }: PageArtboardProps) {
             type="button"
             aria-label={`Editar la página ${page.name}`}
             onClick={select}
+            onContextMenu={(e) => {
+              e.preventDefault(); // el clic derecho también activa la página; el formato se abre en la siguiente
+              select();
+            }}
             className="absolute inset-0 z-10 cursor-pointer rounded-sm hover:ring-2 hover:ring-accent/60"
           />
         )}
@@ -134,24 +189,32 @@ function PageArtboard({ page, active, tiled }: PageArtboardProps) {
   );
 }
 
-/** El lienzo: la página actual, o todas en fila para compararlas y conectarlas. */
+/** El lienzo: todas las páginas en fila para compararlas y enlazarlas; en la vista previa, solo la visitada. */
 export function CanvasPages() {
-  const { layout } = useViewport();
   const { mode } = useNavigation();
   const { pages, currentPageId } = useSite();
 
-  // En la vista previa solo se ve la página que se visita.
-  const tiled = layout === "all" && mode !== "preview";
-  if (!tiled) {
-    const page = pages.find((p) => p.id === currentPageId) ?? pages[0];
-    return <PageArtboard page={page} active tiled={false} />;
-  }
+  if (mode === "preview") return <ProductionView />;
 
   return (
     <div className="flex w-max items-start gap-8">
       {pages.map((page) => (
         <PageArtboard key={page.id} page={page} active={page.id === currentPageId} tiled />
       ))}
+    </div>
+  );
+}
+
+/** Como en producción: una capa a pantalla completa sobre el editor (la barra flotante de ModeBar queda encima). */
+function ProductionView() {
+  const { pages, currentPageId } = useSite();
+  const page = pages.find((p) => p.id === currentPageId) ?? pages[0];
+  // La cabecera es la de la página donde se empezó a probar y no cambia mientras dure la prueba.
+  const [shellPage] = useState(page);
+
+  return (
+    <div className="fixed inset-0 z-40 overflow-auto bg-neutral-300">
+      <PageArtboard page={page} active tiled={false} production shellPage={shellPage} />
     </div>
   );
 }

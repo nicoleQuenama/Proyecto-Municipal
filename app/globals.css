@@ -16,6 +16,17 @@
   --color-accent: #0d99ff;
 }
 
+/* Las líneas fijas «& {» y «}» del editor de CSS de un elemento. */
+.editor-wrapper-text {
+  opacity: 0.45;
+  font-style: italic;
+}
+
+html {
+  /* El editor es oscuro: barras de desplazamiento y controles nativos también. */
+  color-scheme: dark;
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);

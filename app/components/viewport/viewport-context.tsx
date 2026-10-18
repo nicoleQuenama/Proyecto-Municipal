@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-
-/** Ver una sola página, o todas en fila como marcos de Figma. */
-export type CanvasLayout = "single" | "all";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
 export type Device = "desktop" | "tablet" | "mobile";
 
@@ -39,11 +29,14 @@ interface ViewportContextValue {
   tool: Tool;
   setTool: (tool: Tool) => void;
   zoom: number;
+  /** Fija el zoom a mano: deja de ajustarse solo a la ventana. */
   setZoom: (zoom: number) => void;
   stepZoom: (direction: 1 | -1) => void;
-  layout: CanvasLayout;
-  /** Al ver todas las páginas se recuerda el zoom anterior y se recupera al volver a una sola. */
-  setLayout: (layout: CanvasLayout) => void;
+  /** Mientras es true, el zoom lo calcula el lienzo para que quepan todas las páginas. */
+  fitted: boolean;
+  fitToWindow: () => void;
+  /** Lo usa el lienzo para aplicar el zoom calculado sin desactivar el ajuste. */
+  applyFittedZoom: (zoom: number) => void;
 }
 
 const ViewportContext = createContext<ViewportContextValue | null>(null);
@@ -57,35 +50,41 @@ export function useViewport() {
 export function ViewportProvider({ children }: { children: ReactNode }) {
   const [device, setDevice] = useState<Device>("desktop");
   const [tool, setTool] = useState<Tool>("select");
-  const [zoom, setZoom] = useState(100);
-  const [layout, setLayoutState] = useState<CanvasLayout>("single");
-  const savedZoom = useRef(100);
+  const [zoom, setZoomState] = useState(100);
+  const [fitted, setFitted] = useState(true);
 
-  const setLayout = useCallback(
-    (next: CanvasLayout) => {
-      if (next === layout) return;
-      if (next === "all") savedZoom.current = zoom;
-      else setZoom(savedZoom.current);
-      setLayoutState(next);
-    },
-    [layout, zoom],
-  );
+  const setZoom = useCallback((next: number) => {
+    setFitted(false);
+    setZoomState(next);
+  }, []);
+
+  const fitToWindow = useCallback(() => setFitted(true), []);
 
   const stepZoom = useCallback(
-    (direction: 1 | -1) =>
-      setZoom((current) => {
-        const next =
-          direction === 1
-            ? ZOOM_STEPS.find((z) => z > current)
-            : [...ZOOM_STEPS].reverse().find((z) => z < current);
-        return next ?? current;
-      }),
-    [],
+    (direction: 1 | -1) => {
+      const next =
+        direction === 1
+          ? ZOOM_STEPS.find((z) => z > zoom)
+          : [...ZOOM_STEPS].reverse().find((z) => z < zoom);
+      if (next !== undefined) setZoom(next);
+    },
+    [zoom, setZoom],
   );
 
   return (
     <ViewportContext
-      value={{ device, setDevice, tool, setTool, zoom, setZoom, stepZoom, layout, setLayout }}
+      value={{
+        device,
+        setDevice,
+        tool,
+        setTool,
+        zoom,
+        setZoom,
+        stepZoom,
+        fitted,
+        fitToWindow,
+        applyFittedZoom: setZoomState,
+      }}
     >
       {children}
     </ViewportContext>

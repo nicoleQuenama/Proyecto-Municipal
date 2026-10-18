@@ -7,11 +7,11 @@ import { toolCommandId } from "../commands/command-definitions";
 import { useCommands } from "../commands/commands-context";
 import {
   ChevronIcon,
+  CodeIcon,
   CommentIcon,
   CursorIcon,
   EllipseIcon,
   FrameIcon,
-  FramesIcon,
   HandIcon,
   ImageIcon,
   LineIcon,
@@ -27,7 +27,6 @@ import {
   VideoIcon,
 } from "./icons";
 import { MenuButton, type MenuItem } from "./menu-button";
-import { useAllPages } from "./use-all-pages";
 import { ZOOM_STEPS, useViewport, type Tool } from "./viewport-context";
 
 const BASIC_TOOLS: { value: Tool; label: string; icon: ReactNode }[] = [
@@ -51,10 +50,12 @@ const MEDIA_ITEMS: MenuItem<string>[] = [
   { value: "media.video-url", label: "Video desde URL", icon: <VideoIcon />, dividerBefore: true },
 ];
 
-const ZOOM_ITEMS: MenuItem<string>[] = ZOOM_STEPS.map((z) => ({
-  value: String(z),
-  label: `${z}%`,
-}));
+const FIT = "fit";
+
+const ZOOM_ITEMS: MenuItem<string>[] = [
+  { value: FIT, label: "Ajustar a la ventana" },
+  ...ZOOM_STEPS.map((z, index) => ({ value: String(z), label: `${z}%`, dividerBefore: index === 0 })),
+];
 
 const iconButton =
   "flex h-8 w-8 items-center justify-center rounded-lg transition-colors";
@@ -70,9 +71,8 @@ function Divider() {
 }
 
 export function BottomToolbar() {
-  const { tool, setTool, zoom, setZoom, stepZoom } = useViewport();
+  const { tool, setTool, zoom, setZoom, stepZoom, fitted, fitToWindow } = useViewport();
   const { openDialog, runCommand, shortcutOf, withShortcut } = useCommands();
-  const { isAll, toggle: toggleAllPages } = useAllPages();
 
   const hintOf = (commandId: string) => {
     const shortcut = shortcutOf(commandId);
@@ -89,7 +89,7 @@ export function BottomToolbar() {
     <div
       role="toolbar"
       aria-label="Herramientas del lienzo"
-      className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-line bg-panel p-1.5 text-ink shadow-2xl"
+      className="absolute bottom-4 left-1/2 z-30 flex w-max max-w-[calc(100%-1rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-xl border border-line bg-panel p-1.5 text-ink shadow-2xl"
     >
       <button
         type="button"
@@ -147,6 +147,16 @@ export function BottomToolbar() {
 
       <button
         type="button"
+        aria-label="Editor de código"
+        title={withShortcut("Editor de código", "code.open")}
+        onClick={() => runCommand("code.open")}
+        className={`${iconButton} ${idle}`}
+      >
+        <CodeIcon />
+      </button>
+
+      <button
+        type="button"
         aria-label="Comentar"
         title={withShortcut("Comentar", toolCommandId("comment"))}
         aria-pressed={tool === "comment"}
@@ -157,17 +167,6 @@ export function BottomToolbar() {
       </button>
 
       <Divider />
-
-      <button
-        type="button"
-        aria-label="Ver todas las páginas lado a lado"
-        title={withShortcut("Ver todas las páginas lado a lado", "view.all-pages")}
-        aria-pressed={isAll}
-        onClick={toggleAllPages}
-        className={`${iconButton} ${isAll ? on : idle}`}
-      >
-        <FramesIcon />
-      </button>
 
       <button
         type="button"
@@ -183,8 +182,8 @@ export function BottomToolbar() {
       <MenuButton
         label="Nivel de zoom"
         items={ZOOM_ITEMS}
-        selected={String(zoom)}
-        onSelect={(v) => setZoom(Number(v))}
+        selected={fitted ? FIT : String(zoom)}
+        onSelect={(v) => (v === FIT ? fitToWindow() : setZoom(Number(v)))}
         className="flex h-8 min-w-16 items-center justify-center gap-1 rounded-lg px-2 text-xs hover:bg-hover"
       >
         {zoom}%

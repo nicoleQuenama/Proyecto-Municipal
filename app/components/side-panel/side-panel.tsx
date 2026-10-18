@@ -1,40 +1,44 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { AppearanceTab } from "../appearance/appearance-tab";
+import { LibrariesTab } from "../libraries/libraries-tab";
 import { NavigationTab } from "../navigation/navigation-tab";
-import { useNavigation } from "../navigation/navigation-context";
 import { splitBlocks } from "../site/rules";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import { TITLE_SELECTION } from "../site/types";
+import { PanelCollapseIcon } from "../viewport/icons";
 import { ComponentsTab } from "./components-tab";
 import { CATEGORY_ICONS, TABS, type PanelTab } from "./data";
 import { PagesTab } from "./pages-tab";
 import { StructureList, type StructureItem } from "./structure-list";
+import { TAB_ICONS } from "./tab-icons";
 
-const MIN_WIDTH = 288;
-const MAX_WIDTH = 560;
-const DEFAULT_WIDTH = 360;
+/** Ancho de la barra de iconos; el del contenido se puede cambiar arrastrando. */
+const RAIL_WIDTH = 56;
+const MIN_WIDTH = 248;
+const MAX_WIDTH = 520;
+const DEFAULT_WIDTH = 304;
 const KEYBOARD_STEP = 16;
 
 const clampWidth = (width: number) => Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width));
 
-const iconButton =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink";
+/** Qué se dibuja en cada sección del panel. Una sección nueva es una entrada nueva. */
+const TAB_CONTENT: Record<PanelTab, ReactNode> = {
+  pages: <PagesTab />,
+  components: <ComponentsTab />,
+  navigation: <NavigationTab />,
+  appearance: <AppearanceTab />,
+  libraries: <LibrariesTab />,
+};
 
 export function SidePanel() {
+  const [tab, setTab] = useState<PanelTab>("components");
   const [collapsed, setCollapsed] = useState(false);
-  const [chosenTab, setTab] = useState<PanelTab>("components");
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [resizing, setResizing] = useState(false);
   const [structureOpen, setStructureOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
-  const { mode } = useNavigation();
-
-  // Al conectar con flechas el mapa tiene que verse: es donde se sueltan.
-  const connecting = mode === "connect";
-  const tab: PanelTab = connecting ? "navigation" : chosenTab;
-  const compact = collapsed && !connecting;
 
   const page = useCurrentPage();
   const { components, selectedId } = useSite();
@@ -54,7 +58,9 @@ export function SidePanel() {
     ...body.flatMap(toItem),
   ];
 
-  const openTab = (value: PanelTab) => {
+  // Pulsar la sección abierta pliega el panel (como en VS Code); pulsar otra la abre.
+  const pickTab = (value: PanelTab) => {
+    if (value === tab && !collapsed) return setCollapsed(true);
     setTab(value);
     setCollapsed(false);
   };
@@ -67,7 +73,7 @@ export function SidePanel() {
   };
   const moveResize = (e: PointerEvent<HTMLDivElement>) => {
     if (!resizing || !panelRef.current) return;
-    setWidth(clampWidth(e.clientX - panelRef.current.getBoundingClientRect().left));
+    setWidth(clampWidth(e.clientX - panelRef.current.getBoundingClientRect().left - RAIL_WIDTH));
   };
   const resizeWithKeys = (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft") setWidth((w) => clampWidth(w - KEYBOARD_STEP));
@@ -76,88 +82,73 @@ export function SidePanel() {
     e.preventDefault();
   };
 
+  const current = TABS.find((t) => t.value === tab)!;
+
   return (
     <aside
       ref={panelRef}
       aria-label="Panel de construcción"
-      className={`relative my-3 ml-3 flex shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl ${
+      className={`relative my-3 ml-3 flex shrink-0 self-stretch overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl ${
         resizing ? "" : "transition-[width] duration-200"
-      } ${compact ? "w-14" : ""}`}
-      style={compact ? undefined : { width }}
+      }`}
+      style={{ width: collapsed ? RAIL_WIDTH : RAIL_WIDTH + width }}
     >
-      {compact ? (
-        <div className="flex flex-1 flex-col items-center gap-1 py-2">
-          <button
-            type="button"
-            aria-label="Expandir panel"
-            aria-expanded={false}
-            title="Expandir panel"
-            onClick={() => setCollapsed(false)}
-            className={iconButton}
-          >
-            »
-          </button>
-          <span aria-hidden className="my-1 h-px w-6 bg-line" />
-          {TABS.map((t) => (
+      <nav
+        aria-label="Secciones del panel"
+        className="flex shrink-0 flex-col items-center gap-1 border-r border-line py-2"
+        style={{ width: RAIL_WIDTH }}
+      >
+        <button
+          type="button"
+          aria-label={collapsed ? "Expandir panel" : "Plegar panel"}
+          aria-expanded={!collapsed}
+          title={collapsed ? "Expandir panel" : "Plegar panel"}
+          onClick={() => setCollapsed((value) => !value)}
+          className="mb-1 flex h-8 w-8 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink"
+        >
+          <PanelCollapseIcon collapsed={collapsed} />
+        </button>
+
+        {TABS.map((t) => {
+          const active = t.value === tab && !collapsed;
+          return (
             <button
               key={t.value}
               type="button"
-              aria-label={t.label}
-              title={t.label}
-              onClick={() => openTab(t.value)}
-              className={`${iconButton} ${tab === t.value ? "bg-hover text-ink" : ""}`}
+              aria-label={t.title}
+              aria-pressed={active}
+              title={t.title}
+              onClick={() => pickTab(t.value)}
+              className={`relative flex w-12 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] transition-colors ${
+                active ? "bg-hover text-ink" : "text-ink-dim hover:bg-hover/60 hover:text-ink"
+              }`}
             >
-              {t.icon}
+              {active && <span aria-hidden className="absolute top-2 -left-[7px] h-5 w-0.5 rounded-full bg-accent" />}
+              {TAB_ICONS[t.value]}
+              {t.label}
             </button>
-          ))}
-          <span
-            title={`${items.length} bloques en ${page.name}`}
-            className="mt-auto rounded bg-hover px-1.5 py-0.5 text-[11px] text-ink-dim"
-          >
-            {items.length}
-          </span>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-1 border-b border-line p-2">
-            <button
-              type="button"
-              aria-label="Colapsar panel"
-              aria-expanded
-              title="Colapsar panel"
-              onClick={() => setCollapsed(true)}
-              className={iconButton}
-            >
-              «
-            </button>
+          );
+        })}
 
-            <div role="tablist" className="grid flex-1 grid-cols-4 gap-0.5">
-              {TABS.map((t) => (
-                <button
-                  key={t.value}
-                  role="tab"
-                  type="button"
-                  aria-selected={tab === t.value}
-                  onClick={() => setTab(t.value)}
-                  className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-md text-[11px] transition-colors ${
-                    tab === t.value ? "bg-hover text-ink" : "text-ink-dim hover:text-ink"
-                  }`}
-                >
-                  <span aria-hidden>{t.icon}</span>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <span
+          title={`${items.length} bloques en ${page.name}`}
+          className="mt-auto rounded bg-hover px-1.5 py-0.5 text-[11px] text-ink-dim"
+        >
+          {items.length}
+        </span>
+      </nav>
+
+      {!collapsed && (
+        <div className="relative flex min-w-0 flex-1 flex-col">
+          <header className="flex h-11 shrink-0 items-center border-b border-line px-4 text-sm font-semibold">
+            {current.title}
+          </header>
 
           <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto p-4">
-            {tab === "components" && <ComponentsTab />}
-            {tab === "pages" && <PagesTab />}
-            {tab === "appearance" && <AppearanceTab />}
-            {tab === "navigation" && <NavigationTab />}
+            {TAB_CONTENT[tab]}
           </div>
 
-          {/* La estructura empieza cerrada para dejarle todo el alto al contenido de la pestaña. */}
+          {/* La estructura empieza cerrada para dejarle todo el alto al contenido de la sección. */}
           <div className="border-t border-line">
             <button
               type="button"
@@ -204,7 +195,7 @@ export function SidePanel() {
             onKeyDown={resizeWithKeys}
             className="absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none transition-colors outline-none hover:bg-accent/50 focus-visible:bg-accent/50"
           />
-        </>
+        </div>
       )}
     </aside>
   );

@@ -26,5 +26,16 @@ export interface Point {
   y: number;
 }
 
-/** Editar el diseño, trazar flechas entre elementos y páginas, o probar la navegación. */
-export type NavMode = "edit" | "connect" | "preview";
+/** Editar el diseño (y enlazar elementos con páginas) o probar la navegación como un visitante. */
+export type NavMode = "edit" | "preview";
+
+/** Un elemento de un componente, que es lo que se enlaza. */
+export interface ElementRef {
+  componentId: string;
+  elementId: string;
+}
+
+/** El elemento cuyo enlace se está editando y dónde mostrar el editor. */
+export interface LinkEditorTarget extends ElementRef {
+  anchor: Point;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ComponentBuilder } from "../builder/component-builder";
+import { useCommands } from "../commands/commands-context";
 import { Badge } from "../ui/badge";
 import { duplicateComponent } from "../site/rules";
 import { ComponentThumb } from "../site/component-view";
@@ -9,9 +9,6 @@ import { useSite, useSiteDispatch } from "../site/site-context";
 import type { ComponentDef } from "../site/types";
 import { plural } from "../versioning/versioning-rules";
 import { FILTERS, type ComponentFilter } from "./data";
-
-/** Qué se está abriendo en el constructor: uno nuevo, o un componente existente o su copia. */
-type BuilderTarget = "new" | ComponentDef;
 
 const rowButton =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink";
@@ -94,7 +91,7 @@ export function ComponentsTab() {
   const dispatch = useSiteDispatch();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");
-  const [builder, setBuilder] = useState<BuilderTarget | null>(null);
+  const { openBuilder } = useCommands();
 
   const normalized = query.trim().toLowerCase();
   const visible = components.filter(
@@ -107,7 +104,7 @@ export function ComponentsTab() {
     pages.reduce((total, page) => total + page.blocks.filter((b) => b.componentId === id).length, 0);
 
   const duplicate = (def: ComponentDef) =>
-    setBuilder(duplicateComponent(def, crypto.randomUUID(), `${def.name} (copia)`));
+    openBuilder(duplicateComponent(def, crypto.randomUUID(), `${def.name} (copia)`));
 
   return (
     <div className="flex flex-col gap-4">
@@ -142,7 +139,7 @@ export function ComponentsTab() {
 
       <button
         type="button"
-        onClick={() => setBuilder("new")}
+        onClick={() => openBuilder("new")}
         className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover"
       >
         + Nuevo componente
@@ -158,7 +155,7 @@ export function ComponentsTab() {
             def={def}
             usage={usageOf(def.id)}
             onAdd={() => dispatch({ type: "block/add", id: crypto.randomUUID(), componentId: def.id })}
-            onEdit={() => setBuilder(def)}
+            onEdit={() => openBuilder(def)}
             onDuplicate={() => duplicate(def)}
             onDelete={() => dispatch({ type: "component/delete", id: def.id })}
           />
@@ -167,13 +164,6 @@ export function ComponentsTab() {
           <li className="py-6 text-center text-[13px] text-ink-dim">Sin resultados</li>
         )}
       </ul>
-
-      {builder && (
-        <ComponentBuilder
-          initial={builder === "new" ? undefined : builder}
-          onClose={() => setBuilder(null)}
-        />
-      )}
     </div>
   );
 }

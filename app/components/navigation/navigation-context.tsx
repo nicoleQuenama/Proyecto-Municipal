@@ -12,7 +12,7 @@ import {
 } from "react";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { normalizeExternalUrl, resolveTransition } from "./links";
-import type { LinkTarget, NavMode, Point, Transition } from "./types";
+import type { ElementRef, LinkEditorTarget, LinkTarget, NavMode, Point, Transition } from "./types";
 
 /** Atributo que marca un elemento como destino donde soltar una flecha. */
 export const DROP_ATTRIBUTE = "data-link-drop";
@@ -21,14 +21,12 @@ export const pageDrop = (pageId: string) => `page:${pageId}`;
 
 const NOTICE_MS = 4000;
 
+/** Lo que se mueve el puntero (px) para que un clic sobre el ícono no cuente como arrastre. */
+const DRAG_THRESHOLD = 6;
+
 interface Connecting {
   from: Point;
   to: Point;
-}
-
-interface Source {
-  componentId: string;
-  elementId: string;
 }
 
 interface NavigationContextValue {
@@ -38,7 +36,11 @@ interface NavigationContextValue {
   connecting: Connecting | null;
   /** El destino que hay bajo la flecha ahora mismo ("page:servicios", "external"). */
   hotDrop: string | null;
-  startConnect: (componentId: string, elementId: string, from: Point) => void;
+  /** Empieza una flecha desde un elemento: al soltarla sobre una página la enlaza; si no se arrastra, abre el editor. */
+  startConnect: (element: ElementRef, from: Point) => void;
+  /** El elemento cuyo enlace se edita ahora, si hay uno. */
+  linkEditor: LinkEditorTarget | null;
+  closeLinkEditor: () => void;
   /** La transición que se está reproduciendo y un contador que cambia con cada navegación. */
   transition: Transition | null;
   transitionKey: number;
@@ -55,6 +57,8 @@ export function useNavigation() {
   return ctx;
 }
 
+const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
+
 const dropTargetAt = (x: number, y: number): string | null =>
   document.elementFromPoint(x, y)?.closest(`[${DROP_ATTRIBUTE}]`)?.getAttribute(DROP_ATTRIBUTE) ?? null;
 
@@ -68,7 +72,9 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [transition, setTransition] = useState<Transition | null>(null);
   const [transitionKey, setTransitionKey] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
-  const source = useRef<Source | null>(null);
+  const [linkEditor, setLinkEditor] = useState<LinkEditorTarget | null>(null);
+  const source = useRef<ElementRef | null>(null);
+  const origin = useRef<Point | null>(null);
   const noticeTimer = useRef<number | undefined>(undefined);
 
   const notify = useCallback((message: string) => {
@@ -86,16 +92,21 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const setMode = useCallback(
     (next: NavMode) => {
       stopConnecting();
+      setLinkEditor(null);
       setTransition(null); // la primera página de una vista previa no se anima
       setModeState(next);
     },
     [stopConnecting],
   );
 
-  const startConnect = useCallback((componentId: string, elementId: string, from: Point) => {
-    source.current = { componentId, elementId };
+  const startConnect = useCallback((element: ElementRef, from: Point) => {
+    source.current = element;
+    origin.current = from;
+    setLinkEditor(null);
     setConnecting({ from, to: from });
   }, []);
+
+  const closeLinkEditor = useCallback(() => setLinkEditor(null), []);
 
   const followLink = useCallback(
     (link: LinkTarget) => {
@@ -113,7 +124,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (link.pageId === currentPageId || !pages.some((page) => page.id === link.pageId)) return;
+      const target = pages.find((page) => page.id === link.pageId);
+      if (!target || target.hidden || target.id === currentPageId) return;
 
       setTransition(resolveTransition(link, navigation.defaultTransition));
       setTransitionKey((key) => key + 1);
@@ -134,15 +146,18 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     };
 
     const onUp = (e: PointerEvent) => {
-      const drop = dropTargetAt(e.clientX, e.clientY);
       const from = source.current;
+      const anchor = { x: e.clientX, y: e.clientY };
+      const dragged = origin.current !== null && distance(origin.current, anchor) >= DRAG_THRESHOLD;
+      const drop = dragged ? dropTargetAt(e.clientX, e.clientY) : null;
 
-      if (drop && from) {
-        if (drop === EXTERNAL_DROP) {
-          dispatch({ type: "link/set", ...from, link: { kind: "external", url: "", newTab: true } });
-        } else if (drop.startsWith("page:")) {
-          dispatch({ type: "link/set", ...from, link: { kind: "page", pageId: drop.slice("page:".length) } });
-        }
+      if (from && !dragged) {
+        setLinkEditor({ ...from, anchor }); // un clic en el ícono, sin arrastrar
+      } else if (from && drop === EXTERNAL_DROP) {
+        dispatch({ type: "link/set", ...from, link: { kind: "external", url: "", newTab: true } });
+        setLinkEditor({ ...from, anchor }); // falta escribir la URL
+      } else if (from && drop?.startsWith("page:")) {
+        dispatch({ type: "link/set", ...from, link: { kind: "page", pageId: drop.slice("page:".length) } });
       }
       stopConnecting();
     };
@@ -157,22 +172,32 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     };
   }, [isConnecting, dispatch, stopConnecting]);
 
-  // Esc cancela la flecha o, si no hay ninguna, vuelve a editar.
+  // Esc cancela la flecha o, en la vista previa, vuelve a editar (el editor de enlace se cierra solo).
   useEffect(() => {
-    if (mode === "edit") return;
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || document.querySelector("dialog[open]")) return;
       if (isConnecting) stopConnecting();
-      else setMode("edit");
+      else if (mode === "preview") setMode("edit");
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mode, isConnecting, stopConnecting, setMode]);
 
   const value = useMemo<NavigationContextValue>(
-    () => ({ mode, setMode, connecting, hotDrop, startConnect, transition, transitionKey, followLink, notice }),
-    [mode, setMode, connecting, hotDrop, startConnect, transition, transitionKey, followLink, notice],
+    () => ({
+      mode,
+      setMode,
+      connecting,
+      hotDrop,
+      startConnect,
+      linkEditor,
+      closeLinkEditor,
+      transition,
+      transitionKey,
+      followLink,
+      notice,
+    }),
+    [mode, setMode, connecting, hotDrop, startConnect, linkEditor, closeLinkEditor, transition, transitionKey, followLink, notice],
   );
 
   return <NavigationContext value={value}>{children}</NavigationContext>;

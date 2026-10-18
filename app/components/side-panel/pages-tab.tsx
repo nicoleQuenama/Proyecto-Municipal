@@ -6,7 +6,8 @@ import { isPageNameTaken, routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { Page } from "../site/types";
 import { plural } from "../versioning/versioning-rules";
-import { useAllPages } from "../viewport/use-all-pages";
+import { CodeIcon } from "../viewport/icons";
+import { useWorkbench } from "../workbench/workbench-context";
 
 const iconButton =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink";
@@ -19,6 +20,7 @@ interface PageRowProps {
 
 function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const dispatch = useSiteDispatch();
+  const { openFile } = useWorkbench();
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [draft, setDraft] = useState(page.name);
@@ -107,6 +109,15 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
 
       <button
         type="button"
+        aria-label={`Programar ${page.name} en código`}
+        title="Programar esta página en código (CSS y TypeScript)"
+        onClick={() => openFile({ kind: "page-js", pageId: page.id })}
+        className={`${iconButton} hidden group-hover:flex focus:flex`}
+      >
+        <CodeIcon />
+      </button>
+      <button
+        type="button"
         aria-label={`Renombrar ${page.name}`}
         title="Renombrar"
         onClick={() => {
@@ -134,7 +145,6 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
 
 export function PagesTab() {
   const { pages, currentPageId } = useSite();
-  const { isAll, toggle } = useAllPages();
   const dispatch = useSiteDispatch();
 
   const createPage = (name: string) => {
@@ -144,18 +154,6 @@ export function PagesTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <button
-        type="button"
-        aria-pressed={isAll}
-        onClick={toggle}
-        className={`flex h-9 items-center justify-center gap-2 rounded-md border text-xs transition-colors ${
-          isAll ? "border-accent bg-accent/25 text-accent" : "border-line hover:bg-hover"
-        }`}
-      >
-        <span aria-hidden>▥</span>
-        {isAll ? "Ver una sola página" : "Ver todas las páginas lado a lado"}
-      </button>
-
       <InlineForm
         label="Nombre de la nueva página"
         placeholder="Nueva página…"

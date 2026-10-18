@@ -22,6 +22,9 @@ const TOOLS: { kind: ElementKind; label: string; icon: ReactNode }[] = [
 
 const newId = () => crypto.randomUUID();
 
+/** Qué abre el constructor: uno nuevo, o un componente existente o su copia. */
+export type BuilderTarget = "new" | ComponentDef;
+
 interface ComponentBuilderProps {
   /** Componente a editar o copia a completar; sin él se empieza uno nuevo en blanco. */
   initial?: ComponentDef;

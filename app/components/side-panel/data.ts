@@ -1,13 +1,15 @@
 import type { ComponentCategory } from "../site/types";
 
-export type PanelTab = "pages" | "navigation" | "components" | "appearance";
+export type PanelTab = "pages" | "components" | "navigation" | "appearance" | "libraries";
 export type ComponentFilter = "all" | ComponentCategory;
 
-export const TABS: { value: PanelTab; label: string; icon: string }[] = [
-  { value: "pages", label: "Páginas", icon: "▤" },
-  { value: "navigation", label: "Navegación", icon: "⇄" },
-  { value: "components", label: "Componentes", icon: "❖" },
-  { value: "appearance", label: "Apariencia", icon: "◐" },
+/** Las secciones del panel lateral, en el orden de la barra de iconos. */
+export const TABS: { value: PanelTab; label: string; title: string }[] = [
+  { value: "pages", label: "Páginas", title: "Páginas del sitio" },
+  { value: "components", label: "Agregar", title: "Componentes para agregar a la página" },
+  { value: "navigation", label: "Enlaces", title: "Navegación y enlaces entre páginas" },
+  { value: "appearance", label: "Estilo", title: "Variables y reglas de estilo" },
+  { value: "libraries", label: "Librerías", title: "Librerías de código" },
 ];
 
 export const CATEGORY_LABELS: Record<ComponentCategory, string> = {
