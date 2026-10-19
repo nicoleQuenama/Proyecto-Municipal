@@ -76,7 +76,7 @@ export function linkSummary(link: LinkTarget, pages: Page[]): string {
 export const isLinkable = (element: CanvasElement): boolean =>
   element.kind === "image" || element.text.trim() !== "";
 
-const KIND_NAMES = { rect: "Botón", ellipse: "Forma", text: "Texto", image: "Imagen" } as const;
+const KIND_NAMES = { rect: "Botón", ellipse: "Forma", text: "Texto", image: "Imagen", video: "Video" } as const;
 
 export function elementLabel(element: CanvasElement): string {
   const text = element.text.trim().replace(/\s+/g, " ");

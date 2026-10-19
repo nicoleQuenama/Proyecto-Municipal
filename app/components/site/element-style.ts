@@ -29,12 +29,16 @@ const box = (radius: string) => (element: CanvasElement) => [
   ...textCss(element),
 ];
 
+/** Una imagen o un video: esquinas propias y recorte de lo que sobresale. */
+const media = (element: CanvasElement) => [`border-radius: ${element.radius}px`, "overflow: hidden"];
+
 /** Los estilos base de cada tipo de elemento. Un tipo nuevo es una entrada nueva. */
 const BASE_STYLES: Record<ElementKind, (element: CanvasElement) => string[]> = {
   rect: box("own"),
   ellipse: box("50%"),
   text: box("own"),
-  image: (element) => [`border-radius: ${element.radius}px`, "overflow: hidden"],
+  image: media,
+  video: media,
 };
 
 /** Dónde va y cuánto mide un elemento. En la capa base, para que `width`, `height`, `position`… propios lo reemplacen. */

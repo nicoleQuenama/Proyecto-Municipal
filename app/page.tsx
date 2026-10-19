@@ -2,6 +2,7 @@ import { CommandPalette } from "./components/commands/command-palette";
 import { CommandsProvider } from "./components/commands/commands-context";
 import { ShortcutsSettings } from "./components/commands/shortcuts-settings";
 import { BuilderHost } from "./components/builder/builder-host";
+import { CanvasSettingsProvider } from "./components/canvas-editing/settings-context";
 import { Inspector } from "./components/customize/inspector";
 import { TailwindRuntime } from "./components/customize/tailwind-runtime";
 import { FormatMenu } from "./components/format/format-menu";
@@ -36,6 +37,7 @@ export default function Home() {
       <MediaProvider>
         <VersioningProvider>
           <ViewportProvider>
+            <CanvasSettingsProvider>
             <NavigationProvider>
               <WorkbenchProvider>
               <CommandsProvider>
@@ -84,6 +86,7 @@ export default function Home() {
               </CommandsProvider>
               </WorkbenchProvider>
             </NavigationProvider>
+            </CanvasSettingsProvider>
           </ViewportProvider>
         </VersioningProvider>
       </MediaProvider>

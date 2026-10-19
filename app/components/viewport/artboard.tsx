@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { PageGuidesProvider } from "../placement/page-guides";
+import { usePlacedExtent } from "../placement/use-placed-extent";
 import { DROP_ATTRIBUTE, pageDrop, useNavigation } from "../navigation/navigation-context";
 import { usePageCode } from "../behaviors/use-page-code";
 import { MediaList } from "../media/media-list";
@@ -8,6 +10,7 @@ import { VisibilityEye } from "../site/visibility-eye";
 import { PageBlocks } from "../site/page-blocks";
 import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { useDeselect } from "../site/use-deselect";
 import type { Page } from "../site/types";
 import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
@@ -25,10 +28,11 @@ const CURSORS: Partial<Record<Tool, string>> = {
 export function CanvasSurface({ children }: { children: ReactNode }) {
   const { tool } = useViewport();
   useAutoFit();
+  const deselect = useDeselect();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (tool !== "hand") return;
+    if (tool !== "hand") return deselect.onPointerDown(e);
     lastPoint.current = { x: e.clientX, y: e.clientY };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -83,6 +87,9 @@ function PageArtboard({ page, active, tiled, production = false, shellPage }: Pa
   const select = () => dispatch({ type: "page/select", id: page.id });
   const scale = zoom / 100;
   const pageRef = usePageCode(page, mode === "preview" && active);
+  // La página es al menos tan alta como lo más bajo que se colocó libremente en ella.
+  const placedExtent = usePlacedExtent(pageRef);
+  const baseHeight = production ? "100vh" : "600px";
 
   // Solo se anima al navegar en la vista previa; la clave vuelve a montar la página para reproducirla.
   const animation =
@@ -119,12 +126,8 @@ function PageArtboard({ page, active, tiled, production = false, shellPage }: Pa
           : `mx-auto w-full transition-[max-width] duration-200 ${production ? "min-h-full bg-white" : ""}`
       }
       // En fila, el marco ocupa su ancho ya escalado y solo la página se escala; a solas, todo junto.
-      // En producción, el escritorio ocupa todo el ancho; tablet y móvil, el suyo.
-      style={
-        tiled
-          ? { width: current.width * scale }
-          : { maxWidth: production && device === "desktop" ? undefined : current.width }
-      }
+      // En producción la página tiene el mismo ancho que en la maqueta, para que se vea igual.
+      style={tiled ? { width: current.width * scale } : { maxWidth: current.width }}
     >
       {!production && (
       <p className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
@@ -137,6 +140,9 @@ function PageArtboard({ page, active, tiled, production = false, shellPage }: Pa
             >
               {page.name} · {routeOf(page)}
             </button>
+            <span title="Zoom de la vista: el tamaño real es 100 %" className="shrink-0 text-xs tabular-nums">
+              {zoom}%
+            </span>
             <VisibilityEye hidden={false} zoomed={false} label={page.name} onToggle={() => setHidden(true)} className="flex shrink-0" />
           </>
         ) : (
@@ -151,11 +157,12 @@ function PageArtboard({ page, active, tiled, production = false, shellPage }: Pa
         <div
           ref={pageRef}
           data-site-page
-          className={`bg-white text-neutral-900 ${
-            production ? "min-h-screen px-10 py-12" : "min-h-[600px] rounded-sm px-10 py-12 shadow-2xl"
+          className={`relative bg-white text-neutral-900 ${
+            production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={boxStyle(styles.page)}
+          style={{ ...boxStyle(styles.page), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
         >
+          <PageGuidesProvider>
           {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
           {shellPage && <PageBlocks page={shellPage} slot="top" interactive={false} />}
 
@@ -170,6 +177,7 @@ function PageArtboard({ page, active, tiled, production = false, shellPage }: Pa
             <PageBlocks page={page} slot="body" interactive={active} />
             <MediaList page={page} interactive={active} />
           </div>
+          </PageGuidesProvider>
         </div>
 
         {tiled && !active && mode === "edit" && (

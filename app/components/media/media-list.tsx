@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import type { Placement } from "../placement/types";
 import type { Page } from "../site/types";
 import { useNavigation } from "../navigation/navigation-context";
+import { PlacementGrip } from "../placement/placement-grip";
+import { placementAttributes, placementStyle } from "../placement/placement-style";
+import { usePlacementDrag } from "../placement/use-placement-drag";
+import { useWidthResize } from "../placement/use-width-resize";
+import { WidthHandles } from "../placement/width-handles";
 import { HiddenPlaceholder } from "../site/hidden-placeholder";
 import { useSiteDispatch } from "../site/site-context";
 import { VisibilityEye } from "../site/visibility-eye";
@@ -101,6 +107,14 @@ function MediaCard({
   const [posterMenu, setPosterMenu] = useState<{ x: number; y: number } | null>(null);
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "media", pageId, mediaId: item.id }, hidden });
+  const place = (placement: Placement) => dispatch({ type: "media/place", pageId, mediaId: item.id, placement });
+  const resize = useWidthResize({ enabled: removable, onPlace: place });
+  const move = usePlacementDrag({
+    enabled: removable,
+    onPlace: place,
+    onTransfer: (toPageId, placement) =>
+      dispatch({ type: "media/transfer", fromPageId: pageId, toPageId, mediaId: item.id, placement }),
+  });
 
   // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
   if (item.hidden) return <HiddenPlaceholder label={`Oculto · ${item.name}`} onShow={() => setHidden(false)} />;
@@ -109,8 +123,9 @@ function MediaCard({
 
   return (
     <figure
-      className="group relative overflow-hidden rounded-md bg-neutral-100"
-      style={{ borderRadius: radius }}
+      {...placementAttributes(item.placement)}
+      className={`group ${item.placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} overflow-hidden rounded-md bg-neutral-100`}
+      style={{ borderRadius: radius, ...placementStyle(item.placement, true) }}
       onContextMenu={
         canSetPoster
           ? (e) => {
@@ -128,6 +143,14 @@ function MediaCard({
         <MediaPreview item={item} editing={editing} onError={() => setFailed(true)} />
       )}
 
+      {removable && <WidthHandles onStart={resize.startResize} />}
+      {removable && (
+        <PlacementGrip
+          label={item.name}
+          onStart={move.startDrag}
+          className="absolute top-2 left-1/2 hidden -translate-x-1/2 group-hover:flex focus:flex"
+        />
+      )}
       {editing && (
         <VisibilityEye
           hidden={false}
@@ -171,18 +194,27 @@ export function MediaList({ page, interactive }: { page: Page; interactive: bool
   const shown = mode === "preview" ? items.filter((item) => !item.hidden) : items;
   if (shown.length === 0) return null;
 
+  const card = (item: MediaItem) => (
+    <MediaCard
+      key={item.id}
+      item={item}
+      pageId={page.id}
+      radius={styles.role("image").radius}
+      editing={mode === "edit"}
+      removable={interactive && mode === "edit"}
+    />
+  );
+  const isPlaced = (item: MediaItem) => item.placement !== undefined && !item.hidden;
+  const inFlow = shown.filter((item) => !isPlaced(item));
+
   return (
-    <div className="mt-8 flex flex-col gap-6" style={{ gap: styles.page.gap }}>
-      {shown.map((item) => (
-        <MediaCard
-          key={item.id}
-          item={item}
-          pageId={page.id}
-          radius={styles.role("image").radius}
-          editing={mode === "edit"}
-          removable={interactive && mode === "edit"}
-        />
-      ))}
-    </div>
+    <>
+      {inFlow.length > 0 && (
+        <div className="mt-8 flex flex-col gap-6" style={{ gap: styles.page.gap }}>
+          {inFlow.map(card)}
+        </div>
+      )}
+      {shown.filter(isPlaced).map(card)}
+    </>
   );
 }

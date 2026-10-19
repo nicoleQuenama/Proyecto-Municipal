@@ -3,7 +3,9 @@ import type { LinkTarget } from "../navigation/types";
 import { INITIAL_STATE as INITIAL_TITLE } from "../title-editor/constants";
 import { setHidden } from "./hiding";
 import { CODE_COMPONENT_ID, DEFAULT_CODE } from "./code-defaults";
-import { mergePatch, moveBlock, resetFormat, styleBox, styleElements, updateBlock } from "./overrides";
+import { patchComponentElement, resizeComponent } from "./component-scope-rules";
+import { placeBlock, placeMedia, placeTitle, transferBlock, transferMedia } from "../placement/placement-rules";
+import { mergePatch, moveBlock, resetFormat, resizeSection, styleBox, styleElements, updateBlock } from "./overrides";
 import {
   isPageNameTaken,
   slugify,
@@ -184,6 +186,24 @@ const HANDLERS: Handlers = {
     styleElements(state, action.pageId, action.blockId, action.elementIds, action.patch),
 
   "block/box": (state, action) => styleBox(state, action.pageId, action.blockId, action.patch),
+
+  "block/place": (state, action) => placeBlock(state, action.pageId, action.blockId, action.placement),
+
+  "block/transfer": (state, action) =>
+    transferBlock(state, action.fromPageId, action.toPageId, action.blockId, action.placement),
+
+  "title/place": (state, action) => placeTitle(state, action.pageId, action.placement),
+
+  "media/place": (state, action) => placeMedia(state, action.pageId, action.mediaId, action.placement),
+
+  "media/transfer": (state, action) =>
+    transferMedia(state, action.fromPageId, action.toPageId, action.mediaId, action.placement),
+
+  "component/element": (state, action) => patchComponentElement(state, action, action.elementId, action.patch),
+
+  "component/size": (state, action) => resizeComponent(state, action, action.size, action.backdropId),
+
+  "block/size": (state, action) => resizeSection(state, action.pageId, action.blockId, action.size, action.backdropId),
 
   "block/move": (state, action) => moveBlock(state, action.pageId, action.blockId, action.direction),
 

@@ -4,6 +4,8 @@
  * no en el componente, así que solo afecta a ese bloque.
  */
 
+import { layoutDocked } from "../canvas-editing/dock-layout";
+import { clampCanvasSize } from "../canvas-editing/limits";
 import { pixelsOf } from "../styles/apply";
 import { splitBlocks } from "./rules";
 import type {
@@ -33,6 +35,7 @@ type VariableProp = keyof typeof VARIABLE_PROPS;
 /** El valor final de un cambio: si es una variable se resuelve; si es un literal se deja como está. */
 export function resolveOverride(element: CanvasElement, override: ElementOverride, resolve: Resolver): CanvasElement {
   const next: Record<string, unknown> = { ...element, ...override };
+  if (override.parentId === null) next.parentId = undefined; // suelto del contenedor que tenía
 
   for (const prop of Object.keys(VARIABLE_PROPS) as VariableProp[]) {
     const raw = override[prop];
@@ -45,16 +48,22 @@ export function resolveOverride(element: CanvasElement, override: ElementOverrid
   return next as unknown as CanvasElement;
 }
 
-/** El componente tal como se ve en un bloque: con el formato propio del bloque sobre sus elementos. */
+/** Soltar un elemento de su contenedor: se queda donde está y deja de seguirlo. */
+export const FREE_OF_CONTAINER = { parentId: null, slot: undefined, offset: undefined, fitToParent: undefined } satisfies ElementOverride;
+
+/** El componente tal como se ve en un bloque: con el formato, el tamaño y el acoplado propios del bloque. */
 export function applyOverrides(def: ComponentDef, block: BlockInstance, resolve: Resolver): ComponentDef {
   const overrides = block.elements;
-  if (!overrides) return def;
+  if (!overrides && !block.size) return def;
 
+  const elements = def.elements.map((element) =>
+    overrides?.[element.id] ? resolveOverride(element, overrides[element.id], resolve) : element,
+  );
   return {
     ...def,
-    elements: def.elements.map((element) =>
-      overrides[element.id] ? resolveOverride(element, overrides[element.id], resolve) : element,
-    ),
+    ...block.size,
+    // Lo acoplado sigue a su contenedor aunque el bloque lo haya movido o redimensionado.
+    elements: overrides ? layoutDocked(elements) : elements,
   };
 }
 
@@ -98,6 +107,29 @@ export function styleElements(
     }
     return { ...block, elements: Object.keys(elements).length > 0 ? elements : undefined };
   });
+}
+
+/** Cambia el tamaño de la sección de un bloque, sin pasar del máximo de pantalla ni dejar elementos fuera. */
+export function resizeSection(
+  state: SiteState,
+  pageId: string,
+  blockId: string,
+  size: Partial<{ width: number; height: number }>,
+  /** El fondo de la sección: crece con ella y no cuenta como contenido que impida achicarla. */
+  backdropId?: string,
+): SiteState {
+  const block = state.pages.find((p) => p.id === pageId)?.blocks.find((b) => b.id === blockId);
+  const def = state.components.find((c) => c.id === block?.componentId);
+  if (!block || !def) return state;
+
+  const current = applyOverrides(def, block, () => undefined);
+  const next = clampCanvasSize(
+    { width: size.width ?? current.width, height: size.height ?? current.height },
+    current.elements.filter((element) => element.id !== backdropId),
+  );
+  const unchanged = next.width === def.width && next.height === def.height;
+  const resized = updateBlock(state, pageId, blockId, (b) => ({ ...b, size: unchanged ? undefined : next }));
+  return backdropId ? styleElements(resized, pageId, blockId, [backdropId], { x: 0, y: 0, ...next }) : resized;
 }
 
 /** Cambia el fondo o las esquinas de la caja de un bloque. */

@@ -1,24 +1,18 @@
 "use client";
 
-import { useReducer, useState, type ReactNode } from "react";
-import { CATEGORY_LABELS } from "../side-panel/data";
+import { useReducer, useState } from "react";
 import { pruneLinks } from "../navigation/links";
-import { newElement, TEMPLATES, type TemplateId } from "../site/component-templates";
+import { newElement } from "../site/component-templates";
 import { isComponentNameTaken } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
-import type { ComponentCategory, ComponentDef, ElementKind } from "../site/types";
+import type { ComponentDef, ElementKind } from "../site/types";
 import { Modal } from "../ui/modal";
-import { EllipseIcon, ImageIcon, RectangleIcon, TextIcon } from "../viewport/icons";
 import { BuilderCanvas } from "./builder-canvas";
+import { BuilderHeader } from "./builder-header";
 import { builderReducer, initialBuilderState } from "./builder-reducer";
+import { CanvasToolbar } from "./canvas-toolbar";
+import { ElementToolbar } from "./element-toolbar";
 import { PropertiesPanel } from "./properties-panel";
-
-const TOOLS: { kind: ElementKind; label: string; icon: ReactNode }[] = [
-  { kind: "rect", label: "Rectángulo", icon: <RectangleIcon /> },
-  { kind: "ellipse", label: "Elipse", icon: <EllipseIcon /> },
-  { kind: "text", label: "Texto", icon: <TextIcon /> },
-  { kind: "image", label: "Imagen", icon: <ImageIcon /> },
-];
 
 const newId = () => crypto.randomUUID();
 
@@ -49,9 +43,7 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
   const save = () => {
     const name = state.name.trim();
     if (!name) return setError("Ponle un nombre al componente.");
-    if (isComponentNameTaken(components, name, initial?.id)) {
-      return setError("Ya existe un componente con ese nombre.");
-    }
+    if (isComponentNameTaken(components, name, initial?.id)) return setError("Ya existe un componente con ese nombre.");
     if (state.elements.length === 0) return setError("Agrega al menos un elemento al lienzo.");
 
     const count = state.elements.length;
@@ -75,88 +67,22 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
   return (
     <Modal label="Constructor de componentes" size="xl" onClose={onClose}>
       <div className="flex h-[min(40rem,80vh)] flex-col">
-        <header className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-          <input
-            autoFocus
-            aria-label="Nombre del componente"
-            placeholder="Nombre del componente"
-            value={state.name}
-            maxLength={40}
-            onChange={(e) => {
-              dispatch({ type: "meta", patch: { name: e.target.value } });
-              setError(null);
-            }}
-            className="h-8 w-56 rounded-md border border-line bg-canvas px-3 text-[13px] outline-none placeholder:text-ink-dim focus:border-accent"
-          />
-
-          <select
-            aria-label="Categoría"
-            value={state.category}
-            onChange={(e) =>
-              dispatch({ type: "meta", patch: { category: e.target.value as ComponentCategory } })
-            }
-            className="h-8 rounded-md border border-line bg-canvas px-2 text-xs outline-none focus:border-accent [&>option]:bg-panel"
-          >
-            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            aria-label="Cargar una plantilla"
-            value=""
-            onChange={(e) =>
-              e.target.value &&
-              dispatch({
-                type: "template",
-                templateId: e.target.value as TemplateId,
-                nextId: newId,
-                pageIds: pages.map((page) => page.id),
-              })
-            }
-            className="h-8 rounded-md border border-line bg-canvas px-2 text-xs outline-none focus:border-accent [&>option]:bg-panel"
-          >
-            <option value="">Cargar plantilla…</option>
-            {TEMPLATES.map((template) => (
-              <option key={template.id} value={template.id}>{template.label}</option>
-            ))}
-          </select>
-
-          <span className="ml-auto flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90"
-            >
-              {isEditing ? "Guardar cambios" : "Guardar componente"}
-            </button>
-          </span>
-        </header>
+        <BuilderHeader
+          state={state}
+          dispatch={dispatch}
+          newId={newId}
+          pageIds={pages.map((page) => page.id)}
+          isEditing={isEditing}
+          onEdited={() => setError(null)}
+          onSave={save}
+          onClose={onClose}
+        />
 
         <div className="grid min-h-0 flex-1 grid-cols-[3rem_1fr_16rem]">
-          <div role="toolbar" aria-label="Agregar elementos" className="flex flex-col items-center gap-1 border-r border-line py-2">
-            {TOOLS.map((tool) => (
-              <button
-                key={tool.kind}
-                type="button"
-                aria-label={`Agregar ${tool.label.toLowerCase()}`}
-                title={`Agregar ${tool.label.toLowerCase()}`}
-                onClick={() => addElement(tool.kind)}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
-              >
-                {tool.icon}
-              </button>
-            ))}
-          </div>
+          <ElementToolbar onAdd={addElement} />
 
-          <div className="min-w-0 overflow-auto bg-canvas p-6">
+          <div className="min-w-0 overflow-auto bg-canvas p-6 pr-10 pb-12">
+            <CanvasToolbar size={{ width: state.width, height: state.height }} />
             <BuilderCanvas state={state} dispatch={dispatch} />
           </div>
 
@@ -170,7 +96,8 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
             <p role="alert" className="text-red-400">{error}</p>
           ) : (
             <p className="text-ink-dim">
-              Arrastra para mover · la esquina cambia el tamaño · flechas ajustan 1 px (Shift: 10) · Supr elimina.
+              Arrastra para mover · suéltalo sobre un rectángulo para acoplarlo (Alt: libre) · las manijas y los bordes del
+              lienzo cambian el tamaño · flechas 1 px (Shift: 10) · Supr elimina.
             </p>
           )}
         </footer>

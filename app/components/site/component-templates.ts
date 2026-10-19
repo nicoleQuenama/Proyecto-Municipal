@@ -25,6 +25,7 @@ const KIND_DEFAULTS: Record<ElementKind, Partial<CanvasElement>> = {
   ellipse: { width: 100, height: 100 },
   text: { width: 160, height: 32, fill: "transparent", text: "Texto", role: "text" },
   image: { width: 160, height: 120, fill: "transparent", role: "image" },
+  video: { width: 200, height: 120, fill: "transparent", role: "image" },
 };
 
 export function newElement(kind: ElementKind, id: string, overrides: Partial<CanvasElement> = {}): CanvasElement {

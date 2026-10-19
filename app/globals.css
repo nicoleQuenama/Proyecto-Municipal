@@ -50,3 +50,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .nav-anim-fade, .nav-anim-slide, .nav-anim-zoom { animation: none; }
 }
+
+/* La página sobre la que se va a soltar lo que se arrastra (ver `use-placement-drag.ts`). */
+[data-site-page][data-drop-hot] {
+  outline: 4px solid #34d399;
+}

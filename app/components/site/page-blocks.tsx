@@ -16,6 +16,10 @@ import { HiddenPlaceholder } from "./hidden-placeholder";
 import { applyOverrides, type Resolver } from "./overrides";
 import { splitBlocks } from "./rules";
 import { useSite, useSiteDispatch } from "./site-context";
+import { useBlockGestures } from "./use-block-gestures";
+import { placementAttributes, placementStyle } from "../placement/placement-style";
+import { PlacementGrip } from "../placement/placement-grip";
+import { usePlacementDrag } from "../placement/use-placement-drag";
 import { SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
 import { VisibilityEye } from "./visibility-eye";
 
@@ -48,9 +52,21 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const { openFile } = useWorkbench();
 
   const def = components.find((c) => c.id === block.componentId);
-  if (!def) return null;
+  const resolve = def && styles.resolver(def.id);
+  const view = def && resolve && applyOverrides(styles.component(def), block, resolve);
+  const flow = isFlowLayout(def?.styles?.[SECTION_KEY], block.custom?.[SECTION_KEY]);
 
   const editing = interactive && mode === "edit";
+  const selected = editing && block.id === selectedId;
+  const gestures = useBlockGestures({ pageId: page.id, blockId: block.id, view, selected });
+  const move = usePlacementDrag({
+    enabled: editing,
+    onPlace: (placement) => dispatch({ type: "block/place", pageId: page.id, blockId: block.id, placement }),
+    onTransfer: (toPageId, placement) =>
+      dispatch({ type: "block/transfer", fromPageId: page.id, toPageId, blockId: block.id, placement }),
+  });
+  if (!def || !view || !resolve) return null;
+
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
 
@@ -66,10 +82,8 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     );
   }
 
-  const selected = editing && block.id === selectedId;
   const select = () => dispatch({ type: "block/select", id: block.id });
   const box = boxStyle(styles.block(def));
-  const resolve = styles.resolver(def.id);
   const css = customCss(block);
 
   // Los enlaces y el formato de los elementos se editan en todas las páginas; el resto, solo en la actual.
@@ -83,7 +97,10 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     classes: Object.fromEntries(
       [...new Set([...Object.keys(def.styles ?? {}), ...Object.keys(block.custom ?? {})])].map((key) => [key, customClasses(block, key, def)]),
     ),
-    flow: isFlowLayout(def.styles?.[SECTION_KEY], block.custom?.[SECTION_KEY]),
+    flow,
+    onMoveBlock: editing ? move.startDrag : undefined,
+    // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón.
+    gestures: editing && !flow ? gestures : undefined,
     selectedElementId: selected ? selectedElementId : null,
     onFollow: followLink,
     onToggleHidden: (elementId, hidden) =>
@@ -117,23 +134,24 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       ref={ref}
       data-block-id={block.id}
       data-component={def.id}
+      {...placementAttributes(block.placement)}
       // El destino de la sección es su lienzo (ver ComponentView); en un bloque de código, la caja entera.
       {...(block.code ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
       {...behaviorProps}
-      className={`group relative ${block.code ? "w-full" : "w-fit"} max-w-full rounded-md ${
+      className={`group ${block.placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code ? "w-full" : "w-fit"} max-w-full rounded-md ${
         selected && selectedElementId === null
           ? "ring-2 ring-accent"
           : editing
             ? "hover:ring-1 hover:ring-accent/50"
             : ""
       } ${block.code ? customClasses(block, SECTION_KEY) : ""}`}
-      style={{ margin: box.margin }}
+      style={{ margin: box.margin, ...placementStyle(block.placement) }}
     >
       {css && <style>{css}</style>}
 
       <div
         {...(editing ? editProps : {})}
-        className="max-w-full overflow-x-auto p-1"
+        className={`max-w-full p-1 ${editing ? "" : "overflow-x-auto"}`}
         style={{
           padding: box.padding,
           background: (block.box?.background && resolve(block.box.background)) || box.background,
@@ -150,7 +168,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
             onEdit={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
           />
         ) : (
-          <ComponentView def={applyOverrides(styles.component(def), block, resolve)} interaction={interaction} />
+          <ComponentView def={view} interaction={interaction} />
         )}
       </div>
 
@@ -161,6 +179,11 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
             label={def.name}
             onToggle={() => setHidden(blockTarget, true)}
             className={`absolute -top-2 -left-2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
+          />
+          <PlacementGrip
+            label={def.name}
+            onStart={move.startDrag}
+            className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
           />
           {selected && selectedElementId === null && !block.code && (
             <CodeButton

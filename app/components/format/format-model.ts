@@ -5,7 +5,7 @@
 
 import type { Dispatch } from "react";
 import { elementLabel } from "../navigation/links";
-import { clampPosition, type Resolver } from "../site/overrides";
+import { clampPosition, FREE_OF_CONTAINER, type Resolver } from "../site/overrides";
 import type {
   BlockBox,
   BlockInstance,
@@ -86,6 +86,12 @@ function commonOf<T>(values: T[]): T | undefined {
 const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden">]: undefined } = {
   x: undefined,
   y: undefined,
+  width: undefined,
+  height: undefined,
+  slot: undefined,
+  offset: undefined,
+  fitToParent: undefined,
+  parentId: undefined,
   fill: undefined,
   radius: undefined,
   color: undefined,
@@ -143,7 +149,7 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
       moves: MOVE_STEPS.map(({ label, glyph, dx, dy }) => ({
         label,
         glyph,
-        run: () => style(clampPosition(element, view, element.x + dx, element.y + dy)),
+        run: () => style({ ...clampPosition(element, view, element.x + dx, element.y + dy), ...FREE_OF_CONTAINER }),
       })),
       actions: [
         {
@@ -155,6 +161,15 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
               hidden: true,
             }),
         },
+        // Acoplado a un contenedor, el elemento puede adaptarse a su tamaño.
+        ...(element.parentId === undefined
+          ? []
+          : [
+              {
+                label: element.fitToParent ? "Dejar de ajustar al contenedor" : "Ajustar al contenedor",
+                run: () => style({ fitToParent: !element.fitToParent }),
+              },
+            ]),
         { label: "Editar código…", run: env.editCode },
         { label: "Interacciones…", run: () => env.customize(element.id) },
         { label: "Quitar formato", run: () => style(CLEARED_FORMAT) },

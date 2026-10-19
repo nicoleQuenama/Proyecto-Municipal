@@ -31,6 +31,7 @@ const shorten = (text: string) => {
 /** Cómo se ve un elemento en HTML: las imágenes son `<img>`, el resto una caja con su texto. */
 const ELEMENT_CODE: Record<CanvasElement["kind"], (element: CanvasElement) => string> = {
   image: (element) => `<img data-el="${element.id}"${element.src ? ` src="${shorten(element.src)}"` : ""}>`,
+  video: (element) => `<${element.embed ? "iframe" : "video"} data-el="${element.id}"${element.src ? ` src="${shorten(element.src)}"` : ""}>`,
   text: (element) => `<div data-el="${element.id}">${shorten(element.text)}</div>`,
   rect: (element) => `<div data-el="${element.id}">${shorten(element.text)}</div>`,
   ellipse: (element) => `<div data-el="${element.id}">${shorten(element.text)}</div>`,

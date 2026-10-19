@@ -1,16 +1,33 @@
 import type { Behavior } from "../behaviors/types";
 import type { MediaItem } from "../media/types";
 import type { LinkTarget, Transition } from "../navigation/types";
+import type { Placement } from "../placement/types";
 import type { BlockTarget, ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
 import type { TitleState } from "../title-editor/types";
 
 /** Un componente es un conjunto de elementos posicionados sobre un lienzo de tamaño fijo. */
-export type ElementKind = "rect" | "ellipse" | "text" | "image";
+export type ElementKind = "rect" | "ellipse" | "text" | "image" | "video";
 export type TextAlign = "left" | "center" | "right";
+
+/** Hacia qué lado de su contenedor se acopla un elemento en un eje. */
+export type DockAlign = "start" | "center" | "end";
+
+/** La casilla (de una cuadrícula de 3×3) del contenedor donde encaja un elemento acoplado. */
+export interface DockSlot {
+  h: DockAlign;
+  v: DockAlign;
+}
 
 export interface CanvasElement {
   id: string;
   kind: ElementKind;
+  /** Contenedor donde está acoplado. Acoplado, su posición (x, y) se calcula a partir de la casilla `slot`. */
+  parentId?: string;
+  slot?: DockSlot;
+  /** Acoplado sin casilla: su posición libre dentro del contenedor, desde la esquina de este. */
+  offset?: { x: number; y: number };
+  /** Acoplado, se estira para llenar su contenedor: si este cambia de tamaño, el elemento se adapta. */
+  fitToParent?: boolean;
   /** Con rol, el elemento sigue las reglas de estilo de ese rol; sin rol («none») conserva sus valores. */
   role: ElementRole | "none";
   x: number;
@@ -29,8 +46,10 @@ export interface CanvasElement {
   align: TextAlign;
   /** Tipografía propia; vacío = la que hereda de la página. */
   fontFamily: string;
-  /** URL de una imagen. */
+  /** URL de una imagen o de un video. */
   src: string;
+  /** true si `src` es un reproductor para <iframe> (YouTube, Vimeo); si no, un archivo de video. */
+  embed?: boolean;
   /** Formato extra (clic derecho). Se guarda en el bloque; estas marcas solo existen en el componente de un bloque ya mezclado. */
   italic?: boolean;
   underline?: boolean;
@@ -54,6 +73,11 @@ export type ElementOverride = Partial<
     CanvasElement,
     | "x"
     | "y"
+    | "width"
+    | "height"
+    | "slot"
+    | "offset"
+    | "fitToParent"
     | "fill"
     | "color"
     | "fontFamily"
@@ -65,7 +89,12 @@ export type ElementOverride = Partial<
     | "align"
     | "list"
     | "hidden"
-  > & { radius: SizeValue; fontSize: SizeValue }
+  > & {
+    radius: SizeValue;
+    fontSize: SizeValue;
+    /** Contenedor donde se acopla en este bloque; null lo suelta del que tenga el componente. */
+    parentId: string | null;
+  }
 >;
 
 /** El fondo y las esquinas de la caja de un bloque; si faltan, mandan las reglas de estilo. */
@@ -131,6 +160,10 @@ export interface BlockInstance {
   custom?: Record<string, CustomStyle>;
   behaviors?: Behavior[];
   box?: BlockBox;
+  /** Posición libre en la página; sin ella el bloque va en el flujo, uno bajo otro. */
+  placement?: Placement;
+  /** Tamaño propio de la sección en este bloque; si falta, el del componente. */
+  size?: { width: number; height: number };
   /** Formato propio por id de elemento: solo cambia este bloque, no el componente ni los demás bloques. */
   elements?: Record<string, ElementOverride>;
 }
@@ -161,6 +194,8 @@ export interface Page {
   blocks: BlockInstance[];
   hidden?: boolean;
   titleHidden?: boolean;
+  /** Posición libre del titular; sin ella va arriba, en el flujo. */
+  titlePlacement?: Placement;
   /** CSS y JavaScript de toda la página. */
   css?: string;
   js?: string;
@@ -222,6 +257,14 @@ export type SiteAction =
   | { type: "library/remove"; id: string }
   | { type: "block/style"; pageId: string; blockId: string; elementIds: string[]; patch: ElementOverride }
   | { type: "block/box"; pageId: string; blockId: string; patch: BlockBox }
+  | { type: "component/element"; componentId: string; pageId: string; blockId: string; elementId: string; patch: ElementOverride }
+  | { type: "component/size"; componentId: string; pageId: string; blockId: string; size: Partial<{ width: number; height: number }>; backdropId?: string }
+  | { type: "block/place"; pageId: string; blockId: string; placement: Placement }
+  | { type: "block/transfer"; fromPageId: string; toPageId: string; blockId: string; placement: Placement }
+  | { type: "title/place"; pageId: string; placement: Placement }
+  | { type: "media/place"; pageId: string; mediaId: string; placement: Placement }
+  | { type: "media/transfer"; fromPageId: string; toPageId: string; mediaId: string; placement: Placement }
+  | { type: "block/size"; pageId: string; blockId: string; size: Partial<{ width: number; height: number }>; backdropId?: string }
   | { type: "block/move"; pageId: string; blockId: string; direction: -1 | 1 }
   | { type: "block/reset"; pageId: string; blockId: string }
   | { type: "link/set"; componentId: string; elementId: string; link: LinkTarget | null }

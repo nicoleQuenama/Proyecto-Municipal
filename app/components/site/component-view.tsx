@@ -1,4 +1,7 @@
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from "react";
+import { isBackdrop } from "../canvas-editing/backdrop";
+import { EditingLayer } from "../canvas-editing/editing-layer";
+import { ElementHandles } from "../canvas-editing/element-handles";
 import type { Behavior } from "../behaviors/types";
 import { useBehaviors } from "../behaviors/use-behaviors";
 import { LinkHandle } from "../navigation/link-handle";
@@ -8,7 +11,13 @@ import { CodeButton } from "./code-button";
 import { elementBaseCss } from "./element-style";
 import { targetKey } from "./custom-code";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind, type Page } from "./types";
+import type { BlockGestures } from "./use-block-gestures";
+import type { HandleId } from "../canvas-editing/resize-handles";
+import { VideoContent } from "./video-content";
 import { VisibilityEye } from "./visibility-eye";
+
+/** El fondo de una tarjeta solo crece hacia la derecha y hacia abajo: su esquina de arriba es la de la tarjeta. */
+const BACKDROP_HANDLES: HandleId[] = ["e", "s", "se"];
 
 const JUSTIFY = { left: "flex-start", center: "center", right: "flex-end" } as const;
 
@@ -76,6 +85,8 @@ const RENDERERS: Record<ElementKind, Renderer> = {
     </div>
   ),
 
+  video: (element, _text, inherit) => <VideoContent element={element} radius={inherit ? "inherit" : element.radius} />,
+
   image: (element, _text, inherit) =>
     element.src ? (
       // <img> en lugar de next/image: las URLs vienen de dominios arbitrarios.
@@ -124,6 +135,10 @@ export interface ElementInteraction {
   behaviors: Behavior[];
   /** Clases de Tailwind propias por elemento (y por la sección, con `SECTION_KEY`). */
   classes: Record<string, string>;
+  /** Al editar: empieza a mover el bloque entero por la página (ver `placement/use-placement-drag`). */
+  onMoveBlock?: (e: PointerEvent<HTMLElement>) => void;
+  /** Al editar: mover, redimensionar y acoplar los elementos con el ratón. Sin él (sección en flujo), no se pueden. */
+  gestures?: BlockGestures;
   /** La sección usa `display: flex` o `grid`: sus elementos se acomodan solos. */
   flow: boolean;
   selectedElementId: string | null;
@@ -205,12 +220,20 @@ function PositionedElement({
   if (interaction?.mode === "edit") {
     const ref: ElementRef = { componentId: interaction.componentId, elementId: element.id };
     const selected = interaction.selectedElementId === element.id;
+    const { gestures } = interaction;
 
     return (
       <div
         data-target={target}
         data-el={element.id}
-        className={`group/element ${custom}`}
+        className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${gestures ? "cursor-move touch-none select-none" : ""}`}
+        onPointerDown={(e) => {
+          // Los botones del elemento (ojo, enlace, código) siguen siendo botones.
+          if ((e.target as Element).closest("button")) return;
+          // El fondo de una tarjeta (una pieza que ocupa toda la sección) o Mayús arrastran el bloque entero.
+          if (e.shiftKey || (gestures && isBackdrop(element, gestures.size))) return interaction.onMoveBlock?.(e);
+          gestures?.startDrag(e, element);
+        }}
         onClick={(e) => {
           e.stopPropagation(); // el bloque no se vuelve a seleccionar encima del elemento
           interaction.onSelect(element.id);
@@ -231,6 +254,12 @@ function PositionedElement({
           className="absolute top-1 left-1 hidden group-hover/element:flex focus:flex"
         />
         {isLinkable(element) && <LinkHandle element={ref} link={link} label={elementLabel(element)} />}
+        {selected && gestures && (
+          <ElementHandles
+            onStart={(e, handle) => gestures.startDrag(e, element, handle)}
+            only={gestures.backdropId === element.id ? BACKDROP_HANDLES : undefined}
+          />
+        )}
         {selected && (
           <CodeButton
             label="Abrir el código del elemento en el editor"
@@ -259,6 +288,10 @@ export function ComponentView({
 }) {
   return (
     <div
+      ref={interaction?.gestures?.canvasRef}
+      onPointerMove={interaction?.gestures?.onPointerMove}
+      onPointerUp={interaction?.gestures?.endDrag}
+      onPointerCancel={interaction?.gestures?.endDrag}
       {...(interaction ? { "data-canvas": "", "data-target": targetKey(interaction.blockId, SECTION_KEY) } : {})}
       className={`${interaction ? "" : "relative shrink-0"} ${interaction?.classes[SECTION_KEY] ?? ""}`}
       style={interaction ? undefined : { width: def.width, height: def.height }}
@@ -268,6 +301,14 @@ export function ComponentView({
       {def.elements.map((element) => (
         <PositionedElement key={element.id} element={element} interaction={interaction} />
       ))}
+      {interaction?.gestures && (
+        <EditingLayer
+          gestures={interaction.gestures}
+          size={interaction.gestures.size}
+          active={interaction.gestures.sectionActive}
+          onResize={interaction.gestures.onResizeSection}
+        />
+      )}
     </div>
   );
 }

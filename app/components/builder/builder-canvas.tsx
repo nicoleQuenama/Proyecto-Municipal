@@ -1,101 +1,32 @@
 "use client";
 
-import { useRef, type Dispatch, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, type Dispatch } from "react";
+import { ElementHandles } from "../canvas-editing/element-handles";
+import { EditingLayer } from "../canvas-editing/editing-layer";
+import { useCanvasSettings } from "../canvas-editing/settings-context";
+import { useCanvasGestures } from "../canvas-editing/use-canvas-gestures";
 import { ElementContent } from "../site/component-view";
-import type { CanvasElement } from "../site/types";
+import { builderCommands } from "./builder-commands";
 import type { BuilderAction, BuilderState } from "./builder-reducer";
-
-type DragMode = "move" | "resize";
-
-interface DragState {
-  id: string;
-  mode: DragMode;
-  startX: number;
-  startY: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import { handleCanvasKey } from "./canvas-keys";
 
 interface BuilderCanvasProps {
   state: BuilderState;
   dispatch: Dispatch<BuilderAction>;
 }
 
-const GRID = {
-  backgroundImage: "radial-gradient(#cbd5e1 1px, transparent 1px)",
-  backgroundSize: "16px 16px",
-} as const;
-
-/** Lienzo del componente: se selecciona, arrastra y redimensiona cada elemento. */
+/** Lienzo del componente: dibuja los elementos y sus manijas; los gestos viven en `useCanvasGestures`. */
 export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
-  const drag = useRef<DragState | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-
-  const startDrag = (e: PointerEvent<HTMLElement>, element: CanvasElement, mode: DragMode) => {
-    e.stopPropagation();
-    canvasRef.current?.focus(); // para que las flechas y Supr actúen sobre el lienzo
-    dispatch({ type: "select", id: element.id });
-
-    drag.current = {
-      id: element.id,
-      mode,
-      startX: e.clientX,
-      startY: e.clientY,
-      x: element.x,
-      y: element.y,
-      width: element.width,
-      height: element.height,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const onPointerMove = (e: PointerEvent<HTMLElement>) => {
-    const current = drag.current;
-    if (!current) return;
-
-    const dx = e.clientX - current.startX;
-    const dy = e.clientY - current.startY;
-
-    if (current.mode === "move") {
-      dispatch({ type: "move", id: current.id, x: current.x + dx, y: current.y + dy });
-    } else {
-      dispatch({ type: "resize", id: current.id, width: current.width + dx, height: current.height + dy });
-    }
-  };
-
-  const endDrag = () => {
-    drag.current = null;
-  };
-
-  const onKeyDown = (e: KeyboardEvent) => {
-    const id = state.selectedId;
-    if (!id) return;
-
-    const step = e.shiftKey ? 10 : 1;
-    const nudges: Record<string, [number, number]> = {
-      ArrowLeft: [-step, 0],
-      ArrowRight: [step, 0],
-      ArrowUp: [0, -step],
-      ArrowDown: [0, step],
-    };
-
-    if (nudges[e.key]) {
-      dispatch({ type: "nudge", id, dx: nudges[e.key][0], dy: nudges[e.key][1] });
-    } else if (e.key === "Delete" || e.key === "Backspace") {
-      dispatch({ type: "remove", id });
-    } else {
-      return;
-    }
-    e.preventDefault();
-  };
-
-  const dragHandlers = {
-    onPointerMove,
-    onPointerUp: endDrag,
-    onPointerCancel: endDrag,
-  };
+  const { settings } = useCanvasSettings();
+  const size = { width: state.width, height: state.height };
+  const { guides, drop, startDrag, onPointerMove, endDrag } = useCanvasGestures({
+    size,
+    elements: state.elements,
+    settings,
+    commands: builderCommands(dispatch),
+    canvasRef,
+  });
 
   return (
     <div
@@ -103,10 +34,13 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
       role="group"
       aria-label={`Lienzo del componente, ${state.width} por ${state.height} píxeles`}
       tabIndex={0}
-      onKeyDown={onKeyDown}
+      onKeyDown={(e) => handleCanvasKey(e, state.selectedId, dispatch)}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       onPointerDown={(e) => e.target === e.currentTarget && dispatch({ type: "select", id: null })}
       className="relative mx-auto bg-white shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-      style={{ width: state.width, height: state.height, ...GRID }}
+      style={size}
     >
       {state.elements.map((element) => {
         const selected = element.id === state.selectedId;
@@ -114,8 +48,10 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
         return (
           <div
             key={element.id}
-            onPointerDown={(e) => startDrag(e, element, "move")}
-            {...dragHandlers}
+            onPointerDown={(e) => {
+              canvasRef.current?.focus(); // para que las flechas y Supr actúen sobre el lienzo
+              startDrag(e, element);
+            }}
             className={`absolute cursor-move touch-none select-none ${
               selected ? "outline-2 outline-accent" : "hover:outline-1 hover:outline-accent/60"
             }`}
@@ -125,17 +61,17 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
               <ElementContent element={element} />
             </div>
 
-            {selected && (
-              <span
-                aria-label="Cambiar tamaño"
-                onPointerDown={(e) => startDrag(e, element, "resize")}
-                {...dragHandlers}
-                className="absolute -right-1.5 -bottom-1.5 h-3 w-3 cursor-nwse-resize touch-none border-2 border-accent bg-white"
-              />
-            )}
+            {selected && <ElementHandles onStart={(e, handle) => startDrag(e, element, handle)} />}
           </div>
         );
       })}
+
+      <EditingLayer
+        gestures={{ guides, drop }}
+        size={size}
+        active
+        onResize={(next) => dispatch({ type: "meta", patch: next })}
+      />
 
       {state.elements.length === 0 && (
         <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-xs text-slate-400">

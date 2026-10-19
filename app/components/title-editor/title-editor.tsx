@@ -1,9 +1,15 @@
 "use client";
 
 import { useNavigation } from "../navigation/navigation-context";
+import { PlacementGrip } from "../placement/placement-grip";
+import { placementAttributes, placementStyle } from "../placement/placement-style";
+import { usePlacementDrag } from "../placement/use-placement-drag";
+import { useWidthResize } from "../placement/use-width-resize";
+import { WidthHandles } from "../placement/width-handles";
 import { HiddenPlaceholder } from "../site/hidden-placeholder";
 import { VisibilityEye } from "../site/visibility-eye";
 import { useCurrentPage, useSiteDispatch } from "../site/site-context";
+import type { Placement } from "../placement/types";
 import type { Page } from "../site/types";
 import { TITLE_STYLE_KEYS, titleWithRules } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
@@ -58,19 +64,34 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "title", pageId: page.id }, hidden });
 
+  const place = (placement: Placement) => dispatch({ type: "title/place", pageId: page.id, placement });
+  const move = usePlacementDrag({ enabled: interactive && mode === "edit", onPlace: place });
+  const resize = useWidthResize({ enabled: interactive && mode === "edit", onPlace: place });
+
   // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
   if (page.titleHidden) {
     return mode === "edit" ? <HiddenPlaceholder label="Titular oculto" onShow={() => setHidden(false)} /> : null;
   }
 
   return (
-    <div className="group relative" style={effective.applyToSite ? { fontFamily: effective.font } : undefined}>
+    <div
+      {...placementAttributes(page.titlePlacement)}
+      className={`group ${page.titlePlacement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""}`}
+      style={{
+        ...placementStyle(page.titlePlacement, true),
+        ...(effective.applyToSite ? { fontFamily: effective.font } : {}),
+      }}
+    >
       {/* key: al cambiar de página el titular se vuelve a montar con su texto. */}
       <TitlePreview
         key={page.id}
         state={shown}
         onTextChange={(text) => interactive && dispatch({ type: "title/patch", patch: { text } })}
       />
+      {interactive && mode === "edit" && <WidthHandles onStart={resize.startResize} />}
+      {interactive && mode === "edit" && (
+        <PlacementGrip label="el titular" onStart={move.startDrag} className="absolute top-1 left-1 hidden group-hover:flex focus:flex" />
+      )}
       {mode === "edit" && (
         <VisibilityEye
           hidden={false}
