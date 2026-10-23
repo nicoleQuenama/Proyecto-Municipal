@@ -11,6 +11,9 @@ import { executeCode } from "./execute-code";
 import { createApi, openUrl, setVisibility } from "./page-api";
 import { TRIGGERS } from "./triggers";
 import type { Behavior, TriggerKind } from "./types";
+import { useAnimationPlayer } from "./use-animation-player";
+import { useScrollScrub } from "./use-scroll-scrub";
+import { useVisibilityTriggers } from "./use-visibility-triggers";
 
 type Props = Partial<Record<"onClick" | "onPointerEnter", () => void>>;
 
@@ -23,6 +26,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
   const { pages, libraries, functions } = useSite();
   const { followLink } = useNavigation();
   const origin = useOrigin();
+  const play = useAnimationPlayer(behaviors, active);
 
   const run = useCallback(
     (trigger: TriggerKind) => {
@@ -39,6 +43,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
           goToPage: (pageId, transition) => followLink({ kind: "page", pageId, transition }),
           setVisibility: (key, mode) => setVisibility(blockId, key, mode),
           openUrl,
+          play,
           runCode: (source, mode) =>
             void executeCode(source, mode, {
               libraries,
@@ -51,7 +56,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
         runAction(behavior.action, context);
       }
     },
-    [behaviors, blockId, pages, followLink, libraries, functions, origin],
+    [behaviors, blockId, pages, followLink, libraries, functions, origin, play],
   );
 
   // Clic y cursor encima: eventos del propio elemento, según la tabla de disparadores.
@@ -64,26 +69,14 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
     return result;
   }, [active, behaviors, run]);
 
-  // «Al cargar»: al aparecer la página. «Al entrar en pantalla»: la primera vez que se ve el elemento.
+  // «Al cargar»: al aparecer la página.
   const hasLoad = behaviors.some((b) => b.trigger === "load");
-  const hasEnter = behaviors.some((b) => b.trigger === "enter");
-
   useEffect(() => {
     if (active && hasLoad) run("load");
   }, [active, hasLoad, run]);
 
-  useEffect(() => {
-    const element = ref.current;
-    if (!active || !hasEnter || !element) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      run("enter");
-      observer.disconnect();
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [active, hasEnter, run]);
+  useVisibilityTriggers(ref, behaviors, active, run);
+  useScrollScrub(ref, behaviors, active);
 
   return { ref, props };
 }

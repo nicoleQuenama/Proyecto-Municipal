@@ -3,6 +3,10 @@ import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
 import { ElementHandles } from "../canvas-editing/element-handles";
 import type { Behavior } from "../behaviors/types";
+import { BindingBadge } from "../data-sources/binding-badge";
+import { useBoundElement } from "../data-sources/use-bound-element";
+import { useDataDrop } from "../data-sources/use-data-drop";
+import type { DataRef } from "../data-sources/types";
 import { useBehaviors } from "../behaviors/use-behaviors";
 import { LinkHandle } from "../navigation/link-handle";
 import { elementLabel, isLinkable, linkLabel } from "../navigation/links";
@@ -142,13 +146,22 @@ export interface ElementInteraction {
   /** La sección usa `display: flex` o `grid`: sus elementos se acomodan solos. */
   flow: boolean;
   selectedElementId: string | null;
+  /** Elementos sumados a la selección con Ctrl/⌘-clic. */
+  alsoSelectedIds?: string[];
   onFollow: (link: LinkTarget) => void;
   /** Al editar: ocultar o volver a mostrar un elemento. */
   onToggleHidden: (elementId: string, hidden: boolean) => void;
   /** Al editar: abrir el menú de formato de un elemento. */
   onContextMenu: (elementId: string, point: Point) => void;
   /** Al editar: seleccionar un elemento para personalizarlo. */
-  onSelect: (elementId: string) => void;
+  onSelect: (elementId: string, add?: boolean) => void;
+  /** Datos de una API por id de elemento, y la lista que repite la sección (si la repite). */
+  bindings?: Record<string, DataRef>;
+  repeat?: DataRef;
+  /** Al editar: soltar el enlace de un elemento con una API. */
+  onBind: (elementId: string, ref: DataRef | null) => void;
+  /** Al editar: se soltó una clave de una API sobre un elemento (o sobre la sección, con `elementId` null). */
+  onDropData: (ref: DataRef, elementId: string | null) => void;
   /** Al editar: abrir el código de un elemento en el editor. */
   onOpenCode: (elementId: string) => void;
 }
@@ -161,6 +174,9 @@ function PositionedElement({
   interaction: ElementInteraction | undefined;
 }) {
   const mine = (interaction?.behaviors ?? []).filter((b) => b.scope === element.id);
+  const binding = interaction?.bindings?.[element.id];
+  const shown = useBoundElement(element, binding, interaction?.repeat);
+  const drop = useDataDrop((data) => interaction?.onDropData(data, element.id), interaction?.mode === "edit");
   const { ref, props: behaviorProps } = useBehaviors(interaction?.blockId ?? "", mine, interaction?.mode === "preview");
 
   const box: CSSProperties = { left: element.x, top: element.y, width: element.width, height: element.height };
@@ -211,7 +227,7 @@ function PositionedElement({
           link ? "transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-sky-500" : ""
         } ${custom}`}
       >
-        <ElementContent element={element} inherit={interaction !== undefined} />
+        <ElementContent element={shown} inherit={interaction !== undefined} />
       </div>
     );
   }
@@ -220,12 +236,14 @@ function PositionedElement({
   if (interaction?.mode === "edit") {
     const ref: ElementRef = { componentId: interaction.componentId, elementId: element.id };
     const selected = interaction.selectedElementId === element.id;
+    const alsoSelected = interaction.alsoSelectedIds?.includes(element.id);
     const { gestures } = interaction;
 
     return (
       <div
         data-target={target}
         data-el={element.id}
+        {...drop.handlers}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${gestures ? "cursor-move touch-none select-none" : ""}`}
         onPointerDown={(e) => {
           // Los botones del elemento (ojo, enlace, código) siguen siendo botones.
@@ -236,7 +254,7 @@ function PositionedElement({
         }}
         onClick={(e) => {
           e.stopPropagation(); // el bloque no se vuelve a seleccionar encima del elemento
-          interaction.onSelect(element.id);
+          interaction.onSelect(element.id, e.ctrlKey || e.metaKey);
         }}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -244,9 +262,19 @@ function PositionedElement({
           interaction.onContextMenu(element.id, { x: e.clientX, y: e.clientY });
         }}
       >
-        <ElementContent element={element} inherit={interaction !== undefined} />
+        <ElementContent element={shown} inherit={interaction !== undefined} />
         {/* La selección va en una capa aparte para no chocar con el contorno o la sombra que ponga el usuario. */}
         {selected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-sky-500" />}
+        {binding && (
+          <BindingBadge
+            label={elementLabel(element)}
+            reference={binding}
+            onClear={() => interaction.onBind(element.id, null)}
+            className="absolute -top-2 left-1 z-10"
+          />
+        )}
+        {drop.over && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-emerald-500 bg-emerald-500/10" />}
+        {alsoSelected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-dashed border-sky-500" />}
         <VisibilityEye
           hidden={false}
           label={elementLabel(element)}
@@ -273,7 +301,7 @@ function PositionedElement({
 
   return (
     <div className="absolute" style={box}>
-      <ElementContent element={element} inherit={interaction !== undefined} />
+      <ElementContent element={shown} inherit={interaction !== undefined} />
     </div>
   );
 }

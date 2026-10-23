@@ -1,7 +1,7 @@
 import type { Transition } from "../navigation/types";
 
 /** Cuándo se dispara una interacción. */
-export type TriggerKind = "click" | "hover" | "enter" | "load";
+export type TriggerKind = "click" | "hover" | "enter" | "leave" | "scroll" | "load";
 
 /** Los efectos de animación disponibles. */
 export type EffectName = "fade" | "slide-up" | "slide-left" | "zoom" | "bounce" | "shake" | "pulse" | "spin";
@@ -13,6 +13,7 @@ export type CodeMode = "page" | "isolated";
 export type BehaviorAction =
   | { kind: "navigate"; pageId: string; transition?: Transition }
   | { kind: "animate"; effect: EffectName; seconds: number }
+  | { kind: "play"; animationId: string }
   | { kind: "toggle"; targetKey: string; mode: "show" | "hide" | "toggle" }
   | { kind: "openUrl"; url: string }
   | { kind: "code"; source: string; mode?: CodeMode };

@@ -11,6 +11,8 @@ export interface RunContext {
   /** Muestra, oculta o alterna una parte del bloque (solo mientras se prueba). */
   setVisibility: (targetKey: string, mode: "show" | "hide" | "toggle") => void;
   openUrl: (url: string) => void;
+  /** Reproduce una animación grabada en una página. */
+  play: (animationId: string) => void;
   runCode: (source: string, mode: CodeMode) => void;
 }
 
@@ -19,6 +21,7 @@ export type Field =
   | { key: string; label: string; type: "page" }
   | { key: string; label: string; type: "transition" }
   | { key: string; label: string; type: "target" }
+  | { key: string; label: string; type: "animation" }
   | { key: string; label: string; type: "select"; options: { value: string; label: string }[] }
   | { key: string; label: string; type: "number"; min: number; max: number; step: number }
   | { key: string; label: string; type: "text"; placeholder: string }
@@ -59,6 +62,13 @@ export const ACTIONS: { [K in ActionKind]: ActionDef<K> } = {
       { key: "seconds", label: "Duración (s)", type: "number", min: MIN_SECONDS, max: MAX_SECONDS, step: 0.1 },
     ],
     run: (action, context) => animateElement(context.element, action.effect, action.seconds),
+  },
+
+  play: {
+    label: "Reproducir una animación grabada",
+    create: (pages) => ({ kind: "play", animationId: pages.flatMap((p) => p.animations ?? [])[0]?.id ?? "" }),
+    fields: [{ key: "animationId", label: "Animación", type: "animation" }],
+    run: (action, context) => action.animationId && context.play(action.animationId),
   },
 
   toggle: {

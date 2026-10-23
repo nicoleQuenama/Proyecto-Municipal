@@ -2,6 +2,10 @@
 
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useBehaviors } from "../behaviors/use-behaviors";
+import { BindingBadge } from "../data-sources/binding-badge";
+import { RepeatedBlock } from "../data-sources/repeated-block";
+import { useDataDrop } from "../data-sources/use-data-drop";
+import { useDropData } from "../data-sources/use-drop-data";
 import { CodeBlockView } from "../code/code-block-view";
 import { useSharedAssets } from "../code/use-shared-assets";
 import { useWorkbench } from "../workbench/workbench-context";
@@ -20,7 +24,7 @@ import { useBlockGestures } from "./use-block-gestures";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
 import { PlacementGrip } from "../placement/placement-grip";
 import { usePlacementDrag } from "../placement/use-placement-drag";
-import { SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
+import { PLACE_KEY, SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
 import { VisibilityEye } from "./visibility-eye";
 
 /** Las esquinas de la caja de un bloque: píxeles, o el valor de una variable de tamaño. */
@@ -38,7 +42,7 @@ interface PageBlockProps {
 
 /** Un componente colocado en una página, con las reglas de apariencia y su formato propio aplicados. */
 function PageBlock({ page, block, interactive }: PageBlockProps) {
-  const { components, pages, selectedId, selectedElementId, libraries } = useSite();
+  const { components, pages, selectedId, selectedElementId, alsoSelectedIds, libraries } = useSite();
   const dispatch = useSiteDispatch();
   const styles = useStyles(page.id);
   const { mode, followLink } = useNavigation();
@@ -65,6 +69,8 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     onTransfer: (toPageId, placement) =>
       dispatch({ type: "block/transfer", fromPageId: page.id, toPageId, blockId: block.id, placement }),
   });
+  const dropData = useDropData(page.id, block, view?.elements ?? []);
+  const sectionDrop = useDataDrop((ref) => dropData(ref, null), editing && !block.code);
   if (!def || !view || !resolve) return null;
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
@@ -102,16 +108,21 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón.
     gestures: editing && !flow ? gestures : undefined,
     selectedElementId: selected ? selectedElementId : null,
+    alsoSelectedIds: selected ? alsoSelectedIds : undefined,
     onFollow: followLink,
     onToggleHidden: (elementId, hidden) =>
       setHidden({ kind: "element", pageId: page.id, blockId: block.id, elementId }, hidden),
     onContextMenu: (elementId, point) =>
       openFormatMenu({ kind: "element", pageId: page.id, blockId: block.id, elementId }, point),
     onOpenCode: (elementId) => openFile({ kind: "custom-css", pageId: page.id, blockId: block.id, key: elementId }),
-    onSelect: (elementId) => {
+    bindings: block.bindings,
+    repeat: block.repeat,
+    onDropData: dropData,
+    onBind: (elementId, ref) => dispatch({ type: "binding/set", pageId: page.id, blockId: block.id, elementId, ref }),
+    onSelect: (elementId, add) => {
       if (!interactive) return;
-      select();
-      dispatch({ type: "element/select", id: elementId });
+      if (!add || !selected) select();
+      dispatch({ type: "element/select", id: elementId, add: add && selected });
     },
   };
 
@@ -137,7 +148,9 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       {...placementAttributes(block.placement)}
       // El destino de la sección es su lienzo (ver ComponentView); en un bloque de código, la caja entera.
       {...(block.code ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
+      {...(block.placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
+      {...sectionDrop.handlers}
       className={`group ${block.placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code ? "w-full" : "w-fit"} max-w-full rounded-md ${
         selected && selectedElementId === null
           ? "ring-2 ring-accent"
@@ -148,6 +161,15 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       style={{ margin: box.margin, ...placementStyle(block.placement) }}
     >
       {css && <style>{css}</style>}
+      {sectionDrop.over && <span aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md border-2 border-emerald-500 bg-emerald-500/10" />}
+      {editing && block.repeat && (
+        <BindingBadge
+          label="Se repite por cada elemento de"
+          reference={block.repeat}
+          onClear={() => dispatch({ type: "repeat/set", pageId: page.id, blockId: block.id, ref: null })}
+          className="absolute top-1 left-1 z-10"
+        />
+      )}
 
       <div
         {...(editing ? editProps : {})}
@@ -228,7 +250,9 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
       style={{ gap: styles.page.gap }}
     >
       {blocks.map((block) => (
-        <PageBlock key={block.id} page={page} block={block} interactive={interactive} />
+        <RepeatedBlock key={block.id} block={block}>
+          {(copy) => <PageBlock key={copy} page={page} block={block} interactive={interactive && copy === 0} />}
+        </RepeatedBlock>
       ))}
     </div>
   );

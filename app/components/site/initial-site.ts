@@ -47,6 +47,7 @@ export const INITIAL_SITE: SiteState = {
   libraries: [],
   globalCss: "",
   functions: [],
+  sources: [],
   components: BUILT_IN_COMPONENTS,
   pages: [
     page("inicio", "Inicio", {

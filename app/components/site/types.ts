@@ -1,6 +1,10 @@
+import type { RecordingBaseline } from "../animation/animation-rules";
+import type { AnimationStep, RecordedAnimation } from "../animation/types";
 import type { Behavior } from "../behaviors/types";
 import type { MediaItem } from "../media/types";
 import type { LinkTarget, Transition } from "../navigation/types";
+import type { DataRef, DataSource } from "../data-sources/types";
+import type { SourceAction } from "../data-sources/source-rules";
 import type { Placement } from "../placement/types";
 import type { BlockTarget, ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
 import type { TitleState } from "../title-editor/types";
@@ -150,6 +154,9 @@ export interface CustomStyle {
 /** Clave de `BlockInstance.custom` para la sección entera (los elementos usan su id). */
 export const SECTION_KEY = "$section";
 
+/** Destino de animación para el sitio de la sección en la página (su colocación libre), no para su contenido. */
+export const PLACE_KEY = "$place";
+
 export interface BlockInstance {
   id: string;
   componentId: string;
@@ -159,6 +166,10 @@ export interface BlockInstance {
   /** Código propio por clave: la sección (`SECTION_KEY`) o el id de un elemento. */
   custom?: Record<string, CustomStyle>;
   behaviors?: Behavior[];
+  /** Datos de una API por id de elemento: su texto (o su imagen) viene de la clave enlazada. */
+  bindings?: Record<string, DataRef>;
+  /** Repite la sección una vez por cada elemento de esta lista de una API. */
+  repeat?: DataRef;
   box?: BlockBox;
   /** Posición libre en la página; sin ella el bloque va en el flujo, uno bajo otro. */
   placement?: Placement;
@@ -196,6 +207,8 @@ export interface Page {
   titleHidden?: boolean;
   /** Posición libre del titular; sin ella va arriba, en el flujo. */
   titlePlacement?: Placement;
+  /** Animaciones grabadas en esta página; las interacciones las reproducen. */
+  animations?: RecordedAnimation[];
   /** CSS y JavaScript de toda la página. */
   css?: string;
   js?: string;
@@ -221,10 +234,14 @@ export interface SiteState extends StyleState {
   selectedId: string;
   /** El elemento seleccionado dentro del bloque seleccionado, si hay uno. */
   selectedElementId: string | null;
+  /** Elementos que se sumaron a la selección con Ctrl/⌘-clic (además de `selectedElementId`); sirven para animar varios a la vez. */
+  alsoSelectedIds?: string[];
   libraries: Library[];
   /** CSS de todo el sitio (afecta a las páginas, no al editor). */
   globalCss: string;
   functions: SharedFunction[];
+  /** APIs HTTP del proyecto; sus claves se arrastran a elementos y secciones. */
+  sources: DataSource[];
 }
 
 export type SiteAction =
@@ -243,7 +260,7 @@ export type SiteAction =
   | { type: "component/save"; component: ComponentDef }
   | { type: "component/delete"; id: string }
   | { type: "hidden/set"; target: HideTarget; hidden: boolean }
-  | { type: "element/select"; id: string | null }
+  | { type: "element/select"; id: string | null; add?: boolean }
   | { type: "block/code"; pageId: string; blockId: string; patch: Partial<CodeSource> }
   | { type: "block/custom"; pageId: string; blockId: string; key: string; patch: Partial<CustomStyle> }
   | { type: "component/styles"; componentId: string; key: string; patch: Partial<CustomStyle> }
@@ -254,9 +271,12 @@ export type SiteAction =
   | { type: "function/save"; fn: SharedFunction }
   | { type: "function/remove"; id: string }
   | { type: "library/add"; library: Library }
+  | SourceAction
   | { type: "library/remove"; id: string }
   | { type: "block/style"; pageId: string; blockId: string; elementIds: string[]; patch: ElementOverride }
   | { type: "block/box"; pageId: string; blockId: string; patch: BlockBox }
+  /** Cambia de una vez un color de la sección: en los elementos que lo usan (por propiedad) y en el fondo de su caja. */
+  | { type: "block/recolor"; pageId: string; blockId: string; color: string; fill: string[]; text: string[]; box: boolean }
   | { type: "component/element"; componentId: string; pageId: string; blockId: string; elementId: string; patch: ElementOverride }
   | { type: "component/size"; componentId: string; pageId: string; blockId: string; size: Partial<{ width: number; height: number }>; backdropId?: string }
   | { type: "block/place"; pageId: string; blockId: string; placement: Placement }
@@ -272,4 +292,9 @@ export type SiteAction =
   | { type: "variable/save"; variable: Variable }
   | { type: "variable/delete"; id: string }
   | { type: "rule/set"; scope: StyleScope; target: StyleTarget; prop: StyleProp; value: string | null }
-  | { type: "rule/clear"; scope: StyleScope; target: StyleTarget };
+  | { type: "rule/clear"; scope: StyleScope; target: StyleTarget }
+  | { type: "animation/finish"; pageId: string; baseline: RecordingBaseline; animation?: RecordedAnimation }
+  | { type: "animation/add"; pageId: string; animation: RecordedAnimation; trigger?: { blockId: string; behavior: Behavior } }
+  | { type: "animation/steps"; pageId: string; id: string; steps: AnimationStep[] }
+  | { type: "animation/rename"; pageId: string; id: string; name: string }
+  | { type: "animation/delete"; pageId: string; id: string };

@@ -59,6 +59,18 @@ export const FIELD_RENDERERS: { [T in Field["type"]]: Renderer<T> } = {
     </Labeled>
   ),
 
+  animation: (field, { value, onChange, pages }) => {
+    const animations = pages.flatMap((page) => (page.animations ?? []).map((a) => ({ value: a.id, label: `${a.name} · ${page.name}` })));
+    return (
+      <Labeled label={field.label}>
+        <select value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
+          {animations.length === 0 && <option value="">Aún no hay animaciones grabadas</option>}
+          {optionsOf(animations)}
+        </select>
+      </Labeled>
+    );
+  },
+
   select: (field, { value, onChange }) => (
     <Labeled label={field.label}>
       <select value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} className={fieldClass}>

@@ -150,6 +150,12 @@ export const PackageIcon = () => (
     <path d="M4 7.5l8 4.5 8-4.5M12 12v9" />
   </Icon>
 );
+export const DatabaseIcon = () => (
+  <Icon size={18}>
+    <ellipse cx="12" cy="6" rx="7" ry="3" />
+    <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+  </Icon>
+);
 export const PanelCollapseIcon = ({ collapsed }: { collapsed: boolean }) => (
   <Icon size={16}>
     <rect x="3" y="4" width="18" height="16" rx="2" />

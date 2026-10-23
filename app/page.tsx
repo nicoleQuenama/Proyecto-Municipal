@@ -1,3 +1,6 @@
+import { AnimationPreview } from "./components/animation/animation-preview";
+import { RecorderBar } from "./components/animation/recorder-bar";
+import { RecorderProvider } from "./components/animation/recorder-context";
 import { CommandPalette } from "./components/commands/command-palette";
 import { CommandsProvider } from "./components/commands/commands-context";
 import { ShortcutsSettings } from "./components/commands/shortcuts-settings";
@@ -16,6 +19,7 @@ import { LinkPopover } from "./components/navigation/link-popover";
 import { ModeBar } from "./components/navigation/mode-bar";
 import { NavigationProvider } from "./components/navigation/navigation-context";
 import { PreviewToggle } from "./components/navigation/preview-toggle";
+import { SectionColors } from "./components/section-colors/section-colors";
 import { SidePanel } from "./components/side-panel/side-panel";
 import { SiteStyles } from "./components/site/site-styles";
 import { SiteProvider } from "./components/site/site-context";
@@ -42,6 +46,7 @@ export default function Home() {
               <WorkbenchProvider>
               <CommandsProvider>
                 <FormatMenuProvider>
+                  <RecorderProvider>
                     <div className="flex h-screen flex-col">
                       <header className="z-20 flex w-full shrink-0 items-stretch border-b border-line bg-panel">
                         <TitleToolbar />
@@ -60,6 +65,8 @@ export default function Home() {
                             <CanvasPages />
                           </CanvasSurface>
                           <BottomToolbar />
+                          <SectionColors />
+                          <RecorderBar />
                         </div>
 
                         <Inspector />
@@ -81,7 +88,10 @@ export default function Home() {
                     <TailwindRuntime />
                     <SiteStyles />
 
+                    <AnimationPreview />
+
                     <footer></footer>
+                  </RecorderProvider>
                 </FormatMenuProvider>
               </CommandsProvider>
               </WorkbenchProvider>

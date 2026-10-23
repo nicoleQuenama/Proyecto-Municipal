@@ -1,3 +1,5 @@
+import { addAnimation, deleteAnimation, finishRecording, renameAnimation, setAnimationSteps } from "../animation/animation-rules";
+import { SOURCE_HANDLERS } from "../data-sources/source-rules";
 import { dropLinksToPage, normalizeExternalUrl, normalizeTransition } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
 import { INITIAL_STATE as INITIAL_TITLE } from "../title-editor/constants";
@@ -50,6 +52,7 @@ type Handlers = {
 };
 
 const HANDLERS: Handlers = {
+  ...SOURCE_HANDLERS,
   "page/create": (state, action) => {
     const name = action.name.trim();
     if (!name || isPageNameTaken(state.pages, name)) return state;
@@ -178,14 +181,38 @@ const HANDLERS: Handlers = {
     };
   },
 
-  "block/select": (state, action) => ({ ...state, selectedId: action.id, selectedElementId: null }),
+  "block/select": (state, action) => ({ ...state, selectedId: action.id, selectedElementId: null, alsoSelectedIds: undefined }),
 
-  "element/select": (state, action) => ({ ...state, selectedElementId: action.id }),
+  "element/select": (state, action) => {
+    if (!action.add || !action.id || state.selectedElementId === null) {
+      return { ...state, selectedElementId: action.id, alsoSelectedIds: undefined };
+    }
+    if (action.id === state.selectedElementId) return state;
+    const also = state.alsoSelectedIds ?? [];
+    const id = action.id;
+    return { ...state, alsoSelectedIds: also.includes(id) ? also.filter((other) => other !== id) : [...also, id] };
+  },
 
   "block/style": (state, action) =>
     styleElements(state, action.pageId, action.blockId, action.elementIds, action.patch),
 
   "block/box": (state, action) => styleBox(state, action.pageId, action.blockId, action.patch),
+
+  "animation/finish": (state, { pageId, baseline, animation }) => finishRecording(state, pageId, baseline, animation),
+
+  "animation/add": (state, { pageId, animation, trigger }) => addAnimation(state, pageId, animation, trigger),
+
+  "animation/steps": (state, { pageId, id, steps }) => setAnimationSteps(state, pageId, id, steps),
+
+  "animation/rename": (state, { pageId, id, name }) => renameAnimation(state, pageId, id, name),
+
+  "animation/delete": (state, { pageId, id }) => deleteAnimation(state, pageId, id),
+
+  "block/recolor": (state, { pageId, blockId, color, fill, text, box }) => {
+    const filled = fill.length > 0 ? styleElements(state, pageId, blockId, fill, { fill: color }) : state;
+    const texted = text.length > 0 ? styleElements(filled, pageId, blockId, text, { color }) : filled;
+    return box ? styleBox(texted, pageId, blockId, { background: color }) : texted;
+  },
 
   "block/place": (state, action) => placeBlock(state, action.pageId, action.blockId, action.placement),
 
