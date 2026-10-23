@@ -35,7 +35,7 @@ export function StepInspector({ step, onChange, onRemove }: StepInspectorProps) 
   );
 
   return (
-    <div className="grid grid-cols-2 gap-2 border-t border-line p-3 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 p-3">
       <p className="col-span-full text-xs font-medium">{meta.label}</p>
       <Field label="Desde">
         <ValueInput field={meta.field} label="Desde" value={step.from} step={meta.step} onChange={(from) => onChange({ from })} />

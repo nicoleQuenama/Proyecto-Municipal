@@ -6,6 +6,8 @@ import type { LinkTarget, Transition } from "../navigation/types";
 import type { DataRef, DataSource } from "../data-sources/types";
 import type { SourceAction } from "../data-sources/source-rules";
 import type { Placement } from "../placement/types";
+import type { ResponsiveAction } from "../responsive/responsive-rules";
+import type { ResponsiveLayouts } from "../responsive/types";
 import type { BlockTarget, ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
 import type { TitleState } from "../title-editor/types";
 
@@ -177,6 +179,8 @@ export interface BlockInstance {
   size?: { width: number; height: number };
   /** Formato propio por id de elemento: solo cambia este bloque, no el componente ni los demás bloques. */
   elements?: Record<string, ElementOverride>;
+  /** Diseño definido a mano para tablet o móvil; el dispositivo que falta se adapta solo. */
+  responsive?: ResponsiveLayouts;
 }
 
 /** Dónde vale una función reutilizable: en todo el proyecto, en una sección o en un elemento. */
@@ -272,6 +276,7 @@ export type SiteAction =
   | { type: "function/remove"; id: string }
   | { type: "library/add"; library: Library }
   | SourceAction
+  | ResponsiveAction
   | { type: "library/remove"; id: string }
   | { type: "block/style"; pageId: string; blockId: string; elementIds: string[]; patch: ElementOverride }
   | { type: "block/box"; pageId: string; blockId: string; patch: BlockBox }

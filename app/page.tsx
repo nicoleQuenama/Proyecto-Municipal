@@ -1,6 +1,8 @@
 import { AnimationPreview } from "./components/animation/animation-preview";
 import { RecorderBar } from "./components/animation/recorder-bar";
 import { RecorderProvider } from "./components/animation/recorder-context";
+import { ExternalEditor } from "./components/external-site/editor/external-editor";
+import { ExternalProvider } from "./components/external-site/external-context";
 import { CommandPalette } from "./components/commands/command-palette";
 import { CommandsProvider } from "./components/commands/commands-context";
 import { ShortcutsSettings } from "./components/commands/shortcuts-settings";
@@ -39,6 +41,7 @@ export default function Home() {
   return (
     <SiteProvider>
       <MediaProvider>
+        <ExternalProvider>
         <VersioningProvider>
           <ViewportProvider>
             <CanvasSettingsProvider>
@@ -77,6 +80,7 @@ export default function Home() {
                     <BuilderHost />
                     <ShortcutsSettings />
                     <VersionsDialog />
+                    <ExternalEditor />
                     <MediaUrlDialog />
                     <MediaNotice />
                     <MediaDropZone />
@@ -99,6 +103,7 @@ export default function Home() {
             </CanvasSettingsProvider>
           </ViewportProvider>
         </VersioningProvider>
+        </ExternalProvider>
       </MediaProvider>
     </SiteProvider>
   );

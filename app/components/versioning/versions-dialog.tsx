@@ -5,35 +5,33 @@ import { useCommands } from "../commands/commands-context";
 import { Badge } from "../ui/badge";
 import { Modal } from "../ui/modal";
 import { BranchesTab } from "./branches-tab";
+import { ChangesTab } from "./changes-tab";
+import { DialogNav } from "./dialog-nav";
 import { HistoryTab } from "./history-tab";
 import { IssuesTab } from "./issues-tab";
-import { PublishTab } from "./publish-tab";
+import { NAV_ITEMS, type NavCounts, type TabId } from "./nav-items";
+import { OverviewTab } from "./overview-tab";
 import { PullRequestsTab } from "./pull-requests-tab";
+import { useAdvancedMode } from "./use-advanced-mode";
+import { useWorkingChanges } from "./use-working-changes";
 import { useVersioning } from "./versioning-context";
-import { UploadIcon } from "../viewport/icons";
-import {
-  BranchIcon,
-  CommitIcon,
-  IssueIcon,
-  PullRequestIcon,
-} from "./versioning-icons";
 
-type TabId = "publish" | "history" | "branches" | "pulls" | "issues";
-
-const TABS: { id: TabId; label: string; icon: ReactNode; content: ReactNode }[] = [
-  { id: "publish", label: "Publicar", icon: <UploadIcon />, content: <PublishTab /> },
-  { id: "history", label: "Historial", icon: <CommitIcon />, content: <HistoryTab /> },
-  { id: "branches", label: "Ramas", icon: <BranchIcon />, content: <BranchesTab /> },
-  { id: "pulls", label: "Pull requests", icon: <PullRequestIcon />, content: <PullRequestsTab /> },
-  { id: "issues", label: "Issues", icon: <IssueIcon />, content: <IssuesTab /> },
-];
+/** Qué se dibuja en cada sección; `goTo` deja que una sección lleve a otra. */
+const CONTENT: Record<TabId, (goTo: (tab: TabId) => void) => ReactNode> = {
+  overview: (goTo) => <OverviewTab onGoTo={goTo} />,
+  changes: () => <ChangesTab />,
+  history: () => <HistoryTab />,
+  branches: () => <BranchesTab />,
+  pulls: () => <PullRequestsTab />,
+  issues: () => <IssuesTab />,
+};
 
 export function VersionsDialog() {
   const { dialog, closeDialog } = useCommands();
   if (dialog !== "versions") return null;
 
   return (
-    <Modal label="Control de versiones" size="lg" onClose={closeDialog}>
+    <Modal label="Versiones y publicación" size="xl" onClose={closeDialog}>
       <VersionsPanel />
     </Modal>
   );
@@ -41,14 +39,29 @@ export function VersionsDialog() {
 
 function VersionsPanel() {
   const { state } = useVersioning();
+  const { changes } = useWorkingChanges();
   const { closeDialog } = useCommands();
-  const [tab, setTab] = useState<TabId>("publish");
+  const [tab, setTab] = useState<TabId>("overview");
+  const [advanced, setAdvanced] = useAdvancedMode();
+
+  const counts: NavCounts = {
+    changes: changes.length,
+    branches: state.branches.length,
+    pulls: state.pullRequests.filter((pr) => pr.status === "open").length,
+    issues: state.issues.filter((issue) => issue.open).length,
+  };
+
+  // Al apagar el modo avanzado, una sección avanzada abierta vuelve al resumen.
+  const toggleAdvanced = (on: boolean) => {
+    setAdvanced(on);
+    if (!on && NAV_ITEMS.find((item) => item.id === tab)?.advanced) setTab("overview");
+  };
 
   return (
     <div>
       <header className="flex items-center justify-between border-b border-line px-4 py-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Control de versiones</h2>
+          <h2 className="text-sm font-semibold">Versiones y publicación</h2>
           <Badge tone="accent">{state.current}</Badge>
         </div>
         <button
@@ -61,26 +74,11 @@ function VersionsPanel() {
         </button>
       </header>
 
-      <div role="tablist" className="flex gap-1 border-b border-line px-3 py-2">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            type="button"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex h-8 items-center gap-2 rounded-md px-3 text-xs transition-colors ${
-              tab === t.id ? "bg-hover text-ink" : "text-ink-dim hover:text-ink"
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div role="tabpanel" className="h-[min(30rem,60vh)] overflow-y-auto">
-        {TABS.find((t) => t.id === tab)?.content}
+      <div className="flex h-[min(34rem,72vh)]">
+        <DialogNav tab={tab} onSelect={setTab} counts={counts} advanced={advanced} onAdvanced={toggleAdvanced} />
+        <div role="tabpanel" className="min-w-0 flex-1 overflow-y-auto">
+          {CONTENT[tab](setTab)}
+        </div>
       </div>
     </div>
   );

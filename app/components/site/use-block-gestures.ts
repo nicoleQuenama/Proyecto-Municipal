@@ -5,6 +5,8 @@ import { isBackdrop } from "../canvas-editing/backdrop";
 import type { Size } from "../canvas-editing/limits";
 import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { useCanvasGestures, type CanvasCommands, type CanvasGestures } from "../canvas-editing/use-canvas-gestures";
+import { deviceFrameChange, deviceSizeChange } from "../responsive/device-actions";
+import { isAdaptive, type Device } from "../responsive/devices";
 import { dockChange } from "./dock-patch";
 import { elementChange, sectionResize, type EditTarget } from "./scope-actions";
 import { useSiteDispatch } from "./site-context";
@@ -27,13 +29,15 @@ interface BlockGesturesOptions {
   /** El componente tal como se ve en este bloque (con su formato propio ya aplicado). */
   view: ComponentDef | undefined;
   selected: boolean;
+  /** Dispositivo que se está viendo; en tablet o móvil lo que se mueve se guarda en el diseño propio de ese dispositivo. */
+  device: Device;
 }
 
 /**
  * Los gestos sobre los elementos de un bloque. Según el alcance elegido, lo que cambian se guarda como formato
  * propio del bloque o en el componente (ver `scope-actions.ts`).
  */
-export function useBlockGestures({ pageId, blockId, view, selected }: BlockGesturesOptions): BlockGestures {
+export function useBlockGestures({ pageId, blockId, view, selected, device }: BlockGesturesOptions): BlockGestures {
   const dispatch = useSiteDispatch();
   const { settings } = useCanvasSettings();
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -43,9 +47,11 @@ export function useBlockGestures({ pageId, blockId, view, selected }: BlockGestu
   const backdropId = elements.find((element) => isBackdrop(element, size))?.id;
 
   const target: EditTarget = { pageId, blockId, componentId: view?.id ?? "" };
+  const onDevice = isAdaptive(device) ? { pageId, blockId, device } : null;
   const change = (elementId: string, patch: ElementOverride) =>
-    dispatch(elementChange(settings.scope, target, elementId, patch));
-  const resizeSection = (next: Partial<Size>) => dispatch(sectionResize(settings.scope, target, next, backdropId));
+    dispatch(onDevice ? deviceFrameChange(onDevice, elementId, patch) : elementChange(settings.scope, target, elementId, patch));
+  const resizeSection = (next: Partial<Size>) =>
+    dispatch(onDevice ? deviceSizeChange(onDevice, next, backdropId) : sectionResize(settings.scope, target, next, backdropId));
   const elementOf = (id: string) => elements.find((element) => element.id === id);
 
   const commands: CanvasCommands = {

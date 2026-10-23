@@ -2,7 +2,9 @@
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
-export type Device = "desktop" | "tablet" | "mobile";
+import { DEVICE_WIDTH, type Device } from "../responsive/devices";
+
+export type { Device };
 
 export type Tool =
   | "select"
@@ -16,9 +18,9 @@ export type Tool =
   | "triangle";
 
 export const DEVICES: { value: Device; label: string; width: number }[] = [
-  { value: "desktop", label: "Escritorio", width: 1024 },
-  { value: "tablet", label: "Tablet", width: 768 },
-  { value: "mobile", label: "Móvil", width: 390 },
+  { value: "desktop", label: "Escritorio", width: DEVICE_WIDTH.desktop },
+  { value: "tablet", label: "Tablet", width: DEVICE_WIDTH.tablet },
+  { value: "mobile", label: "Móvil", width: DEVICE_WIDTH.mobile },
 ];
 
 export const ZOOM_STEPS = [10, 15, 25, 50, 75, 100, 125, 150, 200, 300];

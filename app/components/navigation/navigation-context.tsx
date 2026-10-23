@@ -62,11 +62,12 @@ const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const dropTargetAt = (x: number, y: number): string | null =>
   document.elementFromPoint(x, y)?.closest(`[${DROP_ATTRIBUTE}]`)?.getAttribute(DROP_ATTRIBUTE) ?? null;
 
-export function NavigationProvider({ children }: { children: ReactNode }) {
+/** `initialMode`: una vista previa incrustada (p. ej. en el editor de código) nace en «Probar». */
+export function NavigationProvider({ children, initialMode = "edit" }: { children: ReactNode; initialMode?: NavMode }) {
   const { pages, currentPageId, navigation } = useSite();
   const dispatch = useSiteDispatch();
 
-  const [mode, setModeState] = useState<NavMode>("edit");
+  const [mode, setModeState] = useState<NavMode>(initialMode);
   const [connecting, setConnecting] = useState<Connecting | null>(null);
   const [hotDrop, setHotDrop] = useState<string | null>(null);
   const [transition, setTransition] = useState<Transition | null>(null);

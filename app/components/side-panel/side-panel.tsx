@@ -3,6 +3,7 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { AppearanceTab } from "../appearance/appearance-tab";
 import { DataTab } from "../data-sources/data-tab";
+import { ExternalTab } from "../external-site/external-tab";
 import { LibrariesTab } from "../libraries/libraries-tab";
 import { NavigationTab } from "../navigation/navigation-tab";
 import { splitBlocks } from "../site/rules";
@@ -32,6 +33,7 @@ const TAB_CONTENT: Record<PanelTab, ReactNode> = {
   appearance: <AppearanceTab />,
   libraries: <LibrariesTab />,
   data: <DataTab />,
+  site: <ExternalTab />,
 };
 
 export function SidePanel() {

@@ -1,4 +1,5 @@
 import { addAnimation, deleteAnimation, finishRecording, renameAnimation, setAnimationSteps } from "../animation/animation-rules";
+import { RESPONSIVE_HANDLERS } from "../responsive/responsive-rules";
 import { SOURCE_HANDLERS } from "../data-sources/source-rules";
 import { dropLinksToPage, normalizeExternalUrl, normalizeTransition } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
@@ -53,6 +54,7 @@ type Handlers = {
 
 const HANDLERS: Handlers = {
   ...SOURCE_HANDLERS,
+  ...RESPONSIVE_HANDLERS,
   "page/create": (state, action) => {
     const name = action.name.trim();
     if (!name || isPageNameTaken(state.pages, name)) return state;

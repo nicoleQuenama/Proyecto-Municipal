@@ -42,3 +42,6 @@ next-env.d.ts
 
 # caché de respuestas de APIs (servidor)
 /.cache/
+
+# lo publicado en sitios de clientes (servidor)
+/.cms-data/

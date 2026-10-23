@@ -1,11 +1,14 @@
 import { StepBar } from "./step-bar";
 import type { Track } from "./timeline";
+import { TRACK_HEADER_PX } from "./timeline-scale";
 import type { AnimationStep } from "./types";
 
 interface TimelineRowProps {
   track: Track;
   label: string;
   span: number;
+  /** Ancho (px) de la zona de tiempo de la pista. */
+  width: number;
   selectedTrack: boolean;
   selectedStepId: string | null;
   msPerPixel: () => number;
@@ -15,11 +18,12 @@ interface TimelineRowProps {
   onRemove: () => void;
 }
 
-/** Una pieza de la animación: su nombre a la izquierda y sus pasos como barras sobre el eje de tiempo. */
+/** Una pista: su nombre fijo a la izquierda y sus pasos como clips sobre el eje de tiempo. */
 export function TimelineRow({
   track,
   label,
   span,
+  width,
   selectedTrack,
   selectedStepId,
   msPerPixel,
@@ -28,12 +32,15 @@ export function TimelineRow({
   onTiming,
   onRemove,
 }: TimelineRowProps) {
-  // Las barras de una misma propiedad comparten renglón; cada propiedad distinta tiene el suyo.
+  // Los clips de una misma propiedad comparten carril; cada propiedad distinta tiene el suyo.
   const props = [...new Set(track.steps.map((step) => step.prop))];
 
   return (
     <div className={`flex border-b border-line ${selectedTrack ? "bg-accent/10" : ""}`}>
-      <div className="flex w-40 shrink-0 items-start justify-between gap-1 border-r border-line p-1.5">
+      <div
+        className={`sticky left-0 z-10 flex shrink-0 items-center justify-between gap-1 border-r border-line px-2 ${selectedTrack ? "bg-[#1d2a3a]" : "bg-panel"}`}
+        style={{ width: TRACK_HEADER_PX }}
+      >
         <button type="button" onClick={onSelectTrack} className="min-w-0 truncate text-left text-[11px] hover:text-accent" title={label}>
           {label}
         </button>
@@ -41,9 +48,9 @@ export function TimelineRow({
           ×
         </button>
       </div>
-      <div className="relative min-w-0 flex-1" data-track-area>
+      <div className="relative shrink-0" style={{ width }} data-track-area onPointerDown={onSelectTrack}>
         {props.map((prop) => (
-          <div key={prop} className="relative h-7">
+          <div key={prop} className="relative h-8">
             {track.steps
               .filter((step) => step.prop === prop)
               .map((step) => (

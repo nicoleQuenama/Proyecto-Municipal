@@ -6,6 +6,7 @@ import { useSharedAssets } from "../code/use-shared-assets";
 import { useSite } from "../site/site-context";
 import { Modal } from "../ui/modal";
 import { Explorer } from "./explorer";
+import { SitePreview } from "./site-preview";
 import { fileId, kindOf, type FileKindName, type FileRef } from "./file-ref";
 import { useWorkbench } from "./workbench-context";
 
@@ -93,7 +94,12 @@ function Workbench() {
               <>
                 {/* key: cada archivo tiene su propio editor, con su historial de deshacer. */}
                 <FileEditor key={fileId(active)} file={active} />
-                {PREVIEWED.has(active.kind) && <BlockPreview file={active as Extract<FileRef, { blockId: string }>} />}
+                {/* Un bloque de código se ve aislado; todo lo demás (CSS, TypeScript…) se ve en la página real. */}
+                {PREVIEWED.has(active.kind) ? (
+                  <BlockPreview file={active as Extract<FileRef, { blockId: string }>} />
+                ) : (
+                  <SitePreview pageId={"pageId" in active ? active.pageId : null} />
+                )}
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-ink-dim">

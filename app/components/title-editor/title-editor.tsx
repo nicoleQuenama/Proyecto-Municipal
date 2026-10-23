@@ -3,6 +3,9 @@
 import { useNavigation } from "../navigation/navigation-context";
 import { PlacementGrip } from "../placement/placement-grip";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
+import { isAdaptive } from "../responsive/devices";
+import { useDevicePlacement } from "../responsive/use-device-placement";
+import { useViewport } from "../viewport/viewport-context";
 import { usePlacementDrag } from "../placement/use-placement-drag";
 import { useWidthResize } from "../placement/use-width-resize";
 import { WidthHandles } from "../placement/width-handles";
@@ -65,8 +68,12 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
     dispatch({ type: "hidden/set", target: { kind: "title", pageId: page.id }, hidden });
 
   const place = (placement: Placement) => dispatch({ type: "title/place", pageId: page.id, placement });
-  const move = usePlacementDrag({ enabled: interactive && mode === "edit", onPlace: place });
-  const resize = useWidthResize({ enabled: interactive && mode === "edit", onPlace: place });
+  // La posición libre es del escritorio: en tablet y móvil el titular va en el flujo y no se arrastra.
+  const placement = useDevicePlacement(page.titlePlacement);
+  const { device } = useViewport();
+  const movable = interactive && mode === "edit" && !isAdaptive(device);
+  const move = usePlacementDrag({ enabled: movable, onPlace: place });
+  const resize = useWidthResize({ enabled: movable, onPlace: place });
 
   // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
   if (page.titleHidden) {
@@ -75,10 +82,10 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
 
   return (
     <div
-      {...placementAttributes(page.titlePlacement)}
-      className={`group ${page.titlePlacement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""}`}
+      {...placementAttributes(placement)}
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""}`}
       style={{
-        ...placementStyle(page.titlePlacement, true),
+        ...placementStyle(placement, true),
         ...(effective.applyToSite ? { fontFamily: effective.font } : {}),
       }}
     >
@@ -88,8 +95,8 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
         state={shown}
         onTextChange={(text) => interactive && dispatch({ type: "title/patch", patch: { text } })}
       />
-      {interactive && mode === "edit" && <WidthHandles onStart={resize.startResize} />}
-      {interactive && mode === "edit" && (
+      {movable && <WidthHandles onStart={resize.startResize} />}
+      {movable && (
         <PlacementGrip label="el titular" onStart={move.startDrag} className="absolute top-1 left-1 hidden group-hover:flex focus:flex" />
       )}
       {mode === "edit" && (

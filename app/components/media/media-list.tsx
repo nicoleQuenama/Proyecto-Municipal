@@ -6,6 +6,9 @@ import type { Page } from "../site/types";
 import { useNavigation } from "../navigation/navigation-context";
 import { PlacementGrip } from "../placement/placement-grip";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
+import { isAdaptive } from "../responsive/devices";
+import { useDevicePlacement } from "../responsive/use-device-placement";
+import { useViewport } from "../viewport/viewport-context";
 import { usePlacementDrag } from "../placement/use-placement-drag";
 import { useWidthResize } from "../placement/use-width-resize";
 import { WidthHandles } from "../placement/width-handles";
@@ -108,9 +111,13 @@ function MediaCard({
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "media", pageId, mediaId: item.id }, hidden });
   const place = (placement: Placement) => dispatch({ type: "media/place", pageId, mediaId: item.id, placement });
-  const resize = useWidthResize({ enabled: removable, onPlace: place });
+  // La posición libre es del escritorio: en tablet y móvil el medio va en el flujo y no se arrastra.
+  const placement = useDevicePlacement(item.placement);
+  const { device } = useViewport();
+  const movable = removable && !isAdaptive(device);
+  const resize = useWidthResize({ enabled: movable, onPlace: place });
   const move = usePlacementDrag({
-    enabled: removable,
+    enabled: movable,
     onPlace: place,
     onTransfer: (toPageId, placement) =>
       dispatch({ type: "media/transfer", fromPageId: pageId, toPageId, mediaId: item.id, placement }),
@@ -123,9 +130,9 @@ function MediaCard({
 
   return (
     <figure
-      {...placementAttributes(item.placement)}
-      className={`group ${item.placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} overflow-hidden rounded-md bg-neutral-100`}
-      style={{ borderRadius: radius, ...placementStyle(item.placement, true) }}
+      {...placementAttributes(placement)}
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} overflow-hidden rounded-md bg-neutral-100`}
+      style={{ borderRadius: radius, ...placementStyle(placement, true) }}
       onContextMenu={
         canSetPoster
           ? (e) => {
@@ -143,8 +150,8 @@ function MediaCard({
         <MediaPreview item={item} editing={editing} onError={() => setFailed(true)} />
       )}
 
-      {removable && <WidthHandles onStart={resize.startResize} />}
-      {removable && (
+      {movable && <WidthHandles onStart={resize.startResize} />}
+      {movable && (
         <PlacementGrip
           label={item.name}
           onStart={move.startDrag}

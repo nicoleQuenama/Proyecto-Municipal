@@ -43,3 +43,10 @@ export const removeStep = (steps: AnimationStep[], id: string) => steps.filter((
 
 export const removeTrack = (steps: AnimationStep[], track: Track) =>
   steps.filter((step) => trackId(step.blockId, step.key) !== track.id);
+
+/** Copia un paso justo a continuación de sí mismo, para repetir un efecto. Devuelve la copia, o null si no existe. */
+export function duplicateStep(steps: AnimationStep[], id: string, newId: string): AnimationStep[] {
+  const original = steps.find((step) => step.id === id);
+  if (!original) return steps;
+  return [...steps, { ...original, id: newId, at: original.at + original.duration }];
+}

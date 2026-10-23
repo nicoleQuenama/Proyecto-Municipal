@@ -12,7 +12,12 @@ import { useWorkbench } from "../workbench/workbench-context";
 import { useFormatMenu } from "../format/format-menu-context";
 import { useNavigation } from "../navigation/navigation-context";
 import { boxStyle, pixelsOf } from "../styles/apply";
+import { adaptToDevice } from "../responsive/adapt";
+import { isAdaptive } from "../responsive/devices";
+import { seedLayout } from "../responsive/manual-layout";
+import { ResponsiveChip } from "../responsive/responsive-chip";
 import { useStyles } from "../styles/use-styles";
+import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
 import { ComponentView, type ElementInteraction } from "./component-view";
 import { customClasses, customCss, isFlowLayout, targetKey } from "./custom-code";
@@ -57,14 +62,22 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
 
   const def = components.find((c) => c.id === block.componentId);
   const resolve = def && styles.resolver(def.id);
-  const view = def && resolve && applyOverrides(styles.component(def), block, resolve);
   const flow = isFlowLayout(def?.styles?.[SECTION_KEY], block.custom?.[SECTION_KEY]);
+
+  // En tablet y móvil la sección se adapta sola o usa el diseño que la persona definió para ese dispositivo.
+  const { device } = useViewport();
+  const adaptive = isAdaptive(device);
+  const formatted = def && resolve && applyOverrides(styles.component(def), block, resolve);
+  const view = formatted && adaptToDevice(formatted, block, device, flow);
+  const manual = adaptive && block.responsive?.[device] !== undefined;
+  // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es del escritorio.
+  const placement = adaptive ? undefined : block.placement;
 
   const editing = interactive && mode === "edit";
   const selected = editing && block.id === selectedId;
-  const gestures = useBlockGestures({ pageId: page.id, blockId: block.id, view, selected });
+  const gestures = useBlockGestures({ pageId: page.id, blockId: block.id, view, selected, device });
   const move = usePlacementDrag({
-    enabled: editing,
+    enabled: editing && !adaptive,
     onPlace: (placement) => dispatch({ type: "block/place", pageId: page.id, blockId: block.id, placement }),
     onTransfer: (toPageId, placement) =>
       dispatch({ type: "block/transfer", fromPageId: page.id, toPageId, blockId: block.id, placement }),
@@ -104,9 +117,10 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       [...new Set([...Object.keys(def.styles ?? {}), ...Object.keys(block.custom ?? {})])].map((key) => [key, customClasses(block, key, def)]),
     ),
     flow,
-    onMoveBlock: editing ? move.startDrag : undefined,
+    onMoveBlock: editing && !adaptive ? move.startDrag : undefined,
     // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón.
-    gestures: editing && !flow ? gestures : undefined,
+    // En tablet o móvil solo se arrastra si la persona definió ese diseño; en automático lo calcula el CMS.
+    gestures: editing && !flow && (!adaptive || manual) ? gestures : undefined,
     selectedElementId: selected ? selectedElementId : null,
     alsoSelectedIds: selected ? alsoSelectedIds : undefined,
     onFollow: followLink,
@@ -145,20 +159,20 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       ref={ref}
       data-block-id={block.id}
       data-component={def.id}
-      {...placementAttributes(block.placement)}
+      {...placementAttributes(placement)}
       // El destino de la sección es su lienzo (ver ComponentView); en un bloque de código, la caja entera.
       {...(block.code ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
-      {...(block.placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
+      {...(placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
       {...sectionDrop.handlers}
-      className={`group ${block.placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code ? "w-full" : "w-fit"} max-w-full rounded-md ${
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code ? "w-full" : "w-fit"} max-w-full rounded-md ${
         selected && selectedElementId === null
           ? "ring-2 ring-accent"
           : editing
             ? "hover:ring-1 hover:ring-accent/50"
             : ""
       } ${block.code ? customClasses(block, SECTION_KEY) : ""}`}
-      style={{ margin: box.margin, ...placementStyle(block.placement) }}
+      style={{ margin: box.margin, ...placementStyle(placement) }}
     >
       {css && <style>{css}</style>}
       {sectionDrop.over && <span aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md border-2 border-emerald-500 bg-emerald-500/10" />}
@@ -207,6 +221,16 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
             onStart={move.startDrag}
             className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
           />
+          {selected && adaptive && !block.code && !flow && (
+            <ResponsiveChip
+              device={device}
+              manual={manual}
+              onChange={(layout) =>
+                dispatch({ type: "responsive/set", pageId: page.id, blockId: block.id, device, layout })
+              }
+              seed={() => seedLayout(view)}
+            />
+          )}
           {selected && selectedElementId === null && !block.code && (
             <CodeButton
               label="Abrir el código de la sección en el editor"

@@ -5,6 +5,8 @@ import { describeTransition, elementLabel, linkSummary } from "../navigation/lin
 import { PROP_DEFS, TARGET_DEFS } from "../styles/registry";
 import { scopeKey } from "../styles/resolve";
 import type { StyleProp, StyleScope } from "../styles/types";
+import type { ExternalState } from "../external-site/types";
+import { addExternal, addResponsive, hashOf, type Add } from "./snapshot-extras";
 import type { DesignSnapshot, WorkingChange } from "./types";
 
 /** Valor que se muestra cuando una propiedad no existía o ya no existe. */
@@ -17,17 +19,8 @@ function labelOf(options: { value: string; label: string }[], value: string): st
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
-/** Huella corta del contenido de un componente, para detectar que se editó. */
-const hashOf = (value: unknown): string => {
-  let hash = 5381;
-  for (const char of JSON.stringify(value)) hash = ((hash * 33) ^ char.charCodeAt(0)) >>> 0;
-  return hash.toString(36).slice(0, 5);
-};
-
 const signatureOf = (def: ComponentDef): string =>
   hashOf([def.name, def.category, def.width, def.height, def.elements]);
-
-type Add = (key: string, node: string, property: string, value: string) => void;
 
 function addTitle(add: Add, page: Page, title: TitleState) {
   const node = `${page.name} · Titular`;
@@ -57,7 +50,10 @@ export function snapshotDesign({
   variables,
   rules,
   navigation,
-}: Pick<SiteState, "pages" | "components" | "variables" | "rules" | "navigation">): DesignSnapshot {
+  external,
+}: Pick<SiteState, "pages" | "components" | "variables" | "rules" | "navigation"> & {
+  external?: Pick<ExternalState, "site" | "patches" | "pages" | "autoResponsive">;
+}): DesignSnapshot {
   const snapshot: DesignSnapshot = {};
   const add: Add = (key, node, property, value) => {
     snapshot[key] = { node, property, value };
@@ -74,6 +70,7 @@ export function snapshotDesign({
       const def = components.find((c) => c.id === block.componentId);
       if (def) add(`block:${block.id}`, `${page.name} · ${def.name}`, "Presencia", "Agregado");
       if (def && block.hidden) add(`hidden:block:${block.id}`, `${page.name} · ${def.name}`, "Visibilidad", "Oculto");
+      if (def) addResponsive(add, `${page.name} · ${def.name}`, block);
       if (def && (block.box || block.elements)) {
         add(`format:${block.id}`, `${page.name} · ${def.name}`, "Formato", hashOf([block.box, block.elements]));
       }
@@ -127,6 +124,7 @@ export function snapshotDesign({
     }
   }
 
+  if (external) addExternal(add, external);
   return snapshot;
 }
 

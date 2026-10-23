@@ -78,7 +78,7 @@ interface PageArtboardProps {
 }
 
 /** Un marco de página: su etiqueta y la página con su titular, bloques y medios. */
-function PageArtboard({ page, active, tiled, production = false, shellPage }: PageArtboardProps) {
+export function PageArtboard({ page, active, tiled, production = false, shellPage }: PageArtboardProps) {
   const { device, zoom } = useViewport();
   const styles = useStyles(page.id);
   const dispatch = useSiteDispatch();
