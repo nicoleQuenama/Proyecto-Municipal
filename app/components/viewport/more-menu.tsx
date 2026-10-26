@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { toolCommandId } from "../commands/command-definitions";
 import { useCommands } from "../commands/commands-context";
 import { formatShortcut } from "../commands/shortcut";
@@ -25,12 +26,17 @@ const MORE_TOOLS: Tool[] = ["frame", "text", "comment"];
 export function MoreMenu() {
   const { tool, setTool } = useViewport();
   const { runCommand, shortcutOf } = useCommands();
+  const { currentUser } = useAuth();
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
 
   const hintOf = (value: MoreValue) => {
     const shortcut = shortcutOf(value === "code" ? "code.open" : toolCommandId(value));
     return shortcut ? formatShortcut(shortcut) : undefined;
   };
-  const items = MORE_ITEMS.map((item) => ({ ...item, hint: hintOf(item.value) }));
+  const items = MORE_ITEMS.filter((item) => item.value !== "code" || canEditCode).map((item) => ({
+    ...item,
+    hint: hintOf(item.value),
+  }));
 
   // Cada opción hace lo suyo: elegir una herramienta o abrir el editor.
   const run: Record<MoreValue, () => void> = {

@@ -1,3 +1,4 @@
+import { sessionUser } from "../../server/auth-session";
 import {
   availability,
   guardRequest,
@@ -11,10 +12,19 @@ import {
 const fail = (error: unknown, status = 400) =>
   Response.json({ error: error instanceof Error ? error.message : "Error inesperado." }, { status });
 
+/** Instalar o quitar librerías es parte del acceso al código: solo superadmin y dev. */
+async function canManageCode(): Promise<boolean> {
+  const user = await sessionUser();
+  return user?.role === "superadmin" || user?.role === "dev";
+}
+
+const forbidden = () => Response.json({ error: "No tienes permiso para gestionar librerías." }, { status: 403 });
+
 /** Si se puede instalar con pnpm aquí, y qué librerías instaló ya el usuario. */
 export async function GET(request: Request) {
   const denied = guardRequest(request);
   if (denied) return Response.json({ ...availability(), available: false, installed: [] });
+  if (!(await canManageCode())) return forbidden();
 
   return Response.json({ ...availability(), installed: await listInstalled() });
 }
@@ -23,6 +33,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const denied = guardRequest(request);
   if (denied) return denied;
+  if (!(await canManageCode())) return forbidden();
 
   const { name, version = "" } = (await request.json().catch(() => ({}))) as { name?: string; version?: string };
   if (!name || !isValidName(name)) return fail("Nombre de paquete no válido.");
@@ -39,6 +50,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const denied = guardRequest(request);
   if (denied) return denied;
+  if (!(await canManageCode())) return forbidden();
 
   const name = new URL(request.url).searchParams.get("name");
   if (!name || !isValidName(name)) return fail("Nombre de paquete no válido.");

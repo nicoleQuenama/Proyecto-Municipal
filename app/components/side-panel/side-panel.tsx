@@ -92,9 +92,8 @@ export function SidePanel() {
     e.preventDefault();
   };
 
-  const visibleTabs = TABS.filter(
-    (t) => t.value !== "users" || hasPermission(currentUser?.role, "manageUsers"),
-  );
+  // Cada sección declara el permiso que necesita; el rol del usuario decide qué ve.
+  const visibleTabs = TABS.filter((t) => hasPermission(currentUser?.role, t.permission));
   const activeTab = visibleTabs.some((t) => t.value === tab) ? tab : visibleTabs[0].value;
   const current = visibleTabs.find((t) => t.value === activeTab) ?? visibleTabs[0];
 

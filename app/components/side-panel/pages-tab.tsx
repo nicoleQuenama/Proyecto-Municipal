@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { PageBackground } from "../background/page-background";
 import { PageRouteForm } from "../dynamic/page-route-form";
 import { PageSeoForm } from "./page-seo-form";
@@ -24,6 +25,8 @@ interface PageRowProps {
 function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const dispatch = useSiteDispatch();
   const { openFile } = useWorkbench();
+  const { currentUser } = useAuth();
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [routing, setRouting] = useState(false);
@@ -146,15 +149,17 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
         >
           SEO
         </button>
-        <button
-          type="button"
-          aria-label={`Programar ${page.name} en código`}
-          title="Programar esta página en código (CSS y TypeScript)"
-          onClick={() => openFile({ kind: "page-js", pageId: page.id })}
-          className={`${iconButton} hidden group-hover:flex focus:flex`}
-        >
-          <CodeIcon />
-        </button>
+        {canEditCode && (
+          <button
+            type="button"
+            aria-label={`Programar ${page.name} en código`}
+            title="Programar esta página en código (CSS y TypeScript)"
+            onClick={() => openFile({ kind: "page-js", pageId: page.id })}
+            className={`${iconButton} hidden group-hover:flex focus:flex`}
+          >
+            <CodeIcon />
+          </button>
+        )}
         <button
           type="button"
           aria-label={`Renombrar ${page.name}`}

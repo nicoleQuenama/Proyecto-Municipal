@@ -1,5 +1,6 @@
 "use client";
 
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { CodeIcon } from "../viewport/icons";
 import { useHandleSize } from "../viewport/use-handle-size";
 
@@ -13,6 +14,9 @@ interface CodeButtonProps {
 /** El icono ‹› sobre una sección o elemento seleccionado: abre su código en el editor. */
 export function CodeButton({ label, onOpen, className }: CodeButtonProps) {
   const size = useHandleSize();
+  const { currentUser } = useAuth();
+  // El acceso al código se decide aquí: todos los botones ‹› de la app pasan por este componente.
+  if (!hasPermission(currentUser?.role, "editCode")) return null;
 
   return (
     <button

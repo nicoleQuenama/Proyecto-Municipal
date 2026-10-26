@@ -49,7 +49,7 @@ export function useAuthDispatch(): Dispatch<AuthAction> {
 
 export function hasPermission(
   role: string | undefined,
-  permission: "viewAll" | "editContent" | "editStyles" | "editCode" | "manageUsers",
+  permission: "viewAll" | "editContent" | "editStyles" | "editCode" | "manageUsers" | "viewAudit",
 ): boolean {
   if (!role) return false;
   if (role === "superadmin") return true;
@@ -61,6 +61,7 @@ export function hasPermission(
     if (permission === "editStyles") return false;
     if (permission === "editCode") return false;
     if (permission === "manageUsers") return false;
+    if (permission === "viewAudit") return false;
     if (permission === "viewAll") return true;
     if (permission === "editContent") return true;
   }

@@ -10,6 +10,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import type { BuilderTarget } from "../builder/component-builder";
 import { useMedia } from "../media/media-context";
 import { useNavigation } from "../navigation/navigation-context";
@@ -79,16 +80,24 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
   const siteDispatch = useSiteDispatch();
   const { setMode } = useNavigation();
   const { openFile } = useWorkbench();
+  const { currentUser } = useAuth();
+  const role = currentUser?.role;
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [builder, setBuilder] = useState<BuilderTarget | null>(null);
 
   const rawOverrides = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const overrides = useMemo(() => parseOverrides(rawOverrides), [rawOverrides]);
 
-  const toggleDialog = useCallback(
-    (target: Dialog) => setDialog((current) => (current === target ? null : target)),
-    [],
+  // La auditoría es una herramienta de desarrollo: no se abre sin permiso, aunque llegue un comando.
+  const allowed = useCallback(
+    (target: Dialog) => target !== "audit" || hasPermission(role, "viewAudit"),
+    [role],
   );
+  const toggleDialog = useCallback(
+    (target: Dialog) => allowed(target) && setDialog((current) => (current === target ? null : target)),
+    [allowed],
+  );
+  const openDialog = useCallback((target: Dialog) => allowed(target) && setDialog(target), [allowed]);
   const closeDialog = useCallback(() => setDialog(null), []);
   const closeBuilder = useCallback(() => setBuilder(null), []);
 
@@ -108,13 +117,18 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
 
   const commands = useMemo<ResolvedCommand[]>(
     () =>
-      createCommands({ setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openCode: () => openFile() }).map(
-        (command) => ({
+      createCommands({ setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openCode: () => openFile() })
+        // El editor de código y la auditoría no aparecen para quien no tiene permiso.
+        .filter((command) => {
+          if (command.id === "code.open") return hasPermission(role, "editCode");
+          if (command.id === "audit.open") return hasPermission(role, "viewAudit");
+          return true;
+        })
+        .map((command) => ({
           ...command,
           shortcut: command.id in overrides ? overrides[command.id] : command.defaultShortcut,
-        }),
-      ),
-    [setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openFile, overrides],
+        })),
+    [setTool, setDevice, setZoom, fitToWindow, stepZoom, toggleDialog, pickImages, setMode, openFile, overrides, role],
   );
 
   useEffect(() => {
@@ -155,7 +169,7 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
     return {
       commands,
       dialog,
-      openDialog: setDialog,
+      openDialog,
       closeDialog,
       builder,
       openBuilder: setBuilder,
@@ -176,7 +190,7 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
       },
       resetAll: () => saveOverrides({}),
     };
-  }, [commands, dialog, closeDialog, builder, closeBuilder, slash, overrides]);
+  }, [commands, dialog, openDialog, closeDialog, builder, closeBuilder, slash, overrides]);
 
   return <CommandsContext value={value}>{children}</CommandsContext>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { useSite } from "../site/site-context";
 import { fileId, sameFile, type FileRef } from "./file-ref";
 import { selectionFile } from "./selection-file";
@@ -33,10 +34,13 @@ export function useWorkbench() {
 /** Guarda si el editor de código está abierto, y con qué pestañas. */
 export function WorkbenchProvider({ children }: { children: ReactNode }) {
   const site = useSite();
+  const { currentUser } = useAuth();
   const [state, setState] = useState<WorkbenchState>(CLOSED);
 
   const openFile = useCallback(
     (ref?: FileRef) => {
+      // Sin permiso de código no se abre el editor, aunque un botón antiguo siga en pantalla.
+      if (!hasPermission(currentUser?.role, "editCode")) return;
       const target = ref ?? selectionFile(site);
       setState((current) => ({
         open: true,
@@ -44,7 +48,7 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         activeId: fileId(target),
       }));
     },
-    [site],
+    [site, currentUser?.role],
   );
 
   const activate = useCallback((ref: FileRef) => setState((current) => ({ ...current, activeId: fileId(ref) })), []);

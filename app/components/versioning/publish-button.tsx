@@ -1,5 +1,6 @@
 "use client";
 
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
 import { UploadIcon } from "../viewport/icons";
 import { ShareButton } from "./share-button";
@@ -9,18 +10,22 @@ import { useWorkingChanges } from "./use-working-changes";
 export function PublishButton() {
   const { openDialog } = useCommands();
   const { changes } = useWorkingChanges();
+  const { currentUser } = useAuth();
+  const canViewAudit = hasPermission(currentUser?.role, "viewAudit");
 
   return (
     <div className="flex shrink-0 items-center gap-2 border-l border-line px-3">
       <ShareButton className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover" />
-      <button
-        type="button"
-        title="Revisar rendimiento, accesibilidad y SEO antes de publicar"
-        onClick={() => openDialog("audit")}
-        className="flex h-7 items-center gap-1.5 rounded-md border border-line px-3 text-xs hover:bg-hover"
-      >
-        Auditoría
-      </button>
+      {canViewAudit && (
+        <button
+          type="button"
+          title="Revisar rendimiento, accesibilidad y SEO antes de publicar"
+          onClick={() => openDialog("audit")}
+          className="flex h-7 items-center gap-1.5 rounded-md border border-line px-3 text-xs hover:bg-hover"
+        >
+          Auditoría
+        </button>
+      )}
       <button
         type="button"
         title="Añadir cambios, hacer una versión y publicar"

@@ -5,7 +5,6 @@ import { login } from "./auth-api";
 import { useAuthDispatch } from "./auth-context";
 import { LoginBackground } from "./login-background";
 import { LoginBrandPanel } from "./login-brand-panel";
-import { LoginDemoAccess } from "./login-demo-access";
 import { LoginFields } from "./login-fields";
 import { LoginIntro } from "./login-intro";
 
@@ -37,13 +36,13 @@ export function LoginForm() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas px-4 py-10">
+    <main className="relative min-h-dvh overflow-x-hidden bg-canvas">
       <LoginBackground />
-      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-3xl border border-line/80 bg-panel/90 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl lg:grid-cols-[1.08fr_1fr]">
+      <div className="relative grid min-h-dvh lg:grid-cols-[minmax(0,1.15fr)_minmax(26rem,0.85fr)]">
         <LoginBrandPanel />
 
-        <section className="relative p-7 sm:p-10 lg:p-12">
-          <div className="mx-auto w-full max-w-sm">
+        <section className="flex min-h-dvh items-center justify-center border-line/40 bg-canvas/60 px-5 py-10 backdrop-blur-sm sm:px-8 lg:border-l lg:px-12">
+          <div className="w-full max-w-sm">
             <LoginIntro />
 
             <form onSubmit={handleLogin} className="flex flex-col gap-5" noValidate>
@@ -73,7 +72,6 @@ export function LoginForm() {
                 {pending ? "Comprobando acceso…" : "Iniciar sesión"}
               </button>
             </form>
-
           </div>
         </section>
       </div>

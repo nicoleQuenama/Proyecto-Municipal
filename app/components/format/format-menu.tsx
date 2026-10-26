@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { applyOverrides } from "../site/overrides";
 import { SECTION_KEY } from "../site/types";
 import { useSite, useSiteDispatch } from "../site/site-context";
@@ -268,6 +269,8 @@ export function FormatMenu() {
   const dispatch = useSiteDispatch();
   const styles = useStyles(menu?.target.pageId);
   const { openFile } = useWorkbench();
+  const { currentUser } = useAuth();
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(ref, menu !== null, closeFormatMenu);
 
@@ -304,6 +307,8 @@ export function FormatMenu() {
   );
   if (!model) return null;
 
+  // Las acciones marcadas como «code» no llegan a los roles sin permiso de código.
+  const visible = canEditCode ? model : { ...model, actions: model.actions.filter((action) => !action.code) };
   const left = Math.max(MARGIN, Math.min(menu.point.x, window.innerWidth - WIDTH - MARGIN));
   const top = Math.max(MARGIN, Math.min(menu.point.y, window.innerHeight - ESTIMATED_HEIGHT - MARGIN));
 
@@ -311,12 +316,12 @@ export function FormatMenu() {
     <TopLayer
       ref={ref}
       role="menu"
-      aria-label={`Formato de ${model.title}`}
+      aria-label={`Formato de ${visible.title}`}
       className="fixed overflow-y-auto rounded-xl border border-line bg-panel text-ink shadow-2xl"
       style={{ left, top, width: WIDTH, maxHeight: window.innerHeight - top - MARGIN }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <MenuBody model={model} close={closeFormatMenu} />
+      <MenuBody model={visible} close={closeFormatMenu} />
     </TopLayer>
   );
 }

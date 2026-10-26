@@ -1,5 +1,6 @@
 "use client";
 
+import { hasPermission, useAuth } from "../auth/auth-context";
 import type { Library, CodeSource } from "../site/types";
 import type { SharedAssets } from "./build-srcdoc";
 import { CodeFrame } from "./code-frame";
@@ -16,11 +17,14 @@ interface CodeBlockViewProps {
 
 /** Un bloque de código tal como se ve en una página. */
 export function CodeBlockView({ code, libraries, shared, name, editing, onEdit }: CodeBlockViewProps) {
+  const { currentUser } = useAuth();
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
+
   return (
     <div className="relative w-full">
       <CodeFrame code={code} libraries={libraries} shared={shared} title={name} />
 
-      {editing && (
+      {editing && canEditCode && (
         <>
           <div className="absolute inset-0" onDoubleClick={onEdit} />
           <button

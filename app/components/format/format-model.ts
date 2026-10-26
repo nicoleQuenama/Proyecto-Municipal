@@ -30,6 +30,8 @@ export interface MenuAction {
   label: string;
   run: () => void;
   danger?: boolean;
+  /** Solo se muestra a quien puede editar código. */
+  code?: boolean;
 }
 
 /** Un valor que se puede cambiar, dejar ligado a una variable, o soltar de ella. */
@@ -175,7 +177,7 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
                 run: () => style({ fitToParent: !element.fitToParent }),
               },
             ]),
-        { label: "Editar código…", run: env.editCode },
+        { label: "Editar código…", run: env.editCode, code: true },
         { label: "Interacciones…", run: () => env.customize(element.id) },
         { label: "Quitar formato", run: () => style(CLEARED_FORMAT) },
       ],
@@ -221,7 +223,7 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
         { label: "Bajar sección", glyph: "↓", run: () => dispatch({ type: "block/move", pageId, blockId: block.id, direction: 1 }) },
       ],
       actions: [
-        { label: "Editar código…", run: env.editCode },
+        { label: "Editar código…", run: env.editCode, code: true },
         { label: "Interacciones…", run: () => env.customize() },
         {
           label: "Ocultar sección",

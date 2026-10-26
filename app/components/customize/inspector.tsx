@@ -80,7 +80,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const canEditCode = hasPermission(currentUser?.role, "editCode");
 
   const saveStyle = (patch: Partial<CustomStyle>) => {
-    if (!canEditContent && !canEditStyles) return;
+    if (!canEditStyles) return;
     dispatch(
       level === "block"
         ? { type: "block/custom", pageId, blockId: block.id, key: scope, patch }
@@ -147,7 +147,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
         </Collapsible>
       )}
 
-      {(canEditStyles || canEditContent) && (
+      {canEditStyles && (
         <div role="group" aria-label="Dónde valen los estilos" className="flex flex-col gap-1.5">
           <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
             {STYLE_LEVELS.map(({ value, label }) => (
@@ -156,8 +156,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 type="button"
                 aria-pressed={level === value}
                 onClick={() => setLevel(value)}
-                disabled={!canEditStyles && value === "component"}
-                className={`h-7 rounded ${level === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"} ${!canEditStyles && value === "component" ? "opacity-40" : ""}`}
+                className={`h-7 rounded ${level === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"}`}
               >
                 {label}
               </button>
@@ -167,10 +166,10 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
         </div>
       )}
 
-      {(canEditContent || canEditStyles) && (
+      {canEditStyles && (
         <Collapsible title="Clases de Tailwind" badge={count(custom.classes.split(/\s+/).filter(Boolean).length)}>
           {/* key: al cambiar de alcance el campo empieza con lo guardado de ese alcance. */}
-          <ClassesField key={level} value={custom.classes} onChange={(classes) => (canEditContent || canEditStyles) && saveStyle({ classes })} />
+          <ClassesField key={level} value={custom.classes} onChange={(classes) => saveStyle({ classes })} />
           <Hint>Se aplican al escribir. Cualquier clase de Tailwind; las variables del proyecto también: «color-primario» da «bg-primario» y «text-primario».</Hint>
         </Collapsible>
       )}

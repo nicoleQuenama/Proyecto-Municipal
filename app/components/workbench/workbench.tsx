@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { CodeFrame } from "../code/code-frame";
 import { useSharedAssets } from "../code/use-shared-assets";
 import { useSite } from "../site/site-context";
@@ -136,7 +137,8 @@ function Workbench() {
 /** El editor de código a pantalla completa, como un editor de escritorio. Se abre con el icono ‹› o con Ctrl+E. */
 export function WorkbenchHost() {
   const { open, close } = useWorkbench();
-  if (!open) return null;
+  const { currentUser } = useAuth();
+  if (!open || !hasPermission(currentUser?.role, "editCode")) return null;
 
   return (
     <Modal label="Editor de código" size="full" onClose={close}>

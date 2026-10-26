@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { ACTIONS, type Field } from "../behaviors/actions";
 import { TRIGGERS } from "../behaviors/triggers";
 import type { ActionKind, Behavior, BehaviorAction, CodeMode, TriggerKind } from "../behaviors/types";
@@ -24,11 +25,15 @@ interface BehaviorEditorProps {
 export function BehaviorEditor({ behavior, pages, elements, onChange, onRemove, onOpenCode }: BehaviorEditorProps) {
   const { action } = behavior;
   const definition = ACTIONS[action.kind];
+  const { currentUser } = useAuth();
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const kinds = (Object.keys(ACTIONS) as ActionKind[]).filter((kind) => kind !== "code" || canEditCode);
 
   const setField = (key: string, value: unknown) =>
     onChange({ ...behavior, action: { ...action, [key]: value } as BehaviorAction });
 
   const draw = (field: Field) => {
+    if (field.type === "code" && !canEditCode) return null;
     const render = FIELD_RENDERERS[field.type] as (field: Field, context: FieldContext) => ReactNode;
     const mode = (action as { mode?: CodeMode }).mode ?? "page";
 
@@ -71,16 +76,20 @@ export function BehaviorEditor({ behavior, pages, elements, onChange, onRemove, 
         </button>
       </div>
 
-      <select
-        aria-label="Qué hace"
-        value={action.kind}
-        onChange={(e) => onChange({ ...behavior, action: ACTIONS[e.target.value as ActionKind].create(pages) })}
-        className={selectClass}
-      >
-        {(Object.keys(ACTIONS) as ActionKind[]).map((kind) => (
-          <option key={kind} value={kind}>{ACTIONS[kind].label}</option>
-        ))}
-      </select>
+      {kinds.includes(action.kind) ? (
+        <select
+          aria-label="Qué hace"
+          value={action.kind}
+          onChange={(e) => onChange({ ...behavior, action: ACTIONS[e.target.value as ActionKind].create(pages) })}
+          className={selectClass}
+        >
+          {kinds.map((kind) => (
+            <option key={kind} value={kind}>{ACTIONS[kind].label}</option>
+          ))}
+        </select>
+      ) : (
+        <p className="text-[11px] text-ink-dim">Esta interacción ejecuta código y tu rol no puede editarla.</p>
+      )}
 
       {definition.fields.map(draw)}
     </li>
