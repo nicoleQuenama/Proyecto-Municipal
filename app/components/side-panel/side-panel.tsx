@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
+import { UserManagement } from "../auth/user-management";
 import { AppearanceTab } from "../appearance/appearance-tab";
 import { DataTab } from "../data-sources/data-tab";
 import { ExternalTab } from "../external-site/external-tab";
@@ -32,6 +34,7 @@ const TAB_CONTENT: Record<PanelTab, ReactNode> = {
   navigation: <NavigationTab />,
   appearance: <AppearanceTab />,
   libraries: <LibrariesTab />,
+  users: <UserManagement />,
   data: <DataTab />,
   site: <ExternalTab />,
 };
@@ -47,6 +50,7 @@ export function SidePanel() {
   const page = useCurrentPage();
   const { components, selectedId } = useSite();
   const dispatch = useSiteDispatch();
+  const { currentUser } = useAuth();
 
   // Igual que en el lienzo: barras de navegación, titular y el resto de bloques.
   const toItem = (block: { id: string; componentId: string }): StructureItem[] => {
@@ -86,7 +90,11 @@ export function SidePanel() {
     e.preventDefault();
   };
 
-  const current = TABS.find((t) => t.value === tab)!;
+  const visibleTabs = TABS.filter(
+    (t) => t.value !== "users" || hasPermission(currentUser?.role, "manageUsers"),
+  );
+  const activeTab = visibleTabs.some((t) => t.value === tab) ? tab : visibleTabs[0].value;
+  const current = visibleTabs.find((t) => t.value === activeTab) ?? visibleTabs[0];
 
   return (
     <aside
@@ -113,8 +121,8 @@ export function SidePanel() {
           <PanelCollapseIcon collapsed={collapsed} />
         </button>
 
-        {TABS.map((t) => {
-          const active = t.value === tab && !collapsed;
+        {visibleTabs.map((t) => {
+          const active = t.value === activeTab && !collapsed;
           return (
             <button
               key={t.value}
@@ -149,7 +157,7 @@ export function SidePanel() {
           </header>
 
           <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto p-4">
-            {TAB_CONTENT[tab]}
+            {TAB_CONTENT[activeTab]}
           </div>
 
           {/* La estructura empieza cerrada para dejarle todo el alto al contenido de la sección. */}

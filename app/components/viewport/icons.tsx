@@ -189,3 +189,40 @@ export const MoreIcon = () => (
     <circle cx="19" cy="12" r="1.5" />
   </Icon>
 );
+export const UserIcon = () => (
+  <Icon>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21a8 8 0 0116 0" />
+  </Icon>
+);
+export const UsersIcon = () => (
+  <Icon size={18}>
+    <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8" />
+  </Icon>
+);
+export const MailIcon = () => (
+  <Icon>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 7l9 6 9-6" />
+  </Icon>
+);
+export const LockIcon = () => (
+  <Icon>
+    <rect x="4" y="10" width="16" height="11" rx="2" />
+    <path d="M8 10V7a4 4 0 018 0v3" />
+  </Icon>
+);
+export const ShieldIcon = () => (
+  <Icon>
+    <path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z" />
+    <path d="M9 12l2 2 4-4" />
+  </Icon>
+);
+export const LogoutIcon = () => (
+  <Icon>
+    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+    <path d="M16 17l5-5-5-5M21 12H9" />
+  </Icon>
+);

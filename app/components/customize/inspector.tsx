@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { elementLabel } from "../navigation/links";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { SECTION_KEY, TITLE_SELECTION, type BlockInstance, type ComponentDef, type CustomStyle } from "../site/types";
@@ -59,92 +60,115 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const { pages } = useSite();
   const dispatch = useSiteDispatch();
   const { openFile } = useWorkbench();
+  const { currentUser } = useAuth();
   // Los estilos valen para este bloque o, si se elige, para todos los lugares donde se use el componente.
   const [level, setLevel] = useState<StyleLevel>("block");
   const custom = (level === "block" ? block.custom?.[scope] : def.styles?.[scope]) ?? { classes: "", css: "" };
+  const canEditContent = hasPermission(currentUser?.role, "editContent");
+  const canEditStyles = hasPermission(currentUser?.role, "editStyles");
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
 
-  const saveStyle = (patch: Partial<CustomStyle>) =>
+  const saveStyle = (patch: Partial<CustomStyle>) => {
+    if (!canEditContent && !canEditStyles) return;
     dispatch(
       level === "block"
         ? { type: "block/custom", pageId, blockId: block.id, key: scope, patch }
         : { type: "component/styles", componentId: def.id, key: scope, patch },
     );
-  const openCss = () =>
+  };
+  const openCss = () => {
+    if (!canEditCode) return;
     openFile(
       level === "block"
         ? { kind: "custom-css", pageId, blockId: block.id, key: scope }
         : { kind: "component-css", componentId: def.id, key: scope },
     );
+  };
 
   const behaviors = (block.behaviors ?? []).filter((b) => b.scope === scope);
-  const add = () =>
+  const add = () => {
+    if (!canEditContent) return;
     dispatch({
       type: "behavior/save",
       pageId,
       blockId: block.id,
       behavior: { id: crypto.randomUUID(), scope, trigger: "click", action: ACTIONS.animate.create(pages) },
     });
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      <Collapsible title="Interacciones" badge={count(behaviors.length)}>
-        <Hint>Qué pasa al hacer clic, pasar el cursor… Se ven al pulsar «Probar» (▶).</Hint>
-        {behaviors.length > 0 && (
-          <ul className="flex flex-col gap-2">
-            {behaviors.map((behavior) => (
-              <BehaviorEditor
-                key={behavior.id}
-                behavior={behavior}
-                pages={pages}
-                elements={def.elements}
-                onChange={(next) => dispatch({ type: "behavior/save", pageId, blockId: block.id, behavior: next })}
-                onRemove={() =>
-                  dispatch({ type: "behavior/remove", pageId, blockId: block.id, behaviorId: behavior.id })
-                }
-                onOpenCode={() => openFile({ kind: "behavior-js", pageId, blockId: block.id, behaviorId: behavior.id })}
-              />
+      {canEditContent && (
+        <Collapsible title="Interacciones" badge={count(behaviors.length)}>
+          <Hint>Qué pasa al hacer clic, pasar el cursor… Se ven al pulsar «Probar» (▶).</Hint>
+          {behaviors.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {behaviors.map((behavior) => (
+                <BehaviorEditor
+                  key={behavior.id}
+                  behavior={behavior}
+                  pages={pages}
+                  elements={def.elements}
+                  onChange={(next) => {
+                    if (!canEditContent) return;
+                    dispatch({ type: "behavior/save", pageId, blockId: block.id, behavior: next });
+                  }}
+                  onRemove={() => {
+                    if (!canEditContent) return;
+                    dispatch({ type: "behavior/remove", pageId, blockId: block.id, behaviorId: behavior.id });
+                  }}
+                  onOpenCode={() => canEditCode && openFile({ kind: "behavior-js", pageId, blockId: block.id, behaviorId: behavior.id })}
+                />
+              ))}
+            </ul>
+          )}
+          <button type="button" onClick={add} className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover">
+            + Añadir interacción
+          </button>
+        </Collapsible>
+      )}
+
+      {(canEditStyles || canEditContent) && (
+        <div role="group" aria-label="Dónde valen los estilos" className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
+            {STYLE_LEVELS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={level === value}
+                onClick={() => setLevel(value)}
+                disabled={!canEditStyles && value === "component"}
+                className={`h-7 rounded ${level === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"} ${!canEditStyles && value === "component" ? "opacity-40" : ""}`}
+              >
+                {label}
+              </button>
             ))}
-          </ul>
-        )}
-        <button type="button" onClick={add} className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover">
-          + Añadir interacción
-        </button>
-      </Collapsible>
-
-      <div role="group" aria-label="Dónde valen los estilos" className="flex flex-col gap-1.5">
-        <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
-          {STYLE_LEVELS.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={level === value}
-              onClick={() => setLevel(value)}
-              className={`h-7 rounded ${level === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"}`}
-            >
-              {label}
-            </button>
-          ))}
+          </div>
+          <Hint>{level === "block" ? "Solo cambia esta sección, en esta página." : `Cambia todos los «${def.name}» del sitio, en todas las páginas.`}</Hint>
         </div>
-        <Hint>{level === "block" ? "Solo cambia esta sección, en esta página." : `Cambia todos los «${def.name}» del sitio, en todas las páginas.`}</Hint>
-      </div>
+      )}
 
-      <Collapsible title="Clases de Tailwind" badge={count(custom.classes.split(/\s+/).filter(Boolean).length)}>
-        {/* key: al cambiar de alcance el campo empieza con lo guardado de ese alcance. */}
-        <ClassesField key={level} value={custom.classes} onChange={(classes) => saveStyle({ classes })} />
-        <Hint>Se aplican al escribir. Cualquier clase de Tailwind; las variables del proyecto también: «color-primario» da «bg-primario» y «text-primario».</Hint>
-      </Collapsible>
+      {(canEditContent || canEditStyles) && (
+        <Collapsible title="Clases de Tailwind" badge={count(custom.classes.split(/\s+/).filter(Boolean).length)}>
+          {/* key: al cambiar de alcance el campo empieza con lo guardado de ese alcance. */}
+          <ClassesField key={level} value={custom.classes} onChange={(classes) => (canEditContent || canEditStyles) && saveStyle({ classes })} />
+          <Hint>Se aplican al escribir. Cualquier clase de Tailwind; las variables del proyecto también: «color-primario» da «bg-primario» y «text-primario».</Hint>
+        </Collapsible>
+      )}
 
-      <Collapsible title="CSS propio" defaultOpen={false} badge={count(custom.css.trim() ? 1 : 0)}>
-        <button
-          type="button"
-          onClick={openCss}
-          className="flex h-9 items-center justify-center gap-2 rounded-md border border-line text-xs hover:bg-hover"
-        >
-          <CodeIcon />
-          Abrir el CSS en el editor
-        </button>
-        <Hint>{level === "block" ? "Solo afecta a este elemento." : "Afecta a este elemento en todos los bloques del componente."} Puedes usar las variables del proyecto: «var(--color-primario)».</Hint>
-      </Collapsible>
+      {canEditCode && (
+        <Collapsible title="CSS propio" defaultOpen={false} badge={count(custom.css.trim() ? 1 : 0)}>
+          <button
+            type="button"
+            onClick={openCss}
+            className="flex h-9 items-center justify-center gap-2 rounded-md border border-line text-xs hover:bg-hover"
+          >
+            <CodeIcon />
+            Abrir el CSS en el editor
+          </button>
+          <Hint>{level === "block" ? "Solo afecta a este elemento." : "Afecta a este elemento en todos los bloques del componente."} Puedes usar las variables del proyecto: «var(--color-primario)».</Hint>
+        </Collapsible>
+      )}
     </div>
   );
 }
@@ -157,6 +181,8 @@ export function Inspector() {
   const { pages, currentPageId, selectedId, selectedElementId, components } = useSite();
   const dispatch = useSiteDispatch();
   const { openFile } = useWorkbench();
+  const { currentUser } = useAuth();
+  const canEditCode = hasPermission(currentUser?.role, "editCode");
 
   const page = pages.find((p) => p.id === currentPageId);
   const block = page?.blocks.find((b) => b.id === selectedId);
@@ -176,16 +202,18 @@ export function Inspector() {
           <p className="text-[10px] tracking-wider text-ink-dim uppercase">{element ? `Elemento · ${def.name}` : "Sección"}</p>
           <p className="truncate text-sm font-medium">{element ? elementLabel(element) : def.name}</p>
         </div>
-        <button
-          type="button"
-          aria-label="Abrir el código en el editor"
-          title="Abrir el código en el editor (Ctrl+E)"
-          onClick={() => openFile()}
-          className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-accent px-2.5 text-xs font-medium text-white hover:opacity-90"
-        >
-          <CodeIcon />
-          Código
-        </button>
+        {canEditCode && (
+          <button
+            type="button"
+            aria-label="Abrir el código en el editor"
+            title="Abrir el código en el editor (Ctrl+E)"
+            onClick={() => openFile()}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-accent px-2.5 text-xs font-medium text-white hover:opacity-90"
+          >
+            <CodeIcon />
+            Código
+          </button>
+        )}
         <button
           type="button"
           aria-label="Cerrar propiedades"

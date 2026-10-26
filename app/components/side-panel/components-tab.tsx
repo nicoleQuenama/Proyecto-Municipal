@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { hasPermission, useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
 import { Badge } from "../ui/badge";
 import { duplicateComponent } from "../site/rules";
@@ -92,6 +93,8 @@ export function ComponentsTab() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");
   const { openBuilder } = useCommands();
+  const { currentUser } = useAuth();
+  const canEditContent = hasPermission(currentUser?.role, "editContent");
 
   const normalized = query.trim().toLowerCase();
   const visible = components.filter(
@@ -137,13 +140,15 @@ export function ComponentsTab() {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => openBuilder("new")}
-        className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover"
-      >
-        + Nuevo componente
-      </button>
+      {canEditContent && (
+        <button
+          type="button"
+          onClick={() => openBuilder("new")}
+          className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover"
+        >
+          + Nuevo componente
+        </button>
+      )}
 
       <p className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">
         Componentes · {visible.length}
@@ -155,9 +160,9 @@ export function ComponentsTab() {
             def={def}
             usage={usageOf(def.id)}
             onAdd={() => dispatch({ type: "block/add", id: crypto.randomUUID(), componentId: def.id })}
-            onEdit={() => openBuilder(def)}
-            onDuplicate={() => duplicate(def)}
-            onDelete={() => dispatch({ type: "component/delete", id: def.id })}
+            onEdit={() => canEditContent && openBuilder(def)}
+            onDuplicate={() => canEditContent && duplicate(def)}
+            onDelete={() => canEditContent && dispatch({ type: "component/delete", id: def.id })}
           />
         ))}
         {visible.length === 0 && (
