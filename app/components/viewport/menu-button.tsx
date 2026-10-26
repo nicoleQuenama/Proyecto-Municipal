@@ -1,12 +1,9 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import type { Side } from "../ui/place-beside";
+import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
-
-const PLACEMENTS = {
-  top: "bottom-full left-1/2 mb-3 -translate-x-1/2",
-  "bottom-end": "top-full right-0 mt-2",
-} as const;
 
 export interface MenuItem<T extends string> {
   value: T;
@@ -23,7 +20,7 @@ interface MenuButtonProps<T extends string> {
   onSelect: (value: T) => void;
   className: string;
   /** Dónde se abre el menú respecto al botón. */
-  placement?: "top" | "bottom-end";
+  placement?: Extract<Side, "top" | "bottom-end">;
   /** Texto de ayuda al final del menú. */
   footer?: ReactNode;
   children: ReactNode;
@@ -41,12 +38,14 @@ export function MenuButton<T extends string>({
 }: MenuButtonProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
 
   useDismiss(ref, open, () => setOpen(false));
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={button}
         type="button"
         aria-label={label}
         aria-haspopup="menu"
@@ -58,11 +57,12 @@ export function MenuButton<T extends string>({
       </button>
 
       {open && (
-        <ul
-          role="menu"
-          aria-label={label}
-          className={`absolute z-40 min-w-56 max-w-64 rounded-lg border border-line bg-panel p-1 shadow-2xl ${PLACEMENTS[placement]}`}
+        <TopLayer
+          anchorRef={button}
+          side={placement}
+          className="min-w-56 max-w-64 overflow-y-auto rounded-lg border border-line bg-panel p-1 text-ink shadow-2xl"
         >
+          <ul role="menu" aria-label={label}>
           {items.map((item) => (
             <li key={item.value} role="none">
               {item.dividerBefore && <hr className="my-1 border-line" />}
@@ -89,7 +89,8 @@ export function MenuButton<T extends string>({
               {footer}
             </li>
           )}
-        </ul>
+          </ul>
+        </TopLayer>
       )}
     </div>
   );

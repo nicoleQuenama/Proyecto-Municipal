@@ -10,6 +10,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { openModalFor } from "../modal/modal-state";
+import type { OpenModal } from "../modal/types";
+import { ParamsContext } from "../dynamic/params-context";
+import { effectiveParams, type RouteValues } from "../dynamic/route-params";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { normalizeExternalUrl, resolveTransition } from "./links";
 import type { ElementRef, LinkEditorTarget, LinkTarget, NavMode, Point, Transition } from "./types";
@@ -46,10 +50,15 @@ interface NavigationContextValue {
   transitionKey: number;
   /** Sigue un enlace en la vista previa: cambia de página con su transición, o abre el sitio externo. */
   followLink: (link: LinkTarget) => void;
+  /** Los parámetros de la página en pantalla (`{ id: "25" }`); vacío si no es dinámica. */
+  params: RouteValues;
   notice: string | null;
+  /** La ventana modal abierta, si hay una. */
+  modal: OpenModal | null;
+  closeModal: () => void;
 }
 
-const NavigationContext = createContext<NavigationContextValue | null>(null);
+export const NavigationContext = createContext<NavigationContextValue | null>(null);
 
 export function useNavigation() {
   const ctx = useContext(NavigationContext);
@@ -74,6 +83,9 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
   const [transitionKey, setTransitionKey] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [linkEditor, setLinkEditor] = useState<LinkEditorTarget | null>(null);
+  // Los parámetros con que se llegó a una página dinámica al seguir un enlace.
+  const [modal, setModal] = useState<OpenModal | null>(null);
+  const [visit, setVisit] = useState<{ pageId: string; values: RouteValues } | null>(null);
   const source = useRef<ElementRef | null>(null);
   const origin = useRef<Point | null>(null);
   const noticeTimer = useRef<number | undefined>(undefined);
@@ -95,6 +107,8 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
       stopConnecting();
       setLinkEditor(null);
       setTransition(null); // la primera página de una vista previa no se anima
+      setVisit(null);
+      setModal(null);
       setModeState(next);
     },
     [stopConnecting],
@@ -109,8 +123,18 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
 
   const closeLinkEditor = useCallback(() => setLinkEditor(null), []);
 
+  const current = pages.find((page) => page.id === currentPageId);
+  const arrived = mode === "preview" && visit?.pageId === currentPageId ? visit.values : undefined;
+  const paramsKey = JSON.stringify(effectiveParams(current?.route, current?.previewParams, arrived));
+  // Estable mientras los valores no cambien, para que las fuentes no se vuelvan a pedir sin motivo.
+  const params = useMemo<RouteValues>(() => JSON.parse(paramsKey), [paramsKey]);
+
+  const closeModal = useCallback(() => setModal(null), []);
+
   const followLink = useCallback(
     (link: LinkTarget) => {
+      if (link.kind === "close-modal") return setModal(null);
+      if (link.kind === "modal") return setModal(openModalFor(link, pages));
       if (link.kind === "external") {
         const url = normalizeExternalUrl(link.url);
         if (!url) return notify("Este enlace todavía no tiene una URL válida.");
@@ -125,14 +149,19 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
         return;
       }
 
+      setModal(null); // ir a otra página cierra la ventana
       const target = pages.find((page) => page.id === link.pageId);
-      if (!target || target.hidden || target.id === currentPageId) return;
+      if (!target || target.hidden) return;
 
+      // Una página dinámica puede enlazarse a sí misma con otro id (el siguiente, el anterior…).
+      const values = effectiveParams(target.route, target.previewParams, link.params);
+      if (target.id === currentPageId && JSON.stringify(values) === JSON.stringify(params)) return;
+      setVisit({ pageId: target.id, values });
       setTransition(resolveTransition(link, navigation.defaultTransition));
       setTransitionKey((key) => key + 1);
       dispatch({ type: "page/select", id: link.pageId });
     },
-    [currentPageId, pages, navigation.defaultTransition, dispatch, notify],
+    [currentPageId, pages, params, navigation.defaultTransition, dispatch, notify],
   );
 
   const isConnecting = connecting !== null;
@@ -196,10 +225,17 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
       transition,
       transitionKey,
       followLink,
+      params,
       notice,
+      modal,
+      closeModal,
     }),
-    [mode, setMode, connecting, hotDrop, startConnect, linkEditor, closeLinkEditor, transition, transitionKey, followLink, notice],
+    [modal, closeModal, mode, setMode, connecting, hotDrop, startConnect, linkEditor, closeLinkEditor, transition, transitionKey, followLink, params, notice],
   );
 
-  return <NavigationContext value={value}>{children}</NavigationContext>;
+  return (
+    <NavigationContext value={value}>
+      <ParamsContext value={params}>{children}</ParamsContext>
+    </NavigationContext>
+  );
 }

@@ -1,7 +1,8 @@
 /** Lo que una animación grabada puede cambiar de un elemento (o de una sección entera). */
 export type StepProp =
   | "x" | "y" | "width" | "height" | "fill" | "color" | "fontSize" | "radius"
-  | "opacity" | "scale" | "rotate" | "move" | "blur" | "reveal";
+  | "opacity" | "scale" | "rotate" | "move" | "blur" | "reveal"
+  | "glow" | "flip" | "tilt";
 
 /**
  * Un paso de una animación: una propiedad pasa de `from` a `to`, empezando `at` ms después del inicio
@@ -18,6 +19,10 @@ export interface AnimationStep {
   duration: number;
   /** Cómo acelera (CSS `easing`); sin él, suave. */
   easing?: string;
+  /** Veces que se repite el paso; 0 = sin fin. Sin él, una sola vez. */
+  iterations?: number;
+  /** Con "alternate" cada repetición va al revés (ida y vuelta, ideal para bucles suaves). */
+  direction?: "normal" | "alternate";
   /** Solo mientras se graba: el gesto (arrastre, selector de color…) del que viene el cambio. */
   gesture?: number;
 }

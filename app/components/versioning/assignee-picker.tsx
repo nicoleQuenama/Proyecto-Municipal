@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Avatar, AvatarStack } from "../ui/avatar";
+import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 
 interface AssigneePickerProps {
@@ -15,11 +16,13 @@ interface AssigneePickerProps {
 export function AssigneePicker({ members, value, onToggle, label }: AssigneePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
   useDismiss(ref, open, () => setOpen(false));
 
   return (
     <div ref={ref} className="relative shrink-0">
       <button
+        ref={button}
         type="button"
         aria-label={label}
         aria-haspopup="true"
@@ -35,7 +38,8 @@ export function AssigneePicker({ members, value, onToggle, label }: AssigneePick
       </button>
 
       {open && (
-        <fieldset className="absolute top-full right-0 z-40 mt-1 w-52 rounded-lg border border-line bg-panel p-1 shadow-2xl">
+        <TopLayer anchorRef={button} side="bottom-end" className="w-52 rounded-lg border border-line bg-panel p-1 shadow-2xl">
+        <fieldset>
           <legend className="sr-only">{label}</legend>
           {members.map((member) => (
             <label
@@ -53,6 +57,7 @@ export function AssigneePicker({ members, value, onToggle, label }: AssigneePick
             </label>
           ))}
         </fieldset>
+        </TopLayer>
       )}
     </div>
   );

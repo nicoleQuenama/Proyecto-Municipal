@@ -34,7 +34,7 @@ export function ChangesTab() {
   if (changes.length === 0) {
     return (
       <p className="m-4 rounded-md border border-dashed border-line px-3 py-8 text-center text-[13px] text-ink-dim">
-        No hay cambios sin guardar. Edita algo en el lienzo o en la web del cliente y aparecerá aquí.
+        No hay cambios sin guardar. Edita algo en el lienzo (un texto, un color, una imagen) y aparecerá aquí; desde aquí eliges qué entra en tu próxima versión.
       </p>
     );
   }

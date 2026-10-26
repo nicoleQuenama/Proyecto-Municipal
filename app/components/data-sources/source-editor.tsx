@@ -2,6 +2,7 @@ import { CacheSelect } from "./cache-select";
 import { fieldClass } from "./field-class";
 import { PairsEditor } from "./pairs-editor";
 import { SourceResult } from "./source-result";
+import { TokenHelp } from "./token-help";
 import type { DataSource, HttpMethod } from "./types";
 import { useSourceData } from "./use-source-data";
 
@@ -26,6 +27,7 @@ export function SourceEditor({ source, onChange, onRemove }: SourceEditorProps) 
         </select>
         <input aria-label="URL" placeholder="https://apiejemplo.com/noticias" value={source.url} onChange={(e) => set({ url: e.target.value })} className={fieldClass} />
       </div>
+      <TokenHelp />
       <PairsEditor label="Parámetros (query)" keyPlaceholder="clave" pairs={source.query} onChange={(query) => set({ query })} />
       <PairsEditor label="Cabeceras" keyPlaceholder="Authorization" pairs={source.headers} onChange={(headers) => set({ headers })} />
       <label className="flex flex-col gap-1 text-[11px] text-ink-dim">

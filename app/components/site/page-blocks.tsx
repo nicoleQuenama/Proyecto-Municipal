@@ -1,6 +1,6 @@
 "use client";
 
-import type { KeyboardEvent, MouseEvent } from "react";
+import { useContext, type KeyboardEvent, type MouseEvent } from "react";
 import { useBehaviors } from "../behaviors/use-behaviors";
 import { BindingBadge } from "../data-sources/binding-badge";
 import { RepeatedBlock } from "../data-sources/repeated-block";
@@ -10,13 +10,26 @@ import { CodeBlockView } from "../code/code-block-view";
 import { useSharedAssets } from "../code/use-shared-assets";
 import { useWorkbench } from "../workbench/workbench-context";
 import { useFormatMenu } from "../format/format-menu-context";
+import { useLinkResolver } from "../dynamic/use-link-resolver";
 import { useNavigation } from "../navigation/navigation-context";
 import { boxStyle, pixelsOf } from "../styles/apply";
-import { adaptToDevice } from "../responsive/adapt";
-import { isAdaptive } from "../responsive/devices";
+import { adaptToDevice, strategyFor } from "../responsive/adapt";
+import { CellWidth } from "../responsive/available-context";
+import { availableWidth, DEVICE_NAME, isAdaptive } from "../responsive/devices";
+import { isHiddenOn } from "../responsive/hidden-on";
+import { sideMargin } from "../responsive/page-margin";
+import { pickAction } from "../responsive/pick-mode";
+import { smartStrategy } from "../responsive/strategies";
 import { seedLayout } from "../responsive/manual-layout";
+import { AdaptOptions } from "../responsive/adapt-options";
+import { foldOf } from "../responsive/fold-model";
+import { FoldedView } from "../responsive/folded-view";
+import { MenuLayer } from "../responsive/menu-layer";
+import { menuSetup } from "../responsive/menu-model";
 import { ResponsiveChip } from "../responsive/responsive-chip";
 import { useStyles } from "../styles/use-styles";
+import { BackgroundLayers } from "../background/background-layers";
+import { hasBackground, spanStyle, stretches } from "../background/background-css";
 import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
 import { ComponentView, type ElementInteraction } from "./component-view";
@@ -52,6 +65,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const styles = useStyles(page.id);
   const { mode, followLink } = useNavigation();
   const { openFormatMenu } = useFormatMenu();
+  const withParams = useLinkResolver(block);
 
   const behaviors = block.behaviors ?? [];
   const sectionBehaviors = behaviors.filter((b) => b.scope === SECTION_KEY);
@@ -68,8 +82,11 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const { device } = useViewport();
   const adaptive = isAdaptive(device);
   const formatted = def && resolve && applyOverrides(styles.component(def), block, resolve);
-  const view = formatted && adaptToDevice(formatted, block, device, flow);
+  const cell = useContext(CellWidth);
+  const available = cell ?? availableWidth(device, sideMargin(device, page.sideMargin));
+  const view = formatted && adaptToDevice(formatted, block, device, flow, available);
   const manual = adaptive && block.responsive?.[device] !== undefined;
+  const menu = formatted ? menuSetup(formatted, block, device) : null;
   // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es del escritorio.
   const placement = adaptive ? undefined : block.placement;
 
@@ -90,19 +107,26 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
 
   // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
-  if (block.hidden) {
+  const hiddenHere = isHiddenOn(block.hiddenOn, device);
+  if (block.hidden || hiddenHere) {
     if (mode !== "edit") return null;
     return (
       <HiddenPlaceholder
         dataBlockId={block.id}
-        label={`Sección oculta · ${def.name}`}
-        onShow={() => setHidden(blockTarget, false)}
+        onDelete={interactive ? () => dispatch({ type: "block/remove", id: block.id }) : undefined}
+        label={hiddenHere ? `Sección oculta en ${DEVICE_NAME[device].plain} · ${def.name}` : `Sección oculta · ${def.name}`}
+        onShow={() =>
+          hiddenHere
+            ? dispatch({ type: "responsive/hide", pageId: page.id, blockId: block.id, device, hidden: false })
+            : setHidden(blockTarget, false)
+        }
       />
     );
   }
 
   const select = () => dispatch({ type: "block/select", id: block.id });
-  const box = boxStyle(styles.block(def));
+  // Una figura dibujada mide exactamente lo dibujado: sin relleno ni fondo de caja.
+  const box = def.drawn ? { padding: 0 } : boxStyle(styles.block(def));
   const css = customCss(block);
 
   // Los enlaces y el formato de los elementos se editan en todas las páginas; el resto, solo en la actual.
@@ -123,7 +147,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     gestures: editing && !flow && (!adaptive || manual) ? gestures : undefined,
     selectedElementId: selected ? selectedElementId : null,
     alsoSelectedIds: selected ? alsoSelectedIds : undefined,
-    onFollow: followLink,
+    onFollow: (link, elementId) => followLink(withParams(link, elementId)),
     onToggleHidden: (elementId, hidden) =>
       setHidden({ kind: "element", pageId: page.id, blockId: block.id, elementId }, hidden),
     onContextMenu: (elementId, point) =>
@@ -139,6 +163,24 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       dispatch({ type: "element/select", id: elementId, add: add && selected });
     },
   };
+
+  const backdrop = block.box?.backdrop;
+  const background = (block.box?.background && resolve(block.box.background)) || box.background;
+  const chipMode = manual ? "manual" : strategyFor(formatted ?? view, block, device, available);
+
+  // El botón del menú va sobre la sección, junto con su panel.
+  const menuLayer = menu && (
+    <MenuLayer
+      setup={menu}
+      view={view}
+      blockId={block.id}
+      live={mode === "preview"}
+      links={def.links}
+      behaviors={behaviors}
+      background={typeof background === "string" ? background : undefined}
+      onFollow={interaction.onFollow}
+    />
+  );
 
   const editProps = {
     role: "button",
@@ -165,7 +207,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       {...(placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
       {...sectionDrop.handlers}
-      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code ? "w-full" : "w-fit"} max-w-full rounded-md ${
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code || stretches(block.box?.span) ? "w-full" : "w-fit"} max-w-full rounded-md ${
         selected && selectedElementId === null
           ? "ring-2 ring-accent"
           : editing
@@ -187,13 +229,18 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
 
       <div
         {...(editing ? editProps : {})}
-        className={`max-w-full p-1 ${editing ? "" : "overflow-x-auto"}`}
+        // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
+        // la sección no hace aparecer barras de desplazamiento.
+        className={`max-w-full p-1 ${editing ? "" : "overflow-x-clip"}`}
         style={{
           padding: box.padding,
-          background: (block.box?.background && resolve(block.box.background)) || box.background,
+          background,
           borderRadius: boxRadius(block.box?.radius, resolve) ?? box.borderRadius,
+          ...spanStyle(block.box?.span),
+          ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),
         }}
       >
+        {hasBackground(backdrop) && <BackgroundLayers bg={backdrop} />}
         {block.code ? (
           <CodeBlockView
             code={block.code}
@@ -204,7 +251,16 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
             onEdit={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
           />
         ) : (
-          <ComponentView def={view} interaction={interaction} />
+          <FoldedView
+            fold={foldOf(block, device)}
+            view={view}
+            blockId={block.id}
+            editing={editing}
+            background={typeof background === "string" ? background : undefined}
+            render={(shown, extra) => (
+              <ComponentView def={shown} interaction={{ ...interaction, overlay: <>{menuLayer}{extra}</> }} />
+            )}
+          />
         )}
       </div>
 
@@ -224,12 +280,21 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
           {selected && adaptive && !block.code && !flow && (
             <ResponsiveChip
               device={device}
-              manual={manual}
-              onChange={(layout) =>
-                dispatch({ type: "responsive/set", pageId: page.id, blockId: block.id, device, layout })
+              mode={chipMode}
+              onPick={(picked) =>
+                dispatch(
+                  pickAction(picked, {
+                    pageId: page.id,
+                    blockId: block.id,
+                    device,
+                    smart: smartStrategy(formatted ?? view, available),
+                    seed: () => seedLayout(view),
+                  }),
+                )
               }
-              seed={() => seedLayout(view)}
-            />
+            >
+              <AdaptOptions mode={chipMode} pageId={page.id} block={block} view={formatted ?? view} device={device} />
+            </ResponsiveChip>
           )}
           {selected && selectedElementId === null && !block.code && (
             <CodeButton
@@ -265,8 +330,10 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
   const { components } = useSite();
   const styles = useStyles(page.id);
 
+  const { device } = useViewport();
   const blocks = splitBlocks(page, components)[slot];
   if (blocks.length === 0) return null;
+  const margin = sideMargin(device, page.sideMargin);
 
   return (
     <div
@@ -274,7 +341,7 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
       style={{ gap: styles.page.gap }}
     >
       {blocks.map((block) => (
-        <RepeatedBlock key={block.id} block={block}>
+        <RepeatedBlock key={block.id} block={block} margin={margin}>
           {(copy) => <PageBlock key={copy} page={page} block={block} interactive={interactive && copy === 0} />}
         </RepeatedBlock>
       ))}

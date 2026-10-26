@@ -5,11 +5,19 @@ export type AdaptiveDevice = Exclude<Device, "desktop">;
 
 export const DEVICE_WIDTH: Record<Device, number> = { desktop: 1024, tablet: 768, mobile: 390 };
 
-/** Relleno de la página (px-10 a cada lado) y de la caja de un bloque: lo que no queda para el contenido. */
-const PAGE_PADDING = 80;
-const BLOCK_PADDING = 16;
+/** Nombre en lenguaje llano: para etiquetas («Móvil · 390 px») y frases («Ocultar en móvil»). */
+export const DEVICE_NAME: Record<Device, { title: string; plain: string }> = {
+  desktop: { title: "Escritorio", plain: "escritorio" },
+  tablet: { title: "Tablet", plain: "tablet" },
+  mobile: { title: "Móvil", plain: "móvil" },
+};
+
+/** Margen de cada lado de la página por defecto (px) y relleno de la caja de un bloque. */
+const DEFAULT_MARGIN = 40;
+export const BLOCK_PADDING = 16;
 
 export const isAdaptive = (device: Device): device is AdaptiveDevice => device !== "desktop";
 
-/** El ancho que tiene una sección para dibujarse en ese dispositivo. */
-export const availableWidth = (device: Device): number => DEVICE_WIDTH[device] - PAGE_PADDING - BLOCK_PADDING;
+/** El ancho que tiene una sección para dibujarse en ese dispositivo, dado el margen lateral de la página. */
+export const availableWidth = (device: Device, margin: number = DEFAULT_MARGIN): number =>
+  DEVICE_WIDTH[device] - 2 * margin - BLOCK_PADDING;

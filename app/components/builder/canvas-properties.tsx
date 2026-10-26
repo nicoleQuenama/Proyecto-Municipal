@@ -2,10 +2,9 @@
 
 import type { Dispatch } from "react";
 import { MAX_CANVAS_HEIGHT, MAX_CANVAS_WIDTH, MIN_CANVAS_SIZE } from "../canvas-editing/limits";
-import { CATEGORY_LABELS } from "../side-panel/data";
-import type { ComponentCategory } from "../site/types";
 import { NumberField } from "../ui/number-field";
 import type { BuilderAction, BuilderState } from "./builder-reducer";
+import { CategorySelect } from "./category-select";
 import { Field, inputClass } from "./panel-fields";
 
 /** Las propiedades del componente entero (cuando no hay ningún elemento seleccionado). */
@@ -15,15 +14,11 @@ export function CanvasProperties({ state, dispatch }: { state: BuilderState; dis
       <h3 className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">Componente</h3>
 
       <Field label="Categoría">
-        <select
+        <CategorySelect
           value={state.category}
-          onChange={(e) => dispatch({ type: "meta", patch: { category: e.target.value as ComponentCategory } })}
+          onChange={(category) => dispatch({ type: "meta", patch: { category } })}
           className={inputClass}
-        >
-          {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
+        />
       </Field>
 
       <div className="grid grid-cols-2 gap-2">

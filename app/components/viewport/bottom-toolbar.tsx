@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { CanvasSettingsMenu } from "../canvas-editing/canvas-settings-menu";
 import { toolCommandId } from "../commands/command-definitions";
 import { useCommands } from "../commands/commands-context";
+import { AdaptAssistant } from "./adapt-assistant";
 import { CursorIcon, HandIcon, SearchIcon } from "./icons";
 import { InsertMenus } from "./insert-menus";
 import { MoreMenu } from "./more-menu";
@@ -26,6 +27,8 @@ export function BottomToolbar() {
   const { openDialog, withShortcut } = useCommands();
 
   return (
+    <>
+    <AdaptAssistant />
     <div
       role="toolbar"
       aria-label="Herramientas del lienzo"
@@ -70,5 +73,6 @@ export function BottomToolbar() {
 
       <ZoomControls />
     </div>
+    </>
   );
 }

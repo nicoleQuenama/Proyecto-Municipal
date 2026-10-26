@@ -15,6 +15,10 @@ const IMAGE_KEY = /(image|img|foto|photo|picture|thumb|avatar|cover|banner|src)/
 
 const isImageField = ({ key, value }: Field) => typeof value === "string" && (IMAGE_VALUE.test(value) || (IMAGE_KEY.test(key) && /^(https?:)?\/\//.test(value)));
 
+/** Un color (`#c22e28`, `hsl(…)`): no es un texto que se lea, se usa como color de algo (ver «Este dato llena el…»). */
+const COLOR_VALUE = /^(#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})|(rgb|hsl)a?\(.*\))$/i;
+const isColorField = ({ value }: Field) => typeof value === "string" && COLOR_VALUE.test(value.trim());
+
 /** Los datos sueltos de un objeto (y de los de dentro, hasta dos niveles), en el orden en que vienen. */
 function fieldsOf(item: unknown, path: string, depth = 0): Field[] {
   if (isScalar(item)) return [{ path, key: path.split(/[.[]/).pop() ?? "", value: item }];
@@ -27,7 +31,7 @@ function fieldsOf(item: unknown, path: string, depth = 0): Field[] {
 }
 
 /** Qué rellena cada tipo de elemento: texto (en orden de lectura) o medios (a las imágenes de los datos). Un tipo nuevo es una entrada nueva. */
-const TAKES: Record<ElementKind, "text" | "media"> = { text: "text", rect: "text", ellipse: "text", image: "media", video: "media" };
+const TAKES: Record<ElementKind, "text" | "media" | "none"> = { text: "text", rect: "text", ellipse: "text", triangle: "none", line: "none", image: "media", video: "media", icon: "none" };
 
 const readingOrder = (a: CanvasElement, b: CanvasElement) => a.y - b.y || a.x - b.x;
 
@@ -39,7 +43,7 @@ export function autoMap(elements: CanvasElement[], item: unknown, itemPath: stri
   const fields = fieldsOf(item, itemPath);
   const images = fields.filter(isImageField);
   // Los textos primero: un número (un id) rara vez es lo que se quiere ver en un titular.
-  const texts = fields.filter((field) => !isImageField(field)).sort((a, b) => Number(typeof b.value === "string") - Number(typeof a.value === "string"));
+  const texts = fields.filter((field) => !isImageField(field) && !isColorField(field)).sort((a, b) => Number(typeof b.value === "string") - Number(typeof a.value === "string"));
 
   const free = elements.filter((e) => !e.hidden && !taken.has(e.id)).sort(readingOrder);
   const textSlots = free.filter((e) => TAKES[e.kind] === "text" && e.text.trim() !== "");

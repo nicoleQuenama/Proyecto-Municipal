@@ -7,6 +7,7 @@ import { useSite, useSiteDispatch } from "../site/site-context";
 import { availableVariables } from "../styles/resolve";
 import { useStyles } from "../styles/use-styles";
 import { FONT_OPTIONS } from "../title-editor/constants";
+import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { useWorkbench } from "../workbench/workbench-context";
 import { ActionButton, ColorField, MenuGroup, ToggleButton } from "./format-controls";
@@ -307,15 +308,15 @@ export function FormatMenu() {
   const top = Math.max(MARGIN, Math.min(menu.point.y, window.innerHeight - ESTIMATED_HEIGHT - MARGIN));
 
   return (
-    <div
+    <TopLayer
       ref={ref}
       role="menu"
       aria-label={`Formato de ${model.title}`}
-      className="fixed z-[70] overflow-y-auto rounded-xl border border-line bg-panel text-ink shadow-2xl"
+      className="fixed overflow-y-auto rounded-xl border border-line bg-panel text-ink shadow-2xl"
       style={{ left, top, width: WIDTH, maxHeight: window.innerHeight - top - MARGIN }}
       onContextMenu={(e) => e.preventDefault()}
     >
       <MenuBody model={model} close={closeFormatMenu} />
-    </div>
+    </TopLayer>
   );
 }

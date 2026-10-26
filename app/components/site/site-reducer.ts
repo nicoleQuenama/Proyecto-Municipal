@@ -1,10 +1,18 @@
 import { addAnimation, deleteAnimation, finishRecording, renameAnimation, setAnimationSteps } from "../animation/animation-rules";
 import { RESPONSIVE_HANDLERS } from "../responsive/responsive-rules";
+import { LAYER_HANDLERS } from "../layers/layer-rules";
+import { DRAW_HANDLERS } from "../drawing/draw-rules";
+import { SEO_HANDLERS } from "./seo-rules";
 import { SOURCE_HANDLERS } from "../data-sources/source-rules";
+import { BACKGROUND_HANDLERS } from "../background/background-rules";
+import { DYNAMIC_HANDLERS } from "../dynamic/dynamic-rules";
 import { dropLinksToPage, normalizeExternalUrl, normalizeTransition } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
 import { INITIAL_STATE as INITIAL_TITLE } from "../title-editor/constants";
 import { setHidden } from "./hiding";
+import { purgeHidden } from "./hidden-items";
+import { EXAMPLE_COMPONENTS } from "./component-templates";
+import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
 import { CODE_COMPONENT_ID, DEFAULT_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
 import { placeBlock, placeMedia, placeTitle, transferBlock, transferMedia } from "../placement/placement-rules";
@@ -37,6 +45,8 @@ const LINK_CHECKS: {
     if (!state.pages.some((p) => p.id === link.pageId)) return null;
     return link.transition ? { ...link, transition: normalizeTransition(link.transition) } : link;
   },
+  modal: (state, link) => (state.pages.some((p) => p.id === link.pageId) ? link : null),
+  "close-modal": (_state, link) => link,
   external: (_state, link) => {
     // Vacío vale mientras el enlace se está creando; si hay texto, debe ser una URL válida.
     const url = link.url.trim() === "" ? "" : normalizeExternalUrl(link.url);
@@ -53,8 +63,15 @@ type Handlers = {
 };
 
 const HANDLERS: Handlers = {
+  // Reemplaza todo el sitio por el que se guardó la última vez.
+  "project/load": (_state, action) => action.state,
   ...SOURCE_HANDLERS,
+  ...SEO_HANDLERS,
+  ...DRAW_HANDLERS,
+  ...DYNAMIC_HANDLERS,
+  ...BACKGROUND_HANDLERS,
   ...RESPONSIVE_HANDLERS,
+  ...LAYER_HANDLERS,
   "page/create": (state, action) => {
     const name = action.name.trim();
     if (!name || isPageNameTaken(state.pages, name)) return state;
@@ -65,6 +82,8 @@ const HANDLERS: Handlers = {
       slug: uniqueSlug(slugify(name), state.pages.map((p) => p.slug)),
       isHome: false,
       title: { ...INITIAL_TITLE, text: name },
+      // Una página nueva nace sin titular; se puede añadir desde la barra de formato.
+      titleRemoved: true,
       media: [],
       blocks: [],
     };
@@ -118,6 +137,25 @@ const HANDLERS: Handlers = {
     };
   },
 
+  // Cambia cuál es la página de inicio (la ruta «/»); la anterior pasa a ser una página normal.
+  "page/home": (state, action) => {
+    if (!state.pages.some((p) => p.id === action.id)) return state;
+    return { ...state, pages: state.pages.map((p) => ({ ...p, isHome: p.id === action.id, hidden: p.id === action.id ? undefined : p.hidden })) };
+  },
+
+  "title/removed": (state, action) => setTitleRemoved(state, action.pageId, action.removed),
+
+  "hidden/purge": (state, action) => purgeHidden(state, action.pageId),
+
+  "element/remove": (state, action) =>
+    removeElements(state, action.scope, action.pageId, action.blockId, action.elementIds),
+
+  // Vuelve a añadir los componentes de ejemplo que se hayan eliminado.
+  "components/restore": (state) => {
+    const missing = EXAMPLE_COMPONENTS.filter((example) => !state.components.some((c) => c.id === example.id));
+    return missing.length > 0 ? { ...state, components: [...missing, ...state.components] } : state;
+  },
+
   "page/select": (state, action) => {
     if (!state.pages.some((p) => p.id === action.id) || action.id === state.currentPageId) return state;
     return { ...state, currentPageId: action.id, selectedId: TITLE_SELECTION, selectedElementId: null };
@@ -169,19 +207,7 @@ const HANDLERS: Handlers = {
     return { ...next, selectedId: action.id, selectedElementId: null };
   },
 
-  "block/remove": (state, action) => {
-    const next = updateCurrentPage(state, (page) => ({
-      ...page,
-      blocks: page.blocks.filter((block) => block.id !== action.id),
-    }));
-    const removedSelected = state.selectedId === action.id;
-    return {
-      ...next,
-      functions: state.functions.filter((f) => f.scope.kind === "global" || f.scope.blockId !== action.id),
-      selectedId: removedSelected ? TITLE_SELECTION : state.selectedId,
-      selectedElementId: removedSelected ? null : state.selectedElementId,
-    };
-  },
+  "block/remove": (state, action) => removeBlocks(state, [action.id]),
 
   "block/select": (state, action) => ({ ...state, selectedId: action.id, selectedElementId: null, alsoSelectedIds: undefined }),
 
@@ -326,25 +352,7 @@ const HANDLERS: Handlers = {
     }),
   }),
 
-  "component/delete": (state, action) => {
-    const component = state.components.find((c) => c.id === action.id);
-    if (!component?.custom) return state;
-
-    const removedBlockIds = new Set(
-      state.pages.flatMap((page) => page.blocks.filter((b) => b.componentId === action.id).map((b) => b.id)),
-    );
-    return {
-      ...state,
-      ...withoutScope(state, { kind: "component", componentId: action.id }),
-      components: state.components.filter((c) => c.id !== action.id),
-      // Los bloques que usaban el componente desaparecen de todas las páginas.
-      pages: state.pages.map((page) => ({
-        ...page,
-        blocks: page.blocks.filter((b) => b.componentId !== action.id),
-      })),
-      selectedId: removedBlockIds.has(state.selectedId) ? TITLE_SELECTION : state.selectedId,
-    };
-  },
+  "component/delete": (state, action) => removeComponent(state, action.id),
 
   "link/set": (state, action) => {
     const component = state.components.find((c) => c.id === action.componentId);

@@ -56,9 +56,10 @@ export function applyOverrides(def: ComponentDef, block: BlockInstance, resolve:
   const overrides = block.elements;
   if (!overrides && !block.size) return def;
 
-  const elements = def.elements.map((element) =>
-    overrides?.[element.id] ? resolveOverride(element, overrides[element.id], resolve) : element,
-  );
+  // Los elementos eliminados en este bloque no existen en él.
+  const elements = def.elements
+    .filter((element) => !overrides?.[element.id]?.removed)
+    .map((element) => (overrides?.[element.id] ? resolveOverride(element, overrides[element.id], resolve) : element));
   return {
     ...def,
     ...block.size,
@@ -137,12 +138,14 @@ export function styleBox(state: SiteState, pageId: string, blockId: string, patc
   return updateBlock(state, pageId, blockId, (block) => ({ ...block, box: mergePatch(block.box, patch) }));
 }
 
-/** Quita todo el formato propio de un bloque; lo que está oculto sigue oculto. */
+/** Quita todo el formato propio de un bloque; lo que está oculto sigue oculto y lo eliminado, eliminado. */
 export function resetFormat(state: SiteState, pageId: string, blockId: string): SiteState {
   return updateBlock(state, pageId, blockId, (block) => {
-    const hidden = Object.entries(block.elements ?? {}).filter(([, override]) => override.hidden);
-    const elements = Object.fromEntries(hidden.map(([id]) => [id, { hidden: true }]));
-    return { ...block, box: undefined, elements: hidden.length > 0 ? elements : undefined };
+    const kept = Object.entries(block.elements ?? {}).filter(([, override]) => override.hidden || override.removed || override.alt !== undefined);
+    const elements = Object.fromEntries(
+      kept.map(([id, o]) => [id, { ...(o.hidden ? { hidden: true } : {}), ...(o.removed ? { removed: true } : {}), ...(o.alt !== undefined ? { alt: o.alt } : {}) }]),
+    );
+    return { ...block, box: undefined, elements: kept.length > 0 ? elements : undefined };
   });
 }
 

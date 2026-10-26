@@ -1,12 +1,13 @@
 "use client";
 
 import { useCurrentPage } from "../site/site-context";
+import { fillRoute } from "../dynamic/route-params";
 import { ViewportSwitcher } from "../viewport/viewport-switcher";
 import { useNavigation } from "./navigation-context";
 
 /** Aviso flotante en la vista previa: dice dónde estás, cómo salir y qué acaba de pasar. */
 export function ModeBar() {
-  const { mode, setMode, notice } = useNavigation();
+  const { mode, setMode, notice, params } = useNavigation();
   const page = useCurrentPage();
   if (mode === "edit") return null;
 
@@ -19,6 +20,7 @@ export function ModeBar() {
       >
         <span>
           <strong className="text-accent">Vista previa</strong> · {page.name}
+          {page.route && <code className="ml-2 rounded bg-hover px-1.5 py-0.5">{fillRoute(page.route, params)}</code>}
         </span>
         <ViewportSwitcher />
         <button

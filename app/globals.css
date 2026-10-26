@@ -55,3 +55,33 @@ body {
 [data-site-page][data-drop-hot] {
   outline: 4px solid #34d399;
 }
+
+/* Ventanas modales: el velo se funde y la ventana entra con la animación elegida (ver `modal/modal-options.ts`). */
+@keyframes modal-fade {
+  from { opacity: 0; }
+}
+@keyframes modal-rise {
+  from { opacity: 0; translate: var(--modal-from, 0 28px); }
+}
+@keyframes modal-zoom {
+  from { opacity: 0; scale: 0.92; }
+}
+.modal-overlay { animation: modal-fade 0.2s ease both; }
+.modal-panel { animation-duration: 0.28s; animation-timing-function: ease; animation-fill-mode: both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal-panel { animation: none; }
+}
+
+/* Paneles en la capa superior (Popover API): sin el estilo por defecto del navegador. */
+@layer base {
+  [popover] {
+    inset: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    overflow: visible;
+  }
+}

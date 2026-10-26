@@ -1,5 +1,13 @@
 export const CURRENT_USER = "Tú";
 
+export type MemberRole = "Editor" | "Revisor";
+
+/** Persona del equipo: nombre o correo y lo que puede hacer. */
+export interface Member {
+  name: string;
+  role: MemberRole;
+}
+
 export interface Branch {
   name: string;
   author: string;
@@ -114,7 +122,7 @@ export interface VersioningState {
   pullRequests: PullRequest[];
   issues: Issue[];
   labels: Label[];
-  members: string[];
+  members: Member[];
   /** Diseño tal como quedó en la última versión guardada. */
   baseline: DesignSnapshot;
   /** Claves de los cambios añadidos para la próxima versión (el «git add»). */
@@ -124,6 +132,7 @@ export interface VersioningState {
 }
 
 export type VersioningAction =
+  | { type: "project/load"; state: VersioningState }
   | { type: "branch/create"; name: string }
   | { type: "branch/switch"; name: string }
   | { type: "branch/delete"; name: string }
@@ -132,10 +141,12 @@ export type VersioningAction =
   | { type: "commit"; message: string; changes: WorkingChange[]; at: string }
   | { type: "publish"; at: string }
   | { type: "pr/open"; title: string; from: string; into: string }
-  | { type: "pr/approve"; number: number }
+  | { type: "pr/approve"; number: number; by?: string }
   | { type: "pr/resolve"; number: number; index: number; resolution: "into" | "from" }
   | { type: "pr/merge"; number: number; at: string }
   | { type: "pr/close"; number: number }
   | { type: "issue/create"; title: string; label: Label; assignees: string[] }
   | { type: "issue/toggle"; number: number }
-  | { type: "issue/toggle-assignee"; number: number; member: string };
+  | { type: "issue/toggle-assignee"; number: number; member: string }
+  | { type: "member/add"; name: string; role: MemberRole }
+  | { type: "member/remove"; name: string };

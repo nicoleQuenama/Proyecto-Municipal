@@ -51,13 +51,12 @@ export function deleteStep({ site, dispatch, removeMedia }: SlashContext): Step 
     },
     {
       id: "component",
-      label: "Componente propio",
+      label: "Componente",
       hint: "Desaparece de todas las páginas",
       run: () =>
         list(
           "Elige el componente",
           site.components
-            .filter((def) => def.custom)
             .map((def) =>
               choice(def.id, def.name, `Se quitará de ${plural(usageOf(def.id), "bloque", "bloques")}.`, () =>
                 dispatch({ type: "component/delete", id: def.id }),

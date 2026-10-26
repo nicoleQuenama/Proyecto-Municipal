@@ -22,7 +22,7 @@ export function buildSteps(
   startAt = 0,
 ): AnimationStep[] {
   const preset: Preset = PRESETS[presetId];
-  const duration = preset.instant ? INSTANT_MS : params.duration;
+  const duration = preset.instant ? INSTANT_MS : params.duration * (preset.durationScale ?? 1);
 
   return targets.flatMap((target, index) =>
     preset.parts(params).map((part) => ({
@@ -34,7 +34,9 @@ export function buildSteps(
       to: part.to,
       at: Math.round(startAt + params.delay + index * params.stagger + (part.start ?? 0) * duration),
       duration: Math.max(INSTANT_MS, Math.round((part.span ?? 1) * duration)),
-      easing,
+      easing: preset.ownEasing && part.easing ? part.easing : easing,
+      ...(part.iterations !== undefined && { iterations: part.iterations }),
+      ...(part.direction && { direction: part.direction }),
     })),
   );
 }

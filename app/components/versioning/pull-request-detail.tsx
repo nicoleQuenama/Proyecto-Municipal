@@ -6,10 +6,11 @@ import { ConflictCard } from "./conflict-card";
 import { CommitCard } from "./commit-card";
 import { applyChanges, DEFAULT_MODEL } from "./preview-model";
 import { VisualDiff } from "./visual-diff";
-import { CURRENT_USER, type PullRequest, type PullRequestStatus } from "./types";
+import { ApproveControl } from "./approve-control";
+import { type PullRequest, type PullRequestStatus } from "./types";
 import { AlertIcon, CheckIcon } from "./versioning-icons";
 import { useVersioning } from "./versioning-context";
-import { canApprove, canDeleteBranch, headOf, mergeBlockers, plural } from "./versioning-rules";
+import { canDeleteBranch, headOf, mergeBlockers, plural } from "./versioning-rules";
 
 export const STATUS_LABELS: Record<PullRequestStatus, { label: string; tone: BadgeTone }> = {
   open: { label: "Abierto", tone: "success" },
@@ -117,14 +118,7 @@ export function PullRequestDetail({ pr }: { pr: PullRequest }) {
             )}
 
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={!canApprove(pr, CURRENT_USER)}
-                onClick={() => dispatch({ type: "pr/approve", number: pr.number })}
-                className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover disabled:opacity-40"
-              >
-                Aprobar cambios
-              </button>
+              <ApproveControl pr={pr} />
               <button
                 type="button"
                 disabled={blockers.length > 0}

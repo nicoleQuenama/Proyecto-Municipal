@@ -46,8 +46,29 @@ export function TitleToolbar() {
     }
   };
 
+  if (page.titleRemoved) {
+    return (
+      <div className="flex min-h-12 min-w-0 flex-1 items-center gap-3 px-3 text-xs text-ink-dim">
+        Esta página no tiene titular.
+        <button
+          type="button"
+          onClick={() => dispatch({ type: "title/removed", pageId: page.id, removed: false })}
+          className="h-7 rounded-md border border-line px-3 text-ink hover:bg-hover"
+        >
+          Añadir titular
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <Toolbar state={effective} onChange={onChange} onReset={() => dispatch({ type: "title/reset" })} />
+    <Toolbar
+      caption="titular"
+      state={effective}
+      onChange={onChange}
+      onReset={() => dispatch({ type: "title/reset" })}
+      onRemoveTitle={() => dispatch({ type: "title/removed", pageId: page.id, removed: true })}
+    />
   );
 }
 
@@ -75,9 +96,18 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
   const move = usePlacementDrag({ enabled: movable, onPlace: place });
   const resize = useWidthResize({ enabled: movable, onPlace: place });
 
+  // Eliminado: no existe en la página (ni oculto). Se vuelve a añadir desde la barra de formato.
+  if (page.titleRemoved) return null;
+
   // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
   if (page.titleHidden) {
-    return mode === "edit" ? <HiddenPlaceholder label="Titular oculto" onShow={() => setHidden(false)} /> : null;
+    return mode === "edit" ? (
+      <HiddenPlaceholder
+        label="Titular oculto"
+        onShow={() => setHidden(false)}
+        onDelete={interactive ? () => dispatch({ type: "title/removed", pageId: page.id, removed: true }) : undefined}
+      />
+    ) : null;
   }
 
   return (
@@ -104,8 +134,19 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
           hidden={false}
           label="el titular"
           onToggle={() => setHidden(true)}
-          className="absolute top-1 right-1 hidden group-hover:flex focus:flex"
+          className="absolute top-1 right-8 hidden group-hover:flex focus:flex"
         />
+      )}
+      {interactive && mode === "edit" && (
+        <button
+          type="button"
+          aria-label="Eliminar el titular"
+          title="Eliminar el titular"
+          onClick={() => dispatch({ type: "title/removed", pageId: page.id, removed: true })}
+          className="absolute top-1 right-1 z-20 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex"
+        >
+          ×
+        </button>
       )}
     </div>
   );

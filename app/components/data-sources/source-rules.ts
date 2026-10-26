@@ -1,13 +1,15 @@
 import { updateBlock } from "../site/overrides";
 import type { SiteState } from "../site/types";
-import type { DataRef, DataSource } from "./types";
+import type { DataRef, DataSource, RepeatLayout, RepeatPaging } from "./types";
 
 export type SourceAction =
   | { type: "source/save"; source: DataSource }
   | { type: "source/remove"; id: string }
   | { type: "binding/set"; pageId: string; blockId: string; elementId: string; ref: DataRef | null }
   | { type: "binding/many"; pageId: string; blockId: string; refs: Record<string, DataRef> }
-  | { type: "repeat/set"; pageId: string; blockId: string; ref: DataRef | null };
+  | { type: "repeat/set"; pageId: string; blockId: string; ref: DataRef | null }
+  | { type: "repeat/layout"; pageId: string; blockId: string; layout: RepeatLayout | null }
+  | { type: "repeat/paging"; pageId: string; blockId: string; paging: RepeatPaging | null };
 
 type Handlers = { [K in SourceAction["type"]]: (state: SiteState, action: Extract<SourceAction, { type: K }>) => SiteState };
 
@@ -49,5 +51,16 @@ export const SOURCE_HANDLERS: Handlers = {
     updateBlock(state, pageId, blockId, (block) => ({ ...block, bindings: { ...block.bindings, ...refs } })),
 
   "repeat/set": (state, { pageId, blockId, ref }) =>
-    updateBlock(state, pageId, blockId, (block) => ({ ...block, repeat: ref ?? undefined })),
+    updateBlock(state, pageId, blockId, (block) => ({
+      ...block,
+      repeat: ref ?? undefined,
+      repeatLayout: ref ? block.repeatLayout : undefined,
+      repeatPaging: ref ? block.repeatPaging : undefined,
+    })),
+
+  "repeat/layout": (state, { pageId, blockId, layout }) =>
+    updateBlock(state, pageId, blockId, (block) => ({ ...block, repeatLayout: layout ?? undefined })),
+
+  "repeat/paging": (state, { pageId, blockId, paging }) =>
+    updateBlock(state, pageId, blockId, (block) => ({ ...block, repeatPaging: paging ?? undefined })),
 };

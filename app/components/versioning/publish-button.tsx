@@ -2,6 +2,7 @@
 
 import { useCommands } from "../commands/commands-context";
 import { UploadIcon } from "../viewport/icons";
+import { ShareButton } from "./share-button";
 import { useWorkingChanges } from "./use-working-changes";
 
 /** Acceso directo del header al flujo de publicación, con el número de cambios sin guardar. */
@@ -10,7 +11,16 @@ export function PublishButton() {
   const { changes } = useWorkingChanges();
 
   return (
-    <div className="flex shrink-0 items-center border-l border-line px-3">
+    <div className="flex shrink-0 items-center gap-2 border-l border-line px-3">
+      <ShareButton className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover" />
+      <button
+        type="button"
+        title="Revisar rendimiento, accesibilidad y SEO antes de publicar"
+        onClick={() => openDialog("audit")}
+        className="flex h-7 items-center gap-1.5 rounded-md border border-line px-3 text-xs hover:bg-hover"
+      >
+        Auditoría
+      </button>
       <button
         type="button"
         title="Añadir cambios, hacer una versión y publicar"

@@ -36,9 +36,13 @@ const media = (element: CanvasElement) => [`border-radius: ${element.radius}px`,
 const BASE_STYLES: Record<ElementKind, (element: CanvasElement) => string[]> = {
   rect: box("own"),
   ellipse: box("50%"),
+  // Las figuras vectoriales se pintan con el color del contenedor (`currentColor`), no con un fondo.
+  triangle: (element) => [`color: ${element.fill}`],
+  line: (element) => [`color: ${element.fill}`],
   text: box("own"),
   image: media,
   video: media,
+  icon: (element) => [`color: ${element.color}`, `font-size: ${element.fontSize}px`],
 };
 
 /** Dónde va y cuánto mide un elemento. En la capa base, para que `width`, `height`, `position`… propios lo reemplacen. */

@@ -1,82 +1,69 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { imageFileProblem, readAsDataUrl } from "../media/image-file";
-import { parseImageUrl, parseVideoUrl, type ParseResult, type ParsedMedia } from "../media/media-url";
 import type { CanvasElement } from "../site/types";
-import { actionButton, Field, inputClass } from "./panel-fields";
+import { MediaOptions } from "./media-options";
+import { isMediaKind, patchFromFile, patchFromUrl } from "./media-patch";
+import { actionButton, inputClass } from "./panel-fields";
+import { useFileDrop } from "./use-file-drop";
 
-/** Lo que cambia en un elemento al ponerle una imagen o un video. */
-type MediaPatch = Pick<CanvasElement, "kind" | "src" | "embed">;
-
-const toPatch = ({ kind, src, embed }: ParsedMedia): MediaPatch => ({ kind, src, embed });
-
-/** Las fuentes por URL: qué se pide y cómo se valida. Una fuente nueva es una entrada nueva. */
-const URL_SOURCES = {
-  image: { button: "Imagen URL", label: "URL de la imagen", parse: parseImageUrl },
-  video: { button: "Video URL", label: "URL del video (YouTube, Vimeo o archivo)", parse: parseVideoUrl },
-} satisfies Record<string, { button: string; label: string; parse: (input: string) => ParseResult<ParsedMedia> }>;
-
-type UrlSource = keyof typeof URL_SOURCES;
+/** Textos de la sección por tipo: título, qué se sube y ejemplo de enlace. */
+const COPY = {
+  image: { title: "Imagen", empty: "Haz clic o suelta una imagen", upload: "Subir imagen", url: "https://…/foto.jpg" },
+  video: { title: "Video", empty: "Pega un enlace de YouTube, Vimeo o archivo", upload: "Subir portada", url: "https://youtu.be/…" },
+} as const;
 
 interface MediaSourceSectionProps {
-  onChange: (patch: MediaPatch) => void;
+  element: CanvasElement;
+  onChange: (patch: Partial<CanvasElement>) => void;
 }
 
-/** De dónde sale la imagen o el video de un elemento: subir un archivo, o una URL de imagen o de video. */
-export function MediaSourceSection({ onChange }: MediaSourceSectionProps) {
+/** La imagen o el video de un elemento: vista previa, subir o soltar un archivo, pegar un enlace y sus opciones. */
+export function MediaSourceSection({ element, onChange }: MediaSourceSectionProps) {
   const fileInput = useRef<HTMLInputElement>(null);
-  const [source, setSource] = useState<UrlSource | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const kind = isMediaKind(element.kind) ? element.kind : "image";
+  const copy = COPY[kind];
 
-  const chooseFile = async (file: File | undefined) => {
+  const applyFile = async (file: File | undefined) => {
     if (!file) return;
-    const problem = imageFileProblem(file);
-    if (problem) return setError(problem);
-
-    try {
-      onChange({ kind: "image", src: await readAsDataUrl(file), embed: false });
-      setError(null);
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "No se pudo leer el archivo.");
-    }
+    const result = await patchFromFile(kind, file);
+    setError(result.ok ? null : result.error);
+    if (result.ok) onChange(result.value);
   };
 
-  const applyUrl = (chosen: UrlSource) => {
-    const result = URL_SOURCES[chosen].parse(draft);
-    if (!result.ok) return setError(result.error);
-
-    onChange(toPatch(result.value));
-    setError(null);
+  const applyUrl = () => {
+    const result = patchFromUrl(kind, draft);
+    setError(result.ok ? null : result.error);
+    if (!result.ok) return;
+    onChange(result.value);
     setDraft("");
-    setSource(null);
   };
 
-  const openUrl = (chosen: UrlSource) => {
-    setSource(source === chosen ? null : chosen);
-    setError(null);
-  };
+  const drop = useFileDrop((file) => void applyFile(file));
+  const preview = kind === "image" ? element.src : element.poster;
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-[11px] text-ink-dim">Contenido</span>
+    <section aria-label={copy.title} className="flex flex-col gap-2 border-t border-line pt-3">
+      <h4 className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">{copy.title}</h4>
 
-      <div className="grid grid-cols-3 gap-1">
-        <button type="button" className={actionButton} onClick={() => fileInput.current?.click()}>
-          Subir
+      <div
+        {...drop.handlers}
+        className={`flex min-h-20 flex-col items-center justify-center gap-1 rounded-md border border-dashed p-2 text-center text-[11px] text-ink-dim ${
+          drop.over ? "border-accent bg-accent/10" : "border-line"
+        }`}
+      >
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="Vista previa" className="max-h-24 max-w-full rounded object-contain" />
+        ) : (
+          <span>{kind === "video" && element.src ? "Video enlazado (sin portada)" : copy.empty}</span>
+        )}
+        <button type="button" className={`${actionButton} w-full`} onClick={() => fileInput.current?.click()}>
+          {copy.upload}
         </button>
-        {(Object.keys(URL_SOURCES) as UrlSource[]).map((key) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={source === key}
-            className={`${actionButton} ${source === key ? "border-accent" : ""}`}
-            onClick={() => openUrl(key)}
-          >
-            {URL_SOURCES[key].button}
-          </button>
-        ))}
+        <span>o arrastra un archivo hasta aquí</span>
       </div>
 
       <input
@@ -85,30 +72,32 @@ export function MediaSourceSection({ onChange }: MediaSourceSectionProps) {
         accept="image/*"
         hidden
         onChange={(e) => {
-          void chooseFile(e.target.files?.[0]);
+          void applyFile(e.target.files?.[0]);
           e.target.value = ""; // permite volver a elegir el mismo archivo
         }}
       />
 
-      {source && (
-        <Field label={URL_SOURCES[source].label}>
-          <input
-            type="url"
-            autoFocus
-            placeholder="https://…"
-            value={draft}
-            aria-invalid={error !== null}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && applyUrl(source)}
-            className={inputClass}
-          />
-          <button type="button" className={actionButton} onClick={() => applyUrl(source)}>
-            Aplicar
-          </button>
-        </Field>
+      <div className="flex gap-1">
+        <input
+          type="url"
+          aria-label={`Enlace de ${copy.title.toLowerCase()}`}
+          placeholder={copy.url}
+          value={draft}
+          aria-invalid={error !== null}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && applyUrl()}
+          className={inputClass}
+        />
+        <button type="button" className={actionButton} onClick={applyUrl}>
+          Usar
+        </button>
+      </div>
+      {element.src && !element.src.startsWith("data:") && (
+        <span className="truncate text-[11px] text-ink-dim" title={element.src}>{element.src}</span>
       )}
-
       {error && <span role="alert" className="text-[11px] text-red-400">{error}</span>}
-    </div>
+
+      <MediaOptions element={element} kind={kind} onChange={onChange} />
+    </section>
   );
 }

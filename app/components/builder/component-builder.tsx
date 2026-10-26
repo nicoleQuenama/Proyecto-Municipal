@@ -7,10 +7,9 @@ import { isComponentNameTaken } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { ComponentDef, ElementKind } from "../site/types";
 import { Modal } from "../ui/modal";
-import { BuilderCanvas } from "./builder-canvas";
 import { BuilderHeader } from "./builder-header";
 import { builderReducer, initialBuilderState } from "./builder-reducer";
-import { CanvasToolbar } from "./canvas-toolbar";
+import { BuilderStage } from "./builder-stage";
 import { ElementToolbar } from "./element-toolbar";
 import { PropertiesPanel } from "./properties-panel";
 
@@ -66,7 +65,7 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
 
   return (
     <Modal label="Constructor de componentes" size="xl" onClose={onClose}>
-      <div className="flex h-[min(40rem,80vh)] flex-col">
+      <div className="flex h-[min(46rem,88vh)] flex-col">
         <BuilderHeader
           state={state}
           dispatch={dispatch}
@@ -81,10 +80,7 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
         <div className="grid min-h-0 flex-1 grid-cols-[3rem_1fr_16rem]">
           <ElementToolbar onAdd={addElement} />
 
-          <div className="min-w-0 overflow-auto bg-canvas p-6 pr-10 pb-12">
-            <CanvasToolbar size={{ width: state.width, height: state.height }} />
-            <BuilderCanvas state={state} dispatch={dispatch} />
-          </div>
+          <BuilderStage state={state} dispatch={dispatch} />
 
           <aside aria-label="Propiedades" className="overflow-y-auto border-l border-line p-3">
             <PropertiesPanel state={state} dispatch={dispatch} newId={newId} />
@@ -97,7 +93,7 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
           ) : (
             <p className="text-ink-dim">
               Arrastra para mover · suéltalo sobre un rectángulo para acoplarlo (Alt: libre) · las manijas y los bordes del
-              lienzo cambian el tamaño · flechas 1 px (Shift: 10) · Supr elimina.
+              lienzo cambian el tamaño · flechas 1 px (Shift: 10) · Supr elimina · Ctrl+rueda o Ctrl +/−/0 para el zoom · Espacio y arrastra para desplazarte.
             </p>
           )}
         </footer>

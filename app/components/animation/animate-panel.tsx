@@ -8,7 +8,7 @@ import { SECTION_KEY } from "../site/types";
 import { useStyles } from "../styles/use-styles";
 import { buildSteps } from "./build-steps";
 import { ParamSliders } from "./param-sliders";
-import { playAnimation, type Playback } from "./play";
+import { playAnimation, previewSpanOf, type Playback } from "./play";
 import { PresetGrid } from "./preset-grid";
 import { DEFAULT_PARAMS, PRESETS, type PresetId, type PresetParams } from "./presets";
 import { useRecorder } from "./recorder-context";
@@ -50,9 +50,10 @@ export function AnimatePanel({ onClose }: { onClose: () => void }) {
   // La prueba se ve sobre la propia página y, al terminar, todo vuelve a como estaba.
   const test = (d: Draft) => {
     preview.current?.cancel();
-    const run = playAnimation(document, stepsOf(d));
+    const steps = stepsOf(d);
+    const run = playAnimation(document, steps);
     preview.current = run;
-    void run.finished.then(() => setTimeout(run.cancel, 700));
+    setTimeout(run.cancel, previewSpanOf(steps) + 700);
   };
   const change = (patch: Partial<Draft>, replay = true) => {
     const next = { ...draft, ...patch };

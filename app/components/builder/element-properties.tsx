@@ -9,6 +9,7 @@ import { NumberField } from "../ui/number-field";
 import type { BuilderAction, BuilderState } from "./builder-reducer";
 import { DockSection } from "./dock-section";
 import { KIND_TRAITS } from "./kind-traits";
+import { IconProperties } from "./icon-properties";
 import { MediaSourceSection } from "./media-source-section";
 import { actionButton, ColorField, Field, inputClass } from "./panel-fields";
 import { TextProperties } from "./text-properties";
@@ -55,11 +56,12 @@ export function ElementProperties({ element, state, dispatch, newId }: ElementPr
 
       <DockSection element={element} parent={state.elements.find((e) => e.id === element.parentId)} dispatch={dispatch} />
 
-      {traits.hasFill && <ColorField label="Relleno" value={element.fill} onChange={(fill) => patch({ fill })} />}
+      {traits.hasFill && <ColorField label="Relleno" value={element.fill} gradient onChange={(fill) => patch({ fill })} />}
       {traits.hasRadius && (
         <NumberField label="Esquinas redondeadas" value={element.radius} min={0} onChange={(radius) => patch({ radius })} />
       )}
-      {traits.hasMedia && <MediaSourceSection onChange={patch} />}
+      {traits.hasMedia && <MediaSourceSection element={element} onChange={patch} />}
+      {traits.hasIcon && <IconProperties element={element} onChange={patch} />}
       {traits.hasText && <TextProperties element={element} onChange={patch} />}
 
       {isLinkable(element) && (

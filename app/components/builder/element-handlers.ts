@@ -1,6 +1,7 @@
 /** Los manejadores que añaden, cambian, copian, reordenan y quitan elementos. */
 
-import { descendantIds } from "../canvas-editing/containers";
+import { withoutElements } from "../canvas-editing/dock-release";
+import { sortByOrder } from "../layers/layer-order";
 import type { CanvasElement } from "../site/types";
 import type { Handlers } from "./builder-types";
 import { detach, editElement, fitToCanvas } from "./element-rules";
@@ -19,7 +20,7 @@ function applyPatch(element: CanvasElement, patch: Partial<CanvasElement>): Canv
   return changed;
 }
 
-export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "reorder" | "remove"> = {
+export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "reorder" | "order" | "remove"> = {
   add: (state, action) => ({
     ...state,
     elements: [...state.elements, fitToCanvas(action.element, state.width, state.height)],
@@ -44,14 +45,16 @@ export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "reorde
     return { ...state, elements: REORDER[action.to](others, target) };
   },
 
-  // Quitar un contenedor quita también lo que lleva dentro.
+  order: (state, action) => ({ ...state, elements: sortByOrder(state.elements, action.ids) }),
+
+  // Quitar un contenedor suelta lo que llevaba dentro, que se queda donde se veía.
   remove: (state, action) => {
-    const removed = descendantIds(state.elements, action.id).add(action.id);
+    const removed = new Set([action.id]);
     return {
       ...state,
-      elements: state.elements.filter((element) => !removed.has(element.id)),
-      links: Object.fromEntries(Object.entries(state.links).filter(([id]) => !removed.has(id))),
-      selectedId: state.selectedId !== null && removed.has(state.selectedId) ? null : state.selectedId,
+      elements: withoutElements(state.elements, removed),
+      links: Object.fromEntries(Object.entries(state.links).filter(([id]) => id !== action.id)),
+      selectedId: state.selectedId === action.id ? null : state.selectedId,
     };
   },
 };

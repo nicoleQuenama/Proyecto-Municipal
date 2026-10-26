@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { ChevronIcon, SlidersIcon } from "../viewport/icons";
 import { CANVAS_TOGGLES, EDIT_SCOPES } from "./canvas-options";
@@ -16,11 +17,13 @@ export function CanvasSettingsMenu() {
   const { settings, setSettings } = useCanvasSettings();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
   useDismiss(ref, open, () => setOpen(false));
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={button}
         type="button"
         aria-label="Ajustes del lienzo"
         aria-haspopup="dialog"
@@ -35,10 +38,11 @@ export function CanvasSettingsMenu() {
       </button>
 
       {open && (
-        <div
+        <TopLayer
+          anchorRef={button}
           role="dialog"
           aria-label="Ajustes del lienzo"
-          className="absolute bottom-full left-1/2 z-40 mb-3 w-72 -translate-x-1/2 rounded-lg border border-line bg-panel p-2 text-ink shadow-2xl"
+          className="w-72 overflow-y-auto rounded-lg border border-line bg-panel p-2 text-ink shadow-2xl"
         >
           <p className="px-2 pb-1 text-[11px] font-semibold tracking-wider text-ink-dim uppercase">Ayudas</p>
           {CANVAS_TOGGLES.map(({ key, label, hint }) => (
@@ -79,7 +83,7 @@ export function CanvasSettingsMenu() {
               </button>
             ))}
           </div>
-        </div>
+        </TopLayer>
       )}
     </div>
   );

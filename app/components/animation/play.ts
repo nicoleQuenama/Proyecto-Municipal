@@ -10,6 +10,11 @@ interface PlayOptions {
   respectReducedMotion?: boolean;
   /** Con false, la animación queda lista y en pausa en su primer fotograma, esperando `play()`. */
   autoplay?: boolean;
+  /**
+   * La copia de una sección donde buscar primero cada pieza. Las secciones que se repiten por cada dato de una API
+   * tienen varias copias con los mismos nombres: cada una debe animar la suya, no la primera de la página.
+   */
+  within?: Element | null;
 }
 
 export interface Playback {
@@ -55,7 +60,9 @@ export function playAnimation(root: ParentNode, steps: AnimationStep[], options:
   const firsts = firstOfEachChain(steps);
 
   for (const step of steps) {
-    const target = root.querySelector(`[data-target="${CSS.escape(targetKey(step.blockId, step.key))}"]`);
+    const selector = `[data-target="${CSS.escape(targetKey(step.blockId, step.key))}"]`;
+    const inside = options.within && (options.within.matches(selector) ? options.within : options.within.querySelector(selector));
+    const target = inside || root.querySelector(selector);
     if (!target) continue;
 
     if (!cleared.has(target)) {
@@ -67,6 +74,8 @@ export function playAnimation(root: ParentNode, steps: AnimationStep[], options:
       delay: step.at,
       duration: step.duration,
       easing: step.easing ?? DEFAULT_EASING,
+      iterations: step.iterations === 0 ? Infinity : (step.iterations ?? 1),
+      direction: step.direction ?? "normal",
       // Antes de empezar, solo el primer paso de cada cadena fija el valor inicial: los siguientes no lo pisan.
       fill: firsts.has(step.id) ? "both" : "forwards",
     });
@@ -83,6 +92,10 @@ export function playAnimation(root: ParentNode, steps: AnimationStep[], options:
     cancel: () => animations.forEach((a) => a.cancel()),
   };
 }
+
+/** Cuánto se ve al probarla: los bucles sin fin cuentan tres vueltas. */
+export const previewSpanOf = (steps: AnimationStep[]) =>
+  steps.reduce((end, s) => Math.max(end, s.at + s.duration * (s.iterations === 0 ? 3 : (s.iterations ?? 1))), 0);
 
 /** Cuánto dura una animación entera, en ms. */
 export const durationOf = (steps: AnimationStep[]) => steps.reduce((end, step) => Math.max(end, step.at + step.duration), 0);

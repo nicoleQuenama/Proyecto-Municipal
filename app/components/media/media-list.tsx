@@ -66,7 +66,7 @@ function MediaPreview({ item, editing, onError }: { item: MediaItem; editing: bo
   if (item.kind === "image") {
     // <img> en lugar de next/image: las fuentes son object URLs o dominios arbitrarios.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={item.src} alt={item.name} draggable={false} onError={onError} className="w-full" />;
+    return <img src={item.src} alt={item.alt ?? item.name} draggable={false} onError={onError} className="w-full" />;
   }
 
   if (item.embed) {
@@ -78,7 +78,7 @@ function MediaPreview({ item, editing, onError }: { item: MediaItem; editing: bo
     return (
       <iframe
         src={playing ? autoplayUrl(item.src) : item.src}
-        title={item.name}
+        title={item.alt || item.name}
         allow="autoplay; fullscreen; picture-in-picture"
         referrerPolicy="strict-origin-when-cross-origin"
         allowFullScreen
@@ -124,7 +124,15 @@ function MediaCard({
   });
 
   // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
-  if (item.hidden) return <HiddenPlaceholder label={`Oculto · ${item.name}`} onShow={() => setHidden(false)} />;
+  if (item.hidden) {
+    return (
+      <HiddenPlaceholder
+        label={`Oculto · ${item.name}`}
+        onShow={() => setHidden(false)}
+        onDelete={removable ? () => dispatch({ type: "media/remove", id: item.id }) : undefined}
+      />
+    );
+  }
 
   const canSetPoster = editing && item.kind === "video";
 

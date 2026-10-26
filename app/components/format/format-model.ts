@@ -83,7 +83,7 @@ function commonOf<T>(values: T[]): T | undefined {
 }
 
 /** Quita todo el formato propio de un elemento (lo oculto no se toca). */
-const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden">]: undefined } = {
+const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden" | "removed" | "hiddenOn" | "alt">]: undefined } = {
   x: undefined,
   y: undefined,
   width: undefined,
@@ -160,6 +160,11 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
               target: { kind: "element", pageId, blockId: block.id, elementId: element.id },
               hidden: true,
             }),
+        },
+        {
+          label: "Eliminar elemento",
+          danger: true,
+          run: () => dispatch({ type: "element/remove", scope: "block", pageId, blockId: block.id, elementIds: [element.id] }),
         },
         // Acoplado a un contenedor, el elemento puede adaptarse a su tamaño.
         ...(element.parentId === undefined

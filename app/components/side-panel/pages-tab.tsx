@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { PageBackground } from "../background/page-background";
+import { PageRouteForm } from "../dynamic/page-route-form";
+import { PageSeoForm } from "./page-seo-form";
 import { InlineForm } from "../ui/inline-form";
-import { isPageNameTaken, routeOf } from "../site/rules";
+import { isPageNameTaken, routeOf, slugify } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { Page } from "../site/types";
 import { plural } from "../versioning/versioning-rules";
@@ -23,6 +26,9 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const { openFile } = useWorkbench();
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [routing, setRouting] = useState(false);
+  const [seoOpen, setSeoOpen] = useState(false);
+  const [styling, setStyling] = useState(false);
   const [draft, setDraft] = useState(page.name);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,51 +100,88 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   }
 
   return (
-    <li className="group flex items-center gap-1">
-      <button
-        type="button"
-        aria-current={isCurrent ? "page" : undefined}
-        onClick={() => dispatch({ type: "page/select", id: page.id })}
-        className={`flex h-10 min-w-0 flex-1 flex-col justify-center rounded-md px-3 text-left ${
-          isCurrent ? "bg-accent/25" : "hover:bg-hover"
-        }`}
-      >
-        <span className="truncate text-[13px] font-medium">{page.name}</span>
-        <span className="truncate text-[11px] text-ink-dim">{routeOf(page)}</span>
-      </button>
-
-      <button
-        type="button"
-        aria-label={`Programar ${page.name} en código`}
-        title="Programar esta página en código (CSS y TypeScript)"
-        onClick={() => openFile({ kind: "page-js", pageId: page.id })}
-        className={`${iconButton} hidden group-hover:flex focus:flex`}
-      >
-        <CodeIcon />
-      </button>
-      <button
-        type="button"
-        aria-label={`Renombrar ${page.name}`}
-        title="Renombrar"
-        onClick={() => {
-          setDraft(page.name);
-          setRenaming(true);
-        }}
-        className={`${iconButton} hidden group-hover:flex focus:flex`}
-      >
-        ✎
-      </button>
-      {!page.isHome && (
+    <li className="flex flex-col gap-1">
+      <div className="group flex items-center gap-1">
         <button
           type="button"
-          aria-label={`Eliminar ${page.name}`}
-          title="Eliminar"
-          onClick={() => setConfirming(true)}
-          className={`${iconButton} hidden hover:text-red-400 group-hover:flex focus:flex`}
+          aria-current={isCurrent ? "page" : undefined}
+          onClick={() => dispatch({ type: "page/select", id: page.id })}
+          className={`flex h-10 min-w-0 flex-1 flex-col justify-center rounded-md px-3 text-left ${
+            isCurrent ? "bg-accent/25" : "hover:bg-hover"
+          }`}
         >
-          ×
+          <span className="truncate text-[13px] font-medium">{page.name}</span>
+          <span className="truncate text-[11px] text-ink-dim">{routeOf(page)}</span>
         </button>
-      )}
+
+        {!page.isHome && (
+          <button
+            type="button"
+            aria-label={`Ruta dinámica de ${page.name}`}
+            title="Página dinámica (ruta con parámetros, p. ej. /pokemon/:id)"
+            aria-pressed={routing}
+            onClick={() => setRouting(!routing)}
+            className={`${iconButton} font-mono text-[11px] ${page.route ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
+          >
+            :id
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label={`Fondo de ${page.name}`}
+          title="Fondo de la página (imagen o video)"
+          aria-pressed={styling}
+          onClick={() => setStyling(!styling)}
+          className={`${iconButton} text-[13px] ${page.backdrop ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
+        >
+          ▨
+        </button>
+        <button
+          type="button"
+          aria-label={`Buscadores de ${page.name}`}
+          title="Título, descripción, imagen e idioma para Google y redes"
+          aria-pressed={seoOpen}
+          onClick={() => setSeoOpen(!seoOpen)}
+          className={`${iconButton} text-[11px] font-semibold ${page.seo?.title && page.seo?.description ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
+        >
+          SEO
+        </button>
+        <button
+          type="button"
+          aria-label={`Programar ${page.name} en código`}
+          title="Programar esta página en código (CSS y TypeScript)"
+          onClick={() => openFile({ kind: "page-js", pageId: page.id })}
+          className={`${iconButton} hidden group-hover:flex focus:flex`}
+        >
+          <CodeIcon />
+        </button>
+        <button
+          type="button"
+          aria-label={`Renombrar ${page.name}`}
+          title="Renombrar"
+          onClick={() => {
+            setDraft(page.name);
+            setRenaming(true);
+          }}
+          className={`${iconButton} hidden group-hover:flex focus:flex`}
+        >
+          ✎
+        </button>
+        {!page.isHome && (
+          <button
+            type="button"
+            aria-label={`Eliminar ${page.name}`}
+            title="Eliminar"
+            onClick={() => setConfirming(true)}
+            className={`${iconButton} hidden hover:text-red-400 group-hover:flex focus:flex`}
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {routing && <PageRouteForm page={page} />}
+      {seoOpen && <PageSeoForm page={page} />}
+      {styling && <PageBackground page={page} />}
     </li>
   );
 }
@@ -146,10 +189,14 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
 export function PagesTab() {
   const { pages, currentPageId } = useSite();
   const dispatch = useSiteDispatch();
+  const [dynamic, setDynamic] = useState(false);
 
   const createPage = (name: string) => {
     if (isPageNameTaken(pages, name)) return "Ya existe una página con ese nombre.";
-    dispatch({ type: "page/create", id: crypto.randomUUID(), name });
+    const id = crypto.randomUUID();
+    dispatch({ type: "page/create", id, name });
+    // Una página dinámica nace con una ruta de ejemplo que se edita con el botón «:id».
+    if (dynamic) dispatch({ type: "page/route", id, route: `/${slugify(name)}/:id` });
   };
 
   return (
@@ -159,7 +206,12 @@ export function PagesTab() {
         placeholder="Nueva página…"
         submitLabel="Crear"
         onSubmit={createPage}
-      />
+      >
+        <label className="flex shrink-0 items-center gap-1 text-[11px] text-ink-dim" title="Ruta con parámetros, p. ej. /pokemon/:id">
+          <input type="checkbox" checked={dynamic} onChange={(e) => setDynamic(e.target.checked)} className="h-3.5 w-3.5 accent-accent" />
+          Dinámica
+        </label>
+      </InlineForm>
 
       <ul className="flex flex-col gap-0.5">
         {pages.map((page) => (

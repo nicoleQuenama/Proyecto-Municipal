@@ -5,7 +5,7 @@ import {
   type Tool,
 } from "../viewport/viewport-context";
 
-export type Dialog = "palette" | "settings" | "versions" | "image-url" | "video-url";
+export type Dialog = "palette" | "settings" | "versions" | "audit" | "image-url" | "video-url";
 
 export type CommandGroup =
   | "General"
@@ -95,6 +95,13 @@ export function createCommands(actions: CommandActions): Command[] {
       group: "Versiones",
       defaultShortcut: "ctrl+shift+g",
       run: () => toggleDialog("versions"),
+    },
+    {
+      id: "audit.open",
+      label: "Auditar el sitio antes de publicar (rendimiento, accesibilidad, SEO)",
+      group: "Versiones",
+      defaultShortcut: null,
+      run: () => toggleDialog("audit"),
     },
 
     {

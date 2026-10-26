@@ -1,6 +1,8 @@
 import { updateBlock } from "../site/overrides";
 import type { SiteState } from "../site/types";
+import { ADAPT_HANDLERS, type AdaptAction } from "./adapt-rules";
 import type { AdaptiveDevice } from "./devices";
+import { OPTION_HANDLERS, type OptionAction } from "./option-rules";
 import { patchFrame, patchSize } from "./manual-layout";
 import type { DeviceLayout, Frame } from "./types";
 
@@ -26,6 +28,8 @@ function editLayout(
 }
 
 export type ResponsiveAction =
+  | AdaptAction
+  | OptionAction
   | { type: "responsive/set"; pageId: string; blockId: string; device: AdaptiveDevice; layout: DeviceLayout | null }
   | { type: "responsive/frame"; pageId: string; blockId: string; device: AdaptiveDevice; elementId: string; frame: Partial<Frame> }
   | { type: "responsive/size"; pageId: string; blockId: string; device: AdaptiveDevice; size: Partial<DeviceLayout["size"]>; backdropId?: string };
@@ -33,6 +37,8 @@ export type ResponsiveAction =
 export const RESPONSIVE_HANDLERS: {
   [K in ResponsiveAction["type"]]: (state: SiteState, action: Extract<ResponsiveAction, { type: K }>) => SiteState;
 } = {
+  ...ADAPT_HANDLERS,
+  ...OPTION_HANDLERS,
   "responsive/set": (state, { pageId, blockId, device, layout }) => setLayout(state, pageId, blockId, device, layout),
   "responsive/frame": (state, { elementId, frame, ...at }) => editLayout(state, at, (l) => patchFrame(l, elementId, frame)),
   "responsive/size": (state, { size, backdropId, ...at }) => editLayout(state, at, (l) => patchSize(l, size, backdropId)),

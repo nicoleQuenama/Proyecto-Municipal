@@ -33,6 +33,8 @@ export type BuilderAction =
   | { type: "dock"; id: string; parentId: string | null; anchor?: DockAnchor }
   | { type: "duplicate"; id: string; newId: string }
   | { type: "reorder"; id: string; to: "front" | "back" }
+  /** Reordena todas las capas: los ids van de atrás hacia delante. */
+  | { type: "order"; ids: string[] }
   | { type: "remove"; id: string }
   | { type: "select"; id: string | null };
 

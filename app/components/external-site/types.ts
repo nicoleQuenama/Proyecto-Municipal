@@ -51,6 +51,7 @@ export interface ExternalState {
 }
 
 export type ExternalAction =
+  | { type: "project/load"; state: ExternalState }
   | { type: "site/connect"; site: string; pageUrl: string; html: string }
   | { type: "site/load"; pageUrl: string; html: string }
   | { type: "site/disconnect" }

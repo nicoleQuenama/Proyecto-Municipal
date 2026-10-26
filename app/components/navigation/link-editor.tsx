@@ -5,6 +5,7 @@ import { useSite } from "../site/site-context";
 import { describeTransition, normalizeExternalUrl, TRANSITION_LABELS } from "./links";
 import type { LinkTarget, TransitionKind } from "./types";
 import { KINDS, TransitionFields } from "./transition-fields";
+import { ModalLinkFields } from "../modal/modal-link-fields";
 
 const selectClass =
   "h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent [&>option]:bg-panel";
@@ -65,6 +66,8 @@ export function LinkEditor({ link, onChange, label }: LinkEditorProps) {
   const changeKind = (next: string) => {
     if (next === "none") onChange(null);
     else if (next === "page") onChange({ kind: "page", pageId: pages[0].id });
+    else if (next === "modal") onChange({ kind: "modal", pageId: (pages.find((p) => !p.isHome) ?? pages[0]).id });
+    else if (next === "close-modal") onChange({ kind: "close-modal" });
     else onChange({ kind: "external", url: "", newTab: true });
   };
 
@@ -85,6 +88,8 @@ export function LinkEditor({ link, onChange, label }: LinkEditorProps) {
       >
         <option value="none">Sin enlace (solo contenido)</option>
         <option value="page">Enlace a una página</option>
+        <option value="modal">Abrir en una ventana modal</option>
+        <option value="close-modal">Cerrar la ventana modal</option>
         <option value="external">Enlace externo ↗</option>
       </select>
 
@@ -100,9 +105,15 @@ export function LinkEditor({ link, onChange, label }: LinkEditorProps) {
               <option value={link.pageId}>(página eliminada)</option>
             )}
             {pages.map((page) => (
-              <option key={page.id} value={page.id}>{page.name}</option>
+              <option key={page.id} value={page.id}>{page.route ? `${page.name} · ${page.route}` : page.name}</option>
             ))}
           </select>
+
+          {pages.find((page) => page.id === link.pageId)?.route && (
+            <p className="text-[11px] text-sky-400">
+              Página dinámica: selecciona el elemento en el lienzo y rellena sus parámetros en el panel de la derecha.
+            </p>
+          )}
 
           <select
             aria-label={`${label}: transición`}
@@ -124,6 +135,11 @@ export function LinkEditor({ link, onChange, label }: LinkEditorProps) {
             />
           )}
         </>
+      )}
+
+      {link?.kind === "modal" && <ModalLinkFields link={link} onChange={onChange} label={label} />}
+      {link?.kind === "close-modal" && (
+        <p className="text-[11px] text-ink-dim">Al pulsar este elemento dentro de una ventana modal, esta se cierra.</p>
       )}
 
       {link?.kind === "external" && (

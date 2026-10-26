@@ -46,6 +46,8 @@ export async function POST(request: Request) {
     if (response.ok) await writeCache(key, cache, entry);
     return Response.json({ ...entry, cached: false });
   } catch (error) {
-    return fail(error instanceof Error ? error.message : "No se pudo completar la petición.", 502);
+    // «fetch failed» no dice nada: la causa real (certificado, DNS, conexión) viene en `cause`.
+    const cause = error instanceof Error && error.cause instanceof Error ? ` (${(error.cause as { code?: string }).code ?? error.cause.message})` : "";
+    return fail(error instanceof Error ? `${error.message}${cause}` : "No se pudo completar la petición.", 502);
   }
 }

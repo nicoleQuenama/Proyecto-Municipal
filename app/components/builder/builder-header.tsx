@@ -1,9 +1,8 @@
 "use client";
 
 import type { Dispatch } from "react";
-import { CATEGORY_LABELS } from "../side-panel/data";
 import { TEMPLATES, type TemplateId } from "../site/component-templates";
-import type { ComponentCategory } from "../site/types";
+import { CategorySelect } from "./category-select";
 import type { BuilderAction, BuilderState } from "./builder-reducer";
 
 const selectClass =
@@ -38,16 +37,11 @@ export function BuilderHeader({ state, dispatch, newId, pageIds, isEditing, onEd
         className="h-8 w-56 rounded-md border border-line bg-canvas px-3 text-[13px] outline-none placeholder:text-ink-dim focus:border-accent"
       />
 
-      <select
-        aria-label="Categoría"
+      <CategorySelect
         value={state.category}
-        onChange={(e) => dispatch({ type: "meta", patch: { category: e.target.value as ComponentCategory } })}
+        onChange={(category) => dispatch({ type: "meta", patch: { category } })}
         className={selectClass}
-      >
-        {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-          <option key={value} value={value}>{label}</option>
-        ))}
-      </select>
+      />
 
       <select
         aria-label="Cargar una plantilla"

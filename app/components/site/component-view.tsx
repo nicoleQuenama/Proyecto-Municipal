@@ -4,6 +4,7 @@ import { EditingLayer } from "../canvas-editing/editing-layer";
 import { ElementHandles } from "../canvas-editing/element-handles";
 import type { Behavior } from "../behaviors/types";
 import { BindingBadge } from "../data-sources/binding-badge";
+import { boundBoxStyle } from "../data-sources/bound-fields";
 import { useBoundElement } from "../data-sources/use-bound-element";
 import { useDataDrop } from "../data-sources/use-data-drop";
 import type { DataRef } from "../data-sources/types";
@@ -11,12 +12,14 @@ import { useBehaviors } from "../behaviors/use-behaviors";
 import { LinkHandle } from "../navigation/link-handle";
 import { elementLabel, isLinkable, linkLabel } from "../navigation/links";
 import type { ElementRef, LinkTarget, NavMode, Point } from "../navigation/types";
+import { IconGlyph } from "../icons/icon-glyph";
 import { CodeButton } from "./code-button";
 import { elementBaseCss } from "./element-style";
 import { targetKey } from "./custom-code";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind, type Page } from "./types";
 import type { BlockGestures } from "./use-block-gestures";
 import type { HandleId } from "../canvas-editing/resize-handles";
+import { LineShape, TriangleShape } from "./vector-shapes";
 import { VideoContent } from "./video-content";
 import { VisibilityEye } from "./visibility-eye";
 
@@ -75,6 +78,8 @@ const shape =
 const RENDERERS: Record<ElementKind, Renderer> = {
   rect: shape((element) => element.radius),
   ellipse: shape(() => "50%"),
+  triangle: (element, _text, inherit) => <TriangleShape element={element} inherit={inherit} />,
+  line: (element, _text, inherit) => <LineShape element={element} inherit={inherit} />,
 
   text: (element, text, inherit) => (
     <div
@@ -89,6 +94,12 @@ const RENDERERS: Record<ElementKind, Renderer> = {
     </div>
   ),
 
+  icon: (element, text) => (
+    <div className="flex h-full w-full items-center justify-center" style={text}>
+      <IconGlyph name={element.icon ?? "star"} size={element.fontSize} strokeWidth={element.strokeWidth} />
+    </div>
+  ),
+
   video: (element, _text, inherit) => <VideoContent element={element} radius={inherit ? "inherit" : element.radius} />,
 
   image: (element, _text, inherit) =>
@@ -97,17 +108,17 @@ const RENDERERS: Record<ElementKind, Renderer> = {
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={element.src}
-        alt=""
+        alt={element.alt ?? ""}
         draggable={false}
-        className="h-full w-full object-cover"
-        style={{ borderRadius: inherit ? "inherit" : element.radius }}
+        className="h-full w-full"
+        style={{ borderRadius: inherit ? "inherit" : element.radius, objectFit: element.fit ?? "cover" }}
       />
     ) : (
       <div
-        className="flex h-full w-full items-center justify-center bg-slate-200 text-xs text-slate-500"
+        className="flex h-full w-full items-center justify-center border border-dashed border-slate-400 bg-slate-200 p-2 text-center text-xs text-slate-500"
         style={{ borderRadius: inherit ? "inherit" : element.radius }}
       >
-        Imagen
+        Haz clic o suelta una imagen
       </div>
     ),
 };
@@ -148,7 +159,7 @@ export interface ElementInteraction {
   selectedElementId: string | null;
   /** Elementos sumados a la selección con Ctrl/⌘-clic. */
   alsoSelectedIds?: string[];
-  onFollow: (link: LinkTarget) => void;
+  onFollow: (link: LinkTarget, elementId: string) => void;
   /** Al editar: ocultar o volver a mostrar un elemento. */
   onToggleHidden: (elementId: string, hidden: boolean) => void;
   /** Al editar: abrir el menú de formato de un elemento. */
@@ -164,6 +175,8 @@ export interface ElementInteraction {
   onDropData: (ref: DataRef, elementId: string | null) => void;
   /** Al editar: abrir el código de un elemento en el editor. */
   onOpenCode: (elementId: string) => void;
+  /** Algo que se dibuja encima de la sección (el botón de un menú, el título de un acordeón). */
+  overlay?: ReactNode;
 }
 
 function PositionedElement({
@@ -179,7 +192,9 @@ function PositionedElement({
   const drop = useDataDrop((data) => interaction?.onDropData(data, element.id), interaction?.mode === "edit");
   const { ref, props: behaviorProps } = useBehaviors(interaction?.blockId ?? "", mine, interaction?.mode === "preview");
 
-  const box: CSSProperties = { left: element.x, top: element.y, width: element.width, height: element.height };
+  const box: CSSProperties = { left: element.x, top: element.y, width: shown.width, height: shown.height };
+  // Un dato que cambia el ancho, el alto o el color se pinta en el contenedor (ahí está el CSS base).
+  const boundStyle = boundBoxStyle(element, shown);
   const link = interaction?.links[element.id];
   const custom = interaction?.classes[element.id] ?? "";
   const target = interaction ? targetKey(interaction.blockId, element.id) : undefined;
@@ -202,7 +217,7 @@ function PositionedElement({
   if (interaction?.mode === "preview") {
     const destination = link ? linkLabel(link, interaction.pages) : undefined;
     const follow = () => {
-      if (link) interaction.onFollow(link);
+      if (link) interaction.onFollow(link, element.id);
       behaviorProps.onClick?.();
     };
     const interactive = link !== undefined || behaviorProps.onClick !== undefined;
@@ -223,6 +238,7 @@ function PositionedElement({
             }
           : {})}
         onClick={interactive ? follow : undefined}
+        style={boundStyle}
         className={`${interactive ? "cursor-pointer" : ""} ${
           link ? "transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-sky-500" : ""
         } ${custom}`}
@@ -244,6 +260,7 @@ function PositionedElement({
         data-target={target}
         data-el={element.id}
         {...drop.handlers}
+        style={boundStyle}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${gestures ? "cursor-move touch-none select-none" : ""}`}
         onPointerDown={(e) => {
           // Los botones del elemento (ojo, enlace, código) siguen siendo botones.
@@ -329,6 +346,7 @@ export function ComponentView({
       {def.elements.map((element) => (
         <PositionedElement key={element.id} element={element} interaction={interaction} />
       ))}
+      {interaction?.overlay}
       {interaction?.gestures && (
         <EditingLayer
           gestures={interaction.gestures}

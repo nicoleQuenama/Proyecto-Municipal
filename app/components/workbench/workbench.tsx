@@ -8,7 +8,9 @@ import { Modal } from "../ui/modal";
 import { Explorer } from "./explorer";
 import { SitePreview } from "./site-preview";
 import { fileId, kindOf, type FileKindName, type FileRef } from "./file-ref";
+import { useExplorerCollapsed } from "./use-explorer-collapsed";
 import { useWorkbench } from "./workbench-context";
+import { PanelCollapseIcon } from "../viewport/icons";
 
 // Monaco necesita el navegador: el editor se carga solo allí.
 const FileEditor = dynamic(() => import("./file-editor"), {
@@ -38,6 +40,7 @@ function BlockPreview({ file }: { file: Extract<FileRef, { blockId: string }> })
 function Workbench() {
   const site = useSite();
   const { tabs, activeId, activate, closeTab, openFile, close } = useWorkbench();
+  const [explorerHidden, toggleExplorer] = useExplorerCollapsed();
 
   // Las pestañas de lo que ya no existe (una función quitada, un bloque eliminado) no se muestran.
   const open = tabs.filter((tab) => kindOf(tab).name(site, tab) !== null);
@@ -46,6 +49,16 @@ function Workbench() {
   return (
     <div className="flex h-full flex-col bg-canvas">
       <header className="flex h-10 shrink-0 items-center gap-3 border-b border-line bg-panel px-4">
+        <button
+          type="button"
+          aria-label={explorerHidden ? "Mostrar el explorador de archivos" : "Ocultar el explorador de archivos"}
+          aria-pressed={!explorerHidden}
+          title="Mostrar u ocultar el explorador (Ctrl+B)"
+          onClick={toggleExplorer}
+          className="-ml-2 flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+        >
+          <PanelCollapseIcon collapsed={explorerHidden} />
+        </button>
         <h2 className="text-sm font-semibold">Editor de código</h2>
         <span className="text-xs text-ink-dim">Los cambios se guardan solos</span>
         <button
@@ -60,7 +73,7 @@ function Workbench() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <Explorer active={active} />
+        {!explorerHidden && <Explorer active={active} />}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div role="tablist" aria-label="Archivos abiertos" className="flex h-9 shrink-0 overflow-x-auto border-b border-line bg-panel">

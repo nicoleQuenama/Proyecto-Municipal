@@ -7,18 +7,24 @@ import type { Point } from "./dock-slots";
 const CAN_CONTAIN: Record<ElementKind, boolean> = {
   rect: true,
   ellipse: true,
+  triangle: false,
+  line: false,
   text: false,
   image: false,
   video: false,
+  icon: false,
 };
 
 /** Qué tipos se estiran para llenar su contenedor al acoplarse: las imágenes y videos se adaptan al cuadro. */
 const FILLS_PARENT_BY_DEFAULT: Record<ElementKind, boolean> = {
   rect: false,
   ellipse: false,
+  triangle: false,
+  line: false,
   text: false,
   image: true,
   video: true,
+  icon: false,
 };
 
 export const isContainer = (element: CanvasElement): boolean => CAN_CONTAIN[element.kind];

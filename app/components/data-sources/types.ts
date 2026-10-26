@@ -28,10 +28,40 @@ export interface DataSource {
   cache: CacheStrategy;
 }
 
+/** Cómo se acomodan las copias de una sección repetida: en una rejilla de `columns` columnas. */
+export interface RepeatLayout {
+  columns: number;
+  /** Espacio entre copias, en px. */
+  gap: number;
+  /** Columnas propias en tablet y móvil; el dispositivo que falta calcula cuántas caben. */
+  columnsOn?: { tablet?: number; mobile?: number };
+}
+
+/** Paginación de una sección repetida: se ven `size` elementos por página y una barra para cambiar de página. */
+export interface RepeatPaging {
+  /** Elementos por página. */
+  size: number;
+  /** Clave de la respuesta con el total de elementos (para APIs que paginan en el servidor); vacío = se desconoce. */
+  totalPath?: string;
+  /** Volver a la página 1 cuando cambian los datos. */
+  resetOnChange: boolean;
+  /** Color de la página actual; por defecto el de acento. */
+  accent?: string;
+  /** Redondeo de los botones (px). */
+  radius?: number;
+}
+
+/** Qué parte de un elemento llena el dato. */
+export type BoundField = "text" | "src" | "fill" | "color" | "width" | "height";
+
 /** Una clave de una fuente (`articles[0].title`), vacía = la respuesta entera. */
 export interface DataRef {
   sourceId: string;
   path: string;
+  /** Qué parte del elemento llena; sin él, su texto (o su imagen). */
+  as?: BoundField;
+  /** Con «ancho» o «alto»: el valor que corresponde a la barra llena (por defecto 100). */
+  max?: number;
 }
 
 /** Lo que devuelve el proxy: el cuerpo tal cual y su tipo. */

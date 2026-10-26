@@ -7,7 +7,8 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
-import { INITIAL_STATE } from "./mock-data";
+import { useAutosave } from "../persistence/use-autosave";
+import { INITIAL_STATE } from "./initial-state";
 import type { VersioningAction, VersioningState } from "./types";
 import { useDesignSnapshot } from "./use-design-snapshot";
 import { versioningReducer } from "./versioning-reducer";
@@ -32,6 +33,7 @@ export function VersioningProvider({ children }: { children: ReactNode }) {
     ...INITIAL_STATE,
     baseline,
   }));
+  useAutosave<VersioningState>("versions", state, (saved) => dispatch({ type: "project/load", state: saved }));
 
   return <VersioningContext value={{ state, dispatch }}>{children}</VersioningContext>;
 }

@@ -49,14 +49,18 @@ export const variableNameOf = (value: string): string | null => VARIABLE_REF.exe
 
 const NUMBER = /^-?\d+(\.\d+)?$/;
 const SIZE = /^-?\d+(\.\d+)?px$/;
-const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const HEX_COLOR = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+// rgb()/hsl() con o sin opacidad y degradados lineales/radiales: el navegador los valida al pintarlos.
+const CSS_COLOR = /^(rgba?|hsla?)\([^()]*\)$/i;
+const CSS_GRADIENT = /^(linear|radial)-gradient\([\s\S]+\)$/i;
 const WEIGHTS = ["400", "500", "600", "700"];
 const ALIGNMENTS = ["left", "center", "right"];
 
 /** Cómo se valida y normaliza cada tipo de valor; `null` si no es válido. */
 const NORMALIZERS: Record<PropKind, (value: string) => string | null> = {
   size: (value) => (NUMBER.test(value) ? `${value}px` : SIZE.test(value) ? value : null),
-  color: (value) => (HEX_COLOR.test(value) ? value.toLowerCase() : null),
+  color: (value) =>
+    HEX_COLOR.test(value) ? value.toLowerCase() : CSS_COLOR.test(value) || CSS_GRADIENT.test(value) ? value : null,
   weight: (value) => (WEIGHTS.includes(value) ? value : null),
   align: (value) => (ALIGNMENTS.includes(value) ? value : null),
   font: (value) => value,

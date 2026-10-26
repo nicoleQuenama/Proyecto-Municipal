@@ -3,13 +3,21 @@
 import { useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
+import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { elementLabel } from "../navigation/links";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { SECTION_KEY, TITLE_SELECTION, type BlockInstance, type ComponentDef, type CustomStyle } from "../site/types";
 import { Collapsible } from "../ui/collapsible";
 import { CodeIcon } from "../viewport/icons";
 import { useWorkbench } from "../workbench/workbench-context";
+import { BindingControls } from "../data-sources/binding-controls";
+import { LinkParamsControls } from "../dynamic/link-params-controls";
+import { RepeatControls } from "../data-sources/repeat-controls";
+import { SectionBackground } from "../background/section-background";
+import { AltControl } from "./alt-control";
 import { BehaviorEditor } from "./behavior-editor";
+import { RemoveButton } from "./remove-button";
+import { HideOnControls } from "./hide-on-controls";
 
 const fieldClass =
   "h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent";
@@ -62,7 +70,10 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
   // Los estilos valen para este bloque o, si se elige, para todos los lugares donde se use el componente.
-  const [level, setLevel] = useState<StyleLevel>("block");
+  // El alcance es el mismo que usan los gestos y la barra de formato: lo que se elige aquí vale en todas partes.
+  const { settings, setSettings } = useCanvasSettings();
+  const level: StyleLevel = settings.scope;
+  const setLevel = (value: StyleLevel) => setSettings((current) => ({ ...current, scope: value }));
   const custom = (level === "block" ? block.custom?.[scope] : def.styles?.[scope]) ?? { classes: "", css: "" };
   const canEditContent = hasPermission(currentUser?.role, "editContent");
   const canEditStyles = hasPermission(currentUser?.role, "editStyles");
@@ -96,8 +107,16 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     });
   };
 
+  const element = def.elements.find((e) => e.id === scope);
+
   return (
     <div className="flex flex-col gap-4">
+      <HideOnControls pageId={pageId} block={block} def={def} elementId={element?.id} />
+      {element && <AltControl pageId={pageId} block={block} element={element} />}
+      {element ? <BindingControls pageId={pageId} block={block} element={element} /> : <RepeatControls pageId={pageId} block={block} />}
+      {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}
+      {!element && <SectionBackground pageId={pageId} block={block} />}
+
       {canEditContent && (
         <Collapsible title="Interacciones" badge={count(behaviors.length)}>
           <Hint>Qué pasa al hacer clic, pasar el cursor… Se ven al pulsar «Probar» (▶).</Hint>
@@ -229,6 +248,7 @@ export function Inspector() {
         {/* key: al cambiar de selección, el editor empieza de cero con lo guardado de esa selección. */}
         <ScopeEditor key={`${block.id}:${scope}`} pageId={page.id} block={block} def={def} scope={scope} />
       </div>
+      <RemoveButton page={page} />
     </aside>
   );
 }

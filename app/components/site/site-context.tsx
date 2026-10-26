@@ -8,7 +8,10 @@ import {
   type ReactNode,
 } from "react";
 import { INITIAL_SITE } from "./initial-site";
+import { useAutosave } from "../persistence/use-autosave";
 import { siteReducer } from "./site-reducer";
+import { UndoToast } from "./undo-toast";
+import { useUndoableDispatch } from "./use-undoable-dispatch";
 import type { Page, SiteAction, SiteState } from "./types";
 
 // El estado y el dispatch van en contextos separados: quien solo dispara acciones
@@ -17,10 +20,16 @@ const StateContext = createContext<SiteState | null>(null);
 const DispatchContext = createContext<Dispatch<SiteAction> | null>(null);
 
 export function SiteProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(siteReducer, INITIAL_SITE);
+  const [state, rawDispatch] = useReducer(siteReducer, INITIAL_SITE);
+  useAutosave<SiteState>("site", state, (saved) => rawDispatch({ type: "project/load", state: saved }));
+  // Lo destructivo avisa con «Deshacer».
+  const { dispatch, toast, undo, dismiss } = useUndoableDispatch(state, rawDispatch);
   return (
     <StateContext value={state}>
-      <DispatchContext value={dispatch}>{children}</DispatchContext>
+      <DispatchContext value={dispatch}>
+        {children}
+        <UndoToast toast={toast} onUndo={undo} onDismiss={dismiss} />
+      </DispatchContext>
     </StateContext>
   );
 }

@@ -1,5 +1,6 @@
 import { AnimationPreview } from "../animation/animation-preview";
 import { RecorderBar } from "../animation/recorder-bar";
+import { AuditDialog } from "../audit/audit-dialog";
 import { ProfileMenu } from "../auth/profile-menu";
 import { BuilderHost } from "../builder/builder-host";
 import { CommandPalette } from "../commands/command-palette";
@@ -18,7 +19,7 @@ import { PreviewToggle } from "../navigation/preview-toggle";
 import { SectionColors } from "../section-colors/section-colors";
 import { SidePanel } from "../side-panel/side-panel";
 import { SiteStyles } from "../site/site-styles";
-import { TitleToolbar } from "../title-editor/title-editor";
+import { FormatBar } from "../title-editor/format-bar";
 import { BranchSwitcher } from "../versioning/branch-switcher";
 import { PublishButton } from "../versioning/publish-button";
 import { VersionsDialog } from "../versioning/versions-dialog";
@@ -32,7 +33,7 @@ export function EditorWorkspace() {
     <>
       <div className="flex h-screen flex-col">
         <header className="z-20 flex w-full shrink-0 items-stretch border-b border-line bg-panel">
-          <TitleToolbar />
+          <FormatBar />
           <BranchSwitcher />
           <PublishButton />
           <PreviewToggle />
@@ -54,12 +55,15 @@ export function EditorWorkspace() {
           </div>
           <Inspector />
         </main>
+
+        <footer></footer>
       </div>
 
       <CommandPalette />
       <BuilderHost />
       <ShortcutsSettings />
       <VersionsDialog />
+      <AuditDialog />
       <ExternalEditor />
       <MediaUrlDialog />
       <MediaNotice />

@@ -1,6 +1,6 @@
 /** Reglas de negocio puras del control de versiones (sin React ni estado). */
 
-import type { AttributedChange, Branch, Commit, Issue, Label, PullRequest, Release } from "./types";
+import type { AttributedChange, Branch, Commit, Issue, Label, Member, PullRequest, Release } from "./types";
 
 export const plural = (count: number, one: string, many: string) =>
   `${count} ${count === 1 ? one : many}`;
@@ -19,6 +19,29 @@ export function slugifyBranchName(name: string): string {
 export function canApprove(pr: PullRequest, user: string): boolean {
   return pr.status === "open" && pr.author !== user && !pr.approvals.includes(user);
 }
+
+export const memberNames = (members: Member[]): string[] => members.map((m) => m.name);
+
+/** Miembros que pueden aprobar este PR (todos menos su autor y quienes ya aprobaron). */
+export const approversOf = (pr: PullRequest, members: Member[]): string[] =>
+  memberNames(members).filter((name) => canApprove(pr, name));
+
+/** Un miembro nuevo necesita nombre y no repetir a otro (sin distinguir mayúsculas). */
+export const memberProblem = (members: Member[], input: string): string | null => {
+  const name = input.trim();
+  if (!name) return "Escribe un nombre o un correo.";
+  const taken = members.some((m) => m.name.toLowerCase() === name.toLowerCase());
+  return taken ? "Esa persona ya está en el equipo." : null;
+};
+
+/** Código estable (hash simple) para el enlace de invitación del prototipo. */
+export function inviteToken(seed: string): string {
+  let hash = 5381;
+  for (const char of seed) hash = (hash * 33 + char.charCodeAt(0)) >>> 0;
+  return hash.toString(36).padStart(7, "0");
+}
+
+export const inviteLink = (origin: string, token: string): string => `${origin}/?invitacion=${token}`;
 
 /** Motivos por los que un PR abierto todavía no se puede fusionar. Vacío = listo. */
 export function mergeBlockers(pr: PullRequest): string[] {

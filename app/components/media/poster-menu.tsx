@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSiteDispatch } from "../site/site-context";
+import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { parsePosterUrl, posterFileProblem, providerThumbnail } from "./poster";
 import type { MediaItem } from "./types";
@@ -61,11 +62,11 @@ export function PosterMenu({ item, pageId, point, onClose }: PosterMenuProps) {
 
   // En un portal al <body>: el lienzo tiene zoom y un menú dentro de él se vería encogido y desplazado.
   return createPortal(
-    <div
+    <TopLayer
       ref={ref}
       role="menu"
       aria-label={`Portada de ${item.name}`}
-      className="fixed z-[70] flex flex-col gap-2 rounded-xl border border-line bg-panel p-3 text-ink shadow-2xl"
+      className="fixed flex flex-col gap-2 rounded-xl border border-line bg-panel p-3 text-ink shadow-2xl"
       style={{ left, top, width: WIDTH }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -109,7 +110,7 @@ export function PosterMenu({ item, pageId, point, onClose }: PosterMenuProps) {
         </button>
       )}
       {error && <p role="alert" className="text-[11px] text-red-400">{error}</p>}
-    </div>,
+    </TopLayer>,
     document.body,
   );
 }

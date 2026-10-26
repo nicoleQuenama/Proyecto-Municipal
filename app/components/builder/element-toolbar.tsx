@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ElementKind } from "../site/types";
+import { IconGlyph } from "../icons/icon-glyph";
 import { EllipseIcon, ImageIcon, RectangleIcon, TextIcon, VideoIcon } from "../viewport/icons";
 
 /** Los tipos de elemento que se pueden agregar. Un tipo nuevo es una entrada nueva. */
@@ -8,6 +9,7 @@ const TOOLS: { kind: ElementKind; label: string; icon: ReactNode }[] = [
   { kind: "ellipse", label: "Elipse", icon: <EllipseIcon /> },
   { kind: "text", label: "Texto", icon: <TextIcon /> },
   { kind: "image", label: "Imagen", icon: <ImageIcon /> },
+  { kind: "icon", label: "Ícono", icon: <IconGlyph name="star" size={16} /> },
   { kind: "video", label: "Video", icon: <VideoIcon /> },
 ];
 

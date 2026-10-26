@@ -28,4 +28,7 @@ export const STEP_META: Record<StepProp, StepMeta> = {
   move: { label: "Desplazamiento", field: "pair", bar: "bg-sky-500" },
   blur: { label: "Desenfoque", field: "number", bar: "bg-amber-500" },
   reveal: { label: "Revelado", field: "text", bar: "bg-amber-500" },
+  glow: { label: "Resplandor", field: "number", bar: "bg-amber-500" },
+  flip: { label: "Giro 3D", field: "number", bar: "bg-violet-500", step: 5 },
+  tilt: { label: "Inclinación 3D", field: "text", bar: "bg-violet-500" },
 };

@@ -26,9 +26,12 @@ export function normalizeColor(value: string): string {
 const COLOR_PROPS: Record<CanvasElement["kind"], (element: CanvasElement) => ElementColorProp[]> = {
   rect: (element) => (element.text ? ["fill", "color"] : ["fill"]),
   ellipse: (element) => (element.text ? ["fill", "color"] : ["fill"]),
+  triangle: () => ["fill"],
+  line: () => ["fill"],
   text: () => ["fill", "color"],
   image: () => [],
   video: () => [],
+  icon: () => ["color"],
 };
 
 /** Los colores distintos que se ven en una sección, en el orden en que aparecen (primero el fondo de la caja). */

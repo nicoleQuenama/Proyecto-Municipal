@@ -2,7 +2,7 @@ import type { CanvasElement, ComponentDef } from "../site/types";
 import type { DeviceLayout, Frame } from "./types";
 
 /** Un elemento con marco propio deja de seguir a su contenedor: su posición ya es la que se definió. */
-const FREE = { parentId: undefined, slot: undefined, offset: undefined, fitToParent: undefined } as const;
+export const FREE = { parentId: undefined, slot: undefined, offset: undefined, fitToParent: undefined } as const;
 
 /** La sección tal como la definió la persona para un dispositivo. */
 export function applyLayout(def: ComponentDef, layout: DeviceLayout): ComponentDef {

@@ -224,6 +224,13 @@ export function BranchesTab() {
         onSubmit={createBranch}
       />
 
+      {state.branches.length === 1 && (
+        <p className="text-xs text-ink-dim">
+          Ahora solo existe «{state.current}», el proyecto principal. Un borrador (rama) es una copia donde pruebas
+          cambios sin tocar lo principal; cuando te convenza, lo pides revisar y se une.
+        </p>
+      )}
+
       <ul className="flex flex-col gap-1">
         {state.branches.map((branch) => (
           <BranchRow

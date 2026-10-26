@@ -13,7 +13,9 @@ import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import { TITLE_SELECTION } from "../site/types";
 import { PanelCollapseIcon } from "../viewport/icons";
 import { ComponentsTab } from "./components-tab";
-import { CATEGORY_ICONS, TABS, type PanelTab } from "./data";
+import { HiddenList } from "./hidden-list";
+import { categoryIcon } from "../site/categories";
+import { TABS, type PanelTab } from "./data";
 import { PagesTab } from "./pages-tab";
 import { StructureList, type StructureItem } from "./structure-list";
 import { TAB_ICONS } from "./tab-icons";
@@ -56,13 +58,13 @@ export function SidePanel() {
   const toItem = (block: { id: string; componentId: string }): StructureItem[] => {
     const def = components.find((c) => c.id === block.componentId);
     return def
-      ? [{ id: block.id, name: def.name, meta: def.description, icon: CATEGORY_ICONS[def.category], removable: true }]
+      ? [{ id: block.id, name: def.name, meta: def.description, icon: categoryIcon(def.category), removable: true }]
       : [];
   };
   const { top, body } = splitBlocks(page, components);
   const items: StructureItem[] = [
     ...top.flatMap(toItem),
-    { id: TITLE_SELECTION, name: "Titular", meta: "", icon: "T", removable: false },
+    ...(page.titleRemoved ? [] : [{ id: TITLE_SELECTION, name: "Titular", meta: "", icon: "T", removable: true }]),
     ...body.flatMap(toItem),
   ];
 
@@ -185,8 +187,15 @@ export function SidePanel() {
                 items={items}
                 activeId={selectedId}
                 onSelect={(id) => dispatch({ type: "block/select", id })}
-                onRemove={(id) => dispatch({ type: "block/remove", id })}
+                onRemove={(id) =>
+                  dispatch(
+                    id === TITLE_SELECTION
+                      ? { type: "title/removed", pageId: page.id, removed: true }
+                      : { type: "block/remove", id },
+                  )
+                }
               />
+              <HiddenList page={page} />
             </div>
           </div>
 

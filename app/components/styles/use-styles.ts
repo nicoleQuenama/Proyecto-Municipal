@@ -6,6 +6,7 @@ import type { ComponentDef } from "../site/types";
 import { styleComponent } from "./apply";
 import { computeStyle, resolveValue } from "./resolve";
 import type { ElementRole, StyleContext, StyleState } from "./types";
+import { styleTarget } from "../site/categories";
 
 /**
  * Los estilos que valen en una página, listos para aplicarlos al dibujar.
@@ -27,7 +28,7 @@ export function useStyles(forPageId?: string) {
       role: (role: ElementRole) => computeStyle(styles, pageCtx, role),
       /** Reglas de la caja de un componente, según su categoría y su propio ámbito. */
       block: (def: ComponentDef) =>
-        computeStyle(styles, { pageId, componentId: def.id }, def.category),
+        computeStyle(styles, { pageId, componentId: def.id }, styleTarget(def.category)),
       /** El componente con las reglas de cada rol aplicadas a sus elementos. */
       component: (def: ComponentDef) => styleComponent(def, styles, pageId),
       /** Sustituye `var(--nombre)` por el valor de la variable que vale en esta página y componente. */

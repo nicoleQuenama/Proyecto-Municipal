@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ColorInput } from "../ui/color-input";
 
 /** Estilo común de los campos de texto y selectores del panel. */
 export const inputClass =
@@ -15,15 +16,11 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-export function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+/** Un color con su campo de texto (ver `ui/color-input`). */
+export function ColorField({ label, value, onChange, gradient }: { label: string; value: string; onChange: (v: string) => void; gradient?: boolean }) {
   return (
     <Field label={label}>
-      <input
-        type="color"
-        value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#cccccc"}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-full cursor-pointer rounded-md border border-line bg-canvas p-1"
-      />
+      <ColorInput label={label} value={value} onChange={onChange} gradient={gradient} />
     </Field>
   );
 }

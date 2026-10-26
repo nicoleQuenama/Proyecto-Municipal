@@ -36,7 +36,7 @@ export const isComponentNameTaken = (
 ): boolean => components.some((c) => c.id !== exceptId && sameName(c.name, name));
 
 /** Ruta visible de una página: la de inicio es "/". */
-export const routeOf = (page: Page): string => (page.isHome ? "/" : `/${page.slug}`);
+export const routeOf = (page: Page): string => (page.isHome ? "/" : (page.route ?? `/${page.slug}`));
 
 /** Copia un componente con ids nuevos (para duplicarlo sin compartir elementos). */
 export function duplicateComponent(def: ComponentDef, id: string, name: string): ComponentDef {

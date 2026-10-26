@@ -4,6 +4,7 @@ import { useState } from "react";
 import { normalizeValue } from "../styles/resolve";
 import type { PropKind } from "../styles/types";
 import { FONT_OPTIONS } from "../title-editor/constants";
+import { ColorInput } from "../ui/color-input";
 
 const controlClass =
   "h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent [&>option]:bg-panel";
@@ -18,14 +19,6 @@ const ALIGN_CHOICES = [
   { value: "center", label: "Centro" },
   { value: "right", label: "Derecha" },
 ];
-
-/** El selector de color nativo solo entiende #rrggbb. */
-function sixDigitHex(hex: string | undefined): string {
-  if (!hex) return "#cccccc";
-  if (/^#[0-9a-f]{6}$/i.test(hex)) return hex;
-  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(hex);
-  return short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}` : "#cccccc";
-}
 
 interface SizeInputProps {
   label: string;
@@ -80,21 +73,15 @@ interface LiteralInputProps {
   placeholder?: string;
   /** Si se indica, los selectores ofrecen una opción vacía con este texto = «sin valor propio». */
   unsetLabel?: string;
+  /** Solo para colores: ofrece también degradados (fondos y rellenos). */
+  gradient?: boolean;
   onCommit: (value: string | null) => void;
 }
 
 /** Control para un valor directo, según su tipo: color, tamaño, tipografía, peso o alineación. */
-export function LiteralInput({ kind, label, value, placeholder, unsetLabel, onCommit }: LiteralInputProps) {
+export function LiteralInput({ kind, label, value, placeholder, unsetLabel, gradient, onCommit }: LiteralInputProps) {
   if (kind === "color") {
-    return (
-      <input
-        type="color"
-        aria-label={label}
-        value={sixDigitHex(value ?? placeholder)}
-        onChange={(e) => onCommit(e.target.value)}
-        className="h-8 w-full cursor-pointer rounded-md border border-line bg-canvas p-1"
-      />
-    );
+    return <ColorInput label={label} value={value ?? placeholder ?? "#cccccc"} onChange={onCommit} gradient={gradient} />;
   }
 
   if (kind === "size") {

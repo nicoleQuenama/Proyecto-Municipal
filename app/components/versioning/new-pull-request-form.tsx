@@ -67,11 +67,17 @@ export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) 
         </select>
       </div>
 
+      {names.length < 2 && (
+        <p className="text-xs text-amber-400">
+          Necesitas al menos dos borradores (ramas). Crea uno en la sección Borradores.
+        </p>
+      )}
+
       {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
 
       <button
         type="submit"
-        disabled={!title.trim()}
+        disabled={!title.trim() || names.length < 2}
         className="h-8 self-start rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40"
       >
         Crear pull request

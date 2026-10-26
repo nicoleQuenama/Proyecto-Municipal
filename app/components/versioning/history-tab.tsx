@@ -58,7 +58,7 @@ export function HistoryTab() {
       {shown.length === 0 ? (
         <p className="py-8 text-center text-[13px] text-ink-dim">
           {scoped.length === 0
-            ? "Todavía no hay versiones guardadas. Guarda la primera desde el Resumen."
+            ? "Todavía no hay versiones guardadas. Cada vez que guardes una desde el Resumen aparecerá aquí, con quién la hizo y qué cambió, para que puedas volver a revisarla."
             : "Ninguna versión coincide con la búsqueda."}
         </p>
       ) : (

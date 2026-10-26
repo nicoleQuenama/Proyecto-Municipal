@@ -12,6 +12,7 @@ const DEVICE_ICONS: Record<Device, ReactNode> = {
 
 export function ViewportSwitcher() {
   const { device, setDevice } = useViewport();
+  const current = DEVICES.find((d) => d.value === device)!;
 
   return (
     <div
@@ -36,6 +37,10 @@ export function ViewportSwitcher() {
           {DEVICE_ICONS[d.value]}
         </button>
       ))}
+      {/* Qué dispositivo se está editando, con su ancho real. */}
+      <span className="ml-1.5 text-xs whitespace-nowrap text-ink-dim" aria-live="polite">
+        Editando: <strong className="font-medium text-ink">{current.label} · {current.width} px</strong>
+      </span>
     </div>
   );
 }

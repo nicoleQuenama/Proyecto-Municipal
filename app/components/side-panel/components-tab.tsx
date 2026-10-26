@@ -3,92 +3,19 @@
 import { useState } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
-import { Badge } from "../ui/badge";
 import { duplicateComponent } from "../site/rules";
-import { ComponentThumb } from "../site/component-view";
+import { EXAMPLE_COMPONENTS } from "../site/component-templates";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { ComponentDef } from "../site/types";
-import { plural } from "../versioning/versioning-rules";
-import { FILTERS, type ComponentFilter } from "./data";
-
-const rowButton =
-  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink";
-
-interface ComponentRowProps {
-  def: ComponentDef;
-  usage: number;
-  onAdd: () => void;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-}
-
-function ComponentRow({ def, usage, onAdd, onEdit, onDuplicate, onDelete }: ComponentRowProps) {
-  const [confirming, setConfirming] = useState(false);
-
-  if (confirming) {
-    return (
-      <li className="flex flex-col gap-2 rounded-lg bg-red-500/10 p-2">
-        <p role="alert" className="text-xs text-red-300">
-          ¿Eliminar «{def.name}»?
-          {usage > 0 && ` Se quitará de ${plural(usage, "bloque", "bloques")}.`}
-        </p>
-        <span className="flex gap-2">
-          <button
-            type="button"
-            onClick={onDelete}
-            className="h-7 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15"
-          >
-            Eliminar
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirming(false)}
-            className="h-7 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink"
-          >
-            Cancelar
-          </button>
-        </span>
-      </li>
-    );
-  }
-
-  return (
-    <li className="group flex items-center gap-2 rounded-lg border border-transparent p-2 hover:border-line hover:bg-hover">
-      <ComponentThumb def={def} />
-
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-[13px] font-medium">
-          <span className="truncate">{def.name}</span>
-          {def.custom && <Badge tone="accent">Propio</Badge>}
-        </p>
-        <p className="truncate text-xs text-ink-dim">{def.description}</p>
-      </div>
-
-      {def.custom ? (
-        <>
-          <button type="button" aria-label={`Editar ${def.name}`} title="Editar" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex`}>✎</button>
-          <button type="button" aria-label={`Eliminar ${def.name}`} title="Eliminar" onClick={() => setConfirming(true)} className={`${rowButton} hidden hover:text-red-400 group-hover:flex focus:flex`}>×</button>
-        </>
-      ) : (
-        <button type="button" aria-label={`Duplicar ${def.name} para editarlo`} title="Duplicar y editar" onClick={onDuplicate} className={`${rowButton} hidden group-hover:flex focus:flex`}>⧉</button>
-      )}
-
-      <button
-        type="button"
-        aria-label={`Agregar ${def.name} a la página`}
-        title="Agregar a la página"
-        onClick={onAdd}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-accent hover:text-white"
-      >
-        +
-      </button>
-    </li>
-  );
-}
+import { categoryLabel, usedCategories } from "../site/categories";
+import { ComponentRow } from "./component-row";
+import type { ComponentFilter } from "./data";
 
 export function ComponentsTab() {
-  const { components, pages } = useSite();
+  const site = useSite();
+  const { pages } = site;
+  // Las figuras dibujadas en la página no son componentes que se agreguen: no se listan.
+  const components = site.components.filter((c) => !c.drawn);
   const dispatch = useSiteDispatch();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");
@@ -96,15 +23,22 @@ export function ComponentsTab() {
   const { currentUser } = useAuth();
   const canEditContent = hasPermission(currentUser?.role, "editContent");
 
+  // Solo las categorías que tienen componentes; si la elegida se vació, vuelve a «Todos».
+  const categories = usedCategories(components);
+  const activeFilter = filter === "all" || categories.includes(filter) ? filter : "all";
+  const filters = [{ value: "all", label: "Todos" }, ...categories.map((value) => ({ value, label: categoryLabel(value) }))];
+
   const normalized = query.trim().toLowerCase();
   const visible = components.filter(
     (c) =>
-      (filter === "all" || c.category === filter) &&
+      (activeFilter === "all" || c.category === activeFilter) &&
       (!normalized || c.name.toLowerCase().includes(normalized)),
   );
 
   const usageOf = (id: string) =>
     pages.reduce((total, page) => total + page.blocks.filter((b) => b.componentId === id).length, 0);
+
+  const missingExamples = EXAMPLE_COMPONENTS.some((example) => !components.some((c) => c.id === example.id));
 
   const duplicate = (def: ComponentDef) =>
     openBuilder(duplicateComponent(def, crypto.randomUUID(), `${def.name} (copia)`));
@@ -125,14 +59,14 @@ export function ComponentsTab() {
       </div>
 
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por categoría">
-        {FILTERS.map((f) => (
+        {filters.map((f) => (
           <button
             key={f.value}
             type="button"
-            aria-pressed={filter === f.value}
+            aria-pressed={activeFilter === f.value}
             onClick={() => setFilter(f.value)}
             className={`h-7 rounded-md px-3 text-xs transition-colors ${
-              filter === f.value ? "bg-accent text-white" : "bg-hover text-ink-dim hover:text-ink"
+              activeFilter === f.value ? "bg-accent text-white" : "bg-hover text-ink-dim hover:text-ink"
             }`}
           >
             {f.label}
@@ -165,10 +99,32 @@ export function ComponentsTab() {
             onDelete={() => canEditContent && dispatch({ type: "component/delete", id: def.id })}
           />
         ))}
-        {visible.length === 0 && (
+        {visible.length === 0 && components.length === 0 && (
+          <li className="flex flex-col items-center gap-3 py-8 text-center text-[13px] text-ink-dim">
+            Aún no has creado componentes.
+            <button
+              type="button"
+              onClick={() => openBuilder("new")}
+              className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90"
+            >
+              + Nuevo componente
+            </button>
+          </li>
+        )}
+        {visible.length === 0 && components.length > 0 && (
           <li className="py-6 text-center text-[13px] text-ink-dim">Sin resultados</li>
         )}
       </ul>
+
+      {missingExamples && (
+        <button
+          type="button"
+          onClick={() => dispatch({ type: "components/restore" })}
+          className="self-start text-[11px] text-ink-dim underline-offset-2 hover:text-ink hover:underline"
+        >
+          Restaurar los componentes de ejemplo
+        </button>
+      )}
     </div>
   );
 }

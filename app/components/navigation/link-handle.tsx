@@ -2,6 +2,7 @@
 
 import { LinkIcon } from "../viewport/icons";
 import { useHandleSize } from "../viewport/use-handle-size";
+import { linkArrow } from "./links";
 import { useNavigation } from "./navigation-context";
 import type { ElementRef, LinkTarget } from "./types";
 
@@ -38,7 +39,7 @@ export function LinkHandle({ element, link, label }: LinkHandleProps) {
       }`}
       style={size}
     >
-      {link ? (link.kind === "external" ? "↗" : "→") : <LinkIcon />}
+      {link ? linkArrow(link) : <LinkIcon />}
     </button>
   );
 }

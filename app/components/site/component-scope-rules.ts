@@ -10,7 +10,7 @@ import type { ComponentDef, ElementOverride, SiteState } from "./types";
 
 interface ComponentTarget {
   componentId: string;
-  /** El bloque desde donde se edita: su formato propio sobre lo cambiado se quita, para que el cambio se vea. */
+  /** El bloque desde donde se edita (se conserva en la acción; el cambio vale para todos los bloques del componente). */
   pageId: string;
   blockId: string;
 }
@@ -23,10 +23,24 @@ const updateComponent = (state: SiteState, componentId: string, update: (def: Co
 /** Un cambio de formato que quita estas propiedades (`undefined` las borra). */
 const clearing = (keys: string[]): ElementOverride => Object.fromEntries(keys.map((key) => [key, undefined]));
 
-/** Cambia un elemento del componente. Los bloques que ya tenían su propio formato en eso lo conservan. */
+/**
+ * Quita el formato propio de esos elementos en TODOS los bloques que usan el componente, en todas las páginas.
+ * Así un cambio «para todo el componente» se ve en cada uno, también en los que antes se habían ajustado a mano.
+ */
+function clearEverywhere(state: SiteState, componentId: string, elementIds: string[], keys: string[]): SiteState {
+  return state.pages.reduce(
+    (current, page) =>
+      page.blocks
+        .filter((block) => block.componentId === componentId)
+        .reduce((inner, block) => styleElements(inner, page.id, block.id, elementIds, clearing(keys)), current),
+    state,
+  );
+}
+
+/** Cambia un elemento del componente. El formato propio que tuvieran los bloques en eso se quita: el cambio vale para todos. */
 export function patchComponentElement(
   state: SiteState,
-  { componentId, pageId, blockId }: ComponentTarget,
+  { componentId }: ComponentTarget,
   elementId: string,
   patch: ElementOverride,
 ): SiteState {
@@ -36,13 +50,13 @@ export function patchComponentElement(
       def.elements.map((element) => (element.id === elementId ? resolveOverride(element, patch, () => undefined) : element)),
     ),
   }));
-  return styleElements(changed, pageId, blockId, [elementId], clearing(Object.keys(patch)));
+  return clearEverywhere(changed, componentId, [elementId], Object.keys(patch));
 }
 
-/** Cambia el tamaño del componente; su fondo (si tiene) crece con él. Lo que ya cambió el bloque se quita. */
+/** Cambia el tamaño del componente; su fondo (si tiene) crece con él. El tamaño propio de los bloques se quita. */
 export function resizeComponent(
   state: SiteState,
-  { componentId, pageId, blockId }: ComponentTarget,
+  { componentId }: ComponentTarget,
   size: Partial<Size>,
   backdropId?: string,
 ): SiteState {
@@ -61,6 +75,12 @@ export function resizeComponent(
     ),
   }));
 
-  const withoutOwnSize = updateBlock(resized, pageId, blockId, (block) => ({ ...block, size: undefined }));
-  return backdropId ? styleElements(withoutOwnSize, pageId, blockId, [backdropId], clearing(["x", "y", "width", "height"])) : withoutOwnSize;
+  const withoutOwnSize = state.pages.reduce(
+    (current, page) =>
+      page.blocks
+        .filter((block) => block.componentId === componentId)
+        .reduce((inner, block) => updateBlock(inner, page.id, block.id, (b) => ({ ...b, size: undefined })), current),
+    resized,
+  );
+  return backdropId ? clearEverywhere(withoutOwnSize, componentId, [backdropId], ["x", "y", "width", "height"]) : withoutOwnSize;
 }

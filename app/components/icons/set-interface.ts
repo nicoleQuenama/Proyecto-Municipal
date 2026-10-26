@@ -1,0 +1,33 @@
+import { box, circle } from "./shapes";
+
+/** Íconos de interfaz: menús, flechas, controles. Cada uno es una lista de trazos (viewBox 24×24). */
+export const INTERFACE_ICONS = {
+  menu: ["M4 6h16", "M4 12h16", "M4 18h16"],
+  "menu-alt": ["M4 6h16", "M10 12h10", "M4 18h16"],
+  close: ["M18 6L6 18", "M6 6l12 12"],
+  plus: ["M12 5v14", "M5 12h14"],
+  minus: ["M5 12h14"],
+  check: ["M20 6L9 17l-5-5"],
+  "chevron-down": ["M6 9l6 6 6-6"],
+  "chevron-up": ["M18 15l-6-6-6 6"],
+  "chevron-left": ["M15 18l-6-6 6-6"],
+  "chevron-right": ["M9 18l6-6-6-6"],
+  "arrow-left": ["M19 12H5", "M12 19l-7-7 7-7"],
+  "arrow-right": ["M5 12h14", "M12 5l7 7-7 7"],
+  "arrow-up": ["M12 19V5", "M5 12l7-7 7 7"],
+  "arrow-down": ["M12 5v14", "M19 12l-7 7-7-7"],
+  "more-horizontal": [circle(5, 12, 1), circle(12, 12, 1), circle(19, 12, 1)],
+  "more-vertical": [circle(12, 5, 1), circle(12, 12, 1), circle(12, 19, 1)],
+  grid: [box(3, 3, 7, 7, 1), box(14, 3, 7, 7, 1), box(3, 14, 7, 7, 1), box(14, 14, 7, 7, 1)],
+  list: ["M8 6h13", "M8 12h13", "M8 18h13", "M3 6h.01", "M3 12h.01", "M3 18h.01"],
+  filter: ["M22 3H2l8 9.5V19l4 2v-8.5z"],
+  sort: ["M3 6h18", "M6 12h12", "M10 18h4"],
+  search: [circle(11, 11, 8), "M21 21l-4.3-4.3"],
+  eye: ["M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z", circle(12, 12, 3)],
+  "eye-off": ["M17.9 17.9A10 10 0 0 1 12 19c-7 0-10-7-10-7a18.5 18.5 0 0 1 5.1-5.9", "M9.9 4.2A9 9 0 0 1 12 4c7 0 10 7 10 7a18.5 18.5 0 0 1-2.2 3.2", "M1 1l22 22"],
+  lock: [box(5, 11, 14, 10, 2), "M8 11V7a4 4 0 0 1 8 0v4"],
+  unlock: [box(5, 11, 14, 10, 2), "M8 11V7a4 4 0 0 1 7.5-2"],
+  settings: [circle(12, 12, 3), circle(12, 12, 7), "M12 2v3", "M12 19v3", "M2 12h3", "M19 12h3", "M4.9 4.9L7 7", "M17 17l2.1 2.1", "M4.9 19.1L7 17", "M17 7l2.1-2.1"],
+  home: ["M3 10.5L12 3l9 7.5", "M5 9.5V21h14V9.5", "M10 21v-6h4v6"],
+  maximize: ["M8 3H5a2 2 0 0 0-2 2v3", "M21 8V5a2 2 0 0 0-2-2h-3", "M3 16v3a2 2 0 0 0 2 2h3", "M16 21h3a2 2 0 0 0 2-2v-3"],
+} satisfies Record<string, string[]>;

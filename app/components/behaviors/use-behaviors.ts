@@ -26,7 +26,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
   const { pages, libraries, functions } = useSite();
   const { followLink } = useNavigation();
   const origin = useOrigin();
-  const play = useAnimationPlayer(behaviors, active);
+  const play = useAnimationPlayer(behaviors, active, ref);
 
   const run = useCallback(
     (trigger: TriggerKind) => {

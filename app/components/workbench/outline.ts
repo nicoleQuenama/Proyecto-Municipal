@@ -35,6 +35,9 @@ const ELEMENT_CODE: Record<CanvasElement["kind"], (element: CanvasElement) => st
   text: (element) => `<div data-el="${element.id}">${shorten(element.text)}</div>`,
   rect: (element) => `<div data-el="${element.id}">${shorten(element.text)}</div>`,
   ellipse: (element) => `<div data-el="${element.id}">${shorten(element.text)}</div>`,
+  triangle: (element) => `<svg data-el="${element.id}" data-shape="triangle">`,
+  line: (element) => `<svg data-el="${element.id}" data-shape="line">`,
+  icon: (element) => `<svg data-el="${element.id}" data-icon="${element.icon ?? "star"}">`,
 };
 
 /** Cómo se elige una parte: dentro de su sección basta `data-el`; desde la página hace falta `data-target`. */

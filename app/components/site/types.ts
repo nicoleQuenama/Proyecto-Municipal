@@ -1,18 +1,28 @@
 import type { RecordingBaseline } from "../animation/animation-rules";
 import type { AnimationStep, RecordedAnimation } from "../animation/types";
+import type { LayerAction } from "../layers/layer-rules";
+import type { BackgroundAction } from "../background/background-rules";
+import type { BlockBackground, BoxSpan } from "../background/types";
 import type { Behavior } from "../behaviors/types";
 import type { MediaItem } from "../media/types";
 import type { LinkTarget, Transition } from "../navigation/types";
-import type { DataRef, DataSource } from "../data-sources/types";
+import type { DataRef, DataSource, RepeatLayout, RepeatPaging } from "../data-sources/types";
 import type { SourceAction } from "../data-sources/source-rules";
+import type { DrawAction } from "../drawing/draw-rules";
+import type { PageSeo, SeoAction } from "./seo-rules";
+import type { IconName } from "../icons/icon-set";
+import type { LinkParams } from "../dynamic/types";
+import type { DynamicAction } from "../dynamic/dynamic-rules";
 import type { Placement } from "../placement/types";
 import type { ResponsiveAction } from "../responsive/responsive-rules";
-import type { ResponsiveLayouts } from "../responsive/types";
-import type { BlockTarget, ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
+import type { Device } from "../responsive/devices";
+import type { SideMargins } from "../responsive/page-margin";
+import type { AdaptChoices, FoldChoices, MenuConfig, ResponsiveLayouts } from "../responsive/types";
+import type { ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
 import type { TitleState } from "../title-editor/types";
 
 /** Un componente es un conjunto de elementos posicionados sobre un lienzo de tamaño fijo. */
-export type ElementKind = "rect" | "ellipse" | "text" | "image" | "video";
+export type ElementKind = "rect" | "ellipse" | "triangle" | "line" | "text" | "image" | "video" | "icon";
 export type TextAlign = "left" | "center" | "right";
 
 /** Hacia qué lado de su contenedor se acopla un elemento en un eje. */
@@ -40,8 +50,10 @@ export interface CanvasElement {
   y: number;
   width: number;
   height: number;
-  /** Color de relleno de rectángulos y elipses. */
+  /** Color de relleno de rectángulos, elipses y triángulos; el color del trazo de una línea. */
   fill: string;
+  /** Línea que sube de izquierda a derecha (↗); sin ella baja (↘). */
+  flipped?: boolean;
   /** Radio de las esquinas (rectángulos e imágenes). */
   radius: number;
   /** Contenido de un texto, o etiqueta centrada de una forma. */
@@ -52,10 +64,24 @@ export interface CanvasElement {
   align: TextAlign;
   /** Tipografía propia; vacío = la que hereda de la página. */
   fontFamily: string;
+  /** Qué ícono dibuja un elemento de tipo «icon» (color = trazo, fontSize = tamaño). */
+  icon?: IconName;
+  /** Grosor del trazo de un ícono. */
+  strokeWidth?: number;
   /** URL de una imagen o de un video. */
   src: string;
+  /** Texto alternativo (lectores de pantalla y buscadores); vacío = decorativa; sin él, falta. */
+  alt?: string;
   /** true si `src` es un reproductor para <iframe> (YouTube, Vimeo); si no, un archivo de video. */
   embed?: boolean;
+  /** Cómo llena el cuadro una imagen o un video: «cover» recorta, «contain» la muestra entera. */
+  fit?: "cover" | "contain";
+  /** Imagen de portada de un video de archivo. */
+  poster?: string;
+  /** Opciones de reproducción de un video de archivo. */
+  autoplay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
   /** Formato extra (clic derecho). Se guarda en el bloque; estas marcas solo existen en el componente de un bloque ya mezclado. */
   italic?: boolean;
   underline?: boolean;
@@ -63,8 +89,16 @@ export interface CanvasElement {
   overline?: boolean;
   strike?: boolean;
   list?: "none" | "ul" | "ol";
+  /** Nombre que le puso la persona en el panel de capas. */
+  name?: string;
+  /** Bloqueado en el panel de capas: no se selecciona ni se arrastra en el lienzo. */
+  locked?: boolean;
   /** Oculto en un bloque concreto (lo fija el bloque, no el componente). */
   hidden?: boolean;
+  /** Oculto solo en estos dispositivos (p. ej. «Ocultar en móvil»). */
+  hiddenOn?: Device[];
+  /** Eliminado en un bloque concreto: ya no se dibuja ahí (lo fija el bloque, no el componente). */
+  removed?: boolean;
 }
 
 /** Un número de píxeles o `var(--nombre)` de una variable de tamaño. */
@@ -95,6 +129,9 @@ export type ElementOverride = Partial<
     | "align"
     | "list"
     | "hidden"
+    | "hiddenOn"
+    | "removed"
+    | "alt"
   > & {
     radius: SizeValue;
     fontSize: SizeValue;
@@ -106,11 +143,18 @@ export type ElementOverride = Partial<
 /** El fondo y las esquinas de la caja de un bloque; si faltan, mandan las reglas de estilo. */
 export interface BlockBox {
   background?: string;
+  /** Imagen o video de fondo, con su ajuste, velo y desenfoque. */
+  backdrop?: BlockBackground;
+  /** Cuánto ocupa la sección: su contenido, todo el ancho o toda la pantalla (banner). */
+  span?: BoxSpan;
   radius?: SizeValue;
 }
 
-/** La categoría decide qué reglas de «caja» recibe el componente. */
-export type ComponentCategory = BlockTarget;
+/**
+ * La categoría agrupa los componentes y decide qué reglas de «caja» recibe. Es una de las 5 conocidas
+ * (`BlockTarget`) o un texto propio; ver `categories.ts`.
+ */
+export type ComponentCategory = string;
 
 export interface ComponentDef {
   id: string;
@@ -122,7 +166,9 @@ export interface ComponentDef {
   elements: CanvasElement[];
   /** Enlaces por id de elemento. Valen en todas las páginas donde se use el componente. */
   links: Record<string, LinkTarget>;
-  /** false para los componentes de fábrica, que no se editan ni se eliminan. */
+  /** Una figura dibujada en la página: tiene un solo elemento y no aparece en la lista de componentes. */
+  drawn?: boolean;
+  /** false para los componentes de fábrica: no se editan (se duplican), pero sí se pueden eliminar. */
   custom: boolean;
   /** Clases de Tailwind y CSS que valen en todos los lugares donde se use el componente (por sección o elemento). */
   styles?: Record<string, CustomStyle>;
@@ -172,6 +218,12 @@ export interface BlockInstance {
   bindings?: Record<string, DataRef>;
   /** Repite la sección una vez por cada elemento de esta lista de una API. */
   repeat?: DataRef;
+  /** Cómo se acomodan las copias de la sección repetida; sin él, una bajo otra. */
+  repeatLayout?: RepeatLayout;
+  /** Muestra la lista por páginas, con una barra para cambiar de página. */
+  repeatPaging?: RepeatPaging;
+  /** Valores de los parámetros de los enlaces a páginas dinámicas, por id de elemento: texto o clave de la API. */
+  linkParams?: LinkParams;
   box?: BlockBox;
   /** Posición libre en la página; sin ella el bloque va en el flujo, uno bajo otro. */
   placement?: Placement;
@@ -181,6 +233,14 @@ export interface BlockInstance {
   elements?: Record<string, ElementOverride>;
   /** Diseño definido a mano para tablet o móvil; el dispositivo que falta se adapta solo. */
   responsive?: ResponsiveLayouts;
+  /** Cómo se adapta solo en cada dispositivo (escalar o apilar); sin elegir, la estrategia inteligente. */
+  adapt?: AdaptChoices;
+  /** El menú de la estrategia «Menú» (tablet y móvil). */
+  menu?: MenuConfig;
+  /** Carrusel, «Ver más» o acordeón por dispositivo. */
+  fold?: FoldChoices;
+  /** La sección completa se oculta solo en estos dispositivos. */
+  hiddenOn?: Device[];
 }
 
 /** Dónde vale una función reutilizable: en todo el proyecto, en una sección o en un elemento. */
@@ -208,7 +268,17 @@ export interface Page {
   media: MediaItem[];
   blocks: BlockInstance[];
   hidden?: boolean;
+  /** Imagen o video de fondo de toda la página. */
+  backdrop?: BlockBackground;
+  /** Ruta con parámetros (`/pokemon/:id`): la página es dinámica y sirve para muchos ids o slugs. */
+  route?: string;
+  /** Valor de ejemplo de cada parámetro, para ver la página en el editor. */
+  previewParams?: Record<string, string>;
   titleHidden?: boolean;
+  /** Margen a cada lado de la página en tablet y móvil; sin él, el de la tabla de márgenes. */
+  sideMargin?: SideMargins;
+  /** El titular se eliminó de esta página: ni se ve ni se publica (las páginas nuevas nacen así). */
+  titleRemoved?: boolean;
   /** Posición libre del titular; sin ella va arriba, en el flujo. */
   titlePlacement?: Placement;
   /** Animaciones grabadas en esta página; las interacciones las reproducen. */
@@ -216,6 +286,8 @@ export interface Page {
   /** CSS y JavaScript de toda la página. */
   css?: string;
   js?: string;
+  /** Título, descripción, imagen e idioma para buscadores y redes. */
+  seo?: PageSeo;
 }
 
 /** Qué se oculta o se muestra: una página, su titular, un bloque, un medio o un elemento de un componente. */
@@ -249,10 +321,16 @@ export interface SiteState extends StyleState {
 }
 
 export type SiteAction =
+  | { type: "project/load"; state: SiteState }
   | { type: "page/create"; id: string; name: string }
   | { type: "page/rename"; id: string; name: string }
   | { type: "page/delete"; id: string }
   | { type: "page/select"; id: string }
+  | { type: "page/home"; id: string }
+  | { type: "title/removed"; pageId: string; removed: boolean }
+  | { type: "hidden/purge"; pageId: string }
+  | { type: "components/restore" }
+  | { type: "element/remove"; scope: "block" | "component"; pageId: string; blockId: string; elementIds: string[] }
   | { type: "title/patch"; patch: Partial<TitleState> }
   | { type: "title/reset" }
   | { type: "media/add"; item: MediaItem }
@@ -276,7 +354,12 @@ export type SiteAction =
   | { type: "function/remove"; id: string }
   | { type: "library/add"; library: Library }
   | SourceAction
+  | SeoAction
+  | DrawAction
+  | DynamicAction
+  | BackgroundAction
   | ResponsiveAction
+  | LayerAction
   | { type: "library/remove"; id: string }
   | { type: "block/style"; pageId: string; blockId: string; elementIds: string[]; patch: ElementOverride }
   | { type: "block/box"; pageId: string; blockId: string; patch: BlockBox }

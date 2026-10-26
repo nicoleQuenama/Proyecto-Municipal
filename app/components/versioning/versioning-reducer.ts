@@ -9,6 +9,7 @@ import {
   canDeleteBranch,
   findLabel,
   headOf,
+  memberProblem,
   mergeBlockers,
   summarizeChanges,
 } from "./versioning-rules";
@@ -52,6 +53,8 @@ type Handlers = {
 };
 
 const HANDLERS: Handlers = {
+  // Reemplaza todo por lo que se guardó la última vez (ramas, versiones, publicaciones…).
+  "project/load": (_state, action) => action.state,
   "branch/create": (state, action) => ({
     ...state,
     branches: [...state.branches, { name: action.name, author: CURRENT_USER, base: state.current }],
@@ -149,7 +152,7 @@ const HANDLERS: Handlers = {
   "pr/approve": (state, action) => {
     return updatePullRequest(state, action.number, (pr) => ({
       ...pr,
-      approvals: [...pr.approvals, CURRENT_USER],
+      approvals: [...pr.approvals, action.by ?? CURRENT_USER],
     }));
   },
 
@@ -206,6 +209,22 @@ const HANDLERS: Handlers = {
         : issue,
     ),
   }),
+
+  "member/add": (state, action) => {
+    const name = action.name.trim();
+    if (memberProblem(state.members, name)) return state;
+    return { ...state, members: [...state.members, { name, role: action.role }] };
+  },
+
+  "member/remove": (state, action) => {
+    // La persona actual no se puede quitar a sí misma.
+    if (action.name === CURRENT_USER) return state;
+    return {
+      ...state,
+      members: state.members.filter((m) => m.name !== action.name),
+      issues: state.issues.map((i) => ({ ...i, assignees: i.assignees.filter((n) => n !== action.name) })),
+    };
+  },
 
   "issue/toggle": (state, action) => ({
     ...state,

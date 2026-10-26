@@ -1,5 +1,5 @@
 import { freshness } from "./cache-strategies";
-import { requestKey } from "./build-request";
+import { requestKey, type PageParams } from "./build-request";
 import { fetchSource } from "./fetch-source";
 import type { DataSource, SourceState } from "./types";
 
@@ -21,11 +21,12 @@ export const subscribe = (listener: () => void) => {
   return () => void listeners.delete(listener);
 };
 
-export const peek = (source: DataSource): SourceState => states.get(requestKey(source)) ?? IDLE;
+export const peek = (source: DataSource, params: PageParams = {}): SourceState =>
+  states.get(requestKey(source, params)) ?? IDLE;
 
 /** Trae la fuente respetando su estrategia de caché; `force` ignora lo guardado (el botón «Probar»). */
-export function load(source: DataSource, force = false): void {
-  const key = requestKey(source);
+export function load(source: DataSource, force = false, params: PageParams = {}): void {
+  const key = requestKey(source, params);
   const known = states.get(key) ?? IDLE;
   const state = known.status === "ready" ? freshness(Date.now() - known.at, source.cache) : "miss";
   if ((!force && state === "fresh") || pending.has(key)) return;
@@ -35,7 +36,7 @@ export function load(source: DataSource, force = false): void {
   if (known.status !== "ready") set(key, { status: "loading" });
 
   pending.add(key);
-  fetchSource(source, force)
+  fetchSource(source, force, params)
     .then((data) => set(key, { status: "ready", data, at: Date.now() }))
     .catch((error) => set(key, { status: "error", message: error instanceof Error ? error.message : "Error", data: previous }))
     .finally(() => void pending.delete(key));

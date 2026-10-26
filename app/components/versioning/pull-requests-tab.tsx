@@ -62,7 +62,11 @@ export function PullRequestsTab() {
         ) : selected ? (
           <PullRequestDetail key={selected.number} pr={selected} />
         ) : (
-          <p className="p-8 text-center text-[13px] text-ink-dim">Selecciona un pull request.</p>
+          <p className="mx-auto max-w-sm p-8 text-center text-[13px] text-ink-dim">
+            {state.pullRequests.length === 0
+              ? "Aún no hay revisiones. Una revisión (pull request) sirve para pedir que otra persona apruebe los cambios de un borrador antes de pasarlos al proyecto principal. Primero crea un borrador y guarda versiones en él; luego pulsa «Nuevo pull request»."
+              : "Selecciona una revisión de la lista."}
+          </p>
         )}
       </div>
     </div>

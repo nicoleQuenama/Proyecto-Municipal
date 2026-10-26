@@ -23,8 +23,11 @@ const BASE: Omit<CanvasElement, "id" | "kind"> = {
 const KIND_DEFAULTS: Record<ElementKind, Partial<CanvasElement>> = {
   rect: {},
   ellipse: { width: 100, height: 100 },
+  triangle: { width: 100, height: 90 },
+  line: { width: 120, height: 60, fill: "#0f172a", role: "none" },
   text: { width: 160, height: 32, fill: "transparent", text: "Texto", role: "text" },
   image: { width: 160, height: 120, fill: "transparent", role: "image" },
+  icon: { width: 32, height: 32, fill: "transparent", icon: "star", fontSize: 24, strokeWidth: 2, role: "none" },
   video: { width: 200, height: 120, fill: "transparent", role: "image" },
 };
 
@@ -171,22 +174,27 @@ function builtIn(
   };
 }
 
-export const BUILT_IN_COMPONENTS: ComponentDef[] = [
+/** Los componentes de ejemplo: se pueden eliminar y volver a añadir con «Restaurar los componentes de ejemplo». */
+export const EXAMPLE_COMPONENTS: ComponentDef[] = [
   builtIn("navbar", "Barra de navegación", "Menú con enlaces a las páginas", "navigation", "navbar"),
   builtIn("card-service", "Tarjeta de Servicio", "Card con icono y texto", "cards", "card"),
   builtIn("cta-buttons", "Set de Botones CTA", "Primario + Secundario", "buttons", "buttons"),
   builtIn("reviews", "Testimonios & Reviews", "Calificación 5 estrellas", "cards", "review"),
   builtIn("hero-banner", "Banner & Hero CTA", "Conversión destacada", "hero", "banner"),
   builtIn("content-section", "Sección de contenido", "Título, texto y botón", "sections", "section"),
-  {
-    id: CODE_COMPONENT_ID,
-    name: "Bloque de código",
-    description: "HTML, CSS, Tailwind y TypeScript",
-    category: "sections",
-    width: 320,
-    height: 120,
-    elements: [],
-    links: {},
-    custom: false,
-  },
 ];
+
+/** El único componente con el que parte un proyecto nuevo: el editor lo necesita para los bloques de código. */
+export const CODE_COMPONENT: ComponentDef = {
+  id: CODE_COMPONENT_ID,
+  name: "Bloque de código",
+  description: "HTML, CSS, Tailwind y TypeScript",
+  category: "sections",
+  width: 320,
+  height: 120,
+  elements: [],
+  links: {},
+  custom: false,
+};
+
+export const BUILT_IN_COMPONENTS: ComponentDef[] = [...EXAMPLE_COMPONENTS, CODE_COMPONENT];

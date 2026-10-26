@@ -25,6 +25,7 @@ interface ParamSlidersProps {
 
 export function ParamSliders({ preset, params, easing, trigger, grouped, onParams, onEasing, onTrigger }: ParamSlidersProps) {
   const instant = "instant" in PRESETS[preset];
+  const ownEasing = "ownEasing" in PRESETS[preset];
 
   return (
     <div className="flex flex-col gap-2">
@@ -46,7 +47,7 @@ export function ParamSliders({ preset, params, easing, trigger, grouped, onParam
         </label>
       ))}
 
-      {!instant && (
+      {!instant && !ownEasing && (
         <label className="flex flex-col gap-1 text-[11px] text-ink-dim">
           Movimiento
           <select value={easing} onChange={(e) => onEasing(e.target.value)} className={selectClass}>

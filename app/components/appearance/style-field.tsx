@@ -71,6 +71,7 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange 
               value={raw}
               placeholder={inherited}
               unsetLabel="Heredado"
+              gradient={prop === "background" || prop === "fill"}
               onCommit={onChange}
             />
           )}

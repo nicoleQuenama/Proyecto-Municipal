@@ -1,35 +1,9 @@
-import type { StepProp } from "./types";
+import type { Preset, PresetParams } from "./preset-types";
+import { PRO_PRESETS } from "./presets-pro";
 
-/** Los ajustes que la persona mueve con deslizadores; cada efecto los usa como quiera. */
-export interface PresetParams {
-  /** ms que dura el efecto entero. */
-  duration: number;
-  /** ms que espera antes de empezar. */
-  delay: number;
-  /** ms de diferencia entre un elemento y el siguiente (cascada). */
-  stagger: number;
-  /** Cuánto se desplaza o crece: píxeles de recorrido, o fuerza del efecto. */
-  distance: number;
-}
+export type { Part, Preset, PresetParams } from "./preset-types";
 
 export const DEFAULT_PARAMS: PresetParams = { duration: 600, delay: 0, stagger: 120, distance: 40 };
-
-/** Un tramo del efecto: una propiedad que va de `from` a `to` durante una parte de la duración (0 a 1). */
-interface Part {
-  prop: StepProp;
-  from: string | number;
-  to: string | number;
-  start?: number;
-  span?: number;
-}
-
-export interface Preset {
-  label: string;
-  icon: string;
-  /** Con duración fija el efecto es instantáneo (aparecer «de golpe»). */
-  instant?: boolean;
-  parts: (p: PresetParams) => Part[];
-}
 
 const px = (x: number, y: number) => `${x}px ${y}px`;
 const ORIGIN = px(0, 0);
@@ -126,6 +100,7 @@ export const PRESETS = {
       { prop: "move", from: px(0, -distance / 3), to: ORIGIN, start: 0.85, span: 0.15 },
     ],
   },
+  ...PRO_PRESETS,
 } as const satisfies Record<string, Preset>;
 
 export type PresetId = keyof typeof PRESETS;

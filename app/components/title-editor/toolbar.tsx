@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ALIGN_OPTIONS,
   BLOCK_OPTIONS,
@@ -17,12 +17,22 @@ import type { BlockTag, TitleState } from "./types";
 interface ToolbarProps {
   state: TitleState;
   onChange: (patch: Partial<TitleState>) => void;
-  onReset: () => void;
+  /** Solo con el titular: restablece sus estilos. */
+  onReset?: () => void;
+  /** A qué afecta la barra: «titular», «Botón «Explorar»», «3 elementos». */
+  caption: string;
+  /** Con el titular la barra ofrece todo; con una selección, solo el formato que vale para elementos. */
+  mode?: "title" | "selection";
+  /** Controles extra junto al rótulo (el alcance de los cambios). */
+  extra?: ReactNode;
+  /** Solo con el titular: lo elimina de la página. */
+  onRemoveTitle?: () => void;
 }
 
 const clampSize = (n: number) => Math.min(MAX_SIZE, Math.max(MIN_SIZE, n));
 
-export function Toolbar({ state, onChange, onReset }: ToolbarProps) {
+export function Toolbar({ state, onChange, onReset, caption, mode = "title", extra, onRemoveTitle }: ToolbarProps) {
+  const isTitle = mode === "title";
   const [linkOpen, setLinkOpen] = useState(false);
   const { size, list } = state;
 
@@ -32,18 +42,25 @@ export function Toolbar({ state, onChange, onReset }: ToolbarProps) {
       aria-label="Editor de titular"
       className="flex min-h-12 min-w-0 flex-1 flex-wrap items-center gap-1 px-3 py-1.5 text-xs text-ink"
     >
-      <select
-        aria-label="Estilo de bloque"
-        className={fieldClass}
-        value={state.block}
-        onChange={(e) => onChange({ block: e.target.value as BlockTag })}
-      >
-        {BLOCK_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <span className="mr-1 max-w-56 shrink-0 truncate rounded-md bg-accent/15 px-2 py-1 font-medium text-accent">
+        Editando: {caption}
+      </span>
+      {extra}
+
+      {isTitle && (
+        <select
+          aria-label="Estilo de bloque"
+          className={fieldClass}
+          value={state.block}
+          onChange={(e) => onChange({ block: e.target.value as BlockTag })}
+        >
+          {BLOCK_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      )}
 
       <select
         aria-label="Tipografía"
@@ -94,18 +111,20 @@ export function Toolbar({ state, onChange, onReset }: ToolbarProps) {
       <ColorButton label="Color de texto" value={state.color} onChange={(color) => onChange({ color })}>
         <b>A</b>
       </ColorButton>
-      <ColorButton
-        label="Resaltado"
-        value={state.highlight ?? "#ffff00"}
-        active={state.highlight !== null}
-        onChange={(highlight) => onChange({ highlight })}
-      >
-        ✎
-      </ColorButton>
+      {isTitle && (
+        <ColorButton
+          label="Resaltado"
+          value={state.highlight ?? "#ffff00"}
+          active={state.highlight !== null}
+          onChange={(highlight) => onChange({ highlight })}
+        >
+          ✎
+        </ColorButton>
+      )}
 
       <Separator />
 
-      {ALIGN_OPTIONS.map(({ value, label, icon }) => (
+      {ALIGN_OPTIONS.filter(({ value }) => isTitle || value !== "justify").map(({ value, label, icon }) => (
         <ToolbarButton
           key={value}
           label={label}
@@ -121,10 +140,12 @@ export function Toolbar({ state, onChange, onReset }: ToolbarProps) {
       <ToolbarButton label="Lista con viñetas" active={list === "ul"} onClick={() => onChange({ list: list === "ul" ? "none" : "ul" })}>•</ToolbarButton>
       <ToolbarButton label="Lista numerada" active={list === "ol"} onClick={() => onChange({ list: list === "ol" ? "none" : "ol" })}>1.</ToolbarButton>
 
-      <Separator />
+      {isTitle && <Separator />}
 
-      <ToolbarButton label="Enlace" active={linkOpen || !!state.link} onClick={() => setLinkOpen((o) => !o)}>🔗</ToolbarButton>
-      {linkOpen && (
+      {isTitle && (
+        <ToolbarButton label="Enlace" active={linkOpen || !!state.link} onClick={() => setLinkOpen((o) => !o)}>🔗</ToolbarButton>
+      )}
+      {isTitle && linkOpen && (
         <input
           autoFocus
           type="url"
@@ -136,8 +157,10 @@ export function Toolbar({ state, onChange, onReset }: ToolbarProps) {
           className={`${fieldClass} w-44 border-line`}
         />
       )}
-      <ToolbarButton label="Restablecer estilos" onClick={onReset}>⟲</ToolbarButton>
+      {onReset && <ToolbarButton label="Restablecer estilos" onClick={onReset}>⟲</ToolbarButton>}
+      {onRemoveTitle && <ToolbarButton label="Eliminar el titular de la página" className="text-red-400" onClick={onRemoveTitle}>🗑</ToolbarButton>}
 
+      {isTitle && (
       <div className="ml-auto flex shrink-0 items-center gap-3 pl-3">
         <label className="flex cursor-pointer items-center gap-2 text-ink-dim hover:text-ink">
           <input
@@ -161,6 +184,7 @@ export function Toolbar({ state, onChange, onReset }: ToolbarProps) {
           {state.editing ? "Editando titular" : "Editar titular"}
         </button>
       </div>
+      )}
     </div>
   );
 }

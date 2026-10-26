@@ -18,6 +18,7 @@ type Handlers = {
 };
 
 const HANDLERS: Handlers = {
+  "project/load": (_state, { state }) => state,
   // Conectar otro sitio empieza de cero; el mismo sitio conserva sus cambios.
   "site/connect": (state, { site, pageUrl, html }) =>
     state.site === site

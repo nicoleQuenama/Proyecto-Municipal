@@ -7,7 +7,7 @@ import { AssigneePicker } from "./assignee-picker";
 import type { Label, LabelTone } from "./types";
 import { useVersioning } from "./versioning-context";
 import { IssueIcon } from "./versioning-icons";
-import { findLabel, matchesAssignee, type AssigneeFilter } from "./versioning-rules";
+import { findLabel, matchesAssignee, memberNames, type AssigneeFilter } from "./versioning-rules";
 
 const CUSTOM = "__custom__";
 
@@ -33,6 +33,7 @@ export function IssuesTab() {
   const [assignees, setAssignees] = useState<string[]>([]);
   const [filter, setFilter] = useState<AssigneeFilter>("all");
 
+  const names = memberNames(state.members);
   const isCustom = selected === CUSTOM;
   const toneOf = (name: string): LabelTone => findLabel(state.labels, name)?.tone ?? "neutral";
   const visibleIssues = state.issues.filter((issue) => matchesAssignee(issue, filter));
@@ -76,7 +77,7 @@ export function IssuesTab() {
 
           <AssigneePicker
             label="Asignar a"
-            members={state.members}
+            members={names}
             value={assignees}
             onToggle={(member) => setAssignees((current) => toggleIn(current, member))}
           />
@@ -126,7 +127,7 @@ export function IssuesTab() {
         >
           <option value="all">Todos</option>
           <option value="unassigned">Sin asignar</option>
-          {state.members.map((member) => (
+          {names.map((member) => (
             <option key={member} value={member}>Asignados a {member}</option>
           ))}
         </select>
@@ -151,7 +152,7 @@ export function IssuesTab() {
 
             <AssigneePicker
               label={`Asignar el issue #${issue.number}`}
-              members={state.members}
+              members={names}
               value={issue.assignees}
               onToggle={(member) =>
                 dispatch({ type: "issue/toggle-assignee", number: issue.number, member })
@@ -168,7 +169,11 @@ export function IssuesTab() {
           </li>
         ))}
         {visibleIssues.length === 0 && (
-          <li className="py-6 text-center text-[13px] text-ink-dim">No hay issues con ese filtro.</li>
+          <li className="py-6 text-center text-[13px] text-ink-dim">
+            {state.issues.length === 0
+              ? "Aún no hay tareas. Una tarea es un pendiente o una idea (p. ej. «Cambiar la foto de portada»): escríbela arriba, elige una etiqueta y, si quieres, a quién se la asignas."
+              : "No hay tareas con ese filtro."}
+          </li>
         )}
       </ul>
     </div>

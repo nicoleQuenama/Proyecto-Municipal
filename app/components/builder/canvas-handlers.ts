@@ -2,6 +2,7 @@
 
 import { clampCanvasSize } from "../canvas-editing/limits";
 import { templateById } from "../site/component-templates";
+import { targetsPage } from "../navigation/links";
 import type { Handlers } from "./builder-types";
 
 export const CANVAS_HANDLERS: Handlers<"meta" | "template" | "link" | "select"> = {
@@ -19,7 +20,7 @@ export const CANVAS_HANDLERS: Handlers<"meta" | "template" | "link" | "select"> 
     const elements = template.build(action.nextId);
     const links = Object.fromEntries(
       Object.entries(template.links?.(elements) ?? {}).filter(
-        ([, link]) => link.kind !== "page" || action.pageIds.includes(link.pageId),
+        ([, link]) => !targetsPage(link) || action.pageIds.includes(link.pageId),
       ),
     );
     return { ...state, width: template.width, height: template.height, elements, links, selectedId: null };

@@ -1,7 +1,7 @@
 /** Reglas puras de enlaces y transiciones (sin React). */
 
 import type { CanvasElement, ComponentDef, Page } from "../site/types";
-import type { LinkTarget, Transition, TransitionKind } from "./types";
+import type { LinkTarget, PageLink, Transition, TransitionKind } from "./types";
 
 export const TRANSITION_LABELS: Record<TransitionKind, string> = {
   none: "Sin animación",
@@ -58,25 +58,37 @@ export function normalizeExternalUrl(input: string): string | null {
   }
 }
 
+/** ¿Apunta a una página (para ir a ella o abrirla en una ventana modal)? */
+export const targetsPage = (link: LinkTarget): link is PageLink => link.kind === "page" || link.kind === "modal";
+
+/** La flecha que acompaña a cada tipo de enlace. */
+const ARROWS: Record<LinkTarget["kind"], string> = { page: "→", modal: "▣", "close-modal": "✕", external: "↗" };
+export const linkArrow = (link: LinkTarget): string => ARROWS[link.kind];
+
 /** Texto corto de a dónde lleva un enlace. */
 export function linkLabel(link: LinkTarget, pages: Page[]): string {
   if (link.kind === "external") return `↗ ${link.url || "(sin URL)"}`;
+  if (link.kind === "close-modal") return "✕ Cierra la ventana modal";
   const page = pages.find((p) => p.id === link.pageId);
-  return `→ ${page ? page.name : "(página eliminada)"}`;
+  const arrow = linkArrow(link);
+  if (!page) return `${arrow} (página eliminada)`;
+  const name = page.route ? `${page.name} (${page.route})` : page.name;
+  return link.kind === "modal" ? `${arrow} Ventana: ${name}` : `${arrow} ${name}`;
 }
 
 /** Resumen para el historial de versiones: destino y, si la tiene, su transición propia. */
 export function linkSummary(link: LinkTarget, pages: Page[]): string {
   const base = linkLabel(link, pages);
   if (link.kind === "external") return link.newTab ? `${base} (pestaña nueva)` : base;
+  if (link.kind !== "page") return base;
   return link.transition ? `${base} · ${describeTransition(normalizeTransition(link.transition))}` : base;
 }
 
 /** Cualquier elemento con texto o una imagen puede ser un enlace. */
 export const isLinkable = (element: CanvasElement): boolean =>
-  element.kind === "image" || element.text.trim() !== "";
+  element.kind === "image" || element.kind === "icon" || element.text.trim() !== "";
 
-const KIND_NAMES = { rect: "Botón", ellipse: "Forma", text: "Texto", image: "Imagen", video: "Video" } as const;
+const KIND_NAMES = { rect: "Botón", ellipse: "Forma", triangle: "Triángulo", line: "Línea", text: "Texto", image: "Imagen", video: "Video", icon: "Ícono" } as const;
 
 export function elementLabel(element: CanvasElement): string {
   const text = element.text.trim().replace(/\s+/g, " ");
@@ -99,7 +111,7 @@ export function dropLinksToPage(
   pageId: string,
 ): Record<string, LinkTarget> {
   return Object.fromEntries(
-    Object.entries(links).filter(([, link]) => !(link.kind === "page" && link.pageId === pageId)),
+    Object.entries(links).filter(([, link]) => !(targetsPage(link) && link.pageId === pageId)),
   );
 }
 

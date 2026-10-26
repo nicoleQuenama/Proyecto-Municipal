@@ -10,6 +10,7 @@ import type { StyleContext, StyleRule, StyleScope, StyleTarget } from "../styles
 import { ScopePicker, type ScopeChoice } from "./scope-picker";
 import { TargetCard } from "./target-card";
 import { VariablesSection } from "./variables-section";
+import { styleTarget } from "../site/categories";
 
 const GROUP_ORDER: TargetGroup[] = ["page", "block", "element"];
 const ELEMENT_TARGETS = (Object.keys(TARGET_DEFS) as StyleTarget[]).filter(
@@ -60,7 +61,7 @@ export function AppearanceTab() {
   const ctx: StyleContext = { pageId: page.id, componentId: component?.id };
 
   // Un componente solo tiene su propia caja (su categoría) y los roles de sus elementos.
-  const targets = component ? [component.category, ...ELEMENT_TARGETS] : ALL_TARGETS;
+  const targets = component ? [styleTarget(component.category), ...ELEMENT_TARGETS] : ALL_TARGETS;
   const groups = GROUP_ORDER.map((group) => ({
     group,
     targets: targets.filter((target) => TARGET_DEFS[target].group === group),
@@ -92,7 +93,7 @@ export function AppearanceTab() {
                 // key con el ámbito: al cambiarlo, las tarjetas se cierran y se reinician.
                 key={`${activeKind}-${component?.id ?? ""}-${target}`}
                 target={target}
-                label={component && target === component.category ? "Caja de este componente" : undefined}
+                label={component && target === styleTarget(component.category) ? "Caja de este componente" : undefined}
                 rule={site.rules.find((rule) => rule.target === target && sameScope(rule.scope, scope))}
                 scope={scope}
                 ctx={ctx}

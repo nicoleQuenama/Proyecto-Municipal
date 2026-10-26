@@ -1,6 +1,10 @@
 "use client";
 
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { BackgroundLayers } from "../background/background-layers";
+import { hasBackground } from "../background/background-css";
+import { useShapeDrawing } from "../drawing/use-shape-drawing";
+import { ModalLayer } from "../modal/modal-layer";
 import { PageGuidesProvider } from "../placement/page-guides";
 import { usePlacedExtent } from "../placement/use-placed-extent";
 import { DROP_ATTRIBUTE, pageDrop, useNavigation } from "../navigation/navigation-context";
@@ -10,13 +14,17 @@ import { VisibilityEye } from "../site/visibility-eye";
 import { PageBlocks } from "../site/page-blocks";
 import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { useDeleteKey } from "../site/use-delete-key";
 import { useDeselect } from "../site/use-deselect";
 import type { Page } from "../site/types";
 import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
 import { TitleCanvas } from "../title-editor/title-editor";
 import { CANVAS_SURFACE_ID } from "./fit-zoom";
+import { PageLabelActions } from "./page-label-actions";
 import { useAutoFit } from "./use-auto-fit";
+import { isAdaptive } from "../responsive/devices";
+import { sideMargin } from "../responsive/page-margin";
 import { DEVICES, useViewport, type Tool } from "./viewport-context";
 
 const CURSORS: Partial<Record<Tool, string>> = {
@@ -29,6 +37,8 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   const { tool } = useViewport();
   useAutoFit();
   const deselect = useDeselect();
+  const drawing = useShapeDrawing();
+  useDeleteKey();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -51,6 +61,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   return (
     <div
       id={CANVAS_SURFACE_ID}
+      onPointerDownCapture={drawing.onPointerDownCapture}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={stopPan}
@@ -58,6 +69,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
       className={`min-w-0 flex-1 overflow-auto p-8 pb-24 ${CURSORS[tool] ?? "cursor-crosshair"}`}
     >
       {children}
+      {drawing.preview}
     </div>
   );
 }
@@ -89,6 +101,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const pageRef = usePageCode(page, mode === "preview" && active);
   // La página es al menos tan alta como lo más bajo que se colocó libremente en ella.
   const placedExtent = usePlacedExtent(pageRef);
+  const margin = sideMargin(device, page.sideMargin);
+  // Fuera del escritorio el margen lateral se ajusta al dispositivo (el del escritorio lo fijan las reglas de la página).
+  const sideStyle = isAdaptive(device) ? { paddingLeft: margin, paddingRight: margin } : undefined;
   const baseHeight = production ? "100vh" : "600px";
 
   // Solo se anima al navegar en la vista previa; la clave vuelve a montar la página para reproducirla.
@@ -144,6 +159,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
               {zoom}%
             </span>
             <VisibilityEye hidden={false} zoomed={false} label={page.name} onToggle={() => setHidden(true)} className="flex shrink-0" />
+            <PageLabelActions page={page} />
           </>
         ) : (
           <>
@@ -157,11 +173,12 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
         <div
           ref={pageRef}
           data-site-page
-          className={`relative bg-white text-neutral-900 ${
+          className={`relative isolate bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
             production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+          style={{ ...boxStyle(styles.page), ...sideStyle, minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
         >
+          {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
           <PageGuidesProvider>
           {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
           {shellPage && <PageBlocks page={shellPage} slot="top" interactive={false} />}
@@ -202,14 +219,17 @@ export function CanvasPages() {
   const { mode } = useNavigation();
   const { pages, currentPageId } = useSite();
 
-  if (mode === "preview") return <ProductionView />;
+  if (mode === "preview") return <><ProductionView /><ModalLayer /></>;
 
   return (
-    <div className="flex w-max items-start gap-8">
-      {pages.map((page) => (
-        <PageArtboard key={page.id} page={page} active={page.id === currentPageId} tiled />
-      ))}
-    </div>
+    <>
+      <div className="flex w-max items-start gap-8">
+        {pages.map((page) => (
+          <PageArtboard key={page.id} page={page} active={page.id === currentPageId} tiled />
+        ))}
+      </div>
+      <ModalLayer />
+    </>
   );
 }
 

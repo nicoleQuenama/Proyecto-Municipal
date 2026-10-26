@@ -3,6 +3,7 @@
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { Page } from "../site/types";
 import { externalLinkCount, flowEdges } from "./links";
+import { routeOf } from "../site/rules";
 import { DROP_ATTRIBUTE, EXTERNAL_DROP, pageDrop, useNavigation } from "./navigation-context";
 
 const WIDTH = 300;
@@ -119,6 +120,7 @@ export function FlowMap() {
                 height={NODE_H}
                 rx="8"
                 strokeWidth={isHot ? 3 : 1.5}
+                strokeDasharray={page.route ? "4 2" : undefined}
                 className={
                   isHot
                     ? "fill-green-500/25 stroke-green-400"
@@ -127,15 +129,21 @@ export function FlowMap() {
                       : "fill-panel stroke-line"
                 }
               />
+              <title>{`${page.name} · ${routeOf(page)}`}</title>
               <text
                 x={point.x}
-                y={point.y + 4}
+                y={point.y + (page.route ? 0 : 4)}
                 textAnchor="middle"
                 fontSize="11"
                 className="pointer-events-none fill-ink"
               >
                 {shortName(page)}
               </text>
+              {page.route && (
+                <text x={point.x} y={point.y + 10} textAnchor="middle" fontSize="7" className="pointer-events-none fill-ink-dim">
+                  {routeOf(page).length > 18 ? `${routeOf(page).slice(0, 17)}…` : routeOf(page)}
+                </text>
+              )}
               {external > 0 && (
                 <text
                   x={point.x + NODE_W / 2 - 2}

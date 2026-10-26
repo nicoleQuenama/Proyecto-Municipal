@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useReducer, useState, type Dispatch, type ReactNode } from "react";
+import { useAutosave } from "../persistence/use-autosave";
 import { externalReducer, INITIAL_EXTERNAL } from "./external-reducer";
 import { loadPage, normalizeSiteUrl } from "./load-page";
 import type { ExternalAction, ExternalState } from "./types";
@@ -27,6 +28,7 @@ export function useExternal() {
 
 export function ExternalProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(externalReducer, INITIAL_EXTERNAL);
+  useAutosave<ExternalState>("external", state, (saved) => dispatch({ type: "project/load", state: saved }));
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [editorOpen, setEditorOpen] = useState(false);
 

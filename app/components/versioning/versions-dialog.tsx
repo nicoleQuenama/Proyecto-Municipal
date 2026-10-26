@@ -11,6 +11,7 @@ import { HistoryTab } from "./history-tab";
 import { IssuesTab } from "./issues-tab";
 import { NAV_ITEMS, type NavCounts, type TabId } from "./nav-items";
 import { OverviewTab } from "./overview-tab";
+import { ShareButton } from "./share-button";
 import { PullRequestsTab } from "./pull-requests-tab";
 import { useAdvancedMode } from "./use-advanced-mode";
 import { useWorkingChanges } from "./use-working-changes";
@@ -64,6 +65,8 @@ function VersionsPanel() {
           <h2 className="text-sm font-semibold">Versiones y publicación</h2>
           <Badge tone="accent">{state.current}</Badge>
         </div>
+        <div className="flex items-center gap-2">
+        <ShareButton className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover" />
         <button
           type="button"
           aria-label="Cerrar"
@@ -72,6 +75,7 @@ function VersionsPanel() {
         >
           ×
         </button>
+        </div>
       </header>
 
       <div className="flex h-[min(34rem,72vh)]">

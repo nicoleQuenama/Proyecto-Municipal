@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { LinkEditor } from "./link-editor";
 import { elementLabel } from "./links";
@@ -26,11 +27,11 @@ export function LinkPopover() {
   const top = Math.min(linkEditor.anchor.y + MARGIN, window.innerHeight - 320);
 
   return (
-    <div
+    <TopLayer
       ref={ref}
       role="dialog"
       aria-label={`Enlace de ${elementLabel(element)}`}
-      className="fixed z-[70] flex flex-col gap-3 rounded-xl border border-line bg-panel p-3 text-ink shadow-2xl"
+      className="fixed flex flex-col gap-3 rounded-xl border border-line bg-panel p-3 text-ink shadow-2xl"
       style={{ left, top, width: WIDTH }}
     >
       <p className="flex items-center justify-between gap-2 text-xs font-medium">
@@ -53,6 +54,6 @@ export function LinkPopover() {
         }
       />
       <p className="text-[11px] text-ink-dim">Vale en todas las páginas donde se use este componente.</p>
-    </div>
+    </TopLayer>
   );
 }

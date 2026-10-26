@@ -32,6 +32,13 @@ export function OverviewTab({ onGoTo }: { onGoTo: (tab: "changes" | "history") =
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {state.commits.length === 0 && (
+        <p className="rounded-lg bg-hover px-4 py-3 text-xs text-ink-dim">
+          Bienvenido. Aquí guardas versiones de tu trabajo (como puntos de restauración) y las publicas en la página
+          oficial. Empieza editando algo en el lienzo: los cambios aparecerán abajo para guardarlos.
+        </p>
+      )}
+
       <div className="grid grid-cols-3 gap-3">
         <StatusCard
           title="Sin guardar"
