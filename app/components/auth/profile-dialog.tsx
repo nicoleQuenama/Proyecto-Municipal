@@ -31,33 +31,6 @@ export function ProfileDialog({ user, onClose }: { user: User; onClose: () => vo
         <Field icon={<LockIcon />} label="Nombre completo" value={user.name} />
       </div>
 
-      <div className="border-t border-line p-6">
-        <p className="mb-3 text-[10px] font-semibold tracking-wider text-ink-dim uppercase">Permisos</p>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {PERMISSIONS.map((permission) => {
-            const allowed = hasPermission(user.role, permission.key);
-            return (
-              <li
-                key={permission.key}
-                className={`flex items-start gap-2 rounded-lg border px-2.5 py-2 text-[11px] ${
-                  allowed ? "border-line bg-canvas/40 text-ink" : "border-line/60 text-ink-dim/60"
-                }`}
-              >
-                <span
-                  aria-hidden
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] ${
-                    allowed ? "bg-accent/15 text-accent" : "bg-hover text-ink-dim"
-                  }`}
-                >
-                  {allowed ? "✓" : "×"}
-                </span>
-                {permission.label}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
       <div className="flex justify-end border-t border-line bg-canvas/30 px-6 py-4">
         <button
           type="button"

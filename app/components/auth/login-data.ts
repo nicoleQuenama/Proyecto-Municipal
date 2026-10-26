@@ -4,8 +4,4 @@ export const DEMO_ACCOUNTS = [
   { username: "designer", password: "Designer2026!", role: "Diseñador" },
 ];
 
-export const FEATURES = [
-  "Editor visual en tiempo real, sin escribir HTML.",
-  "Control de versiones, ramas y publicación integrada.",
-  "Permisos por rol para todo tu equipo.",
-];
+

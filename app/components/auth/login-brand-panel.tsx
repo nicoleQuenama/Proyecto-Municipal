@@ -1,5 +1,5 @@
 import { ComponentsIcon } from "../viewport/icons";
-import { FEATURES } from "./login-data";
+
 
 export function LoginBrandPanel() {
   return (
@@ -15,16 +15,6 @@ export function LoginBrandPanel() {
           editor profesional.
         </p>
 
-        <ul className="mt-10 flex flex-col gap-4">
-          {FEATURES.map((feature) => (
-            <li key={feature} className="flex items-start gap-3 text-sm text-ink-dim">
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-[10px] text-accent">
-                ✓
-              </span>
-              {feature}
-            </li>
-          ))}
-        </ul>
       </div>
 
       <p className="relative text-[11px] text-ink-dim/80">

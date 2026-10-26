@@ -70,21 +70,10 @@ export function LoginForm() {
                 {pending && (
                   <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 )}
-                {pending ? "Comprobando acceso…" : "Entrar al CMS"}
+                {pending ? "Comprobando acceso…" : "Iniciar sesión"}
               </button>
             </form>
 
-            <LoginDemoAccess
-              onPick={(demoUser, demoPassword) => {
-                setUsername(demoUser);
-                setPassword(demoPassword);
-                setError("");
-              }}
-            />
-
-            <p className="mt-6 text-center text-[10px] leading-relaxed text-ink-dim/70">
-              Sesión protegida con cookie segura. Las contraseñas se guardan cifradas en el servidor.
-            </p>
           </div>
         </section>
       </div>
