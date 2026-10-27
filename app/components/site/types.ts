@@ -142,6 +142,8 @@ export type ElementOverride = Partial<
 >;
 
 /** El fondo y las esquinas de la caja de un bloque; si faltan, mandan las reglas de estilo. */
+export type BlendMode = "multiply" | "screen" | "overlay" | "difference" | "lighten" | "darken";
+
 export interface BlockBox {
   background?: string;
   /** Imagen o video de fondo, con su ajuste, velo y desenfoque. */
@@ -149,6 +151,8 @@ export interface BlockBox {
   /** Cuánto ocupa la sección: su contenido, todo el ancho o toda la pantalla (banner). */
   span?: BoxSpan;
   radius?: SizeValue;
+  /** Cómo se mezcla la sección con lo que tiene detrás (multiplicar, pantalla…): deja ver el fondo a través de ella. */
+  blend?: BlendMode;
 }
 
 /**

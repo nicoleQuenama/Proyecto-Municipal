@@ -4,7 +4,7 @@ import type { Transition } from "../navigation/types";
 export type TriggerKind = "click" | "hover" | "enter" | "leave" | "scroll" | "load";
 
 /** Los efectos de animación disponibles. */
-export type EffectName = "fade" | "slide-up" | "slide-left" | "zoom" | "bounce" | "shake" | "pulse" | "spin";
+export type EffectName = "fade" | "fade-out" | "slide-up" | "slide-left" | "zoom" | "bounce" | "shake" | "pulse" | "spin";
 
 /** Dónde corre el código de una interacción: en la página (acceso completo, necesario para usar librerías) o aislado. */
 export type CodeMode = "page" | "isolated";
@@ -13,6 +13,7 @@ export type CodeMode = "page" | "isolated";
 export type BehaviorAction =
   | { kind: "navigate"; pageId: string; transition?: Transition }
   | { kind: "animate"; effect: EffectName; seconds: number }
+  | { kind: "count"; from: number; to: number; seconds: number; suffix: string }
   | { kind: "play"; animationId: string }
   | { kind: "toggle"; targetKey: string; mode: "show" | "hide" | "toggle" }
   | { kind: "openUrl"; url: string }
@@ -27,5 +28,7 @@ export interface Behavior {
   /** Cómo la llama el usuario (da nombre al archivo de su código); sin él, «código 1», «código 2»… */
   name?: string;
   trigger: TriggerKind;
+  /** Segundos que se espera, tras el disparador, antes de hacer la acción. */
+  delay?: number;
   action: BehaviorAction;
 }

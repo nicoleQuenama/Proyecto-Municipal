@@ -239,6 +239,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       } ${block.code ? customClasses(block, SECTION_KEY) : ""}`}
       style={{
         margin: box.margin,
+        ...(block.box?.blend ? { mixBlendMode: block.box.blend } : {}),
         ...placementStyle(placement),
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
       }}

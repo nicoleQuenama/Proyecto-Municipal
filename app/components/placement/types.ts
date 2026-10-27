@@ -4,4 +4,6 @@ export interface Placement {
   y: number;
   /** Ancho que tenía al soltarlo: lo usan el titular y los medios, que no tienen uno propio. */
   width: number;
+  /** Fija en la pantalla: no se mueve al hacer scroll (una barra, una pantalla de carga, un botón flotante). */
+  fixed?: boolean;
 }

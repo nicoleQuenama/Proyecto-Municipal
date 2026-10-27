@@ -76,6 +76,20 @@ export function BehaviorEditor({ behavior, pages, elements, onChange, onRemove, 
         </button>
       </div>
 
+      <label className="flex items-center justify-between gap-2 text-[11px] text-ink-dim">
+        Esperar antes (s)
+        <input
+          type="number"
+          min={0}
+          max={60}
+          step={0.1}
+          aria-label="Esperar antes de hacerlo (segundos)"
+          value={behavior.delay ?? 0}
+          onChange={(e) => onChange({ ...behavior, delay: Math.min(60, Math.max(0, Number(e.target.value) || 0)) || undefined })}
+          className={`${selectClass} w-20`}
+        />
+      </label>
+
       {kinds.includes(action.kind) ? (
         <select
           aria-label="Qué hace"

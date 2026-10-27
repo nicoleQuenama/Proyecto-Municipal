@@ -18,6 +18,7 @@ import { RepeatControls } from "../data-sources/repeat-controls";
 import { SectionBackground } from "../background/section-background";
 import { IconPicker } from "../icons/icon-picker";
 import { AltControl } from "./alt-control";
+import { LayerControls } from "./layer-controls";
 import { BehaviorEditor } from "./behavior-editor";
 import { RemoveButton } from "./remove-button";
 import { HideOnControls } from "./hide-on-controls";
@@ -128,6 +129,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       {element ? <BindingControls pageId={pageId} block={block} element={element} /> : <RepeatControls pageId={pageId} block={block} />}
       {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}
       {!element && <SectionBackground pageId={pageId} block={block} />}
+      {!element && canEditContent && <LayerControls pageId={pageId} block={block} />}
 
       {canEditContent && (
         <Collapsible title="Interacciones" badge={count(behaviors.length)}>

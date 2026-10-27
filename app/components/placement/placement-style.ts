@@ -7,7 +7,13 @@ import type { Placement } from "./types";
  */
 export function placementStyle(placement: Placement | undefined, sized = false): CSSProperties | undefined {
   if (!placement) return undefined;
-  return { position: "absolute", left: placement.x, top: placement.y, ...(sized ? { width: placement.width } : {}) };
+  return {
+    position: placement.fixed ? "fixed" : "absolute",
+    left: placement.x,
+    top: placement.y,
+    ...(placement.fixed ? { zIndex: 40 } : {}),
+    ...(sized ? { width: placement.width } : {}),
+  };
 }
 
 /** Atributos que identifican al elemento en el DOM: arrastrable, y colocado si lo está. */

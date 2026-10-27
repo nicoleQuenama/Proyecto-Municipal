@@ -1,5 +1,6 @@
 import type { Transition } from "../navigation/types";
 import { SECTION_KEY, type Page } from "../site/types";
+import { countElement, MAX_COUNT_SECONDS } from "./count";
 import { animateElement, EFFECTS, MAX_SECONDS, MIN_SECONDS } from "./effects";
 import type { ActionKind, BehaviorAction, CodeMode } from "./types";
 
@@ -62,6 +63,18 @@ export const ACTIONS: { [K in ActionKind]: ActionDef<K> } = {
       { key: "seconds", label: "Duración (s)", type: "number", min: MIN_SECONDS, max: MAX_SECONDS, step: 0.1 },
     ],
     run: (action, context) => animateElement(context.element, action.effect, action.seconds),
+  },
+
+  count: {
+    label: "Contar un número",
+    create: () => ({ kind: "count", from: 0, to: 100, seconds: 2, suffix: "%" }),
+    fields: [
+      { key: "from", label: "Desde", type: "number", min: -1000000, max: 1000000, step: 1 },
+      { key: "to", label: "Hasta", type: "number", min: -1000000, max: 1000000, step: 1 },
+      { key: "seconds", label: "Duración (s)", type: "number", min: MIN_SECONDS, max: MAX_COUNT_SECONDS, step: 0.1 },
+      { key: "suffix", label: "Después del número", type: "text", placeholder: "%" },
+    ],
+    run: (action, context) => countElement(context.element, action.from, action.to, action.seconds, action.suffix),
   },
 
   play: {

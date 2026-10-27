@@ -27,6 +27,9 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
   const { followLink } = useNavigation();
   const origin = useOrigin();
   const play = useAnimationPlayer(behaviors, active, ref);
+  // Las acciones con retraso pendientes: se cancelan al salir, para no actuar sobre una página que ya no está.
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
 
   const run = useCallback(
     (trigger: TriggerKind) => {
@@ -53,7 +56,9 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
               functions: functionsFor(functions, { blockId, elementId }),
             }),
         };
-        runAction(behavior.action, context);
+        const fire = () => runAction(behavior.action, context);
+        if (behavior.delay && behavior.delay > 0) timers.current.push(window.setTimeout(fire, behavior.delay * 1000));
+        else fire();
       }
     },
     [behaviors, blockId, pages, followLink, libraries, functions, origin, play],
