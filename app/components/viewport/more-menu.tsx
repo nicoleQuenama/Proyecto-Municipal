@@ -27,7 +27,7 @@ export function MoreMenu() {
   const { tool, setTool } = useViewport();
   const { runCommand, shortcutOf } = useCommands();
   const { currentUser } = useAuth();
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditCode = hasPermission(currentUser, "editCode");
 
   const hintOf = (value: MoreValue) => {
     const shortcut = shortcutOf(value === "code" ? "code.open" : toolCommandId(value));

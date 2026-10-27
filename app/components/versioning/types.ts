@@ -93,6 +93,11 @@ export interface PullRequest {
   requiredApprovals: number;
   changes: AttributedChange[];
   conflicts: Conflict[];
+  /** Solo en las que llegan por el servidor (equipos de trabajo): quién la envió y quién la revisa. */
+  authorId?: string;
+  /** Quien invitó al autor y es el único que la recibe; `null` si la recibe un superadministrador. */
+  reviewerId?: string | null;
+  reviewerName?: string;
 }
 
 export type LabelTone = "neutral" | "accent" | "success" | "danger" | "warning";
@@ -133,14 +138,18 @@ export interface VersioningState {
 
 export type VersioningAction =
   | { type: "project/load"; state: VersioningState }
-  | { type: "branch/create"; name: string }
+  | { type: "branch/create"; name: string; author?: string }
   | { type: "branch/switch"; name: string }
   | { type: "branch/delete"; name: string }
   | { type: "stage/toggle"; key: string }
   | { type: "stage/set"; keys: string[] }
-  | { type: "commit"; message: string; changes: WorkingChange[]; at: string }
-  | { type: "publish"; at: string }
-  | { type: "pr/open"; title: string; from: string; into: string }
+  | { type: "commit"; message: string; changes: WorkingChange[]; at: string; author?: string }
+  | { type: "publish"; at: string; author?: string }
+  | { type: "pr/open"; title: string; from: string; into: string; author?: string }
+  /** Las pull requests que el servidor entrega a esta persona (enviadas por ella o para que las revise). */
+  | { type: "reviews/sync"; pullRequests: PullRequest[] }
+  /** Una pull request del servidor se fusionó: queda su versión de fusión en la rama de destino. */
+  | { type: "review/merged"; number: number; at: string }
   | { type: "pr/approve"; number: number; by?: string }
   | { type: "pr/resolve"; number: number; index: number; resolution: "into" | "from" }
   | { type: "pr/merge"; number: number; at: string }

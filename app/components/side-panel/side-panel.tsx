@@ -5,7 +5,6 @@ import { hasPermission, useAuth } from "../auth/auth-context";
 import { UserManagement } from "../auth/user-management";
 import { AppearanceTab } from "../appearance/appearance-tab";
 import { DataTab } from "../data-sources/data-tab";
-import { ExternalTab } from "../external-site/external-tab";
 import { LibrariesTab } from "../libraries/libraries-tab";
 import { NavigationTab } from "../navigation/navigation-tab";
 import { splitBlocks } from "../site/rules";
@@ -38,7 +37,6 @@ const TAB_CONTENT: Record<PanelTab, ReactNode> = {
   libraries: <LibrariesTab />,
   users: <UserManagement />,
   data: <DataTab />,
-  site: <ExternalTab />,
 };
 
 export function SidePanel() {
@@ -93,7 +91,7 @@ export function SidePanel() {
   };
 
   // Cada sección declara el permiso que necesita; el rol del usuario decide qué ve.
-  const visibleTabs = TABS.filter((t) => hasPermission(currentUser?.role, t.permission));
+  const visibleTabs = TABS.filter((t) => hasPermission(currentUser, t.permission));
   const activeTab = visibleTabs.some((t) => t.value === tab) ? tab : visibleTabs[0].value;
   const current = visibleTabs.find((t) => t.value === activeTab) ?? visibleTabs[0];
 

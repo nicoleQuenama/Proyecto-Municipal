@@ -13,7 +13,7 @@ import {
 import { openModalFor } from "../modal/modal-state";
 import type { OpenModal } from "../modal/types";
 import { ParamsContext } from "../dynamic/params-context";
-import { effectiveParams, type RouteValues } from "../dynamic/route-params";
+import { effectiveParams, paramsOf, type RouteValues } from "../dynamic/route-params";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { normalizeExternalUrl, resolveTransition } from "./links";
 import type { ElementRef, LinkEditorTarget, LinkTarget, NavMode, Point, Transition } from "./types";
@@ -155,6 +155,12 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
 
       // Una página dinámica puede enlazarse a sí misma con otro id (el siguiente, el anterior…).
       const values = effectiveParams(target.route, target.previewParams, link.params);
+      const unset = paramsOf(target.route).filter((name) => !link.params?.[name]);
+      if (unset.length > 0) {
+        notify(
+          `«${target.name}» es dinámica y este enlace no dice qué ${unset.join(", ")} usar: se muestra el ejemplo (${unset.map((n) => `${n} = ${values[n]}`).join(", ")}). Selecciona el enlace y rellena sus datos en el panel derecho.`,
+        );
+      }
       if (target.id === currentPageId && JSON.stringify(values) === JSON.stringify(params)) return;
       setVisit({ pageId: target.id, values });
       setTransition(resolveTransition(link, navigation.defaultTransition));

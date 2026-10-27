@@ -10,6 +10,7 @@ import { isAdaptive, type Device } from "../responsive/devices";
 import { dockChange } from "./dock-patch";
 import { elementChange, sectionResize, type EditTarget } from "./scope-actions";
 import { useSiteDispatch } from "./site-context";
+import { useNudgeKeys } from "./use-nudge-keys";
 import type { ComponentDef, ElementOverride } from "./types";
 
 /** Edición directa de un bloque en la página: sus gestos y el lienzo (la sección) donde ocurren. */
@@ -52,6 +53,7 @@ export function useBlockGestures({ pageId, blockId, view, selected, device }: Bl
     dispatch(onDevice ? deviceFrameChange(onDevice, elementId, patch) : elementChange(settings.scope, target, elementId, patch));
   const resizeSection = (next: Partial<Size>) =>
     dispatch(onDevice ? deviceSizeChange(onDevice, next, backdropId) : sectionResize(settings.scope, target, next, backdropId));
+  useNudgeKeys(selected, elements, change);
   const elementOf = (id: string) => elements.find((element) => element.id === id);
 
   const commands: CanvasCommands = {

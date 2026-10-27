@@ -18,7 +18,7 @@ interface CodeBlockViewProps {
 /** Un bloque de código tal como se ve en una página. */
 export function CodeBlockView({ code, libraries, shared, name, editing, onEdit }: CodeBlockViewProps) {
   const { currentUser } = useAuth();
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditCode = hasPermission(currentUser, "editCode");
 
   return (
     <div className="relative w-full">

@@ -10,7 +10,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Indica tu usuario y contraseña." }, { status: 400 });
   }
 
-  const user = await verifyCredentials(body.username, body.password);
+  let user;
+  try {
+    user = await verifyCredentials(body.username, body.password);
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "No se pudo iniciar sesión." }, { status: 403 });
+  }
   if (!user) return Response.json({ error: "Usuario o contraseña incorrectos." }, { status: 401 });
 
   await startSession(user.id);

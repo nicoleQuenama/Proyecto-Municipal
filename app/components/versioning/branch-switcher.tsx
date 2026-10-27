@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
 import { ChevronIcon } from "../viewport/icons";
 import { MenuButton, type MenuItem } from "../viewport/menu-button";
@@ -10,11 +11,13 @@ const MANAGE = "__manage";
 
 /** Selector de rama del header: cambia de rama o abre el panel de versiones. */
 export function BranchSwitcher() {
-  const { state, dispatch } = useVersioning();
+  const { state, dispatch, mustBranch } = useVersioning();
   const { openDialog, withShortcut } = useCommands();
+  const { currentUser } = useAuth();
 
   const items: MenuItem<string>[] = [
-    ...state.branches.map((branch) => ({
+    // Quien no puede publicar en main trabaja solo en las ramas que creó.
+    ...state.branches.filter((branch) => !mustBranch || branch.author === currentUser?.name).map((branch) => ({
       value: branch.name,
       label: branch.name,
       icon: <BranchIcon />,
@@ -32,7 +35,7 @@ export function BranchSwitcher() {
         items={items}
         selected={state.current}
         onSelect={onSelect}
-        placement="bottom-end"
+        placement="bottom-start"
         className="flex h-7 max-w-44 items-center gap-1.5 rounded-md px-2 text-xs hover:bg-hover"
       >
         <BranchIcon />

@@ -270,7 +270,7 @@ export function FormatMenu() {
   const styles = useStyles(menu?.target.pageId);
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditCode = hasPermission(currentUser, "editCode");
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(ref, menu !== null, closeFormatMenu);
 

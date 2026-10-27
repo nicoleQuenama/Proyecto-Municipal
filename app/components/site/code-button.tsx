@@ -16,7 +16,7 @@ export function CodeButton({ label, onOpen, className }: CodeButtonProps) {
   const size = useHandleSize();
   const { currentUser } = useAuth();
   // El acceso al código se decide aquí: todos los botones ‹› de la app pasan por este componente.
-  if (!hasPermission(currentUser?.role, "editCode")) return null;
+  if (!hasPermission(currentUser, "editCode")) return null;
 
   return (
     <button

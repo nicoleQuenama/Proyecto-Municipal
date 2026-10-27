@@ -26,7 +26,7 @@ export function BehaviorEditor({ behavior, pages, elements, onChange, onRemove, 
   const { action } = behavior;
   const definition = ACTIONS[action.kind];
   const { currentUser } = useAuth();
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditCode = hasPermission(currentUser, "editCode");
   const kinds = (Object.keys(ACTIONS) as ActionKind[]).filter((kind) => kind !== "code" || canEditCode);
 
   const setField = (key: string, value: unknown) =>

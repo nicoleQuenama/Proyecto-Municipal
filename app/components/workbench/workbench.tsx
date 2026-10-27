@@ -138,7 +138,7 @@ function Workbench() {
 export function WorkbenchHost() {
   const { open, close } = useWorkbench();
   const { currentUser } = useAuth();
-  if (!open || !hasPermission(currentUser?.role, "editCode")) return null;
+  if (!open || !hasPermission(currentUser, "editCode")) return null;
 
   return (
     <Modal label="Editor de código" size="full" onClose={close}>

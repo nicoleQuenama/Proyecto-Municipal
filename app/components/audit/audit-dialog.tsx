@@ -9,7 +9,7 @@ import { AuditPanel } from "./audit-panel";
 export function AuditDialog() {
   const { dialog, closeDialog } = useCommands();
   const { currentUser } = useAuth();
-  if (dialog !== "audit" || !hasPermission(currentUser?.role, "viewAudit")) return null;
+  if (dialog !== "audit" || !hasPermission(currentUser, "viewAudit")) return null;
 
   return (
     <Modal label="Auditoría antes de publicar" size="full" onClose={closeDialog}>

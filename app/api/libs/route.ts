@@ -15,7 +15,7 @@ const fail = (error: unknown, status = 400) =>
 /** Instalar o quitar librerías es parte del acceso al código: solo superadmin y dev. */
 async function canManageCode(): Promise<boolean> {
   const user = await sessionUser();
-  return user?.role === "superadmin" || user?.role === "dev";
+  return (user?.role === "superadmin" || user?.role === "dev") && !user.access?.denied.includes("installLibraries");
 }
 
 const forbidden = () => Response.json({ error: "No tienes permiso para gestionar librerías." }, { status: 403 });

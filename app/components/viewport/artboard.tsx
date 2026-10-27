@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground } from "../background/background-css";
 import { useShapeDrawing } from "../drawing/use-shape-drawing";
@@ -22,6 +22,9 @@ import { useStyles } from "../styles/use-styles";
 import { TitleCanvas } from "../title-editor/title-editor";
 import { CANVAS_SURFACE_ID } from "./fit-zoom";
 import { PageLabelActions } from "./page-label-actions";
+import { FullBleedContext, useWidth } from "./page-width";
+import { useAuth } from "../auth/auth-context";
+import { canEditBlock } from "../auth/access";
 import { useAutoFit } from "./use-auto-fit";
 import { isAdaptive } from "../responsive/devices";
 import { sideMargin } from "../responsive/page-margin";
@@ -95,6 +98,10 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const styles = useStyles(page.id);
   const dispatch = useSiteDispatch();
   const { mode, hotDrop, transition, transitionKey } = useNavigation();
+  const { currentUser } = useAuth();
+  // Con acceso limitado: ¿hay algo en esta página que le toque? Si no, el marco se atenúa.
+  const limited = !!currentUser?.access?.scope && mode === "edit";
+  const hasMine = page.blocks.some((block) => canEditBlock(currentUser, page.id, block.id));
   const current = DEVICES.find((d) => d.value === device)!;
   const select = () => dispatch({ type: "page/select", id: page.id });
   const scale = zoom / 100;
@@ -103,8 +110,22 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const placedExtent = usePlacedExtent(pageRef);
   const margin = sideMargin(device, page.sideMargin);
   // Fuera del escritorio el margen lateral se ajusta al dispositivo (el del escritorio lo fijan las reglas de la página).
-  const sideStyle = isAdaptive(device) ? { paddingLeft: margin, paddingRight: margin } : undefined;
+  const fullWidth = production && !isAdaptive(device);
+  // Con la página a todo el ancho, el contenido (diseñado a 1024 px) queda centrado y el fondo llega a los bordes.
+  // El relleno lateral propio de la página (o el de por defecto) se suma al centrado.
+  const sides = styles.page.padding?.split(/\s+/);
+  const ownSide = sides ? (sides[3] ?? sides[1] ?? sides[0]) : "2.5rem";
+  const frame = useRef<HTMLDivElement>(null);
+  const frameWidth = useWidth(frame);
+  const centeredOnly = Math.max(0, (frameWidth - current.width) / 2);
+  const centered = `calc(${centeredOnly}px + ${ownSide})`;
+  const sideStyle = isAdaptive(device)
+    ? { paddingLeft: margin, paddingRight: margin }
+    : fullWidth
+      ? { paddingLeft: centered, paddingRight: centered }
+      : undefined;
   const baseHeight = production ? "100vh" : "600px";
+  // En escritorio la vista previa ocupa todo el ancho de la ventana, como lo vería un visitante; tablet y móvil conservan su ancho.
 
   // Solo se anima al navegar en la vista previa; la clave vuelve a montar la página para reproducirla.
   const animation =
@@ -137,12 +158,12 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       {...dropProps}
       className={
         tiled
-          ? "shrink-0"
+          ? `shrink-0 ${limited && !hasMine ? "opacity-35 saturate-50" : ""}`
           : `mx-auto w-full transition-[max-width] duration-200 ${production ? "min-h-full bg-white" : ""}`
       }
       // En fila, el marco ocupa su ancho ya escalado y solo la página se escala; a solas, todo junto.
-      // En producción la página tiene el mismo ancho que en la maqueta, para que se vea igual.
-      style={tiled ? { width: current.width * scale } : { maxWidth: current.width }}
+      // En producción, en tablet y móvil, la página tiene el ancho del dispositivo.
+      style={tiled ? { width: current.width * scale } : fullWidth ? undefined : { maxWidth: current.width }}
     >
       {!production && (
       <p className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
@@ -155,6 +176,8 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
             >
               {page.name} · {routeOf(page)}
             </button>
+            {limited && hasMine && <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white">✏ Puedes editar</span>}
+            {limited && !hasMine && <span className="shrink-0 text-[10px]">sin cambios para ti</span>}
             <span title="Zoom de la vista: el tamaño real es 100 %" className="shrink-0 text-xs tabular-nums">
               {zoom}%
             </span>
@@ -169,16 +192,18 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       </p>
       )}
 
-      <div className="relative" style={tiled ? { width: current.width, zoom: scale } : undefined}>
+      <div ref={frame} className="relative" style={tiled ? { width: current.width, zoom: scale } : undefined}>
         <div
           ref={pageRef}
           data-site-page
           className={`relative isolate bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
             production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), ...sideStyle, minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+          style={{ ...boxStyle(styles.page), ...sideStyle, ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
+          {fullWidth && <style>{"[data-site-page] [data-placed]{margin-left:var(--cms-offset)!important}"}</style>}
+          <FullBleedContext value={fullWidth}>
           <PageGuidesProvider>
           {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
           {shellPage && <PageBlocks page={shellPage} slot="top" interactive={false} />}
@@ -195,6 +220,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
             <MediaList page={page} interactive={active} />
           </div>
           </PageGuidesProvider>
+          </FullBleedContext>
         </div>
 
         {tiled && !active && mode === "edit" && (
@@ -218,13 +244,20 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
 export function CanvasPages() {
   const { mode } = useNavigation();
   const { pages, currentPageId } = useSite();
+  const { currentUser } = useAuth();
 
   if (mode === "preview") return <><ProductionView /><ModalLayer /></>;
+
+  // Con acceso limitado solo se muestran las páginas donde hay algo que cambiar: lo demás sería ruido.
+  const mine = currentUser?.access?.scope
+    ? pages.filter((page) => page.blocks.some((block) => canEditBlock(currentUser, page.id, block.id)))
+    : pages;
+  const shown = mine.length > 0 ? mine : pages;
 
   return (
     <>
       <div className="flex w-max items-start gap-8">
-        {pages.map((page) => (
+        {shown.map((page) => (
           <PageArtboard key={page.id} page={page} active={page.id === currentPageId} tiled />
         ))}
       </div>

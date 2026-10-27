@@ -365,6 +365,8 @@ export type SiteAction =
   | { type: "block/box"; pageId: string; blockId: string; patch: BlockBox }
   /** Cambia de una vez un color de la sección: en los elementos que lo usan (por propiedad) y en el fondo de su caja. */
   | { type: "block/recolor"; pageId: string; blockId: string; color: string; fill: string[]; text: string[]; box: boolean }
+  /** Lo mismo que `block/recolor`, pero para todas las secciones que usan el componente. */
+  | { type: "component/recolor"; componentId: string; pageId: string; blockId: string; color: string; fill: string[]; text: string[]; box: boolean }
   | { type: "component/element"; componentId: string; pageId: string; blockId: string; elementId: string; patch: ElementOverride }
   | { type: "component/size"; componentId: string; pageId: string; blockId: string; size: Partial<{ width: number; height: number }>; backdropId?: string }
   | { type: "block/place"; pageId: string; blockId: string; placement: Placement }

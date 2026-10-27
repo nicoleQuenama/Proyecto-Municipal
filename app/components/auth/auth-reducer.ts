@@ -15,7 +15,10 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
         currentUser: action.user,
       };
     case "auth/login":
-      return { ...state, status: "authenticated", currentUser: action.user };
+      // Si nada cambió se conserva el objeto, para no volver a dibujar todo cada vez que se comprueba.
+      return JSON.stringify(state.currentUser) === JSON.stringify(action.user)
+        ? state
+        : { ...state, status: "authenticated", currentUser: action.user };
     case "auth/logout":
       return { ...state, status: "anonymous", currentUser: null, users: [] };
     case "users/set":
@@ -24,6 +27,8 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
       return { ...state, users: [...state.users, action.user] };
     case "user/remove":
       return { ...state, users: state.users.filter((u) => u.id !== action.id) };
+    case "user/access":
+      return { ...state, users: state.users.map((u) => (u.id === action.id ? { ...u, access: action.access } : u)) };
     default:
       return state;
   }

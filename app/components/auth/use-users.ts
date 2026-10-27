@@ -20,7 +20,7 @@ export function useUsers() {
   const [role, setRole] = useState<UserRole>("designer");
 
   useEffect(() => {
-    if (!hasPermission(currentUser?.role, "manageUsers")) return;
+    if (!hasPermission(currentUser, "manageUsers")) return;
     let active = true;
     fetchUsers()
       .then((list) => {
@@ -35,7 +35,7 @@ export function useUsers() {
     return () => {
       active = false;
     };
-  }, [currentUser?.role, dispatch]);
+  }, [currentUser, dispatch]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

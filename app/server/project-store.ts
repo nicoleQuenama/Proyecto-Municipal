@@ -2,7 +2,7 @@ import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs
 import { join } from "node:path";
 
 /** Las partes del proyecto que se guardan solas. Una nueva es una entrada nueva. */
-export const PROJECT_PARTS = ["site", "versions", "external"] as const;
+export const PROJECT_PARTS = ["site", "versions"] as const;
 export type ProjectPart = (typeof PROJECT_PARTS)[number];
 
 const DIR = join(process.cwd(), ".cms-data");

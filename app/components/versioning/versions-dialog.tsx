@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
 import { Badge } from "../ui/badge";
 import { Modal } from "../ui/modal";
@@ -13,6 +14,7 @@ import { NAV_ITEMS, type NavCounts, type TabId } from "./nav-items";
 import { OverviewTab } from "./overview-tab";
 import { ShareButton } from "./share-button";
 import { PullRequestsTab } from "./pull-requests-tab";
+import { pendingFor } from "./group-rules";
 import { useAdvancedMode } from "./use-advanced-mode";
 import { useWorkingChanges } from "./use-working-changes";
 import { useVersioning } from "./versioning-context";
@@ -39,11 +41,17 @@ export function VersionsDialog() {
 }
 
 function VersionsPanel() {
-  const { state } = useVersioning();
+  const { state, mustBranch } = useVersioning();
+  const { currentUser } = useAuth();
   const { changes } = useWorkingChanges();
   const { closeDialog } = useCommands();
-  const [tab, setTab] = useState<TabId>("overview");
   const [advanced, setAdvanced] = useAdvancedMode();
+
+  // En un equipo de trabajo las revisiones se ven siempre, sin activar el modo avanzado; y si hay alguna esperando
+  // tu respuesta, el panel se abre directamente ahí.
+  const inTeam = mustBranch || state.pullRequests.some((pr) => pr.authorId !== undefined);
+  const alsoShow: TabId[] = inTeam ? ["pulls"] : [];
+  const [tab, setTab] = useState<TabId>(() => (pendingFor(currentUser, state.pullRequests).length > 0 ? "pulls" : "overview"));
 
   const counts: NavCounts = {
     changes: changes.length,
@@ -55,7 +63,7 @@ function VersionsPanel() {
   // Al apagar el modo avanzado, una sección avanzada abierta vuelve al resumen.
   const toggleAdvanced = (on: boolean) => {
     setAdvanced(on);
-    if (!on && NAV_ITEMS.find((item) => item.id === tab)?.advanced) setTab("overview");
+    if (!on && NAV_ITEMS.find((item) => item.id === tab)?.advanced && !alsoShow.includes(tab)) setTab("overview");
   };
 
   return (
@@ -79,7 +87,7 @@ function VersionsPanel() {
       </header>
 
       <div className="flex h-[min(34rem,72vh)]">
-        <DialogNav tab={tab} onSelect={setTab} counts={counts} advanced={advanced} onAdvanced={toggleAdvanced} />
+        <DialogNav tab={tab} onSelect={setTab} counts={counts} advanced={advanced} onAdvanced={toggleAdvanced} alsoShow={alsoShow} />
         <div role="tabpanel" className="min-w-0 flex-1 overflow-y-auto">
           {CONTENT[tab](setTab)}
         </div>

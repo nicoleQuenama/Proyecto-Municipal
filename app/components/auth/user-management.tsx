@@ -7,7 +7,7 @@ import { useUsers } from "./use-users";
 
 export function UserManagement() {
   const users = useUsers();
-  if (!hasPermission(users.currentUser?.role, "manageUsers")) return null;
+  if (!hasPermission(users.currentUser, "manageUsers")) return null;
 
   return (
     <div className="flex flex-col gap-5">

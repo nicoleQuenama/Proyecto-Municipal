@@ -1,6 +1,10 @@
 "use client";
 
-import { useContext, type KeyboardEvent, type MouseEvent } from "react";
+import { useContext, useLayoutEffect, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { FullBleedContext } from "../viewport/page-width";
+import { MIN_BLEED_WIDTH, visiblePaint } from "./full-bleed";
+import { canEditBlock } from "../auth/access";
+import { useAuth } from "../auth/auth-context";
 import { useBehaviors } from "../behaviors/use-behaviors";
 import { BindingBadge } from "../data-sources/binding-badge";
 import { RepeatedBlock } from "../data-sources/repeated-block";
@@ -66,6 +70,9 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const { mode, followLink } = useNavigation();
   const { openFormatMenu } = useFormatMenu();
   const withParams = useLinkResolver(block);
+  const fullPage = useContext(FullBleedContext);
+  // El fondo liso con que se dibuja la sección (también el que viene de clases o CSS propios), para extenderlo a los bordes.
+  const [painted, setPainted] = useState<string | null>(null);
 
   const behaviors = block.behaviors ?? [];
   const sectionBehaviors = behaviors.filter((b) => b.scope === SECTION_KEY);
@@ -85,12 +92,22 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const cell = useContext(CellWidth);
   const available = cell ?? availableWidth(device, sideMargin(device, page.sideMargin));
   const view = formatted && adaptToDevice(formatted, block, device, flow, available);
+  const wideEnough = (view?.width ?? 0) >= MIN_BLEED_WIDTH;
+  useLayoutEffect(() => {
+    const canvas = fullPage && wideEnough ? ref.current?.querySelector<HTMLElement>("[data-canvas]") : null;
+    setPainted(canvas ? visiblePaint(canvas) : null);
+  }, [ref, fullPage, wideEnough, block.custom, def?.styles, view]);
   const manual = adaptive && block.responsive?.[device] !== undefined;
   const menu = formatted ? menuSetup(formatted, block, device) : null;
   // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es del escritorio.
   const placement = adaptive ? undefined : block.placement;
 
-  const editing = interactive && mode === "edit";
+  // Una cuenta con acceso limitado solo edita las secciones que se le asignaron; el resto se ve pero no se toca.
+  const { currentUser } = useAuth();
+  const locked = !canEditBlock(currentUser, page.id, block.id);
+  const editing = interactive && mode === "edit" && !locked;
+  // Con acceso limitado se remarca lo que sí puede cambiar y se atenúa el resto.
+  const limited = interactive && mode === "edit" && !!currentUser?.access?.scope;
   const selected = editing && block.id === selectedId;
   const gestures = useBlockGestures({ pageId: page.id, blockId: block.id, view, selected, device });
   const move = usePlacementDrag({
@@ -102,6 +119,10 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   const dropData = useDropData(page.id, block, view?.elements ?? []);
   const sectionDrop = useDataDrop((ref) => dropData(ref, null), editing && !block.code);
   if (!def || !view || !resolve) return null;
+
+  // Vista previa a todo el ancho: lo marcado «Todo el ancho» y lo diseñado de borde a borde llegan a los bordes de la página.
+  const autoFill = fullPage && !placement && !stretches(block.box?.span) && !block.code ? painted : null;
+  const bleeds = fullPage && !placement && (stretches(block.box?.span) || autoFill !== null);
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
@@ -207,16 +228,25 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       {...(placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
       {...sectionDrop.handlers}
-      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${block.code || stretches(block.box?.span) ? "w-full" : "w-fit"} max-w-full rounded-md ${
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${block.code || stretches(block.box?.span) || autoFill ? "w-full" : "w-fit"} max-w-full rounded-md ${
         selected && selectedElementId === null
           ? "ring-2 ring-accent"
           : editing
             ? "hover:ring-1 hover:ring-accent/50"
             : ""
       } ${block.code ? customClasses(block, SECTION_KEY) : ""}`}
-      style={{ margin: box.margin, ...placementStyle(placement) }}
+      style={{
+        margin: box.margin,
+        ...placementStyle(placement),
+        ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
+      }}
     >
       {css && <style>{css}</style>}
+      {limited && !locked && (
+        <span className="pointer-events-none absolute top-1 left-1 z-10 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white shadow">
+          ✏ Puedes editar
+        </span>
+      )}
       {sectionDrop.over && <span aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md border-2 border-emerald-500 bg-emerald-500/10" />}
       {editing && block.repeat && (
         <BindingBadge
@@ -234,9 +264,9 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
         className={`max-w-full p-1 ${editing ? "" : "overflow-x-clip"}`}
         style={{
           padding: box.padding,
-          background,
+          background: background ?? autoFill ?? undefined,
           borderRadius: boxRadius(block.box?.radius, resolve) ?? box.borderRadius,
-          ...spanStyle(block.box?.span),
+          ...spanStyle(autoFill ? "width" : block.box?.span),
           ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),
         }}
       >

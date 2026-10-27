@@ -1,5 +1,6 @@
 "use client";
 
+import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { colorInputValue } from "../format/format-options";
 import { useNavigation } from "../navigation/navigation-context";
 import { applyOverrides } from "../site/overrides";
@@ -37,6 +38,7 @@ export function SectionColors() {
   const page = useCurrentPage();
   const dispatch = useSiteDispatch();
   const styles = useStyles();
+  const { settings } = useCanvasSettings();
 
   const block = site.selectedId === TITLE_SELECTION ? undefined : page.blocks.find((b) => b.id === site.selectedId);
   const def = site.components.find((c) => c.id === block?.componentId);
@@ -48,16 +50,11 @@ export function SectionColors() {
   const groups = collectColors(view, typeof boxBackground === "string" ? boxBackground : undefined);
   if (groups.length === 0) return null;
 
-  const recolor = (group: ColorGroup, color: string) =>
-    dispatch({
-      type: "block/recolor",
-      pageId: page.id,
-      blockId: block.id,
-      color,
-      fill: group.elements.fill,
-      text: group.elements.color,
-      box: group.box,
-    });
+  // «Todo el componente» recolorea en cada sección que lo usa; si no, solo en esta.
+  const recolor = (group: ColorGroup, color: string) => {
+    const change = { pageId: page.id, blockId: block.id, color, fill: group.elements.fill, text: group.elements.color, box: group.box };
+    dispatch(settings.scope === "component" ? { type: "component/recolor", componentId: def.id, ...change } : { type: "block/recolor", ...change });
+  };
 
   return (
     <div

@@ -81,7 +81,7 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
   const { setMode } = useNavigation();
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
-  const role = currentUser?.role;
+  const role = currentUser;
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [builder, setBuilder] = useState<BuilderTarget | null>(null);
 

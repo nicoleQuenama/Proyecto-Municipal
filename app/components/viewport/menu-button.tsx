@@ -20,7 +20,7 @@ interface MenuButtonProps<T extends string> {
   onSelect: (value: T) => void;
   className: string;
   /** Dónde se abre el menú respecto al botón. */
-  placement?: Extract<Side, "top" | "bottom-end">;
+  placement?: Extract<Side, "top" | "bottom-start" | "bottom-end">;
   /** Texto de ayuda al final del menú. */
   footer?: ReactNode;
   children: ReactNode;

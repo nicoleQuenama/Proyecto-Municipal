@@ -40,7 +40,7 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
   const openFile = useCallback(
     (ref?: FileRef) => {
       // Sin permiso de código no se abre el editor, aunque un botón antiguo siga en pantalla.
-      if (!hasPermission(currentUser?.role, "editCode")) return;
+      if (!hasPermission(currentUser, "editCode")) return;
       const target = ref ?? selectionFile(site);
       setState((current) => ({
         open: true,

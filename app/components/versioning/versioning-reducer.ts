@@ -34,13 +34,14 @@ function withCommit(
   message: string,
   at: string,
   changes: Change[] = [],
+  author: string = CURRENT_USER,
 ): VersioningState {
   const lastId = Math.max(0, ...state.commits.map((c) => Number(c.id.slice(1))));
   const commit = {
     id: `c${lastId + 1}`,
     branch,
     message,
-    author: CURRENT_USER,
+    author,
     at,
     changes,
   };
@@ -54,10 +55,10 @@ type Handlers = {
 
 const HANDLERS: Handlers = {
   // Reemplaza todo por lo que se guardó la última vez (ramas, versiones, publicaciones…).
-  "project/load": (_state, action) => action.state,
+  "project/load": (_state, action) => ({ ...action.state, pullRequests: action.state.pullRequests.filter((pr) => !pr.authorId) }),
   "branch/create": (state, action) => ({
     ...state,
-    branches: [...state.branches, { name: action.name, author: CURRENT_USER, base: state.current }],
+    branches: [...state.branches, { name: action.name, author: action.author ?? CURRENT_USER, base: state.current }],
     current: action.name,
   }),
 
@@ -110,7 +111,7 @@ const HANDLERS: Handlers = {
     }));
 
     return {
-      ...withCommit(state, state.current, action.message, action.at, changes),
+      ...withCommit(state, state.current, action.message, action.at, changes, action.author),
       baseline,
       staged: state.staged.filter((key) => !saved.has(key)),
     };
@@ -125,7 +126,7 @@ const HANDLERS: Handlers = {
       commitId: head.id,
       branch: state.current,
       message: head.message,
-      author: CURRENT_USER,
+      author: action.author ?? CURRENT_USER,
       at: action.at,
     };
     return { ...state, releases: [release, ...state.releases] };
@@ -139,7 +140,7 @@ const HANDLERS: Handlers = {
       title: action.title,
       from: action.from,
       into: action.into,
-      author: CURRENT_USER,
+      author: action.author ?? CURRENT_USER,
       status: "open",
       approvals: [],
       requiredApprovals: 1,
@@ -147,6 +148,17 @@ const HANDLERS: Handlers = {
       conflicts: [],
     };
     return { ...state, pullRequests: [pr, ...state.pullRequests] };
+  },
+
+  "reviews/sync": (state, action) => ({
+    ...state,
+    // Las del servidor mandan; las de antes (sin autor del servidor) se conservan tal cual.
+    pullRequests: [...action.pullRequests, ...state.pullRequests.filter((pr) => !pr.authorId)],
+  }),
+
+  "review/merged": (state, action) => {
+    const pr = state.pullRequests.find((p) => p.number === action.number);
+    return pr ? withCommit(state, pr.into, `Merge del PR #${pr.number}: ${pr.title}`, action.at) : state;
   },
 
   "pr/approve": (state, action) => {

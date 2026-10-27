@@ -7,6 +7,7 @@ import { CommitCard } from "./commit-card";
 import { applyChanges, DEFAULT_MODEL } from "./preview-model";
 import { VisualDiff } from "./visual-diff";
 import { ApproveControl } from "./approve-control";
+import { TeamReview } from "./team-review";
 import { type PullRequest, type PullRequestStatus } from "./types";
 import { AlertIcon, CheckIcon } from "./versioning-icons";
 import { useVersioning } from "./versioning-context";
@@ -107,7 +108,9 @@ export function PullRequestDetail({ pr }: { pr: PullRequest }) {
           )}
         </div>
 
-        {isOpen && (
+        {pr.authorId !== undefined && <TeamReview pr={pr} />}
+
+        {isOpen && pr.authorId === undefined && (
           <>
             {blockers.length > 0 && (
               <ul className="flex flex-col gap-1 text-xs text-amber-400">

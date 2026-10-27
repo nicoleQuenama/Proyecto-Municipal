@@ -1,3 +1,5 @@
+import type { Access } from "./access";
+
 export type UserRole = "superadmin" | "dev" | "designer";
 
 export interface User {
@@ -6,6 +8,10 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  /** Acceso limitado dado por un superadministrador; sin él, la persona tiene todo lo de su rol. */
+  access?: Access;
+  /** La cuenta que la invitó; sin ella, la creó un superadministrador. */
+  invitedBy?: string;
 }
 
 /** Datos que se envían al crear un usuario. La contraseña nunca se guarda en el cliente. */
@@ -31,7 +37,8 @@ export type AuthAction =
   | { type: "auth/logout" }
   | { type: "users/set"; users: User[] }
   | { type: "user/create"; user: User }
-  | { type: "user/remove"; id: string };
+  | { type: "user/remove"; id: string }
+  | { type: "user/access"; id: string; access: Access };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: "Superadministrador",

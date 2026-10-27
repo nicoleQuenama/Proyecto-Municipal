@@ -1,13 +1,13 @@
 import { AnimationPreview } from "../animation/animation-preview";
 import { RecorderBar } from "../animation/recorder-bar";
 import { AuditDialog } from "../audit/audit-dialog";
+import { MyWorkPanel } from "../auth/my-work-panel";
 import { ProfileMenu } from "../auth/profile-menu";
 import { BuilderHost } from "../builder/builder-host";
 import { CommandPalette } from "../commands/command-palette";
 import { ShortcutsSettings } from "../commands/shortcuts-settings";
 import { Inspector } from "../customize/inspector";
 import { TailwindRuntime } from "../customize/tailwind-runtime";
-import { ExternalEditor } from "../external-site/editor/external-editor";
 import { FormatMenu } from "../format/format-menu";
 import { MediaDropZone } from "../media/media-drop-zone";
 import { MediaNotice } from "../media/media-notice";
@@ -32,14 +32,18 @@ export function EditorWorkspace() {
   return (
     <>
       <div className="flex h-screen flex-col">
-        <header className="z-20 flex w-full shrink-0 items-stretch border-b border-line bg-panel">
-          <FormatBar />
-          <BranchSwitcher />
-          <PublishButton />
-          <PreviewToggle />
-          <ViewportSwitcher />
-          <div className="ml-auto flex items-center px-3">
-            <ProfileMenu />
+        <header className="z-20 w-full shrink-0 border-b border-line bg-panel">
+          <div className="flex h-11 items-stretch">
+            <BranchSwitcher />
+            <PublishButton />
+            <PreviewToggle />
+            <ViewportSwitcher />
+            <div className="ml-auto flex items-center px-3">
+              <ProfileMenu />
+            </div>
+          </div>
+          <div className="h-10 overflow-x-auto border-t border-line bg-canvas/40">
+            <FormatBar />
           </div>
         </header>
 
@@ -52,6 +56,7 @@ export function EditorWorkspace() {
             <BottomToolbar />
             <SectionColors />
             <RecorderBar />
+            <MyWorkPanel />
           </div>
           <Inspector />
         </main>
@@ -64,7 +69,6 @@ export function EditorWorkspace() {
       <ShortcutsSettings />
       <VersionsDialog />
       <AuditDialog />
-      <ExternalEditor />
       <MediaUrlDialog />
       <MediaNotice />
       <MediaDropZone />

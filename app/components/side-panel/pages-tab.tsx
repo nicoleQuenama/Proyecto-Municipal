@@ -26,7 +26,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const dispatch = useSiteDispatch();
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditCode = hasPermission(currentUser, "editCode");
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [routing, setRouting] = useState(false);

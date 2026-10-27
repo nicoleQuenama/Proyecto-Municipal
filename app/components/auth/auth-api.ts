@@ -1,4 +1,5 @@
 import { REQUEST_HEADER } from "../../server/request-header";
+import type { Access } from "./access";
 import type { NewUser, User } from "./types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -48,4 +49,8 @@ export async function createUser(input: NewUser): Promise<User> {
 
 export async function removeUser(id: string): Promise<void> {
   await request<{ ok: true }>(`/api/auth/users?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export async function saveAccess(id: string, access: Access): Promise<User> {
+  return (await request<{ user: User }>("/api/auth/users", { method: "PATCH", body: JSON.stringify({ id, access }) })).user;
 }

@@ -1,7 +1,10 @@
+import { sessionUser } from "../../../server/auth-session";
 import { isPart, readPart, writePart } from "../../../server/project-store";
 import { sameOriginRequest } from "../../../server/proxy-guard";
 
 const MAX_BYTES = 20_000_000;
+
+const signedOut = () => Response.json({ error: "Tu sesión terminó o tu acceso venció." }, { status: 401 });
 
 const partOf = (request: Request) => {
   const part = new URL(request.url).searchParams.get("part");
@@ -11,6 +14,7 @@ const partOf = (request: Request) => {
 /** Lo último que se guardó de una parte del proyecto (el sitio, las versiones…). */
 export async function GET(request: Request) {
   if (!sameOriginRequest(request)) return Response.json({ error: "Petición no permitida." }, { status: 403 });
+  if (!(await sessionUser())) return signedOut();
   const part = partOf(request);
   if (!part) return Response.json({ error: "Parte desconocida." }, { status: 400 });
 
@@ -23,6 +27,7 @@ export async function GET(request: Request) {
 /** Guarda una parte del proyecto: el editor lo hace solo, poco después de cada cambio. */
 export async function PUT(request: Request) {
   if (!sameOriginRequest(request)) return Response.json({ error: "Petición no permitida." }, { status: 403 });
+  if (!(await sessionUser())) return signedOut();
   const part = partOf(request);
   if (!part) return Response.json({ error: "Parte desconocida." }, { status: 400 });
 

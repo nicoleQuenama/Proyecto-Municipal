@@ -16,7 +16,7 @@ export interface Store {
 }
 
 export function toPublic(user: StoredUser): User {
-  return { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role };
+  return { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, access: user.access, invitedBy: user.invitedBy };
 }
 
 export async function writeStore(store: Store): Promise<void> {

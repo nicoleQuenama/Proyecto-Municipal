@@ -5,6 +5,7 @@ import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { ChevronIcon, SlidersIcon } from "../viewport/icons";
 import { CANVAS_TOGGLES, EDIT_SCOPES } from "./canvas-options";
+import { mineLabel, useSharedUsage } from "../site/use-shared-usage";
 import { useCanvasSettings } from "./settings-context";
 
 const row = "flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-hover";
@@ -15,6 +16,7 @@ const row = "flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text
  */
 export function CanvasSettingsMenu() {
   const { settings, setSettings } = useCanvasSettings();
+  const mine = mineLabel(useSharedUsage());
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -66,7 +68,9 @@ export function CanvasSettingsMenu() {
             Los cambios valen para
           </p>
           <div role="radiogroup" aria-label="Alcance de los cambios">
-            {EDIT_SCOPES.map(({ value, label, hint }) => (
+            {EDIT_SCOPES.map((option) => {
+              const { value, label, hint } = option.value === "component" && mine ? { ...option, ...mine } : option;
+              return (
               <button
                 key={value}
                 type="button"
@@ -81,7 +85,8 @@ export function CanvasSettingsMenu() {
                   <span className="block text-[11px] text-ink-dim">{hint}</span>
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </TopLayer>
       )}

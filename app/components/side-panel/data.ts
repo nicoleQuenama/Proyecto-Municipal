@@ -5,13 +5,12 @@ export type PanelTab =
   | "appearance"
   | "libraries"
   | "users"
-  | "data"
-  | "site";
+  | "data";
 /** «all» o el nombre de una categoría. */
 export type ComponentFilter = string;
 
 /** Permiso mínimo para ver cada sección; el menú lateral se filtra con `hasPermission`. */
-export type PanelPermission = "editContent" | "editStyles" | "editCode" | "manageUsers";
+export type PanelPermission = "editContent" | "editStyles" | "editCode" | "editData" | "installLibraries" | "manageUsers";
 
 /** Las secciones del panel lateral, en el orden de la barra de iconos. */
 export const TABS: { value: PanelTab; label: string; title: string; permission: PanelPermission }[] = [
@@ -19,8 +18,7 @@ export const TABS: { value: PanelTab; label: string; title: string; permission: 
   { value: "components", label: "Agregar", title: "Componentes para agregar a la página", permission: "editContent" },
   { value: "navigation", label: "Enlaces", title: "Navegación y enlaces entre páginas", permission: "editContent" },
   { value: "appearance", label: "Estilo", title: "Variables y reglas de estilo", permission: "editStyles" },
-  { value: "libraries", label: "Librerías", title: "Librerías de código", permission: "editCode" },
+  { value: "libraries", label: "Librerías", title: "Librerías de código", permission: "installLibraries" },
   { value: "users", label: "Usuarios", title: "Usuarios y permisos del CMS", permission: "manageUsers" },
-  { value: "data", label: "Datos", title: "APIs HTTP y sus datos", permission: "editCode" },
-  { value: "site", label: "Sitio", title: "Web existente del cliente", permission: "editCode" },
+  { value: "data", label: "Datos", title: "APIs HTTP y sus datos", permission: "editData" },
 ];

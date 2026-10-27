@@ -21,7 +21,7 @@ export function ComponentsTab() {
   const [filter, setFilter] = useState<ComponentFilter>("all");
   const { openBuilder } = useCommands();
   const { currentUser } = useAuth();
-  const canEditContent = hasPermission(currentUser?.role, "editContent");
+  const canEditContent = hasPermission(currentUser, "editContent");
 
   // Solo las categorías que tienen componentes; si la elegida se vació, vuelve a «Todos».
   const categories = usedCategories(components);

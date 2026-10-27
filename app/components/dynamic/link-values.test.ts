@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveLinkParams, resolveParam } from "./link-values";
+import { inferredParams, resolveLinkParams, resolveParam } from "./link-values";
 
 const data = { items: [{ id: 25, name: "Pikachu" }, { id: 4, name: "Charmander" }] };
 const read = (sourceId: string) => (sourceId === "api" ? data : undefined);
@@ -22,6 +22,18 @@ describe("resolveParam", () => {
   it("sin datos o con un objeto queda vacío", () => {
     expect(resolveParam({ sourceId: "otra", path: "x" }, read, undefined, null)).toBe("");
     expect(resolveParam({ sourceId: "api", path: "items[0]" }, read, undefined, null)).toBe("");
+  });
+});
+
+describe("inferredParams", () => {
+  it("en una sección repetida, cada parámetro sin valor toma la clave del mismo nombre", () => {
+    const spec = inferredParams(["id"], undefined, repeat);
+    expect(resolveLinkParams(spec, read, repeat, 1)).toEqual({ id: "4" });
+  });
+
+  it("respeta lo que ya se configuró y no hace nada fuera de una lista", () => {
+    expect(inferredParams(["id"], { id: "7" }, repeat)).toEqual({});
+    expect(inferredParams(["id"], undefined, undefined)).toEqual({});
   });
 });
 

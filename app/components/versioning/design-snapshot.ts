@@ -5,8 +5,7 @@ import { describeTransition, elementLabel, linkSummary } from "../navigation/lin
 import { PROP_DEFS, TARGET_DEFS } from "../styles/registry";
 import { scopeKey } from "../styles/resolve";
 import type { StyleProp, StyleScope } from "../styles/types";
-import type { ExternalState } from "../external-site/types";
-import { addExternal, addResponsive, hashOf, type Add } from "./snapshot-extras";
+import { addResponsive, hashOf, type Add } from "./snapshot-extras";
 import type { DesignSnapshot, WorkingChange } from "./types";
 
 /** Valor que se muestra cuando una propiedad no existía o ya no existe. */
@@ -50,10 +49,7 @@ export function snapshotDesign({
   variables,
   rules,
   navigation,
-  external,
-}: Pick<SiteState, "pages" | "components" | "variables" | "rules" | "navigation"> & {
-  external?: Pick<ExternalState, "site" | "patches" | "pages" | "autoResponsive">;
-}): DesignSnapshot {
+}: Pick<SiteState, "pages" | "components" | "variables" | "rules" | "navigation">): DesignSnapshot {
   const snapshot: DesignSnapshot = {};
   const add: Add = (key, node, property, value) => {
     snapshot[key] = { node, property, value };
@@ -124,7 +120,6 @@ export function snapshotDesign({
     }
   }
 
-  if (external) addExternal(add, external);
   return snapshot;
 }
 

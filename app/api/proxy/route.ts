@@ -14,6 +14,26 @@ interface ProxyInput {
   refresh?: boolean;
 }
 
+const MAX_REDIRECTS = 5;
+
+/** Sigue las redirecciones a mano: cada destino pasa la misma revisión que el primero (nada interno). */
+async function fetchFollowing(first: URL, method: string, headers: Record<string, string>): Promise<Response> {
+  let target = first;
+  for (let hop = 0; ; hop++) {
+    const response = await fetch(target, {
+      method,
+      headers,
+      redirect: "manual",
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const location = response.headers.get("location");
+    if (response.status < 300 || response.status >= 400 || !location) return response;
+    if (hop >= MAX_REDIRECTS) throw new Error("Demasiadas redirecciones.");
+    target = await checkTarget(new URL(location, target).toString());
+  }
+}
+
 const fail = (error: string, status: number) => Response.json({ error }, { status });
 
 /** Pide una API en nombre de la página: sin CORS, sin enseñar las claves al visitante y con caché de servidor. */
@@ -32,13 +52,7 @@ export async function POST(request: Request) {
     const saved = refresh ? null : await readCache(key, cache);
     if (saved) return Response.json({ ...saved, cached: true });
 
-    const response = await fetch(target, {
-      method,
-      headers,
-      redirect: "error",
-      cache: "no-store",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
+    const response = await fetchFollowing(target, method, headers);
     const body = await response.text();
     if (body.length > MAX_BYTES) return fail("La respuesta es demasiado grande (máx. 5 MB).", 413);
 

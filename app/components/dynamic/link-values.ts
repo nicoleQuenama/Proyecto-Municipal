@@ -20,6 +20,20 @@ export function resolveParam(
   return asText(resolveRef(read(value.sourceId), value, repeat, index)).trim();
 }
 
+/**
+ * Lo que se da por hecho sin que nadie lo configure: en una sección repetida, un parámetro sin valor
+ * (`:id`) toma la clave del mismo nombre de cada elemento de la lista (`items[0].id`).
+ */
+export function inferredParams(
+  names: string[],
+  given: Record<string, LinkParamValue> | undefined,
+  repeat: DataRef | undefined,
+): Record<string, LinkParamValue> {
+  if (!repeat) return {};
+  const missing = names.filter((name) => !given?.[name]);
+  return Object.fromEntries(missing.map((name) => [name, { sourceId: repeat.sourceId, path: `${repeat.path}[0].${name}` }]));
+}
+
 /** Todos los parámetros de un enlace; los que no se pueden resolver todavía se omiten. */
 export function resolveLinkParams(
   spec: Record<string, LinkParamValue> | undefined,

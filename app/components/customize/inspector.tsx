@@ -3,6 +3,8 @@
 import { useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
+import { ExportButton } from "../export/export-button";
+import { mineLabel, useSharedUsage } from "../site/use-shared-usage";
 import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { elementLabel } from "../navigation/links";
 import { useSite, useSiteDispatch } from "../site/site-context";
@@ -73,11 +75,12 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   // El alcance es el mismo que usan los gestos y la barra de formato: lo que se elige aquí vale en todas partes.
   const { settings, setSettings } = useCanvasSettings();
   const level: StyleLevel = settings.scope;
+  const mine = mineLabel(useSharedUsage());
   const setLevel = (value: StyleLevel) => setSettings((current) => ({ ...current, scope: value }));
   const custom = (level === "block" ? block.custom?.[scope] : def.styles?.[scope]) ?? { classes: "", css: "" };
-  const canEditContent = hasPermission(currentUser?.role, "editContent");
-  const canEditStyles = hasPermission(currentUser?.role, "editStyles");
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditContent = hasPermission(currentUser, "editContent");
+  const canEditStyles = hasPermission(currentUser, "editStyles");
+  const canEditCode = hasPermission(currentUser, "editCode");
 
   const saveStyle = (patch: Partial<CustomStyle>) => {
     if (!canEditStyles) return;
@@ -150,7 +153,9 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       {canEditStyles && (
         <div role="group" aria-label="Dónde valen los estilos" className="flex flex-col gap-1.5">
           <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
-            {STYLE_LEVELS.map(({ value, label }) => (
+            {STYLE_LEVELS.map(({ value, label: base }) => {
+              const label = value === "component" && mine ? mine.label : base;
+              return (
               <button
                 key={value}
                 type="button"
@@ -160,9 +165,14 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               >
                 {label}
               </button>
-            ))}
+              );
+            })}
           </div>
-          <Hint>{level === "block" ? "Solo cambia esta sección, en esta página." : `Cambia todos los «${def.name}» del sitio, en todas las páginas.`}</Hint>
+          <Hint>
+            {level === "block"
+              ? "Solo cambia esta sección, en esta página."
+              : (mine?.hint ?? `Cambia todos los «${def.name}» del sitio, en todas las páginas.`)}
+          </Hint>
         </div>
       )}
 
@@ -200,7 +210,7 @@ export function Inspector() {
   const dispatch = useSiteDispatch();
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
-  const canEditCode = hasPermission(currentUser?.role, "editCode");
+  const canEditCode = hasPermission(currentUser, "editCode");
 
   const page = pages.find((p) => p.id === currentPageId);
   const block = page?.blocks.find((b) => b.id === selectedId);
@@ -220,6 +230,7 @@ export function Inspector() {
           <p className="text-[10px] tracking-wider text-ink-dim uppercase">{element ? `Elemento · ${def.name}` : "Sección"}</p>
           <p className="truncate text-sm font-medium">{element ? elementLabel(element) : def.name}</p>
         </div>
+        {canEditCode && <ExportButton pageId={page.id} block={block} def={def} />}
         {canEditCode && (
           <button
             type="button"

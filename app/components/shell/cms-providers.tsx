@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { RecorderProvider } from "../animation/recorder-context";
 import { CommandsProvider } from "../commands/commands-context";
 import { CanvasSettingsProvider } from "../canvas-editing/settings-context";
-import { ExternalProvider } from "../external-site/external-context";
 import { FormatMenuProvider } from "../format/format-menu-context";
 import { MediaProvider } from "../media/media-context";
 import { NavigationProvider } from "../navigation/navigation-context";
@@ -15,7 +14,6 @@ export function CmsProviders({ children }: { children: ReactNode }) {
   return (
     <SiteProvider>
       <MediaProvider>
-        <ExternalProvider>
           <VersioningProvider>
             <ViewportProvider>
               <CanvasSettingsProvider>
@@ -31,7 +29,6 @@ export function CmsProviders({ children }: { children: ReactNode }) {
               </CanvasSettingsProvider>
             </ViewportProvider>
           </VersioningProvider>
-        </ExternalProvider>
       </MediaProvider>
     </SiteProvider>
   );

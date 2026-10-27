@@ -242,6 +242,19 @@ const HANDLERS: Handlers = {
     return box ? styleBox(texted, pageId, blockId, { background: color }) : texted;
   },
 
+  "component/recolor": (state, { componentId, pageId, blockId, color, fill, text, box }) => {
+    // Los colores de los elementos pasan al componente; el fondo de la caja es de cada sección y se cambia en todas.
+    const target = { componentId, pageId, blockId };
+    const filled = fill.reduce((current, id) => patchComponentElement(current, target, id, { fill: color }), state);
+    const texted = text.reduce((current, id) => patchComponentElement(current, target, id, { color }), filled);
+    if (!box) return texted;
+    return texted.pages.reduce(
+      (current, page) =>
+        page.blocks.filter((b) => b.componentId === componentId).reduce((inner, b) => styleBox(inner, page.id, b.id, { background: color }), current),
+      texted,
+    );
+  },
+
   "block/place": (state, action) => placeBlock(state, action.pageId, action.blockId, action.placement),
 
   "block/transfer": (state, action) =>

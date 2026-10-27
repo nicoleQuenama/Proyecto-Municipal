@@ -8,12 +8,13 @@ const selectClass =
   "h-9 min-w-0 flex-1 rounded-md border border-line bg-canvas px-2 text-[13px] outline-none focus:border-accent [&>option]:bg-panel";
 
 export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) => void }) {
-  const { state, dispatch } = useVersioning();
+  const { state, dispatch, mustBranch, submitReview } = useVersioning();
   const names = state.branches.map((b) => b.name);
+  const main = state.branches.find((b) => b.base === null)?.name ?? "main";
 
   const [title, setTitle] = useState("");
   const [from, setFrom] = useState(state.current === "main" ? (names[1] ?? names[0]) : state.current);
-  const [into, setInto] = useState("main");
+  const [into, setInto] = useState(main);
   const [error, setError] = useState<string | null>(null);
 
   const problemWith = (): string | null => {
@@ -29,6 +30,12 @@ export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) 
     const problem = problemWith();
     if (problem) return setError(problem);
 
+    // Quien no puede publicar en main la envía por el servidor: la recibe quien lo invitó.
+    if (mustBranch) {
+      setError(null);
+      submitReview(title.trim(), from, into).then(onCreated, (reason) => setError(reason instanceof Error ? reason.message : "No se pudo enviar."));
+      return;
+    }
     const number = nextNumber(state.pullRequests);
     dispatch({ type: "pr/open", title: title.trim(), from, into });
     onCreated(number);
@@ -66,6 +73,9 @@ export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) 
           {names.map((name) => <option key={name}>{name}</option>)}
         </select>
       </div>
+      {mustBranch && (
+        <p className="text-xs text-ink-dim">Esta pull request la recibirá solo quien te invitó al grupo.</p>
+      )}
 
       {names.length < 2 && (
         <p className="text-xs text-amber-400">

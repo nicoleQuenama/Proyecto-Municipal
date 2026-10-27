@@ -8,11 +8,13 @@ interface DialogNavProps {
   counts: NavCounts;
   advanced: boolean;
   onAdvanced: (on: boolean) => void;
+  /** Secciones avanzadas que se muestran igual (las revisiones, dentro de un equipo de trabajo). */
+  alsoShow?: TabId[];
 }
 
 /** El menú lateral del panel: lo esencial siempre, y lo de trabajo en equipo solo con el modo avanzado. */
-export function DialogNav({ tab, onSelect, counts, advanced, onAdvanced }: DialogNavProps) {
-  const items = NAV_ITEMS.filter((item) => advanced || !item.advanced);
+export function DialogNav({ tab, onSelect, counts, advanced, onAdvanced, alsoShow = [] }: DialogNavProps) {
+  const items = NAV_ITEMS.filter((item) => advanced || !item.advanced || alsoShow.includes(item.id));
 
   return (
     <nav aria-label="Secciones de versiones" className="flex w-52 shrink-0 flex-col border-r border-line p-2">

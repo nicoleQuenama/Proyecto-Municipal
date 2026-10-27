@@ -40,7 +40,7 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
     <div
       role="toolbar"
       aria-label="Editor de titular"
-      className="flex min-h-12 min-w-0 flex-1 flex-wrap items-center gap-1 px-3 py-1.5 text-xs text-ink"
+      className="flex h-10 w-max min-w-full items-center gap-1 px-3 text-xs text-ink"
     >
       <span className="mr-1 max-w-56 shrink-0 truncate rounded-md bg-accent/15 px-2 py-1 font-medium text-accent">
         Editando: {caption}
