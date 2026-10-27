@@ -13,7 +13,7 @@ export function siteWith(elements: CanvasElement[], links: ComponentDef["links"]
   return {
     ...INITIAL_SITE,
     components: [def],
-    pages: [{ ...home, blocks: [{ id: "b1", componentId: "c1" }] }, ...INITIAL_SITE.pages.slice(1)],
+    pages: [{ ...home, titleRemoved: undefined, blocks: [{ id: "b1", componentId: "c1" }] }, ...INITIAL_SITE.pages.slice(1)],
   };
 }
 

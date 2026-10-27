@@ -4,6 +4,7 @@ import { useState } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
 import { duplicateComponent } from "../site/rules";
+import { CODE_COMPONENT_ID } from "../site/code-defaults";
 import { EXAMPLE_COMPONENTS } from "../site/component-templates";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { ComponentDef } from "../site/types";
@@ -14,8 +15,8 @@ import type { ComponentFilter } from "./data";
 export function ComponentsTab() {
   const site = useSite();
   const { pages } = site;
-  // Las figuras dibujadas en la página no son componentes que se agreguen: no se listan.
-  const components = site.components.filter((c) => !c.drawn);
+  // Ni las figuras dibujadas ni el bloque de código (lo pone el editor) son componentes hechos: no se listan.
+  const components = site.components.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID);
   const dispatch = useSiteDispatch();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");

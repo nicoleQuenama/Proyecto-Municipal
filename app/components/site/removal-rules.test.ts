@@ -15,14 +15,14 @@ const second = card.elements[1].id;
 
 /** Un sitio con la tarjeta y dos bloques que la usan, uno en cada página. */
 function site(): SiteState {
-  const [home, other] = INITIAL_SITE.pages;
+  const [home] = INITIAL_SITE.pages;
+  const other = { ...home, id: "otra", name: "Otra", slug: "otra", isHome: false, blocks: [] };
   return {
     ...INITIAL_SITE,
     components: [...INITIAL_SITE.components, { ...card, links: { [first]: { kind: "page", pageId: other.id } } }],
     pages: [
-      { ...home, blocks: [{ id: "b1", componentId: card.id, bindings: { [first]: { sourceId: "s", path: "x" } } }] },
+      { ...home, titleRemoved: undefined, blocks: [{ id: "b1", componentId: card.id, bindings: { [first]: { sourceId: "s", path: "x" } } }] },
       { ...other, blocks: [{ id: "b2", componentId: card.id }] },
-      ...INITIAL_SITE.pages.slice(2),
     ],
     selectedId: "b1",
     selectedElementId: first,
@@ -32,7 +32,9 @@ function site(): SiteState {
 const def = (state: SiteState) => state.components.find((c) => c.id === card.id)!;
 
 describe("proyecto de partida", () => {
-  it("solo trae el bloque de código; los ejemplos se restauran", () => {
+  it("trae una sola página en blanco y solo el bloque de código; los ejemplos se restauran", () => {
+    expect(INITIAL_SITE.pages).toHaveLength(1);
+    expect(INITIAL_SITE.pages[0]).toMatchObject({ blocks: [], media: [], titleRemoved: true });
     expect(INITIAL_SITE.components.map((c) => c.id)).toEqual(["code-block"]);
     const restored = siteReducer(INITIAL_SITE, { type: "components/restore" });
     expect(restored.components.length).toBe(EXAMPLE_COMPONENTS.length + 1);
@@ -108,7 +110,8 @@ describe("ocultos", () => {
 
 describe("página de inicio", () => {
   it("se puede cambiar y la anterior se vuelve borrable", () => {
-    const moved = siteReducer(INITIAL_SITE, { type: "page/home", id: "servicios" });
+    const two = siteReducer(INITIAL_SITE, { type: "page/create", id: "servicios", name: "Servicios" });
+    const moved = siteReducer(two, { type: "page/home", id: "servicios" });
     expect(moved.pages.filter((p) => p.isHome).map((p) => p.id)).toEqual(["servicios"]);
     const deleted = siteReducer(moved, { type: "page/delete", id: "inicio" });
     expect(deleted.pages.some((p) => p.id === "inicio")).toBe(false);

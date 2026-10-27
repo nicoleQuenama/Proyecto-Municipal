@@ -4,7 +4,7 @@ import { CODE_COMPONENT } from "./component-templates";
 import type { Variable } from "../styles/types";
 import { TITLE_SELECTION, type Page, type SiteState } from "./types";
 
-/** Datos de ejemplo del sitio para el prototipo. */
+/** El sitio con el que arranca el editor: una página en blanco. */
 
 const page = (
   id: string,
@@ -47,10 +47,6 @@ export const INITIAL_SITE: SiteState = {
   sources: [],
   // Sin componentes de ejemplo: «Restaurar los componentes de ejemplo» los devuelve. El de código lo necesita el editor.
   components: [CODE_COMPONENT],
-  pages: [
-    page("inicio", "Inicio", { isHome: true, title: INITIAL_TITLE }),
-    page("servicios", "Servicios"),
-    page("tramites", "Trámites", { slug: "tramites" }),
-    page("contacto", "Contacto"),
-  ],
+  // Una sola página, vacía y sin titular: es lo que se ve al entrar.
+  pages: [page("inicio", "Inicio", { isHome: true, titleRemoved: true })],
 };
