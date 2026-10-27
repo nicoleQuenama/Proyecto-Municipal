@@ -3,6 +3,11 @@ import { RESPONSIVE_HANDLERS } from "../responsive/responsive-rules";
 import { LAYER_HANDLERS } from "../layers/layer-rules";
 import { DRAW_HANDLERS } from "../drawing/draw-rules";
 import { TEXT_HANDLERS } from "./text-rules";
+import { PASTE_HANDLERS } from "./paste-rules";
+import { MULTI_SELECT_HANDLERS } from "./multi-select";
+import { JOIN_HANDLERS } from "./join-rules";
+import { ORDER_HANDLERS } from "./order-rules";
+import { ROLE_HANDLERS } from "./page-roles";
 import { SEO_HANDLERS } from "./seo-rules";
 import { SOURCE_HANDLERS } from "../data-sources/source-rules";
 import { BACKGROUND_HANDLERS } from "../background/background-rules";
@@ -70,6 +75,11 @@ const HANDLERS: Handlers = {
   ...SEO_HANDLERS,
   ...DRAW_HANDLERS,
   ...TEXT_HANDLERS,
+  ...PASTE_HANDLERS,
+  ...MULTI_SELECT_HANDLERS,
+  ...JOIN_HANDLERS,
+  ...ORDER_HANDLERS,
+  ...ROLE_HANDLERS,
   ...DYNAMIC_HANDLERS,
   ...BACKGROUND_HANDLERS,
   ...RESPONSIVE_HANDLERS,
@@ -211,7 +221,7 @@ const HANDLERS: Handlers = {
 
   "block/remove": (state, action) => removeBlocks(state, [action.id]),
 
-  "block/select": (state, action) => ({ ...state, selectedId: action.id, selectedElementId: null, alsoSelectedIds: undefined }),
+  "block/select": (state, action) => ({ ...state, selectedId: action.id, selectedElementId: null, alsoSelectedIds: undefined, selectedBlockIds: undefined }),
 
   "element/select": (state, action) => {
     if (!action.add || !action.id || state.selectedElementId === null) {

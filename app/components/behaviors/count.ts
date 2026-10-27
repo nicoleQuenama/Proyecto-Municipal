@@ -10,7 +10,10 @@ export function countText(from: number, to: number, progress: number, suffix: st
 
 /** El primer texto con contenido dentro del elemento: se cambia su valor sin tocar los nodos que maneja React. */
 function firstText(root: Element): Text | null {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  // Los `<style>` y `<script>` de la sección también tienen texto: no es el que se ve.
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => (node.parentElement?.closest("style, script") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+  });
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (node.nodeValue?.trim()) return node as Text;
   }

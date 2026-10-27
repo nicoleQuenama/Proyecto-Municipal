@@ -19,6 +19,8 @@ const ACTIONS: Record<Behavior["action"]["kind"], (action: never, ctx: SpecConte
   navigate: ((a: { pageId: string }, ctx: SpecContext) => `ir a la página «${ctx.pageName(a.pageId)}»`) as never,
   animate: ((a: { effect: string; seconds: number }) => `animación «${a.effect}» de ${a.seconds}s`) as never,
   count: ((a: { from: number; to: number; seconds: number; suffix: string }) => `contar de ${a.from} a ${a.to}${a.suffix} en ${a.seconds}s`) as never,
+  toast: ((a: { message: string; tone: string }) => `mostrar una notificación (${a.tone}): «${a.message}»`) as never,
+  dialog: ((a: { title: string; message: string }) => `mostrar un diálogo «${a.title}»: ${a.message}`) as never,
   play: (() => "reproducir una animación grabada del editor") as never,
   toggle: ((a: { mode: string; targetKey: string }) => `${a.mode === "show" ? "mostrar" : a.mode === "hide" ? "ocultar" : "alternar"} otro elemento`) as never,
   openUrl: ((a: { url: string }) => `abrir ${a.url}`) as never,

@@ -6,6 +6,7 @@ import type { CodeMode } from "../behaviors/types";
 import { DEFAULT_TRANSITION, elementLabel } from "../navigation/links";
 import { TransitionFields } from "../navigation/transition-fields";
 import type { Transition } from "../navigation/types";
+import { OTHER_SECTION } from "../behaviors/page-api";
 import { SECTION_KEY, type CanvasElement, type Page } from "../site/types";
 import { CodeIcon } from "../viewport/icons";
 
@@ -79,12 +80,16 @@ export const FIELD_RENDERERS: { [T in Field["type"]]: Renderer<T> } = {
     </Labeled>
   ),
 
-  target: (field, { value, onChange, elements }) => (
+  target: (field, { value, onChange, elements, pages }) => (
     <Labeled label={field.label}>
       <select value={String(value ?? SECTION_KEY)} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
         {optionsOf([
           { value: SECTION_KEY, label: "Esta sección completa" },
           ...elements.map((element) => ({ value: element.id, label: elementLabel(element) })),
+          // Otra sección de la página (un menú, un panel…): `@` + su id.
+          ...pages.flatMap((page) =>
+            page.blocks.map((block, index) => ({ value: `${OTHER_SECTION}${block.id}`, label: `${page.name} · sección ${index + 1}` })),
+          ),
         ])}
       </select>
     </Labeled>

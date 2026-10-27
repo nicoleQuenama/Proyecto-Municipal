@@ -14,6 +14,11 @@ import { VisibilityEye } from "../site/visibility-eye";
 import { PageBlocks } from "../site/page-blocks";
 import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { useClipboardKeys } from "../site/use-clipboard-keys";
+import { useHistoryKeys } from "../site/use-history-keys";
+import { useOrderKeys } from "../site/use-order-keys";
+import { useMarquee } from "../site/use-marquee";
+import { useGradientTool } from "../gradient/use-gradient-tool";
 import { useDeleteKey } from "../site/use-delete-key";
 import { useDeselect } from "../site/use-deselect";
 import type { Page } from "../site/types";
@@ -21,6 +26,7 @@ import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
 import { TitleCanvas } from "../title-editor/title-editor";
 import { CANVAS_SURFACE_ID } from "./fit-zoom";
+import { LoadingLayer } from "./loading-layer";
 import { PageLabelActions } from "./page-label-actions";
 import { FullBleedContext, useWidth } from "./page-width";
 import { useAuth } from "../auth/auth-context";
@@ -42,10 +48,18 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   const deselect = useDeselect();
   const drawing = useShapeDrawing();
   useDeleteKey();
+  useClipboardKeys();
+  useHistoryKeys();
+  useOrderKeys();
+  const marquee = useMarquee();
+  const gradient = useGradientTool();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (tool !== "hand") return deselect.onPointerDown(e);
+    if (tool !== "hand") {
+      marquee.onPointerDown(e);
+      return deselect.onPointerDown(e);
+    }
     lastPoint.current = { x: e.clientX, y: e.clientY };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -64,7 +78,11 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   return (
     <div
       id={CANVAS_SURFACE_ID}
-      onPointerDownCapture={drawing.onPointerDownCapture}
+      onPointerDownCapture={(e) => {
+        drawing.onPointerDownCapture(e);
+        gradient.onPointerDownCapture(e);
+        marquee.onPointerDownCapture(e);
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={stopPan}
@@ -73,6 +91,8 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
     >
       {children}
       {drawing.preview}
+      {gradient.layer}
+      {marquee.box && <div aria-hidden className="pointer-events-none fixed z-30 border border-accent bg-accent/15" style={marquee.box} />}
     </div>
   );
 }
@@ -110,7 +130,12 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const placedExtent = usePlacedExtent(pageRef);
   const margin = sideMargin(device, page.sideMargin);
   // Fuera del escritorio el margen lateral se ajusta al dispositivo (el del escritorio lo fijan las reglas de la página).
-  const fullWidth = production && !isAdaptive(device);
+  // La vista previa de escritorio escala el diseño al ancho de la ventana: lo diseñado se ve con las mismas proporciones.
+  const section = useRef<HTMLElement>(null);
+  const available = useWidth(section);
+  const fits = production && !isAdaptive(device);
+  const fitScale = fits ? Math.max(1, available / current.width) : 1;
+  const fullWidth = fits && fitScale === 1;
   // Con la página a todo el ancho, el contenido (diseñado a 1024 px) queda centrado y el fondo llega a los bordes.
   // El relleno lateral propio de la página (o el de por defecto) se suma al centrado.
   const sides = styles.page.padding?.split(/\s+/);
@@ -124,7 +149,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
     : fullWidth
       ? { paddingLeft: centered, paddingRight: centered }
       : undefined;
-  const baseHeight = production ? "100vh" : "600px";
+  const baseHeight = production ? `${100 / fitScale}vh` : "600px";
   // En escritorio la vista previa ocupa todo el ancho de la ventana, como lo vería un visitante; tablet y móvil conservan su ancho.
 
   // Solo se anima al navegar en la vista previa; la clave vuelve a montar la página para reproducirla.
@@ -153,6 +178,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
 
   return (
     <section
+      ref={section}
       aria-label={`Página ${page.name}`}
       data-page-id={page.id}
       {...dropProps}
@@ -163,7 +189,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       }
       // En fila, el marco ocupa su ancho ya escalado y solo la página se escala; a solas, todo junto.
       // En producción, en tablet y móvil, la página tiene el ancho del dispositivo.
-      style={tiled ? { width: current.width * scale } : fullWidth ? undefined : { maxWidth: current.width }}
+      style={tiled ? { width: current.width * scale } : fits ? undefined : { maxWidth: current.width }}
     >
       {!production && (
       <p className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
@@ -192,17 +218,17 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       </p>
       )}
 
-      <div ref={frame} className="relative" style={tiled ? { width: current.width, zoom: scale } : undefined}>
+      <div ref={frame} className="relative" style={tiled ? { width: current.width, zoom: scale } : fitScale > 1 ? { width: current.width, zoom: fitScale } : undefined}>
         <div
           ref={pageRef}
           data-site-page
           className={`relative isolate bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
             production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), ...sideStyle, ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
-          {fullWidth && <style>{"[data-site-page] [data-placed]{margin-left:var(--cms-offset)!important}"}</style>}
+          {fullWidth && <style>{"[data-site-page] [data-placed]:not([data-bleed]){margin-left:var(--cms-offset)!important}"}</style>}
           <FullBleedContext value={fullWidth}>
           <PageGuidesProvider>
           {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
@@ -276,6 +302,7 @@ function ProductionView() {
   return (
     <div className="fixed inset-0 z-40 overflow-auto bg-neutral-300">
       <PageArtboard page={page} active tiled={false} production shellPage={shellPage} />
+      <LoadingLayer />
     </div>
   );
 }

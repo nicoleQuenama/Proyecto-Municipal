@@ -6,6 +6,7 @@ import { NumberField } from "../ui/number-field";
 import type { BuilderAction, BuilderState } from "./builder-reducer";
 import { CategorySelect } from "./category-select";
 import { Field, inputClass } from "./panel-fields";
+import { SizeSuggestions } from "./size-suggestions";
 
 /** Las propiedades del componente entero (cuando no hay ningún elemento seleccionado). */
 export function CanvasProperties({ state, dispatch }: { state: BuilderState; dispatch: Dispatch<BuilderAction> }) {
@@ -20,6 +21,8 @@ export function CanvasProperties({ state, dispatch }: { state: BuilderState; dis
           className={inputClass}
         />
       </Field>
+
+      <SizeSuggestions state={state} dispatch={dispatch} />
 
       <div className="grid grid-cols-2 gap-2">
         <NumberField

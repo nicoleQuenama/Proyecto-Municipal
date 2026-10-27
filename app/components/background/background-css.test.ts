@@ -70,6 +70,7 @@ describe("spanStyle y hasBackground", () => {
     expect(spanStyle(undefined)).toEqual({});
     expect(spanStyle("screen", true)).toMatchObject({ minHeight: "100vh", justifyContent: "flex-start", alignItems: "flex-start" });
     expect(spanStyle(undefined, true)).toEqual({});
+    expect(spanStyle("width", true, true)).toMatchObject({ justifyContent: "center", alignItems: "flex-start" });
     expect(stretches("width")).toBe(true);
     expect(stretches(undefined)).toBe(false);
   });

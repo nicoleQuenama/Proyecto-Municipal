@@ -2,6 +2,8 @@ import { AnimationPreview } from "../animation/animation-preview";
 import { RecorderBar } from "../animation/recorder-bar";
 import { AuditDialog } from "../audit/audit-dialog";
 import { MyWorkPanel } from "../auth/my-work-panel";
+import { DemoButton } from "../demo/demo-button";
+import { HistoryButtons } from "./history-buttons";
 import { ProfileMenu } from "../auth/profile-menu";
 import { BuilderHost } from "../builder/builder-host";
 import { CommandPalette } from "../commands/command-palette";
@@ -37,6 +39,8 @@ export function EditorWorkspace() {
             <BranchSwitcher />
             <PublishButton />
             <PreviewToggle />
+            <HistoryButtons />
+            <DemoButton />
             <ViewportSwitcher />
             <div className="ml-auto flex items-center px-3">
               <ProfileMenu />

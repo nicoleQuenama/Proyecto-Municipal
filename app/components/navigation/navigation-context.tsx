@@ -14,6 +14,7 @@ import { openModalFor } from "../modal/modal-state";
 import type { OpenModal } from "../modal/types";
 import { ParamsContext } from "../dynamic/params-context";
 import { effectiveParams, paramsOf, type RouteValues } from "../dynamic/route-params";
+import { pageWithRole } from "../site/page-roles";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { normalizeExternalUrl, resolveTransition } from "./links";
 import type { ElementRef, LinkEditorTarget, LinkTarget, NavMode, Point, Transition } from "./types";
@@ -151,7 +152,17 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
 
       setModal(null); // ir a otra página cierra la ventana
       const target = pages.find((page) => page.id === link.pageId);
-      if (!target || target.hidden) return;
+      if (!target || target.hidden) {
+        // Un enlace roto lleva a la página «No encontrada» si el sitio tiene una.
+        const missing = pageWithRole(pages, "not-found");
+        if (missing && missing.id !== currentPageId) {
+          setVisit({ pageId: missing.id, values: {} });
+          setTransition(null);
+          setTransitionKey((key) => key + 1);
+          dispatch({ type: "page/select", id: missing.id });
+        }
+        return;
+      }
 
       // Una página dinámica puede enlazarse a sí misma con otro id (el siguiente, el anterior…).
       const values = effectiveParams(target.route, target.previewParams, link.params);

@@ -1,6 +1,7 @@
 import type { Transition } from "../navigation/types";
 import { SECTION_KEY, type Page } from "../site/types";
 import { countElement, MAX_COUNT_SECONDS } from "./count";
+import { MAX_NOTICE_SECONDS, PLACE_LABELS, showDialog, showToast, TONE_LABELS } from "./notify";
 import { animateElement, EFFECTS, MAX_SECONDS, MIN_SECONDS } from "./effects";
 import type { ActionKind, BehaviorAction, CodeMode } from "./types";
 
@@ -75,6 +76,29 @@ export const ACTIONS: { [K in ActionKind]: ActionDef<K> } = {
       { key: "suffix", label: "Después del número", type: "text", placeholder: "%" },
     ],
     run: (action, context) => countElement(context.element, action.from, action.to, action.seconds, action.suffix),
+  },
+
+  toast: {
+    label: "Mostrar una notificación",
+    create: () => ({ kind: "toast", message: "¡Listo!", tone: "success", place: "bottom-right", seconds: 3 }),
+    fields: [
+      { key: "message", label: "Mensaje", type: "text", placeholder: "Se guardó correctamente" },
+      { key: "tone", label: "Tipo", type: "select", options: Object.entries(TONE_LABELS).map(([value, label]) => ({ value, label })) },
+      { key: "place", label: "Posición", type: "select", options: Object.entries(PLACE_LABELS).map(([value, label]) => ({ value, label })) },
+      { key: "seconds", label: "Dura (s)", type: "number", min: 0.5, max: MAX_NOTICE_SECONDS, step: 0.5 },
+    ],
+    run: (action) => void showToast(action.message, action.tone, action.place, action.seconds),
+  },
+
+  dialog: {
+    label: "Mostrar un diálogo",
+    create: () => ({ kind: "dialog", title: "Aviso", message: "Escribe aquí el mensaje.", button: "Aceptar" }),
+    fields: [
+      { key: "title", label: "Título", type: "text", placeholder: "Aviso" },
+      { key: "message", label: "Mensaje", type: "text", placeholder: "Escribe aquí el mensaje." },
+      { key: "button", label: "Texto del botón", type: "text", placeholder: "Aceptar" },
+    ],
+    run: (action) => void showDialog(action.title, action.message, action.button),
   },
 
   play: {

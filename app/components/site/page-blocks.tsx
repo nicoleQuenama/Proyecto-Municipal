@@ -64,7 +64,7 @@ interface PageBlockProps {
 
 /** Un componente colocado en una página, con las reglas de apariencia y su formato propio aplicados. */
 function PageBlock({ page, block, interactive }: PageBlockProps) {
-  const { components, pages, selectedId, selectedElementId, alsoSelectedIds, libraries } = useSite();
+  const { components, pages, selectedId, selectedElementId, alsoSelectedIds, selectedBlockIds, libraries } = useSite();
   const dispatch = useSiteDispatch();
   const styles = useStyles(page.id);
   const { mode, followLink } = useNavigation();
@@ -225,13 +225,14 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       data-block-id={block.id}
       data-component={def.id}
       {...placementAttributes(placement)}
+      {...(placement && !placement.fixed && stretches(block.box?.span) ? { "data-bleed": "" } : {})}
       // El destino de la sección es su lienzo (ver ComponentView); en un bloque de código, la caja entera.
       {...(block.code ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
       {...(placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
       {...sectionDrop.handlers}
-      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${block.code || stretches(block.box?.span) || autoFill ? "w-full" : "w-fit"} max-w-full rounded-md ${
-        selected && selectedElementId === null
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${block.code || stretches(block.box?.span) || autoFill ? "w-full" : "w-fit"} max-w-full ${stretches(block.box?.span) ? "" : "rounded-md"} ${
+        (selected && selectedElementId === null) || (editing && selectedBlockIds?.includes(block.id))
           ? "ring-2 ring-accent"
           : editing
             ? "hover:ring-1 hover:ring-accent/50"
@@ -241,6 +242,10 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
         margin: box.margin,
         ...(block.box?.blend ? { mixBlendMode: block.box.blend } : {}),
         ...placementStyle(placement),
+        // Una sección colocada de ancho completo (o pantalla completa) llega a los bordes de la página, no al ancho del diseño.
+        ...(fullPage && placement && !placement.fixed && stretches(block.box?.span) ? { left: 0, width: "100%", maxWidth: "none" } : {}),
+        // Una sección fija que ocupa todo el ancho o la pantalla cubre la ventana entera (pantalla de carga, barra fija).
+        ...(placement?.fixed && stretches(block.box?.span) ? { left: 0, top: 0, width: "100vw", maxWidth: "none" } : {}),
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
       }}
     >
@@ -268,8 +273,8 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
         style={{
           padding: box.padding,
           background: background ?? autoFill ?? undefined,
-          borderRadius: boxRadius(block.box?.radius, resolve) ?? box.borderRadius,
-          ...spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined),
+          borderRadius: stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
+          ...spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined && !placement.fixed, fullPage),
           ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),
         }}
       >

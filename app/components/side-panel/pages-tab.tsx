@@ -1,5 +1,6 @@
 "use client";
 
+import { PAGE_ROLES, ROLE_NAMES, type PageRole } from "../site/page-roles";
 import { useState } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { PageBackground } from "../background/page-background";
@@ -117,6 +118,20 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
           <span className="truncate text-[11px] text-ink-dim">{routeOf(page)}</span>
         </button>
 
+        {!page.isHome && (
+          <select
+            aria-label={`Función de ${page.name}`}
+            title="Función de la página: carga, 404…"
+            value={page.role ?? ""}
+            onChange={(e) => dispatch({ type: "page/role", id: page.id, role: (e.target.value || null) as PageRole | null })}
+            className={`h-7 w-16 rounded-md border border-line bg-canvas px-1 text-[11px] text-ink-dim outline-none [&>option]:bg-panel ${page.role ? "text-accent" : "hidden group-hover:block focus:block"}`}
+          >
+            <option value="">Normal</option>
+            {ROLE_NAMES.map((role) => (
+              <option key={role} value={role}>{PAGE_ROLES[role].label}</option>
+            ))}
+          </select>
+        )}
         {!page.isHome && (
           <button
             type="button"

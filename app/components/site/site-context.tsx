@@ -16,7 +16,9 @@ import { useAuth } from "../auth/auth-context";
 import { INITIAL_SITE } from "./initial-site";
 import { useAutosave } from "../persistence/use-autosave";
 import { siteReducer } from "./site-reducer";
+import { HistoryContext } from "./history-context";
 import { UndoToast } from "./undo-toast";
+import { useHistory } from "./use-history";
 import { useUndoableDispatch } from "./use-undoable-dispatch";
 import type { Page, SiteAction, SiteState } from "./types";
 
@@ -41,7 +43,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const [state, rawDispatch] = useReducer(siteReducer, INITIAL_SITE);
   useAutosave<SiteState>("site", state, (saved) => rawDispatch({ type: "project/load", state: saved }));
   // Lo destructivo avisa con «Deshacer».
-  const { dispatch: undoable, toast, undo, dismiss } = useUndoableDispatch(state, rawDispatch);
+  const { dispatch: undoable, toast, dismiss } = useUndoableDispatch(state, rawDispatch);
 
   // Con acceso limitado, cada cambio pasa antes por el alcance de la persona (ver `guardAction`).
   const { currentUser } = useAuth();
@@ -49,27 +51,42 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     latest.current = state;
   }, [state]);
+  // Todo cambio se anota para poder deshacerlo y rehacerlo (Ctrl+Z, Ctrl+Mayús+Z) hasta muchos pasos atrás.
+  const load = useCallback((saved: SiteState) => rawDispatch({ type: "project/load", state: saved }), []);
+  const history = useHistory(latest, load);
   const { message, say } = useNotice();
   const dispatch = useCallback<Dispatch<SiteAction>>(
     (action) => {
       const result = guardAction(action, currentUser, latest.current.pages);
       if (result.kind === "blocked") return say(result.reason);
       if (result.kind === "narrowed") say(`Se aplicó a tus ${result.count} ${result.count === 1 ? "sección" : "secciones"} con este componente; las demás no cambian.`);
-      result.actions.forEach(undoable);
+      result.actions.forEach((step) => {
+        history.track(step);
+        undoable(step);
+      });
     },
-    [currentUser, undoable, say],
+    [currentUser, undoable, say, history],
   );
 
   return (
     <StateContext value={state}>
       <DispatchContext value={dispatch}>
+        <HistoryContext value={history.controls}>
         {children}
         {message && (
           <p role="status" className="fixed bottom-20 left-1/2 z-50 max-w-md -translate-x-1/2 rounded-lg bg-panel px-4 py-2 text-xs text-ink shadow-2xl ring-1 ring-line">
             {message}
           </p>
         )}
-        <UndoToast toast={toast} onUndo={undo} onDismiss={dismiss} />
+        <UndoToast
+          toast={toast}
+          onUndo={() => {
+            history.undo();
+            dismiss();
+          }}
+          onDismiss={dismiss}
+        />
+        </HistoryContext>
       </DispatchContext>
     </StateContext>
   );

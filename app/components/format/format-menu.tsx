@@ -25,6 +25,7 @@ import {
   TOGGLES,
 } from "./format-options";
 import { makeCreateVariable } from "./format-variables";
+import { SelectionActions } from "./selection-actions";
 import { VariableSelect } from "./variable-select";
 
 const WIDTH = 288;
@@ -322,6 +323,7 @@ export function FormatMenu() {
       onContextMenu={(e) => e.preventDefault()}
     >
       <MenuBody model={visible} close={closeFormatMenu} />
+      <SelectionActions pageId={page.id} blockId={block.id} close={closeFormatMenu} />
     </TopLayer>
   );
 }

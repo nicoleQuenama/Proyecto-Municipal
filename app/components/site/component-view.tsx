@@ -266,6 +266,7 @@ function PositionedElement({
       <div
         data-target={target}
         data-el={element.id}
+        {...(gestures && isBackdrop(element, gestures.size) ? { "data-backdrop": "" } : {})}
         {...drop.handlers}
         style={boundStyle}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${gestures ? "cursor-move touch-none select-none" : ""}`}

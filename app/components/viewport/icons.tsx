@@ -32,6 +32,12 @@ export const FrameIcon = () => (
 export const StarIcon = () => (
   <Icon><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></Icon>
 );
+export const GradientIcon = () => (
+  <Icon>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M3 15l6-6M3 21L21 3M15 21l6-6" />
+  </Icon>
+);
 export const TextIcon = () => (
   <Icon><path d="M5 5h14M12 5v14" /></Icon>
 );

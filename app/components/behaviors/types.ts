@@ -1,4 +1,5 @@
 import type { Transition } from "../navigation/types";
+import type { NoticePlace, NoticeTone } from "./notify";
 
 /** Cuándo se dispara una interacción. */
 export type TriggerKind = "click" | "hover" | "enter" | "leave" | "scroll" | "load";
@@ -14,6 +15,8 @@ export type BehaviorAction =
   | { kind: "navigate"; pageId: string; transition?: Transition }
   | { kind: "animate"; effect: EffectName; seconds: number }
   | { kind: "count"; from: number; to: number; seconds: number; suffix: string }
+  | { kind: "toast"; message: string; tone: NoticeTone; place: NoticePlace; seconds: number }
+  | { kind: "dialog"; title: string; message: string; button: string }
   | { kind: "play"; animationId: string }
   | { kind: "toggle"; targetKey: string; mode: "show" | "hide" | "toggle" }
   | { kind: "openUrl"; url: string }

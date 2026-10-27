@@ -12,6 +12,7 @@ export type Tool =
   | "frame"
   | "text"
   | "icon"
+  | "gradient"
   | "comment"
   | "rectangle"
   | "ellipse"

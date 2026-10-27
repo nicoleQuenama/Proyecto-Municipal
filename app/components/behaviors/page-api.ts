@@ -1,6 +1,6 @@
 import { normalizeExternalUrl } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
-import { SECTION_KEY, type Page } from "../site/types";
+import { PLACE_KEY, SECTION_KEY, type Page } from "../site/types";
 import { animateElement, EFFECTS } from "./effects";
 import type { SandboxApi } from "./sandbox";
 import type { EffectName } from "./types";
@@ -30,9 +30,19 @@ export interface PageApi extends SandboxApi {
 
 const targetSelector = (blockId: string, key: string) => `[data-target="${CSS.escape(`${blockId}:${key}`)}"]`;
 
+/** Prefijo del destino que es otra sección de la página: `@` + el id del bloque. */
+export const OTHER_SECTION = "@";
+
+/** El destino: una parte de esta sección o, con `@`, otra sección entera (primero su sitio colocado, si lo tiene). */
+function findTarget(blockId: string, key: string): HTMLElement | null {
+  if (!key.startsWith(OTHER_SECTION)) return document.querySelector<HTMLElement>(targetSelector(blockId, key));
+  const other = key.slice(OTHER_SECTION.length);
+  return document.querySelector<HTMLElement>(`${targetSelector(other, PLACE_KEY)}, ${targetSelector(other, SECTION_KEY)}`);
+}
+
 /** Muestra, oculta o alterna una parte del bloque (solo mientras se prueba el sitio). */
 export function setVisibility(blockId: string, key: string, mode: "show" | "hide" | "toggle") {
-  const target = document.querySelector<HTMLElement>(targetSelector(blockId, key));
+  const target = findTarget(blockId, key);
   if (!target) return;
 
   const hide = mode === "hide" || (mode === "toggle" && target.style.display !== "none");

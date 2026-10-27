@@ -10,6 +10,11 @@ import type { DataRef, DataSource, RepeatLayout, RepeatPaging } from "../data-so
 import type { SourceAction } from "../data-sources/source-rules";
 import type { DrawAction } from "../drawing/draw-rules";
 import type { TextAction } from "./text-rules";
+import type { PasteAction } from "./paste-rules";
+import type { MultiSelectAction } from "./multi-select";
+import type { JoinAction } from "./join-rules";
+import type { OrderAction } from "./order-rules";
+import type { PageRole, RoleAction } from "./page-roles";
 import type { PageSeo, SeoAction } from "./seo-rules";
 import type { IconName } from "../icons/icon-set";
 import type { LinkParams } from "../dynamic/types";
@@ -269,12 +274,16 @@ export interface Page {
   slug: string;
   /** La página de inicio no se puede eliminar. */
   isHome: boolean;
+  /** Función especial de la página (carga, 404): se muestra sola cuando hace falta y no es una página normal del sitio. */
+  role?: PageRole;
   title: TitleState;
   media: MediaItem[];
   blocks: BlockInstance[];
   hidden?: boolean;
   /** Imagen o video de fondo de toda la página. */
   backdrop?: BlockBackground;
+  /** Color de fondo de toda la página (lo que se ve detrás de las secciones y en los bordes). */
+  color?: string;
   /** Ruta con parámetros (`/pokemon/:id`): la página es dinámica y sirve para muchos ids o slugs. */
   route?: string;
   /** Valor de ejemplo de cada parámetro, para ver la página en el editor. */
@@ -317,6 +326,8 @@ export interface SiteState extends StyleState {
   selectedElementId: string | null;
   /** Elementos que se sumaron a la selección con Ctrl/⌘-clic (además de `selectedElementId`); sirven para animar varios a la vez. */
   alsoSelectedIds?: string[];
+  /** Secciones seleccionadas a la vez (arrastrando sobre ellas); la activa es `selectedId`. */
+  selectedBlockIds?: string[];
   libraries: Library[];
   /** CSS de todo el sitio (afecta a las páginas, no al editor). */
   globalCss: string;
@@ -362,6 +373,11 @@ export type SiteAction =
   | SeoAction
   | DrawAction
   | TextAction
+  | PasteAction
+  | MultiSelectAction
+  | JoinAction
+  | OrderAction
+  | RoleAction
   | DynamicAction
   | BackgroundAction
   | ResponsiveAction
