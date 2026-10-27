@@ -42,7 +42,14 @@ const SPAN_CSS: Record<BoxSpan, CSSProperties> = {
   screen: { display: "flex", justifyContent: "center", alignItems: "center", width: "100%", minHeight: "100vh" },
 };
 
-export const spanStyle = (span: BoxSpan | undefined): CSSProperties => SPAN_CSS[span ?? "content"];
+/**
+ * El estilo de la sección según cuánto ocupa. Una sección colocada libremente en la página (`anchored`) no centra su
+ * contenido: se queda donde se dibujó, igual que las demás piezas de la página, y solo crece el fondo.
+ */
+export const spanStyle = (span: BoxSpan | undefined, anchored = false): CSSProperties => {
+  const style = SPAN_CSS[span ?? "content"];
+  return anchored && "display" in style ? { ...style, justifyContent: "flex-start", alignItems: "flex-start" } : style;
+};
 
 /** ¿La sección se estira a todo el ancho de la página? */
 export const stretches = (span: BoxSpan | undefined): boolean => (span ?? "content") !== "content";

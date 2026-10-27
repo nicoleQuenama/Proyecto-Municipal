@@ -14,6 +14,8 @@ export const SHAPE_TOOLS: Partial<Record<Tool, ShapeSpec>> = {
   ellipse: { kind: "ellipse", label: "Elipse" },
   triangle: { kind: "triangle", label: "Triángulo" },
   line: { kind: "line", label: "Línea" },
-  text: { kind: "text", label: "Texto" },
+  // Nace vacío: al soltar, el texto queda listo para escribir (ver `component-view`).
+  text: { kind: "text", label: "Texto", overrides: { text: "" } },
+  icon: { kind: "icon", label: "Icono", overrides: { icon: "star" } },
   frame: { kind: "rect", label: "Marco", overrides: { fill: "#f1f5f9", radius: 0 } },
 };

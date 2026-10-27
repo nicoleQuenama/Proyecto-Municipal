@@ -169,6 +169,8 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     selectedElementId: selected ? selectedElementId : null,
     alsoSelectedIds: selected ? alsoSelectedIds : undefined,
     onFollow: (link, elementId) => followLink(withParams(link, elementId)),
+    onEditText: (elementId, text) =>
+      dispatch({ type: "component/text", componentId: def.id, pageId: page.id, blockId: block.id, elementId, text }),
     onToggleHidden: (elementId, hidden) =>
       setHidden({ kind: "element", pageId: page.id, blockId: block.id, elementId }, hidden),
     onContextMenu: (elementId, point) =>
@@ -266,7 +268,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
           padding: box.padding,
           background: background ?? autoFill ?? undefined,
           borderRadius: boxRadius(block.box?.radius, resolve) ?? box.borderRadius,
-          ...spanStyle(autoFill ? "width" : block.box?.span),
+          ...spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined),
           ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),
         }}
       >

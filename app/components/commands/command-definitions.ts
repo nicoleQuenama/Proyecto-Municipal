@@ -50,6 +50,7 @@ const TOOL_COMMANDS: {
   { tool: "hand", label: "Mano", group: "Herramientas", shortcut: "h" },
   { tool: "frame", label: "Marco", group: "Herramientas", shortcut: "f" },
   { tool: "text", label: "Texto", group: "Herramientas", shortcut: "t" },
+  { tool: "icon", label: "Icono", group: "Herramientas", shortcut: null },
   { tool: "comment", label: "Comentar", group: "Herramientas", shortcut: "c" },
   { tool: "rectangle", label: "Rectángulo", group: "Figuras", shortcut: "r" },
   { tool: "ellipse", label: "Elipse", group: "Figuras", shortcut: "o" },

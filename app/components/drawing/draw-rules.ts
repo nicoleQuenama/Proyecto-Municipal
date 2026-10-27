@@ -54,7 +54,8 @@ export function drawShape(state: SiteState, input: DrawShapeInput): SiteState {
     pages: state.pages.map((page) => (page.id === pageId ? { ...page, blocks: [...page.blocks, block] } : page)),
     currentPageId: pageId,
     selectedId: blockId,
-    selectedElementId: null,
+    // Un texto nuevo queda seleccionado: así se empieza a escribir sin buscarlo.
+    selectedElementId: kind === "text" ? element.id : null,
     alsoSelectedIds: undefined,
   };
 }

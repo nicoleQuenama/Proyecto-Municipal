@@ -36,6 +36,7 @@ const CLICK_SIZE: Partial<Record<ElementKind, { width: number; height: number }>
   triangle: { width: 120, height: 104 },
   line: { width: 160, height: 0 },
   text: { width: 200, height: 40 },
+  icon: { width: 32, height: 32 },
 };
 const FALLBACK_SIZE = { width: 120, height: 100 };
 

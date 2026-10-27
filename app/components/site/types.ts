@@ -9,6 +9,7 @@ import type { LinkTarget, Transition } from "../navigation/types";
 import type { DataRef, DataSource, RepeatLayout, RepeatPaging } from "../data-sources/types";
 import type { SourceAction } from "../data-sources/source-rules";
 import type { DrawAction } from "../drawing/draw-rules";
+import type { TextAction } from "./text-rules";
 import type { PageSeo, SeoAction } from "./seo-rules";
 import type { IconName } from "../icons/icon-set";
 import type { LinkParams } from "../dynamic/types";
@@ -356,6 +357,7 @@ export type SiteAction =
   | SourceAction
   | SeoAction
   | DrawAction
+  | TextAction
   | DynamicAction
   | BackgroundAction
   | ResponsiveAction

@@ -32,7 +32,7 @@ export function LinkHandle({ element, link, label }: LinkHandleProps) {
         startConnect(element, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
       }}
       onClick={(e) => e.stopPropagation()}
-      className={`absolute top-1 right-1 z-20 flex cursor-crosshair touch-none items-center justify-center rounded-full border text-[10px] font-bold shadow ${
+      className={`absolute -top-2 -right-2 z-20 flex cursor-crosshair touch-none items-center justify-center rounded-full border text-[10px] font-bold shadow ${
         link
           ? "border-sky-500 bg-sky-500 text-white"
           : "hidden border-sky-500 bg-white text-sky-600 group-hover/element:flex focus:flex"

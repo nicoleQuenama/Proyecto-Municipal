@@ -68,6 +68,8 @@ describe("spanStyle y hasBackground", () => {
   it("la pantalla completa ocupa todo el alto y el contenido no cambia nada", () => {
     expect(spanStyle("screen")).toMatchObject({ minHeight: "100vh", width: "100%" });
     expect(spanStyle(undefined)).toEqual({});
+    expect(spanStyle("screen", true)).toMatchObject({ minHeight: "100vh", justifyContent: "flex-start", alignItems: "flex-start" });
+    expect(spanStyle(undefined, true)).toEqual({});
     expect(stretches("width")).toBe(true);
     expect(stretches(undefined)).toBe(false);
   });

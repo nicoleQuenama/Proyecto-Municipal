@@ -16,6 +16,7 @@ import { BindingControls } from "../data-sources/binding-controls";
 import { LinkParamsControls } from "../dynamic/link-params-controls";
 import { RepeatControls } from "../data-sources/repeat-controls";
 import { SectionBackground } from "../background/section-background";
+import { IconPicker } from "../icons/icon-picker";
 import { AltControl } from "./alt-control";
 import { BehaviorEditor } from "./behavior-editor";
 import { RemoveButton } from "./remove-button";
@@ -115,6 +116,14 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   return (
     <div className="flex flex-col gap-4">
       <HideOnControls pageId={pageId} block={block} def={def} elementId={element?.id} />
+      {element?.kind === "icon" && canEditContent && (
+        <Collapsible title="Ícono">
+          <IconPicker
+            value={element.icon ?? "star"}
+            onPick={(icon) => dispatch({ type: "component/icon", componentId: def.id, pageId, blockId: block.id, elementId: element.id, icon })}
+          />
+        </Collapsible>
+      )}
       {element && <AltControl pageId={pageId} block={block} element={element} />}
       {element ? <BindingControls pageId={pageId} block={block} element={element} /> : <RepeatControls pageId={pageId} block={block} />}
       {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}

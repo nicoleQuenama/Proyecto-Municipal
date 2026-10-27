@@ -11,6 +11,7 @@ export type Tool =
   | "hand"
   | "frame"
   | "text"
+  | "icon"
   | "comment"
   | "rectangle"
   | "ellipse"

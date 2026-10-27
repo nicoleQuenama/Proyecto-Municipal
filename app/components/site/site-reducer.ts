@@ -2,6 +2,7 @@ import { addAnimation, deleteAnimation, finishRecording, renameAnimation, setAni
 import { RESPONSIVE_HANDLERS } from "../responsive/responsive-rules";
 import { LAYER_HANDLERS } from "../layers/layer-rules";
 import { DRAW_HANDLERS } from "../drawing/draw-rules";
+import { TEXT_HANDLERS } from "./text-rules";
 import { SEO_HANDLERS } from "./seo-rules";
 import { SOURCE_HANDLERS } from "../data-sources/source-rules";
 import { BACKGROUND_HANDLERS } from "../background/background-rules";
@@ -68,6 +69,7 @@ const HANDLERS: Handlers = {
   ...SOURCE_HANDLERS,
   ...SEO_HANDLERS,
   ...DRAW_HANDLERS,
+  ...TEXT_HANDLERS,
   ...DYNAMIC_HANDLERS,
   ...BACKGROUND_HANDLERS,
   ...RESPONSIVE_HANDLERS,

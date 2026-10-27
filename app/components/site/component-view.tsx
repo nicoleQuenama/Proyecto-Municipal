@@ -1,4 +1,4 @@
-import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from "react";
+import { useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
 import { ElementHandles } from "../canvas-editing/element-handles";
@@ -15,6 +15,7 @@ import type { ElementRef, LinkTarget, NavMode, Point } from "../navigation/types
 import { IconGlyph } from "../icons/icon-glyph";
 import { CodeButton } from "./code-button";
 import { elementBaseCss } from "./element-style";
+import { InlineTextEditor } from "./inline-text-editor";
 import { targetKey } from "./custom-code";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind, type Page } from "./types";
 import type { BlockGestures } from "./use-block-gestures";
@@ -166,6 +167,8 @@ export interface ElementInteraction {
   onContextMenu: (elementId: string, point: Point) => void;
   /** Al editar: seleccionar un elemento para personalizarlo. */
   onSelect: (elementId: string, add?: boolean) => void;
+  /** Al editar: guardar el texto escrito sobre el lienzo en un elemento de texto. */
+  onEditText?: (elementId: string, text: string) => void;
   /** Datos de una API por id de elemento, y la lista que repite la sección (si la repite). */
   bindings?: Record<string, DataRef>;
   repeat?: DataRef;
@@ -191,6 +194,10 @@ function PositionedElement({
   const shown = useBoundElement(element, binding, interaction?.repeat);
   const drop = useDataDrop((data) => interaction?.onDropData(data, element.id), interaction?.mode === "edit");
   const { ref, props: behaviorProps } = useBehaviors(interaction?.blockId ?? "", mine, interaction?.mode === "preview");
+  // Un texto recién dibujado nace vacío y seleccionado: se empieza a escribir sin pulsar nada más.
+  const [writing, setWriting] = useState(
+    element.kind === "text" && element.text === "" && interaction?.selectedElementId === element.id,
+  );
 
   const box: CSSProperties = { left: element.x, top: element.y, width: shown.width, height: shown.height };
   // Un dato que cambia el ancho, el alto o el color se pinta en el contenedor (ahí está el CSS base).
@@ -273,13 +280,22 @@ function PositionedElement({
           e.stopPropagation(); // el bloque no se vuelve a seleccionar encima del elemento
           interaction.onSelect(element.id, e.ctrlKey || e.metaKey);
         }}
+        onDoubleClick={() => element.kind === "text" && interaction.onEditText && setWriting(true)}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation(); // el menú del bloque no se abre encima
           interaction.onContextMenu(element.id, { x: e.clientX, y: e.clientY });
         }}
       >
-        <ElementContent element={shown} inherit={interaction !== undefined} />
+        {writing && interaction.onEditText ? (
+          <InlineTextEditor
+            element={element}
+            onCommit={(text) => interaction.onEditText?.(element.id, text)}
+            onClose={() => setWriting(false)}
+          />
+        ) : (
+          <ElementContent element={shown} inherit={interaction !== undefined} />
+        )}
         {/* La selección va en una capa aparte para no chocar con el contorno o la sombra que ponga el usuario. */}
         {selected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-sky-500" />}
         {binding && (
@@ -296,7 +312,7 @@ function PositionedElement({
           hidden={false}
           label={elementLabel(element)}
           onToggle={() => interaction.onToggleHidden(element.id, true)}
-          className="absolute top-1 left-1 hidden group-hover/element:flex focus:flex"
+          className="absolute -top-2 -left-2 hidden group-hover/element:flex focus:flex"
         />
         {isLinkable(element) && <LinkHandle element={ref} link={link} label={elementLabel(element)} />}
         {selected && gestures && (

@@ -5,9 +5,11 @@ import { useNavigation } from "../navigation/navigation-context";
 import { PAGE_SELECTOR, scaleOf } from "../placement/page-geometry";
 import { useSiteDispatch } from "../site/site-context";
 import { useViewport } from "../viewport/viewport-context";
+import { backgroundAt } from "./background-under";
 import { frameFromDrag, type DrawFrame, type Point } from "./draw-plan";
 import { ShapePreview } from "./shape-preview";
 import { SHAPE_TOOLS, type ShapeSpec } from "./shape-tools";
+import { textColorOn } from "./text-color";
 
 interface Gesture {
   spec: ShapeSpec;
@@ -16,6 +18,9 @@ interface Gesture {
   scale: number;
   start: Point;
 }
+
+/** La página crece con su contenido: se puede dibujar hasta aquí por debajo de su borde para agregar secciones nuevas. */
+const GROW_BELOW = 1200;
 
 /** Dónde está el puntero dentro de la página, en píxeles de la página (sin el zoom del lienzo). */
 const pointOn = (e: { clientX: number; clientY: number }, page: HTMLElement, scale: number): Point => {
@@ -53,6 +58,8 @@ export function useShapeDrawing() {
     e.stopPropagation(); // ni la selección de un bloque ni «deseleccionar» deben reaccionar
 
     const { page, pageId } = target;
+    // Un texto nuevo toma la tinta que mejor se lee sobre el fondo donde se empieza a dibujar (antes de que aparezca la vista previa).
+    const overrides = spec.kind === "text" || spec.kind === "icon" ? { ...spec.overrides, color: textColorOn(backgroundAt(e.clientX, e.clientY)) } : spec.overrides;
     const gesture: Gesture = { spec, pageId, page, scale: scaleOf(page), start: pointOn(e, page, scaleOf(page)) };
 
     const frameAt = (event: PointerEvent): DrawFrame =>
@@ -61,7 +68,7 @@ export function useShapeDrawing() {
         start: gesture.start,
         end: pointOn(event, page, gesture.scale),
         constrain: event.shiftKey,
-        bounds: { width: page.offsetWidth, height: page.offsetHeight },
+        bounds: { width: page.offsetWidth, height: page.offsetHeight + GROW_BELOW },
       });
 
     const stop = () => {
@@ -86,7 +93,7 @@ export function useShapeDrawing() {
         componentId: crypto.randomUUID(),
         kind: spec.kind,
         label: spec.label,
-        overrides: spec.overrides,
+        overrides,
         frame,
       });
       setTool("select");

@@ -9,6 +9,7 @@ import { TITLE_SELECTION } from "../site/types";
 import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
 import { collectColors, type ColorGroup } from "./collect-colors";
+import { HexField } from "./hex-field";
 
 function Swatch({ group, onChange }: { group: ColorGroup; onChange: (color: string) => void }) {
   return (
@@ -26,7 +27,7 @@ function Swatch({ group, onChange }: { group: ColorGroup; onChange: (color: stri
           className="absolute inset-0 size-full cursor-pointer opacity-0"
         />
       </label>
-      <span title={group.value} className="w-full truncate text-center font-mono text-[10px] text-ink-dim uppercase">{group.value}</span>
+      <HexField value={group.value} onChange={onChange} />
     </li>
   );
 }
