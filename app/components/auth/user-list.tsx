@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Avatar } from "./avatar";
 import { ROLE_LABELS, type User } from "./types";
 import { ROLE_BADGE } from "./user-ui";
+import { resetPassword } from "./auth-api";
 
 export function UserList({
   users,
@@ -15,6 +17,21 @@ export function UserList({
   removingId: string | null;
   onRemove: (id: string, username: string) => void;
 }) {
+  const [resetting, setResetting] = useState<string | null>(null);
+  const [temp, setTemp] = useState<{ id: string; pass: string } | null>(null);
+
+  const doReset = async (id: string) => {
+    setResetting(id);
+    try {
+      const pass = await resetPassword(id);
+      setTemp({ id, pass });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error");
+    } finally {
+      setResetting(null);
+    }
+  } 
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
@@ -51,19 +68,35 @@ export function UserList({
             </span>
           </div>
           {user.id !== currentUserId && (
-            <button
-              type="button"
-              disabled={removingId === user.id}
-              onClick={() => onRemove(user.id, user.username)}
-              title={`Eliminar a ${user.name}`}
-              aria-label={`Eliminar a ${user.name}`}
-              className="shrink-0 rounded-md px-1.5 py-1 text-[10px] text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
-            >
-              {removingId === user.id ? "…" : "Eliminar"}
-            </button>
+            <div className="flex shrink-0 flex-col gap-1">
+              <button
+                type="button"
+                disabled={resetting === user.id}
+                onClick={() => doReset(user.id)}
+                className="rounded-md px-1.5 py-1 text-[10px] text-ink-dim transition-colors hover:bg-hover disabled:opacity-50"
+              >
+                {resetting === user.id ? "..." : "Reset"}
+              </button>
+              <button
+                type="button"
+                disabled={removingId === user.id}
+                onClick={() => onRemove(user.id, user.username)}
+                className="rounded-md px-1.5 py-1 text-[10px] text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+              >
+                {removingId === user.id ? "..." : "Eliminar"}
+              </button>
+            </div>
           )}
         </div>
       ))}
+      {temp && (
+        <div className="rounded-lg border border-line bg-canvas p-2 text-[11px] text-ink">
+          <p>Contraseña temporal para @{users.find((u) => u.id === temp.id)?.username}:</p>
+          <p className="mt-1 font-mono">{temp.pass}</p>
+          <button onClick={() => setTemp(null)} className="mt-1 text-ink-dim hover:text-ink">Cerrar</button>
+        </div>
+      )}
     </div>
   );
 }
+

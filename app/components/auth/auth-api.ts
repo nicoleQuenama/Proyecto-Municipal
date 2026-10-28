@@ -54,3 +54,18 @@ export async function removeUser(id: string): Promise<void> {
 export async function saveAccess(id: string, access: Access): Promise<User> {
   return (await request<{ user: User }>("/api/auth/users", { method: "PATCH", body: JSON.stringify({ id, access }) })).user;
 }
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await request<{ ok: true }>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export async function resetPassword(userId: string): Promise<string> {
+  const res = await request<{ ok: true; tempPassword: string }>("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
+  return res.tempPassword;
+}

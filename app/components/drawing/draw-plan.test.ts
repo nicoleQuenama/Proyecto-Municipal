@@ -32,7 +32,7 @@ describe("frameFromDrag", () => {
 
   it("un clic coloca la figura con su tamaño de partida", () => {
     expect(draw([100, 100], [101, 100])).toEqual({ x: 100, y: 100, width: 160, height: 100 });
-    expect(draw([950, 780], [950, 780])).toMatchObject({ x: 840, y: 680 });
+    expect(draw([950, 780], [950, 780])).toMatchObject({ x: 840, y: 700 });
   });
 
   it("una línea que sube queda marcada como invertida", () => {

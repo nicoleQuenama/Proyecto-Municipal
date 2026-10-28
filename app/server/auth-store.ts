@@ -148,3 +148,37 @@ export async function listManaged(managerId: string, all: boolean): Promise<User
 export async function findStored(id: string): Promise<StoredUser | null> {
   return (await readStore()).users.find((user) => user.id === id) ?? null;
 }
+
+/** Change password for authenticated user */
+export async function changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+  }
+
+  const store = await readStore();
+  const user = store.users.find((entry) => entry.id === id);
+  if (!user) throw new Error("El usuario no existe.");
+  
+  if (!passwordMatches(currentPassword, user.passwordHash, user.salt)) {
+    throw new Error("La contraseña actual es incorrecta.");
+  }
+
+  const salt = newSalt();
+  user.salt = salt;
+  user.passwordHash = hashPassword(newPassword, salt);
+  await writeStore(store);
+}
+
+/** Reset password by admin (no current password required) */
+export async function resetPassword(id: string): Promise<string> {
+  const store = await readStore();
+  const user = store.users.find((entry) => entry.id === id);
+  if (!user) throw new Error("El usuario no existe.");
+
+  const tempPassword = `Temp${randomUUID().slice(0, 8)}!`;
+  const salt = newSalt();
+  user.salt = salt;
+  user.passwordHash = hashPassword(tempPassword, salt);
+  await writeStore(store);
+  return tempPassword;
+}
