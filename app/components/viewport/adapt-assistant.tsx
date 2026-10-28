@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { describeSuggestions, suggestAll } from "../responsive/adapt-suggest";
 import { describeSummary, summarizeAdaptation } from "../responsive/adapt-summary";
 import { availableWidth, DEVICE_NAME, isAdaptive } from "../responsive/devices";
 import { MARGIN_LIMITS, sideMargin } from "../responsive/page-margin";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
+import { AdaptHelp } from "./adapt-help";
 import { copiesFrom } from "./suggest-copies";
 import { useViewport } from "./viewport-context";
 
@@ -19,6 +21,7 @@ export function AdaptAssistant() {
   const page = useCurrentPage();
   const dispatch = useSiteDispatch();
   const { components, sources } = useSite();
+  const [explaining, setExplaining] = useState(false);
   if (!isAdaptive(device) || !page) return null;
 
   const summary = summarizeAdaptation(page.blocks, device);
@@ -36,7 +39,7 @@ export function AdaptAssistant() {
     <div
       role="region"
       aria-label={`Asistente responsive para ${name}`}
-      className="absolute bottom-[8.5rem] left-1/2 z-30 flex w-max max-w-[calc(100%-1rem)] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-panel px-3 py-2 text-xs text-ink shadow-2xl"
+      className="absolute bottom-[8.5rem] left-1/2 z-30 flex w-max max-w-[min(42rem,calc(100%-1rem))] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-panel px-3 py-2 text-xs text-ink shadow-2xl"
     >
       <button type="button" onClick={() => adaptAll(false)} className={`${button} bg-accent text-white hover:opacity-90`}>
         Adaptar toda la página a {name}
@@ -59,6 +62,14 @@ export function AdaptAssistant() {
           Volver también las manuales a automático
         </button>
       )}
+      <button
+        type="button"
+        aria-expanded={explaining}
+        onClick={() => setExplaining(!explaining)}
+        className={`${button} border border-line text-ink-dim hover:bg-hover hover:text-ink`}
+      >
+        {explaining ? "Ocultar ayuda" : "¿Cómo se adapta?"}
+      </button>
       <label className="flex items-center gap-1.5 text-ink-dim">
         Margen lateral
         <input
@@ -72,6 +83,7 @@ export function AdaptAssistant() {
         />
         px
       </label>
+      {explaining && <AdaptHelp device={name} suggestions={suggestions} />}
     </div>
   );
 }

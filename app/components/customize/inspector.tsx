@@ -17,6 +17,11 @@ import { LinkParamsControls } from "../dynamic/link-params-controls";
 import { RepeatControls } from "../data-sources/repeat-controls";
 import { SectionBackground } from "../background/section-background";
 import { IconPicker } from "../icons/icon-picker";
+import { GroupControls } from "./group-controls";
+import { LayoutControls } from "./layout-controls";
+import { ControlControls } from "../forms/control-controls";
+import { MediaPerformanceControls } from "../media/media-performance-controls";
+import { FluidControls } from "../responsive/fluid-controls";
 import { AltControl } from "./alt-control";
 import { LayerControls } from "./layer-controls";
 import { BehaviorEditor } from "./behavior-editor";
@@ -84,8 +89,8 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const canEditStyles = hasPermission(currentUser, "editStyles");
   const canEditCode = hasPermission(currentUser, "editCode");
 
-  const saveStyle = (patch: Partial<CustomStyle>) => {
-    if (!canEditStyles) return;
+  const saveStyle = (patch: Partial<CustomStyle>, allowed = canEditStyles) => {
+    if (!allowed) return;
     dispatch(
       level === "block"
         ? { type: "block/custom", pageId, blockId: block.id, key: scope, patch }
@@ -125,6 +130,9 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           />
         </Collapsible>
       )}
+      {element?.kind === "text" && canEditContent && <FluidControls componentId={def.id} pageId={pageId} blockId={block.id} element={element} />}
+      {(element?.kind === "image" || element?.kind === "video") && canEditContent && <MediaPerformanceControls componentId={def.id} pageId={pageId} blockId={block.id} element={element} />}
+      {element && canEditContent && <ControlControls componentId={def.id} element={element} />}
       {element && <AltControl pageId={pageId} block={block} element={element} />}
       {element ? <BindingControls pageId={pageId} block={block} element={element} /> : <RepeatControls pageId={pageId} block={block} />}
       {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}
@@ -140,6 +148,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 <BehaviorEditor
                   key={behavior.id}
                   behavior={behavior}
+                  blockId={block.id}
                   pages={pages}
                   elements={def.elements}
                   onChange={(next) => {
@@ -185,6 +194,17 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               : (mine?.hint ?? `Cambia todos los «${def.name}» del sitio, en todas las páginas.`)}
           </Hint>
         </div>
+      )}
+
+      {/* La disposición es maquetar: también es del diseñador, aunque no pueda escribir clases a mano. */}
+      {canEditContent && scope !== SECTION_KEY && element && <GroupControls componentId={def.id} element={element} />}
+      {canEditContent && (
+        <LayoutControls
+          isSection={scope === SECTION_KEY}
+          classes={custom.classes}
+          sectionClasses={((level === "block" ? block.custom?.[SECTION_KEY] : def.styles?.[SECTION_KEY]) ?? { classes: "" }).classes}
+          onChange={(classes) => saveStyle({ classes }, canEditContent)}
+        />
       )}
 
       {canEditStyles && (

@@ -2,6 +2,7 @@ import { normalizeExternalUrl } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
 import { PLACE_KEY, SECTION_KEY, type Page } from "../site/types";
 import { animateElement, EFFECTS } from "./effects";
+import { slideDestination, type SlideTo } from "./slide";
 import type { SandboxApi } from "./sandbox";
 import type { EffectName } from "./types";
 
@@ -47,6 +48,15 @@ export function setVisibility(blockId: string, key: string, mode: "show" | "hide
 
   const hide = mode === "hide" || (mode === "toggle" && target.style.display !== "none");
   target.style.display = hide ? "none" : "";
+}
+
+/** Desliza un carrusel (una sección con desplazamiento horizontal): una página hacia un lado, o al principio o al final. */
+export function slideTarget(blockId: string, key: string, to: SlideTo) {
+  const track = findTarget(blockId, key);
+  if (!track) return;
+  const starts = [...track.children].filter((child): child is HTMLElement => child instanceof HTMLElement && child.hasAttribute("data-el")).map((card) => card.offsetLeft);
+  const left = slideDestination(starts, track.scrollLeft, to, track.scrollWidth);
+  track.scrollTo({ left, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
 export function openUrl(url: string) {

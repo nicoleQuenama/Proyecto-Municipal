@@ -39,9 +39,10 @@ function useNotice() {
   return { message, say };
 }
 
-export function SiteProvider({ children }: { children: ReactNode }) {
-  const [state, rawDispatch] = useReducer(siteReducer, INITIAL_SITE);
-  useAutosave<SiteState>("site", state, (saved) => rawDispatch({ type: "project/load", state: saved }));
+/** `initial` + `persist: false`: el visor del sitio publicado, que parte de un sitio dado y no guarda nada. */
+export function SiteProvider({ children, initial = INITIAL_SITE, persist = true }: { children: ReactNode; initial?: SiteState; persist?: boolean }) {
+  const [state, rawDispatch] = useReducer(siteReducer, initial);
+  useAutosave<SiteState>("site", state, (saved) => rawDispatch({ type: "project/load", state: saved }), persist);
   // Lo destructivo avisa con «Deshacer».
   const { dispatch: undoable, toast, dismiss } = useUndoableDispatch(state, rawDispatch);
 

@@ -73,7 +73,7 @@ const dropTargetAt = (x: number, y: number): string | null =>
   document.elementFromPoint(x, y)?.closest(`[${DROP_ATTRIBUTE}]`)?.getAttribute(DROP_ATTRIBUTE) ?? null;
 
 /** `initialMode`: una vista previa incrustada (p. ej. en el editor de código) nace en «Probar». */
-export function NavigationProvider({ children, initialMode = "edit" }: { children: ReactNode; initialMode?: NavMode }) {
+export function NavigationProvider({ children, initialMode = "edit", locked = false }: { children: ReactNode; initialMode?: NavMode; /** El visor público no puede salir de «Probar». */ locked?: boolean }) {
   const { pages, currentPageId, navigation } = useSite();
   const dispatch = useSiteDispatch();
 
@@ -105,6 +105,7 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
 
   const setMode = useCallback(
     (next: NavMode) => {
+      if (locked && next !== initialMode) return;
       stopConnecting();
       setLinkEditor(null);
       setTransition(null); // la primera página de una vista previa no se anima
@@ -112,7 +113,7 @@ export function NavigationProvider({ children, initialMode = "edit" }: { childre
       setModal(null);
       setModeState(next);
     },
-    [stopConnecting],
+    [stopConnecting, locked, initialMode],
   );
 
   const startConnect = useCallback((element: ElementRef, from: Point) => {

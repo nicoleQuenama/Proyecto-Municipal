@@ -13,11 +13,11 @@ const HEADERS = { "content-type": "application/json", [REQUEST_HEADER]: "1" };
  * Guarda una parte del proyecto en el servidor después de cada cambio y la recupera al abrir el editor.
  * Hasta que termina de cargar lo guardado no se guarda nada, para no pisarlo con el estado de partida.
  */
-export function useAutosave<T>(part: string, state: T, restore: (saved: T) => void) {
+export function useAutosave<T>(part: string, state: T, restore: (saved: T) => void, enabled = true) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (isFresh()) return;
+    if (isFresh() || !enabled) return;
     let cancelled = false;
     fetch(URL_OF(part), { headers: HEADERS })
       .then((response) => (response.ok ? response.json() : null))

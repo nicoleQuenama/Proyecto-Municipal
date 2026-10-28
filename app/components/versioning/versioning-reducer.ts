@@ -56,6 +56,14 @@ type Handlers = {
 const HANDLERS: Handlers = {
   // Reemplaza todo por lo que se guardó la última vez (ramas, versiones, publicaciones…).
   "project/load": (_state, action) => ({ ...action.state, pullRequests: action.state.pullRequests.filter((pr) => !pr.authorId) }),
+  "history/reset": (state, action) => ({
+    ...state,
+    commits: [],
+    releases: [],
+    pullRequests: [],
+    staged: [],
+    baseline: action.baseline,
+  }),
   "branch/create": (state, action) => ({
     ...state,
     branches: [...state.branches, { name: action.name, author: action.author ?? CURRENT_USER, base: state.current }],

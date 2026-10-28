@@ -66,7 +66,7 @@ function MediaPreview({ item, editing, onError }: { item: MediaItem; editing: bo
   if (item.kind === "image") {
     // <img> en lugar de next/image: las fuentes son object URLs o dominios arbitrarios.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={item.src} alt={item.alt ?? item.name} draggable={false} onError={onError} className="w-full" />;
+    return <img src={item.src} alt={item.alt ?? item.name} draggable={false} onError={onError} loading="lazy" decoding="async" className="w-full" />;
   }
 
   if (item.embed) {
@@ -87,7 +87,7 @@ function MediaPreview({ item, editing, onError }: { item: MediaItem; editing: bo
     );
   }
 
-  return <video src={item.src} poster={item.poster} controls onError={onError} className="w-full" />;
+  return <video src={item.src} poster={item.poster} controls preload="metadata" onError={onError} className="w-full" />;
 }
 
 function MediaCard({

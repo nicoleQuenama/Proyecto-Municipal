@@ -6,6 +6,10 @@ import { TEXT_HANDLERS } from "./text-rules";
 import { PASTE_HANDLERS } from "./paste-rules";
 import { MULTI_SELECT_HANDLERS } from "./multi-select";
 import { JOIN_HANDLERS } from "./join-rules";
+import { GROUP_ELEMENTS_HANDLERS } from "./group-elements";
+import { GROUP_MOVE_HANDLERS } from "./group-move";
+import { COMMENT_HANDLERS } from "../comments/comment-rules";
+import { CONTROL_HANDLERS } from "../forms/control-rules";
 import { ORDER_HANDLERS } from "./order-rules";
 import { ROLE_HANDLERS } from "./page-roles";
 import { SEO_HANDLERS } from "./seo-rules";
@@ -79,6 +83,10 @@ const HANDLERS: Handlers = {
   ...MULTI_SELECT_HANDLERS,
   ...JOIN_HANDLERS,
   ...ORDER_HANDLERS,
+  ...CONTROL_HANDLERS,
+  ...COMMENT_HANDLERS,
+  ...GROUP_MOVE_HANDLERS,
+  ...GROUP_ELEMENTS_HANDLERS,
   ...ROLE_HANDLERS,
   ...DYNAMIC_HANDLERS,
   ...BACKGROUND_HANDLERS,

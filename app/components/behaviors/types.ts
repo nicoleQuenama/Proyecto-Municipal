@@ -17,6 +17,8 @@ export type BehaviorAction =
   | { kind: "count"; from: number; to: number; seconds: number; suffix: string }
   | { kind: "toast"; message: string; tone: NoticeTone; place: NoticePlace; seconds: number }
   | { kind: "dialog"; title: string; message: string; button: string }
+  | { kind: "slide"; targetKey: string; to: "prev" | "next" | "start" | "end" }
+  | { kind: "submit"; url: string; message: string }
   | { kind: "play"; animationId: string }
   | { kind: "toggle"; targetKey: string; mode: "show" | "hide" | "toggle" }
   | { kind: "openUrl"; url: string }

@@ -1,6 +1,7 @@
 /** El contenido de un elemento que se cambia directamente sobre el lienzo: su texto o su icono. */
 
 import type { IconName } from "../icons/icon-set";
+import type { FluidText } from "../responsive/fluid-text";
 import type { SiteState } from "./types";
 
 interface ElementTarget {
@@ -12,12 +13,16 @@ interface ElementTarget {
 
 export type TextAction =
   | ({ type: "component/text"; text: string } & ElementTarget)
-  | ({ type: "component/icon"; icon: IconName } & ElementTarget);
+  | ({ type: "component/icon"; icon: IconName } & ElementTarget)
+  /** Texto adaptable: sus límites, o `null` para que mida siempre lo mismo. */
+  | ({ type: "component/fluid"; fluid: FluidText | null } & ElementTarget)
+  /** Carga inmediata de una imagen o un video (lo principal de la página). */
+  | ({ type: "component/eager"; eager: boolean } & ElementTarget);
 
 /** Un texto que se deja vacío vuelve a este, para que el elemento no desaparezca de la página. */
 export const EMPTY_TEXT = "Texto";
 
-function patchElement(state: SiteState, componentId: string, elementId: string, patch: { text?: string; icon?: IconName }): SiteState {
+function patchElement(state: SiteState, componentId: string, elementId: string, patch: { text?: string; icon?: IconName; fluid?: FluidText | undefined; eager?: boolean | undefined }): SiteState {
   const component = state.components.find((c) => c.id === componentId);
   const element = component?.elements.find((e) => e.id === elementId);
   if (!component || !element) return state;
@@ -38,4 +43,6 @@ type Handlers = { [K in TextAction["type"]]: (state: SiteState, action: Extract<
 export const TEXT_HANDLERS: Handlers = {
   "component/text": (state, action) => setElementText(state, action.componentId, action.elementId, action.text),
   "component/icon": (state, action) => setElementIcon(state, action.componentId, action.elementId, action.icon),
+  "component/eager": (state, action) => patchElement(state, action.componentId, action.elementId, { eager: action.eager || undefined }),
+  "component/fluid": (state, action) => patchElement(state, action.componentId, action.elementId, { fluid: action.fluid ?? undefined }),
 };

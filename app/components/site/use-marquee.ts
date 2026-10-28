@@ -18,6 +18,9 @@ export function elementsTouching(section: HTMLElement, box: MarqueeBox): string[
     .map((el) => el.dataset.el!);
 }
 
+/** ¿Tiene la sección elementos propios además de su fondo? Sin ellos no hay nada que elegir dentro. */
+export const hasInnerElements = (section: HTMLElement) => section.querySelector("[data-el]:not([data-backdrop])") !== null;
+
 export interface MarqueeBox {
   left: number;
   top: number;
@@ -122,9 +125,11 @@ export function useMarquee() {
       const target = e.target as Element;
       const section = target.closest<HTMLElement>("[data-block-id]");
       const pressedElement = target.closest<HTMLElement>("[data-el]");
-      // Sección ya seleccionada: su fondo o un punto vacío arrastran un rectángulo de elementos, no la sección.
+      // Una sección con varios elementos, ya seleccionada (y sola): su fondo o un punto vacío arrastran un rectángulo
+      // de elementos, no la sección. Una forma suelta (una tarjeta, un rectángulo) se sigue moviendo al arrastrarla.
       if (
-        active && !e.shiftKey && e.button === 0 && section && selectionOf(site).includes(section.dataset.blockId!) &&
+        active && !e.shiftKey && e.button === 0 && section && selectionOf(site).length === 1 && selectionOf(site)[0] === section.dataset.blockId &&
+        hasInnerElements(section) &&
         (!pressedElement || pressedElement.hasAttribute("data-backdrop")) && !target.closest("button, a, input, textarea, select, [role=menu], [role=dialog]")
       ) {
         e.preventDefault();

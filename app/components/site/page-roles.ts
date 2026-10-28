@@ -2,12 +2,13 @@
 
 import type { SiteState, Page } from "./types";
 
-export type PageRole = "loading" | "not-found";
+export type PageRole = "loading" | "not-found" | "skeleton";
 
 /** Las funciones posibles: su nombre y cuándo se muestra. Una nueva es una entrada nueva. */
 export const PAGE_ROLES: Record<PageRole, { label: string; hint: string }> = {
-  loading: { label: "Carga", hint: "Se muestra al entrar al sitio y mientras se cambia de página." },
+  loading: { label: "Carga", hint: "Se muestra al entrar al sitio y al cambiar de página, hasta que la página termina de cargar (con un mínimo y un máximo de 15 s)." },
   "not-found": { label: "No encontrada (404)", hint: "Se muestra cuando un enlace lleva a una página que no existe." },
+  skeleton: { label: "Esqueleto", hint: "Se muestra, con un brillo suave, mientras los datos de la página (APIs) todavía están llegando." },
 };
 
 export const ROLE_NAMES = Object.keys(PAGE_ROLES) as PageRole[];

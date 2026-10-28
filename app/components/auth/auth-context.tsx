@@ -61,7 +61,7 @@ export function useAuthDispatch(): Dispatch<AuthAction> {
 }
 
 export type Permission =
-  | "viewAll" | "editContent" | "editStyles" | "editCode" | "editData" | "installLibraries" | "invite" | "publishMain" | "manageUsers" | "viewAudit";
+  | "viewAll" | "editContent" | "editStyles" | "editCode" | "editData" | "installLibraries" | "invite" | "publishMain" | "manageUsers" | "viewAudit" | "deploy";
 
 /** Lo que el rol permite, menos lo que la cuenta tenga vetado. Con solo el rol (texto) no hay vetos. */
 export function hasPermission(who: User | string | null | undefined, permission: Permission): boolean {

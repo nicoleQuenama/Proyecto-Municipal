@@ -8,7 +8,7 @@ import { useSite } from "../site/site-context";
 import { SECTION_KEY } from "../site/types";
 import { runAction, type RunContext } from "./actions";
 import { executeCode } from "./execute-code";
-import { createApi, openUrl, setVisibility } from "./page-api";
+import { createApi, openUrl, setVisibility, slideTarget } from "./page-api";
 import { TRIGGERS } from "./triggers";
 import type { Behavior, TriggerKind } from "./types";
 import { useAnimationPlayer } from "./use-animation-player";
@@ -46,6 +46,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
           goToPage: (pageId, transition) => followLink({ kind: "page", pageId, transition }),
           setVisibility: (key, mode) => setVisibility(blockId, key, mode),
           openUrl,
+          slide: (key, to) => slideTarget(blockId, key, to),
           play,
           runCode: (source, mode) =>
             void executeCode(source, mode, {

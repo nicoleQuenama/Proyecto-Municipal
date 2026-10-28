@@ -6,18 +6,23 @@ import { FormatMenuProvider } from "../format/format-menu-context";
 import { MediaProvider } from "../media/media-context";
 import { NavigationProvider } from "../navigation/navigation-context";
 import { SiteProvider } from "../site/site-context";
+import type { SiteState } from "../site/types";
 import { VersioningProvider } from "../versioning/versioning-context";
 import { ViewportProvider } from "../viewport/viewport-context";
 import { WorkbenchProvider } from "../workbench/workbench-context";
 
-export function CmsProviders({ children }: { children: ReactNode }) {
+const Passthrough = ({ children }: { children: ReactNode }) => <>{children}</>;
+
+/** `viewer`: el sitio publicado para el público: parte de ese sitio, no guarda nada y no sale de «Probar». */
+export function CmsProviders({ children, viewer }: { children: ReactNode; viewer?: SiteState }) {
+  const Versions = viewer ? Passthrough : VersioningProvider;
   return (
-    <SiteProvider>
+    <SiteProvider initial={viewer} persist={!viewer}>
       <MediaProvider>
-          <VersioningProvider>
+          <Versions>
             <ViewportProvider>
               <CanvasSettingsProvider>
-                <NavigationProvider>
+                <NavigationProvider initialMode={viewer ? "preview" : "edit"} locked={!!viewer}>
                   <WorkbenchProvider>
                     <CommandsProvider>
                       <FormatMenuProvider>
@@ -28,7 +33,7 @@ export function CmsProviders({ children }: { children: ReactNode }) {
                 </NavigationProvider>
               </CanvasSettingsProvider>
             </ViewportProvider>
-          </VersioningProvider>
+          </Versions>
       </MediaProvider>
     </SiteProvider>
   );

@@ -23,6 +23,7 @@ import { SidePanel } from "../side-panel/side-panel";
 import { SiteStyles } from "../site/site-styles";
 import { FormatBar } from "../title-editor/format-bar";
 import { BranchSwitcher } from "../versioning/branch-switcher";
+import { DeployButton } from "../deploy/deploy-button";
 import { PublishButton } from "../versioning/publish-button";
 import { VersionsDialog } from "../versioning/versions-dialog";
 import { CanvasPages, CanvasSurface } from "../viewport/artboard";
@@ -38,6 +39,7 @@ export function EditorWorkspace() {
           <div className="flex h-11 items-stretch">
             <BranchSwitcher />
             <PublishButton />
+            <DeployButton />
             <PreviewToggle />
             <HistoryButtons />
             <DemoButton />

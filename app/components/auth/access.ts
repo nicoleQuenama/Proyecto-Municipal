@@ -1,7 +1,7 @@
 import type { User } from "./types";
 
 /** Lo que se le puede quitar a una persona aunque su rol lo permita. */
-export type Restriction = "installLibraries" | "editCode" | "editStyles" | "editData" | "invite" | "publishMain";
+export type Restriction = "installLibraries" | "editCode" | "editStyles" | "editData" | "invite" | "publishMain" | "deploy";
 
 export const RESTRICTION_LABELS: Record<Restriction, string> = {
   installLibraries: "No puede instalar librerías",
@@ -10,6 +10,7 @@ export const RESTRICTION_LABELS: Record<Restriction, string> = {
   editData: "No puede cambiar las APIs y sus datos",
   invite: "No puede invitar a otras personas",
   publishMain: "No puede publicar directo en main (trabaja en su rama y envía pull requests)",
+  deploy: "No puede desplegar, exportar ni configurar servidores",
 };
 
 /** Qué páginas (enteras) y qué secciones sueltas puede tocar; sin límite (`null`) puede tocar todo. */

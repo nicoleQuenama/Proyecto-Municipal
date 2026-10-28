@@ -13,6 +13,8 @@ const HOT_ATTRIBUTE = "data-drop-hot";
 interface PlacementDragOptions {
   enabled: boolean;
   onPlace: (placement: Placement) => void;
+  /** Al agarrar: el momento de anotar dónde está todo antes de moverlo (para mover un grupo). */
+  onBegin?: () => void;
   /** Soltado sobre otra página. Sin esto, el elemento se queda en la suya. */
   onTransfer?: (pageId: string, placement: Placement) => void;
 }
@@ -22,7 +24,7 @@ interface PlacementDragOptions {
  * `startDrag` va en el `onPointerDown` de lo que se agarra (un asa, o el propio elemento); el elemento es el
  * ancestro marcado con `data-placeable`.
  */
-export function usePlacementDrag({ enabled, onPlace, onTransfer }: PlacementDragOptions) {
+export function usePlacementDrag({ enabled, onPlace, onBegin, onTransfer }: PlacementDragOptions) {
   const { settings } = useCanvasSettings();
   const setGuides = usePageGuidesSetter();
   const [dragging, setDragging] = useState(false);
@@ -30,9 +32,9 @@ export function usePlacementDrag({ enabled, onPlace, onTransfer }: PlacementDrag
   const hotPage = useRef<HTMLElement | null>(null);
 
   // Los oyentes de la ventana viven más que un dibujo: leen siempre lo último.
-  const latest = useRef({ settings, onPlace, onTransfer, setGuides });
+  const latest = useRef({ settings, onPlace, onBegin, onTransfer, setGuides });
   useLayoutEffect(() => {
-    latest.current = { settings, onPlace, onTransfer, setGuides };
+    latest.current = { settings, onPlace, onBegin, onTransfer, setGuides };
   });
 
   const markHot = (page: HTMLElement | null) => {
@@ -84,6 +86,7 @@ export function usePlacementDrag({ enabled, onPlace, onTransfer }: PlacementDrag
     e.preventDefault(); // sin selección de texto mientras se arrastra
     e.stopPropagation();
 
+    latest.current.onBegin?.();
     drag.current = beginPlacementDrag(found.item, found.page, { x: e.clientX, y: e.clientY });
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", finish);

@@ -13,6 +13,7 @@ import { LinkHandle } from "../navigation/link-handle";
 import { elementLabel, isLinkable, linkLabel } from "../navigation/links";
 import type { ElementRef, LinkTarget, NavMode, Point } from "../navigation/types";
 import { IconGlyph } from "../icons/icon-glyph";
+import { ControlContent } from "../forms/control-content";
 import { CodeButton } from "./code-button";
 import { elementBaseCss } from "./element-style";
 import { InlineTextEditor } from "./inline-text-editor";
@@ -111,6 +112,9 @@ const RENDERERS: Record<ElementKind, Renderer> = {
         src={element.src}
         alt={element.alt ?? ""}
         draggable={false}
+        loading={element.eager ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={element.eager ? "high" : undefined}
         className="h-full w-full"
         style={{ borderRadius: inherit ? "inherit" : element.radius, objectFit: element.fit ?? "cover" }}
       />
@@ -125,7 +129,20 @@ const RENDERERS: Record<ElementKind, Renderer> = {
 };
 
 /** Dibuja un elemento llenando el espacio de su contenedor (el contenedor lo posiciona). */
-export function ElementContent({ element, inherit = false }: { element: CanvasElement; inherit?: boolean }) {
+export function ElementContent({
+  element,
+  inherit = false,
+  live = false,
+  hasClick = false,
+}: {
+  element: CanvasElement;
+  inherit?: boolean;
+  /** Al probar el sitio: los campos y botones responden. */
+  live?: boolean;
+  hasClick?: boolean;
+}) {
+  if (element.control) return <ControlContent element={element} live={live} hasClick={hasClick} />;
+
   const text: CSSProperties = inherit
     ? {}
     : {
@@ -185,9 +202,12 @@ export interface ElementInteraction {
 function PositionedElement({
   element,
   interaction,
+  nested,
 }: {
   element: CanvasElement;
   interaction: ElementInteraction | undefined;
+  /** Lo acoplado a este elemento, dibujado dentro de él (en una sección en flujo, la tarjeta se mueve entera). */
+  nested?: ReactNode;
 }) {
   const mine = (interaction?.behaviors ?? []).filter((b) => b.scope === element.id);
   const binding = interaction?.bindings?.[element.id];
@@ -234,6 +254,7 @@ function PositionedElement({
         ref={ref}
         data-target={target}
         data-el={element.id}
+        {...(interactive ? { "data-interactive": "" } : {})}
         {...behaviorProps}
         {...(link
           ? {
@@ -250,7 +271,8 @@ function PositionedElement({
           link ? "transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-sky-500" : ""
         } ${custom}`}
       >
-        <ElementContent element={shown} inherit={interaction !== undefined} />
+        <ElementContent element={shown} inherit={interaction !== undefined} live hasClick={behaviorProps.onClick !== undefined} />
+        {nested}
       </div>
     );
   }
@@ -297,6 +319,7 @@ function PositionedElement({
         ) : (
           <ElementContent element={shown} inherit={interaction !== undefined} />
         )}
+        {nested}
         {/* La selección va en una capa aparte para no chocar con el contorno o la sombra que ponga el usuario. */}
         {selected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-sky-500" />}
         {binding && (
@@ -336,9 +359,36 @@ function PositionedElement({
   return (
     <div className="absolute" style={box}>
       <ElementContent element={shown} inherit={interaction !== undefined} />
+      {nested}
     </div>
   );
 }
+
+/** Una pieza y lo que lleva acoplado dentro (de forma recursiva). */
+interface Card {
+  element: CanvasElement;
+  children: Card[];
+}
+
+/**
+ * Las piezas de la sección. En flujo (flex, grid, carrusel), lo acoplado a un elemento va dentro de él: la tarjeta
+ * es una sola pieza que se acomoda y se desliza entera. Fuera de flujo todo va suelto, cada uno en su posición.
+ */
+function cardsOf(elements: CanvasElement[], flow: boolean): Card[] {
+  if (!flow) return elements.map((element) => ({ element, children: [] }));
+  const ids = new Set(elements.map((e) => e.id));
+  const build = (element: CanvasElement): Card => ({ element, children: elements.filter((e) => e.parentId === element.id).map(build) });
+  return elements.filter((e) => e.parentId === undefined || !ids.has(e.parentId)).map(build);
+}
+
+const renderCard = (card: Card, interaction: ElementInteraction | undefined): ReactNode => (
+  <PositionedElement
+    key={card.element.id}
+    element={card.element}
+    interaction={interaction}
+    nested={card.children.length > 0 ? card.children.map((child) => renderCard(child, interaction)) : undefined}
+  />
+);
 
 /** Un componente completo, a su tamaño natural. */
 export function ComponentView({
@@ -360,9 +410,7 @@ export function ComponentView({
     >
       {/* En la página, la posición, el tamaño y los estilos base van en CSS (capa de menor prioridad); en miniaturas, en línea. */}
       {interaction && <style>{elementBaseCss(interaction.blockId, def, interaction.flow)}</style>}
-      {def.elements.map((element) => (
-        <PositionedElement key={element.id} element={element} interaction={interaction} />
-      ))}
+      {cardsOf(def.elements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
       {interaction?.overlay}
       {interaction?.gestures && (
         <EditingLayer

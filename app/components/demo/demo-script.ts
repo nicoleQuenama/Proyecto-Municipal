@@ -1,6 +1,6 @@
 /** El guion de la página de ejemplo: la misma lista de acciones que haría una persona en el editor, paso a paso. */
 
-import type { ElementKind, Page, SiteState } from "../site/types";
+import type { ElementKind, Page, SiteAction, SiteState } from "../site/types";
 import { SECTION_KEY } from "../site/types";
 import type { CanvasElement } from "../site/types";
 import type { DemoStep } from "./demo-types";
@@ -50,11 +50,17 @@ export function buildDemo(site: SiteState): DemoStep[] {
     // Menú de la izquierda: el ☰ que ya está en la cabecera abre y cierra un panel que empieza oculto.
     const burgerComponent = site.components.find((c) => c.elements.some((el) => el.text?.trim() === "☰"));
     const burgerBlock = home.blocks.find((block) => block.componentId === burgerComponent?.id);
+    // La interacción va en el elemento ☰ (no en toda su sección: el ☰ puede ir dentro de un grupo).
+    const burgerScope = burgerComponent?.elements.find((el) => el.text?.trim() === "☰")?.id ?? SECTION_KEY;
     if (burgerBlock) {
+      // Las interacciones que dejó una ejecución anterior en ese bloque.
+      for (const old of burgerBlock.behaviors ?? []) {
+        if (old.id.startsWith("demo-")) clears.push({ action: { type: "behavior/remove", pageId: id, blockId: burgerBlock.id, behaviorId: old.id } });
+      }
       const panel = rect(id, { x: 20, y: 64, width: 230, height: 190 }, "#0f172a", 10);
       const items = text(id, { x: 40, y: 80, width: 190, height: 160 }, "Sinopsis\nEquipo técnico\nVídeos\nGalería", { fontSize: 18, color: WHITE });
       const behavior = (n: string, trigger: "load" | "click", blockId: string, mode: "hide" | "toggle", on: string) =>
-        steps.push({ action: { type: "behavior/save", pageId: id, blockId: on, behavior: { id: `demo-${run}-${n}`, scope: SECTION_KEY, trigger, action: { kind: "toggle", targetKey: `@${blockId}`, mode } } } });
+        steps.push({ action: { type: "behavior/save", pageId: id, blockId: on, behavior: { id: `demo-${run}-${n}`, scope: on === burgerBlock?.id ? burgerScope : SECTION_KEY, trigger, action: { kind: "toggle", targetKey: `@${blockId}`, mode } } } });
       steps.push({ action: { type: "block/order", pageId: id, blockIds: [panel.blockId, items.blockId], to: "front" } });
       for (const part of [panel, items]) {
         behavior(`hide-${part.blockId}`, "load", part.blockId, "hide", part.blockId);
@@ -105,7 +111,21 @@ export function buildDemo(site: SiteState): DemoStep[] {
       rect(id, { x, y: 2040, width: 210, height: 60 }, CARD, 8);
       text(id, { x, y: 2058, width: 210, height: 24 }, `Partner ${i + 1}`, { fontSize: 15, align: "center", color: MUTED });
     });
-    text(id, { x: 60, y: 2140, width: 700, height: 24 }, "© 2026 Centinela: Nueva Era · Web de ejemplo", { fontSize: 14, color: "#64748b" });
+    // Contacto: campos con rol (texto, correo obligatorio) y un botón que envía.
+    text(id, { x: 60, y: 2160, width: 400, height: 50 }, "CONTACTO", { fontSize: 32, bold: true });
+    const role = (shape: { componentId: string; elementId: string }, control: Extract<SiteAction, { type: "component/control" }>["control"]) =>
+      steps.push({ action: { type: "component/control", componentId: shape.componentId, elementId: shape.elementId, control } });
+    const field = (y: number, label: string, kind: "input" | "textarea", name: string, placeholder: string, extra: object = {}) => {
+      const shape = draw(id, "rect", { x: 60, y, width: 420, height: kind === "textarea" ? 110 : 48 }, { fill: "#1e293b", radius: 8, color: WHITE, fontSize: 16, text: "" }, label);
+      role(shape, { kind });
+      role(shape, { name, placeholder, ...extra });
+    };
+    field(2230, "Campo nombre", "input", "nombre", "Tu nombre", { required: true });
+    field(2290, "Campo correo", "input", "correo", "tu@correo.com", { inputType: "email", required: true });
+    field(2350, "Campo mensaje", "textarea", "mensaje", "Cuéntanos qué te interesa");
+    const send = draw(id, "rect", { x: 60, y: 2480, width: 200, height: 48 }, { fill: RED, radius: 8, color: WHITE, fontSize: 16, bold: true, text: "ENVIAR" }, "Botón enviar");
+    role(send, { kind: "submit" });
+    text(id, { x: 60, y: 2580, width: 700, height: 24 }, "© 2026 Centinela: Nueva Era · Web de ejemplo", { fontSize: 14, color: "#64748b" });
   }
 
   if (loading) {

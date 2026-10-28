@@ -30,6 +30,8 @@ interface BlockGesturesOptions {
   /** El componente tal como se ve en este bloque (con su formato propio ya aplicado). */
   view: ComponentDef | undefined;
   selected: boolean;
+  /** Los elementos marcados de este bloque (Ctrl-clic o rectángulo): arrastrar uno mueve a todos. */
+  selectedElementIds?: string[];
   /** Dispositivo que se está viendo; en tablet o móvil lo que se mueve se guarda en el diseño propio de ese dispositivo. */
   device: Device;
 }
@@ -38,7 +40,7 @@ interface BlockGesturesOptions {
  * Los gestos sobre los elementos de un bloque. Según el alcance elegido, lo que cambian se guarda como formato
  * propio del bloque o en el componente (ver `scope-actions.ts`).
  */
-export function useBlockGestures({ pageId, blockId, view, selected, device }: BlockGesturesOptions): BlockGestures {
+export function useBlockGestures({ pageId, blockId, view, selected, selectedElementIds = [], device }: BlockGesturesOptions): BlockGestures {
   const dispatch = useSiteDispatch();
   const { settings } = useCanvasSettings();
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -56,12 +58,30 @@ export function useBlockGestures({ pageId, blockId, view, selected, device }: Bl
   useNudgeKeys(selected, elements, change);
   const elementOf = (id: string) => elements.find((element) => element.id === id);
 
+  // Al agarrar un elemento que ya estaba marcado junto a otros, se anota dónde estaba cada uno: se mueven como grupo.
+  const group = useRef<Record<string, { x: number; y: number }> | null>(null);
+
   const commands: CanvasCommands = {
     select: (id) => {
+      if (selected && selectedElementIds.length > 1 && selectedElementIds.includes(id)) {
+        group.current = Object.fromEntries(
+          elements.filter((element) => selectedElementIds.includes(element.id)).map((element) => [element.id, { x: element.x, y: element.y }]),
+        );
+        return;
+      }
+      group.current = null;
       dispatch({ type: "block/select", id: blockId });
       dispatch({ type: "element/select", id });
     },
-    move: (id, x, y) => change(id, { x, y, ...dockChange(undefined, null, undefined) }),
+    move: (id, x, y) => {
+      const origins = group.current;
+      const own = origins?.[id];
+      if (!origins || !own) return change(id, { x, y, ...dockChange(undefined, null, undefined) });
+      for (const [otherId, origin] of Object.entries(origins)) {
+        const at = otherId === id ? { x, y } : { x: origin.x + (x - own.x), y: origin.y + (y - own.y) };
+        change(otherId, { ...at, ...dockChange(undefined, null, undefined) });
+      }
+    },
     // El fondo de una tarjeta es la tarjeta: estirarlo cambia el tamaño de toda la sección.
     resize: (id, frame) =>
       id === backdropId

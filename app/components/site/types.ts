@@ -14,6 +14,11 @@ import type { PasteAction } from "./paste-rules";
 import type { MultiSelectAction } from "./multi-select";
 import type { JoinAction } from "./join-rules";
 import type { OrderAction } from "./order-rules";
+import type { GroupElementsAction } from "./group-elements";
+import type { GroupMoveAction } from "./group-move";
+import type { CommentAction, DesignComment } from "../comments/comment-rules";
+import type { ControlAction } from "../forms/control-rules";
+import type { ControlSpec } from "../forms/control-types";
 import type { PageRole, RoleAction } from "./page-roles";
 import type { PageSeo, SeoAction } from "./seo-rules";
 import type { IconName } from "../icons/icon-set";
@@ -22,6 +27,7 @@ import type { DynamicAction } from "../dynamic/dynamic-rules";
 import type { Placement } from "../placement/types";
 import type { ResponsiveAction } from "../responsive/responsive-rules";
 import type { Device } from "../responsive/devices";
+import type { FluidText } from "../responsive/fluid-text";
 import type { SideMargins } from "../responsive/page-margin";
 import type { AdaptChoices, FoldChoices, MenuConfig, ResponsiveLayouts } from "../responsive/types";
 import type { ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
@@ -52,6 +58,8 @@ export interface CanvasElement {
   fitToParent?: boolean;
   /** Con rol, el elemento sigue las reglas de estilo de ese rol; sin rol («none») conserva sus valores. */
   role: ElementRole | "none";
+  /** Su rol funcional en la página: botón, campo de formulario, casilla… (sin él, solo se ve). */
+  control?: ControlSpec;
   x: number;
   y: number;
   width: number;
@@ -65,6 +73,8 @@ export interface CanvasElement {
   /** Contenido de un texto, o etiqueta centrada de una forma. */
   text: string;
   fontSize: number;
+  /** Con límites, el texto se adapta al ancho de la pantalla (mínimo y máximo en píxeles). */
+  fluid?: FluidText;
   color: string;
   bold: boolean;
   align: TextAlign;
@@ -80,6 +90,8 @@ export interface CanvasElement {
   alt?: string;
   /** true si `src` es un reproductor para <iframe> (YouTube, Vimeo); si no, un archivo de video. */
   embed?: boolean;
+  /** Imagen o video principal (lo primero que se ve): se carga de inmediato; si no, solo al acercarse a la pantalla. */
+  eager?: boolean;
   /** Cómo llena el cuadro una imagen o un video: «cover» recorta, «contain» la muestra entera. */
   fit?: "cover" | "contain";
   /** Imagen de portada de un video de archivo. */
@@ -318,6 +330,8 @@ export interface SiteState extends StyleState {
   /** Cómo se anima el paso entre páginas cuando un enlace no define su propia transición. */
   navigation: { defaultTransition: Transition };
   pages: Page[];
+  /** Notas del equipo sobre el diseño (ver `comments/comment-rules`). */
+  comments?: DesignComment[];
   currentPageId: string;
   components: ComponentDef[];
   /** Lo que se está editando en la página actual: "title" o el id de un bloque. */
@@ -377,6 +391,10 @@ export type SiteAction =
   | MultiSelectAction
   | JoinAction
   | OrderAction
+  | ControlAction
+  | CommentAction
+  | GroupMoveAction
+  | GroupElementsAction
   | RoleAction
   | DynamicAction
   | BackgroundAction

@@ -73,7 +73,7 @@ export function VersioningProvider({ children }: { children: ReactNode }) {
         // Sin permiso para main: ni guardar versiones ahí, ni volver a esa rama, ni publicar directo.
         if (action.type === "commit" && !owns(state.current)) return;
         if (action.type === "branch/switch" && !owns(action.name)) return;
-        if (action.type === "publish") return;
+        if (action.type === "publish" || action.type === "history/reset") return;
         if (action.type === "pr/merge" || action.type === "pr/approve") return;
       }
       rawDispatch(SIGNED.includes(action.type) && currentUser ? ({ ...action, author: currentUser.name } as VersioningAction) : action);

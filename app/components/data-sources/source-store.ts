@@ -21,6 +21,9 @@ export const subscribe = (listener: () => void) => {
   return () => void listeners.delete(listener);
 };
 
+/** Cuántas peticiones de datos están en camino ahora mismo (para saber si la página sigue cargando). */
+export const pendingCount = () => pending.size;
+
 export const peek = (source: DataSource, params: PageParams = {}): SourceState =>
   states.get(requestKey(source, params)) ?? IDLE;
 
@@ -36,8 +39,12 @@ export function load(source: DataSource, force = false, params: PageParams = {})
   if (known.status !== "ready") set(key, { status: "loading" });
 
   pending.add(key);
+  emit();
   fetchSource(source, force, params)
     .then((data) => set(key, { status: "ready", data, at: Date.now() }))
     .catch((error) => set(key, { status: "error", message: error instanceof Error ? error.message : "Error", data: previous }))
-    .finally(() => void pending.delete(key));
+    .finally(() => {
+      pending.delete(key);
+      emit();
+    });
 }

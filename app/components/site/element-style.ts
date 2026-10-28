@@ -6,13 +6,14 @@
  * propia con `@layer miCapa, theme, …` no sirve: el empaquetador de CSS descarta esa declaración.)
  */
 
+import { fluidFontSize } from "../responsive/fluid-text";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind } from "./types";
 
 /** El texto: color, tamaño, peso, estilo y tipografía. */
 function textCss(element: CanvasElement): string[] {
   return [
     `color: ${element.color}`,
-    `font-size: ${element.fontSize}px`,
+    `font-size: ${element.fluid ? fluidFontSize(element.fontSize, element.fluid) : `${element.fontSize}px`}`,
     `font-weight: ${element.bold ? 700 : 400}`,
     ...(element.italic ? ["font-style: italic"] : []),
     ...(element.fontFamily ? [`font-family: ${element.fontFamily}`] : []),
@@ -45,6 +46,12 @@ const BASE_STYLES: Record<ElementKind, (element: CanvasElement) => string[]> = {
   icon: (element) => [`color: ${element.color}`, `font-size: ${element.fontSize}px`],
 };
 
+/** El elemento con su posición medida desde su contenedor, si lo tiene. */
+function inside(element: CanvasElement, all: CanvasElement[]): CanvasElement {
+  const parent = element.parentId === undefined ? undefined : all.find((e) => e.id === element.parentId);
+  return parent ? { ...element, x: element.x - parent.x, y: element.y - parent.y } : element;
+}
+
 /** Dónde va y cuánto mide un elemento. En la capa base, para que `width`, `height`, `position`… propios lo reemplacen. */
 const placement = (element: CanvasElement) => [
   "position: absolute",
@@ -66,7 +73,11 @@ export function elementBaseCss(blockId: string, def: ComponentDef, flow: boolean
   const rules = [
     rule(section, ["position: relative", "flex-shrink: 0", ...(flow ? ["min-width: 0"] : [`width: ${def.width}px`, `height: ${def.height}px`])]),
     ...def.elements.map((element) =>
-      rule(`[data-target="${blockId}:${element.id}"]`, [...placement(element), ...BASE_STYLES[element.kind](element)]),
+      rule(`[data-target="${blockId}:${element.id}"]`, [
+        // En flujo, lo acoplado va dentro de su contenedor: su posición se cuenta desde la esquina de este.
+        ...placement(flow ? inside(element, def.elements) : element),
+        ...BASE_STYLES[element.kind](element),
+      ]),
     ),
     ...(flow ? [rule(`${section} > [data-el]`, ["position: relative", "left: auto", "top: auto"])] : []),
   ];

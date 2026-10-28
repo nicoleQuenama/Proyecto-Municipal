@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { ACTIONS, type Field } from "../behaviors/actions";
+import { previewBehavior } from "../behaviors/preview-in-editor";
 import { TRIGGERS } from "../behaviors/triggers";
 import type { ActionKind, Behavior, BehaviorAction, CodeMode, TriggerKind } from "../behaviors/types";
 import type { CanvasElement, Page } from "../site/types";
@@ -13,6 +14,8 @@ const selectClass =
 
 interface BehaviorEditorProps {
   behavior: Behavior;
+  /** La sección a la que pertenece, para ver el efecto aquí mismo. */
+  blockId: string;
   pages: Page[];
   elements: CanvasElement[];
   onChange: (behavior: Behavior) => void;
@@ -22,7 +25,7 @@ interface BehaviorEditorProps {
 }
 
 /** Una interacción: cuándo se dispara, qué hace y los datos de esa acción. */
-export function BehaviorEditor({ behavior, pages, elements, onChange, onRemove, onOpenCode }: BehaviorEditorProps) {
+export function BehaviorEditor({ behavior, blockId, pages, elements, onChange, onRemove, onOpenCode }: BehaviorEditorProps) {
   const { action } = behavior;
   const definition = ACTIONS[action.kind];
   const { currentUser } = useAuth();
@@ -106,6 +109,15 @@ export function BehaviorEditor({ behavior, pages, elements, onChange, onRemove, 
       )}
 
       {definition.fields.map(draw)}
+
+      <button
+        type="button"
+        onClick={() => previewBehavior(blockId, behavior)}
+        title="Ejecuta esta acción ahora, sin salir del editor"
+        className="h-8 rounded-md border border-line text-xs text-ink hover:bg-hover"
+      >
+        ▶ Ver el efecto
+      </button>
     </li>
   );
 }

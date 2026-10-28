@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useLayoutEffect, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useContext, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { FullBleedContext } from "../viewport/page-width";
 import { MIN_BLEED_WIDTH, visiblePaint } from "./full-bleed";
 import { canEditBlock } from "../auth/access";
@@ -40,6 +40,8 @@ import { ComponentView, type ElementInteraction } from "./component-view";
 import { customClasses, customCss, isFlowLayout, targetKey } from "./custom-code";
 import { HiddenPlaceholder } from "./hidden-placeholder";
 import { applyOverrides, type Resolver } from "./overrides";
+import { selectionOf } from "./multi-select";
+import type { Placement } from "../placement/types";
 import { splitBlocks } from "./rules";
 import { useSite, useSiteDispatch } from "./site-context";
 import { useBlockGestures } from "./use-block-gestures";
@@ -109,10 +111,28 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   // Con acceso limitado se remarca lo que sí puede cambiar y se atenúa el resto.
   const limited = interactive && mode === "edit" && !!currentUser?.access?.scope;
   const selected = editing && block.id === selectedId;
-  const gestures = useBlockGestures({ pageId: page.id, blockId: block.id, view, selected, device });
+  const gestures = useBlockGestures({
+    pageId: page.id,
+    blockId: block.id,
+    view,
+    selected,
+    selectedElementIds: selected && selectedElementId ? [selectedElementId, ...(alsoSelectedIds ?? [])] : [],
+    device,
+  });
+  // Con varias secciones marcadas, arrastrar una mueve todas: se anota dónde estaba cada una al agarrar.
+  const groupOrigins = useRef<Record<string, Placement> | null>(null);
   const move = usePlacementDrag({
     enabled: editing && !adaptive,
-    onPlace: (placement) => dispatch({ type: "block/place", pageId: page.id, blockId: block.id, placement }),
+    onBegin: () => {
+      const ids = selectionOf({ selectedId, selectedBlockIds });
+      const group = ids.length > 1 && ids.includes(block.id) ? page.blocks.filter((b) => ids.includes(b.id) && b.placement) : [];
+      groupOrigins.current = group.length > 1 ? Object.fromEntries(group.map((b) => [b.id, b.placement!])) : null;
+    },
+    onPlace: (placement) => {
+      const origins = groupOrigins.current;
+      if (origins) dispatch({ type: "block/place-group", pageId: page.id, anchorId: block.id, placement, origins });
+      else dispatch({ type: "block/place", pageId: page.id, blockId: block.id, placement });
+    },
     onTransfer: (toPageId, placement) =>
       dispatch({ type: "block/transfer", fromPageId: page.id, toPageId, blockId: block.id, placement }),
   });
@@ -230,6 +250,7 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       {...(block.code ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
       {...(placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
+      {...(behaviorProps.onClick ? { "data-interactive": "" } : {})}
       {...sectionDrop.handlers}
       className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${block.code || stretches(block.box?.span) || autoFill ? "w-full" : "w-fit"} max-w-full ${stretches(block.box?.span) ? "" : "rounded-md"} ${
         (selected && selectedElementId === null) || (editing && selectedBlockIds?.includes(block.id))

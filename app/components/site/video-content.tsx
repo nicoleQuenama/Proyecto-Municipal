@@ -27,6 +27,7 @@ export function VideoContent({ element, radius }: VideoContentProps) {
           allow="autoplay; fullscreen; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
+          loading={element.eager ? "eager" : "lazy"}
           className="h-full w-full border-0"
         />
       ) : (
@@ -39,6 +40,8 @@ export function VideoContent({ element, radius }: VideoContentProps) {
           muted={element.muted || element.autoplay}
           loop={element.loop}
           playsInline
+          // Sin reproducción automática solo se baja lo justo para mostrar la portada y la duración.
+          preload={element.eager || element.autoplay ? "auto" : "metadata"}
           className="h-full w-full"
           style={{ objectFit: element.fit ?? "cover" }}
         />

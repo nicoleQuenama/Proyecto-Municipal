@@ -138,6 +138,8 @@ export interface VersioningState {
 
 export type VersioningAction =
   | { type: "project/load"; state: VersioningState }
+  /** Borra las versiones y publicaciones guardadas y toma el diseño de ahora como punto de partida. */
+  | { type: "history/reset"; baseline: DesignSnapshot }
   | { type: "branch/create"; name: string; author?: string }
   | { type: "branch/switch"; name: string }
   | { type: "branch/delete"; name: string }

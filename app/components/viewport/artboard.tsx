@@ -16,6 +16,7 @@ import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { useClipboardKeys } from "../site/use-clipboard-keys";
 import { useHistoryKeys } from "../site/use-history-keys";
+import { useGroupKeys } from "../site/use-group-keys";
 import { useOrderKeys } from "../site/use-order-keys";
 import { useMarquee } from "../site/use-marquee";
 import { useGradientTool } from "../gradient/use-gradient-tool";
@@ -28,6 +29,10 @@ import { TitleCanvas } from "../title-editor/title-editor";
 import { CANVAS_SURFACE_ID } from "./fit-zoom";
 import { LoadingLayer } from "./loading-layer";
 import { PageLabelActions } from "./page-label-actions";
+import { clickThrough } from "./click-through";
+import { SITE_VIEW_ATTRIBUTE } from "./page-readiness";
+import { SkeletonLayer } from "./skeleton-layer";
+import { CommentLayer } from "../comments/comment-layer";
 import { FullBleedContext, useWidth } from "./page-width";
 import { useAuth } from "../auth/auth-context";
 import { canEditBlock } from "../auth/access";
@@ -51,6 +56,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   useClipboardKeys();
   useHistoryKeys();
   useOrderKeys();
+  useGroupKeys();
   const marquee = useMarquee();
   const gradient = useGradientTool();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
@@ -149,6 +155,8 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
     : fullWidth
       ? { paddingLeft: centered, paddingRight: centered }
       : undefined;
+  // El ancho (sin zoom) en que se maqueta la página: de él depende el tamaño de los textos adaptables.
+  const layoutWidth = production && fitScale === 1 ? frameWidth || current.width : current.width;
   const baseHeight = production ? `${100 / fitScale}vh` : "600px";
   // En escritorio la vista previa ocupa todo el ancho de la ventana, como lo vería un visitante; tablet y móvil conservan su ancho.
 
@@ -225,9 +233,10 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           className={`relative isolate bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
             production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...({ "--cms-w": `${layoutWidth}px` } as CSSProperties), ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
+          {mode === "edit" && !production && <CommentLayer page={page} />}
           {fullWidth && <style>{"[data-site-page] [data-placed]:not([data-bleed]){margin-left:var(--cms-offset)!important}"}</style>}
           <FullBleedContext value={fullWidth}>
           <PageGuidesProvider>
@@ -300,8 +309,10 @@ function ProductionView() {
   const [shellPage] = useState(page);
 
   return (
-    <div className="fixed inset-0 z-40 overflow-auto bg-neutral-300">
+    // Las páginas con función (carga, 404) son pantallas completas: lo que sobra de su diseño se recorta, no se desplaza.
+    <div {...{ [SITE_VIEW_ATTRIBUTE]: "" }} onClickCapture={clickThrough} className={`fixed inset-0 z-40 bg-neutral-300 ${page.role ? "overflow-hidden" : "overflow-auto"}`}>
       <PageArtboard page={page} active tiled={false} production shellPage={shellPage} />
+      <SkeletonLayer />
       <LoadingLayer />
     </div>
   );

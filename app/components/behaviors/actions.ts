@@ -1,6 +1,7 @@
 import type { Transition } from "../navigation/types";
 import { SECTION_KEY, type Page } from "../site/types";
 import { countElement, MAX_COUNT_SECONDS } from "./count";
+import { submitForm } from "../forms/submit";
 import { MAX_NOTICE_SECONDS, PLACE_LABELS, showDialog, showToast, TONE_LABELS } from "./notify";
 import { animateElement, EFFECTS, MAX_SECONDS, MIN_SECONDS } from "./effects";
 import type { ActionKind, BehaviorAction, CodeMode } from "./types";
@@ -13,6 +14,8 @@ export interface RunContext {
   /** Muestra, oculta o alterna una parte del bloque (solo mientras se prueba). */
   setVisibility: (targetKey: string, mode: "show" | "hide" | "toggle") => void;
   openUrl: (url: string) => void;
+  /** Desliza un carrusel de la página. */
+  slide: (targetKey: string, to: "prev" | "next" | "start" | "end") => void;
   /** Reproduce una animación grabada en una página. */
   play: (animationId: string) => void;
   runCode: (source: string, mode: CodeMode) => void;
@@ -99,6 +102,36 @@ export const ACTIONS: { [K in ActionKind]: ActionDef<K> } = {
       { key: "button", label: "Texto del botón", type: "text", placeholder: "Aceptar" },
     ],
     run: (action) => void showDialog(action.title, action.message, action.button),
+  },
+
+  slide: {
+    label: "Deslizar un carrusel",
+    create: () => ({ kind: "slide", targetKey: SECTION_KEY, to: "next" }),
+    fields: [
+      { key: "targetKey", label: "Carrusel", type: "target" },
+      {
+        key: "to",
+        label: "Hacia",
+        type: "select",
+        options: [
+          { value: "next", label: "Siguiente" },
+          { value: "prev", label: "Anterior" },
+          { value: "start", label: "Al principio" },
+          { value: "end", label: "Al final" },
+        ],
+      },
+    ],
+    run: (action, context) => context.slide(action.targetKey, action.to),
+  },
+
+  submit: {
+    label: "Enviar el formulario",
+    create: () => ({ kind: "submit", url: "", message: "¡Enviado!" }),
+    fields: [
+      { key: "url", label: "Destino de los datos (vacío = solo probar)", type: "text", placeholder: "https://mi-servidor.com/contacto" },
+      { key: "message", label: "Aviso al enviar", type: "text", placeholder: "¡Enviado!" },
+    ],
+    run: (action, context) => void submitForm(context.element, action.url, action.message),
   },
 
   play: {
