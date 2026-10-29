@@ -1,7 +1,7 @@
 "use client";
 
 import { PAGE_ROLES, ROLE_NAMES, type PageRole } from "../site/page-roles";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { PageBackground } from "../background/page-background";
 import { PageRouteForm } from "../dynamic/page-route-form";
@@ -34,8 +34,28 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const [seoOpen, setSeoOpen] = useState(false);
   const [styling, setStyling] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [draft, setDraft] = useState(page.name);
   const [error, setError] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   const stopRenaming = () => {
     setRenaming(false);
@@ -105,110 +125,190 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   }
 
   return (
-    <li className="flex flex-col gap-1">
-      <div className="group flex items-center gap-1">
+    <li className="relative flex flex-col gap-1">
+      <div className="group relative flex items-center gap-1 rounded-md transition-colors">
+        {/* Cuerpo principal del item: flex-1 para clic directo y enfocar/seleccionar */}
         <button
           type="button"
           aria-current={isCurrent ? "page" : undefined}
           onClick={() => dispatch({ type: "page/select", id: page.id })}
-          className={`flex h-10 min-w-0 flex-1 flex-col justify-center rounded-md px-3 text-left ${
-            isCurrent ? "bg-accent/25" : "hover:bg-hover"
+          className={`flex h-11 min-w-0 flex-1 flex-col justify-center rounded-md px-3 text-left transition-colors ${
+            isCurrent ? "bg-accent/20 ring-1 ring-accent/40" : "hover:bg-hover"
           }`}
         >
-          <span className="truncate text-[13px] font-medium">{page.name}</span>
+          <div className="flex items-center gap-1.5 w-full">
+            <span className={`truncate text-[13px] ${isCurrent ? "text-accent font-semibold" : "text-ink font-medium"}`}>
+              {page.name}
+            </span>
+            {page.isHome && (
+              <span className="shrink-0 rounded bg-accent/15 px-1.5 py-0.2 text-[9px] font-semibold text-accent uppercase">
+                Inicio
+              </span>
+            )}
+            {page.role && (
+              <span className="shrink-0 rounded bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-600 uppercase">
+                {PAGE_ROLES[page.role]?.label ?? page.role}
+              </span>
+            )}
+            {page.route && (
+              <span className="shrink-0 rounded bg-canvas border border-line px-1 text-[9px] font-mono text-ink-dim">
+                :id
+              </span>
+            )}
+          </div>
           <span className="truncate text-[11px] text-ink-dim">{routeOf(page)}</span>
         </button>
 
-        {!page.isHome && (
-          <select
-            aria-label={`Función de ${page.name}`}
-            title="Función de la página: carga, 404…"
-            value={page.role ?? ""}
-            onChange={(e) => dispatch({ type: "page/role", id: page.id, role: (e.target.value || null) as PageRole | null })}
-            className={`h-7 w-16 rounded-md border border-line bg-canvas px-1 text-[11px] text-ink-dim outline-none [&>option]:bg-panel ${page.role ? "text-accent" : "hidden group-hover:block focus:block"}`}
-          >
-            <option value="">Normal</option>
-            {ROLE_NAMES.map((role) => (
-              <option key={role} value={role}>{PAGE_ROLES[role].label}</option>
-            ))}
-          </select>
-        )}
-        {!page.isHome && (
+        {/* Menú de opciones secundarias (tres puntos / kebab menu) */}
+        <div ref={menuRef} className="relative shrink-0 pr-1">
           <button
             type="button"
-            aria-label={`Ruta dinámica de ${page.name}`}
-            title="Página dinámica (ruta con parámetros, p. ej. /pokemon/:id)"
-            aria-pressed={routing}
-            onClick={() => setRouting(!routing)}
-            className={`${iconButton} font-mono text-[11px] ${page.route ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
+            aria-label={`Opciones de ${page.name}`}
+            title="Opciones de página"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(!menuOpen)}
+            className={`flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-opacity ${
+              menuOpen ? "opacity-100 bg-hover text-ink" : "opacity-0 group-hover:opacity-100 focus:opacity-100"
+            }`}
           >
-            :id
+            <span className="text-base leading-none font-bold tracking-tighter">•••</span>
           </button>
-        )}
-        <button
-          type="button"
-          aria-label={`Fondo de ${page.name}`}
-          title="Fondo de la página (imagen o video)"
-          aria-pressed={styling}
-          onClick={() => setStyling(!styling)}
-          className={`${iconButton} text-[13px] ${page.backdrop ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
-        >
-          ▨
-        </button>
-        <button
-          type="button"
-          aria-label={`Buscadores de ${page.name}`}
-          title="Título, descripción, imagen e idioma para Google y redes"
-          aria-pressed={seoOpen}
-          onClick={() => setSeoOpen(!seoOpen)}
-          className={`${iconButton} text-[11px] font-semibold ${page.seo?.title && page.seo?.description ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
-        >
-          SEO
-        </button>
-        {canEditCode && (
-          <button
-            type="button"
-            aria-label={`Programar ${page.name} en código`}
-            title="Programar esta página en código (CSS y TypeScript)"
-            onClick={() => openFile({ kind: "page-js", pageId: page.id })}
-            className={`${iconButton} hidden group-hover:flex focus:flex`}
-          >
-            <CodeIcon />
-          </button>
-        )}
-        <button
-          type="button"
-          aria-label={`Estructura y disposición de ${page.name}`}
-          title="Encabezado y pie de página visibles en esta página"
-          aria-pressed={layoutOpen}
-          onClick={() => setLayoutOpen(!layoutOpen)}
-          className={`${iconButton} text-[12px] ${page.hideHeader || page.hideFooter ? "text-amber-500 font-bold" : layoutOpen ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
-        >
-          ☷
-        </button>
-        <button
-          type="button"
-          aria-label={`Renombrar ${page.name}`}
-          title="Renombrar"
-          onClick={() => {
-            setDraft(page.name);
-            setRenaming(true);
-          }}
-          className={`${iconButton} hidden group-hover:flex focus:flex`}
-        >
-          ✎
-        </button>
-        {!page.isHome && (
-          <button
-            type="button"
-            aria-label={`Eliminar ${page.name}`}
-            title="Eliminar"
-            onClick={() => setConfirming(true)}
-            className={`${iconButton} hidden hover:text-red-400 group-hover:flex focus:flex`}
-          >
-            ×
-          </button>
-        )}
+
+          {/* Menú desplegable flotante */}
+          {menuOpen && (
+            <div className="absolute right-0 top-8 z-40 flex w-52 flex-col rounded-xl border border-line bg-panel p-1 text-xs shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setDraft(page.name);
+                  setRenaming(true);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover hover:text-accent transition-colors"
+              >
+                <span className="text-xs">✎</span>
+                <span>Renombrar página</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setLayoutOpen(!layoutOpen);
+                }}
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+                  layoutOpen || page.hideHeader || page.hideFooter ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
+                }`}
+              >
+                <span className="text-xs">☷</span>
+                <span>Estructura (Header / Footer)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setStyling(!styling);
+                }}
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+                  styling || page.backdrop ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
+                }`}
+              >
+                <span className="text-xs">▨</span>
+                <span>Fondo de página</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setSeoOpen(!seoOpen);
+                }}
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+                  seoOpen || (page.seo?.title && page.seo?.description) ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
+                }`}
+              >
+                <span className="text-[10px] font-bold">SEO</span>
+                <span>Buscadores y redes</span>
+              </button>
+
+              {!page.isHome && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setRouting(!routing);
+                  }}
+                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+                    routing || page.route ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
+                  }`}
+                >
+                  <span className="font-mono text-[10px]">:id</span>
+                  <span>Ruta dinámica</span>
+                </button>
+              )}
+
+              {!page.isHome && (
+                <div className="flex flex-col px-2.5 py-1 border-t border-line my-0.5">
+                  <span className="text-[10px] font-medium text-ink-dim uppercase tracking-wider mb-1">
+                    Función de página:
+                  </span>
+                  <select
+                    aria-label={`Función de ${page.name}`}
+                    value={page.role ?? ""}
+                    onChange={(e) => {
+                      dispatch({
+                        type: "page/role",
+                        id: page.id,
+                        role: (e.target.value || null) as PageRole | null,
+                      });
+                      setMenuOpen(false);
+                    }}
+                    className="h-7 w-full rounded-md border border-line bg-canvas px-1.5 text-[11px] text-ink outline-none"
+                  >
+                    <option value="">Página Normal</option>
+                    {ROLE_NAMES.map((role) => (
+                      <option key={role} value={role}>
+                        {PAGE_ROLES[role].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {canEditCode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openFile({ kind: "page-js", pageId: page.id });
+                  }}
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover transition-colors"
+                >
+                  <CodeIcon />
+                  <span>Programar en código</span>
+                </button>
+              )}
+
+              {!page.isHome && (
+                <>
+                  <div className="my-1 h-px bg-line" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setConfirming(true);
+                    }}
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-red-500 hover:bg-red-500/10 font-medium transition-colors"
+                  >
+                    <span className="text-xs">×</span>
+                    <span>Eliminar página</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       {routing && <PageRouteForm page={page} />}
       {seoOpen && <PageSeoForm page={page} />}

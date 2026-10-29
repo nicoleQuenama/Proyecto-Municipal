@@ -61,7 +61,7 @@ export function SectionColors() {
     <div
       role="group"
       aria-label={`Colores de ${view.name}`}
-      className="absolute top-4 right-6 z-30 max-w-[calc(100%-2rem)] rounded-xl border border-line bg-panel p-2 text-ink shadow-2xl"
+      className="absolute top-4 right-[21.5rem] z-30 max-w-[calc(100%-23rem)] rounded-xl border border-line bg-panel p-2 text-ink shadow-2xl"
     >
       <ul className="flex flex-wrap justify-end gap-x-1 gap-y-2">
         {groups.map((group, index) => (

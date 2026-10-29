@@ -705,7 +705,7 @@ export function Inspector() {
   return (
     <aside
       aria-label="Propiedades"
-      className="my-3 mr-3 flex w-80 shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl"
+      className="absolute top-3 right-3 bottom-3 z-30 flex w-80 max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-right-4 duration-150"
     >
       <header className="flex h-12 shrink-0 items-center gap-1 border-b border-line px-4">
         <div className="min-w-0 flex-1">

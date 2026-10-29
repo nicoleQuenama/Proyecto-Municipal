@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground } from "../background/background-css";
 import { useShapeDrawing } from "../drawing/use-shape-drawing";
@@ -48,7 +48,7 @@ const CURSORS: Partial<Record<Tool, string>> = {
 };
 
 export function CanvasSurface({ children }: { children: ReactNode }) {
-  const { tool } = useViewport();
+  const { tool, zoom, setZoom } = useViewport();
   useAutoFit();
   const deselect = useDeselect();
   const drawing = useShapeDrawing();
@@ -60,6 +60,71 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   const marquee = useMarquee();
   const gradient = useGradientTool();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const anchorRef = useRef<{
+    pointerX: number;
+    pointerY: number;
+    contentX: number;
+    contentY: number;
+    oldZoom: number;
+    newZoom: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const currentZoom = zoomRef.current;
+        const normalizedDelta = e.deltaMode === 1 ? e.deltaY * 20 : e.deltaY;
+        const factor = Math.exp(-normalizedDelta * 0.002);
+        let nextZoom = Math.round(currentZoom * factor);
+        if (nextZoom === currentZoom) {
+          nextZoom = currentZoom + (normalizedDelta < 0 ? 1 : -1);
+        }
+        nextZoom = Math.min(300, Math.max(10, nextZoom));
+
+        if (nextZoom !== currentZoom) {
+          const rect = surface.getBoundingClientRect();
+          const pointerX = e.clientX - rect.left;
+          const pointerY = e.clientY - rect.top;
+          const contentX = pointerX + surface.scrollLeft;
+          const contentY = pointerY + surface.scrollTop;
+
+          anchorRef.current = {
+            pointerX,
+            pointerY,
+            contentX,
+            contentY,
+            oldZoom: currentZoom,
+            newZoom: nextZoom,
+          };
+
+          setZoom(nextZoom);
+        }
+      }
+    };
+
+    surface.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    return () => surface.removeEventListener("wheel", onWheel, { capture: true });
+  }, [setZoom]);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    const anchor = anchorRef.current;
+    if (!surface || !anchor) return;
+
+    const scaleRatio = anchor.newZoom / anchor.oldZoom;
+    surface.scrollLeft = anchor.contentX * scaleRatio - anchor.pointerX;
+    surface.scrollTop = anchor.contentY * scaleRatio - anchor.pointerY;
+    anchorRef.current = null;
+  }, [zoom]);
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (tool !== "hand") {
@@ -83,6 +148,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
 
   return (
     <div
+      ref={surfaceRef}
       id={CANVAS_SURFACE_ID}
       onPointerDownCapture={(e) => {
         drawing.onPointerDownCapture(e);
@@ -194,11 +260,13 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       className={
         tiled
           ? `shrink-0 ${limited && !hasMine ? "opacity-35 saturate-50" : ""}`
-          : `mx-auto w-full transition-[max-width] duration-200 ${production ? "min-h-full bg-white" : ""}`
+          : production
+            ? `mx-auto w-full transition-[max-width] duration-200 min-h-full bg-white`
+            : `shrink-0 mx-auto`
       }
-      // En fila, el marco ocupa su ancho ya escalado y solo la página se escala; a solas, todo junto.
+      // En fila o enfoque, el marco ocupa su ancho ya escalado y la página interna se escala con zoom.
       // En producción, en tablet y móvil, la página tiene el ancho del dispositivo.
-      style={tiled ? { width: current.width * scale } : fits ? undefined : { maxWidth: current.width }}
+      style={production ? (fits ? undefined : { maxWidth: current.width }) : { width: current.width * scale }}
     >
       {!production && (
         <div className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
@@ -248,7 +316,17 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
         </div>
       )}
 
-      <div ref={frame} className="relative" style={tiled ? { width: current.width, zoom: scale } : fitScale > 1 ? { width: current.width, zoom: fitScale } : undefined}>
+      <div
+        ref={frame}
+        className="relative"
+        style={
+          production
+            ? fitScale > 1
+              ? { width: current.width, zoom: fitScale }
+              : undefined
+            : { width: current.width, zoom: scale }
+        }
+      >
         <div
           ref={pageRef}
           data-site-page
