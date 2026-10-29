@@ -41,6 +41,10 @@ interface ViewportContextValue {
   fitToWindow: () => void;
   /** Lo usa el lienzo para aplicar el zoom calculado sin desactivar el ajuste. */
   applyFittedZoom: (zoom: number) => void;
+  /** Modo enfoque: aísla y centra una sola página en el lienzo para editar cómodamente. */
+  focusMode: boolean;
+  setFocusMode: (val: boolean | ((prev: boolean) => boolean)) => void;
+  toggleFocusMode: () => void;
 }
 
 const ViewportContext = createContext<ViewportContextValue | null>(null);
@@ -56,6 +60,9 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
   const [tool, setTool] = useState<Tool>("select");
   const [zoom, setZoomState] = useState(100);
   const [fitted, setFitted] = useState(true);
+  const [focusMode, setFocusMode] = useState(false);
+
+  const toggleFocusMode = useCallback(() => setFocusMode((prev) => !prev), []);
 
   const setZoom = useCallback((next: number) => {
     setFitted(false);
@@ -88,6 +95,9 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
         fitted,
         fitToWindow,
         applyFittedZoom: setZoomState,
+        focusMode,
+        setFocusMode,
+        toggleFocusMode,
       }}
     >
       {children}

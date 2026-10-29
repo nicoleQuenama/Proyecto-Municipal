@@ -118,7 +118,9 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
           active={state.highlight !== null}
           onChange={(highlight) => onChange({ highlight })}
         >
-          ✎
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 2l2 2-8 8H4v-2l8-8zM2 14h12" />
+          </svg>
         </ColorButton>
       )}
 
@@ -143,7 +145,12 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
       {isTitle && <Separator />}
 
       {isTitle && (
-        <ToolbarButton label="Enlace" active={linkOpen || !!state.link} onClick={() => setLinkOpen((o) => !o)}>🔗</ToolbarButton>
+        <ToolbarButton label="Enlace" active={linkOpen || !!state.link} onClick={() => setLinkOpen((o) => !o)}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5L7.5 3.5" />
+            <path d="M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1" />
+          </svg>
+        </ToolbarButton>
       )}
       {isTitle && linkOpen && (
         <input
@@ -158,7 +165,13 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
         />
       )}
       {onReset && <ToolbarButton label="Restablecer estilos" onClick={onReset}>⟲</ToolbarButton>}
-      {onRemoveTitle && <ToolbarButton label="Eliminar el titular de la página" className="text-red-400" onClick={onRemoveTitle}>🗑</ToolbarButton>}
+      {onRemoveTitle && (
+        <ToolbarButton label="Eliminar el titular de la página" className="text-red-400" onClick={onRemoveTitle}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M3 4h10M6 4V2.5h4V4M4.5 4l.8 9.5a1.5 1.5 0 001.5 1.5h2.4a1.5 1.5 0 001.5-1.5L11.5 4" />
+          </svg>
+        </ToolbarButton>
+      )}
 
       {isTitle && (
       <div className="ml-auto flex shrink-0 items-center gap-3 pl-3">

@@ -7,6 +7,8 @@
  */
 
 import { fluidFontSize } from "../responsive/fluid-text";
+import type { Device } from "../responsive/devices";
+import { parseResponsiveGridConfig } from "../customize/layout-presets";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind } from "./types";
 
 /** El texto: color, tamaño, peso, estilo y tipografía. */
@@ -68,18 +70,128 @@ const rule = (selector: string, declarations: string[]) => `${selector} {\n  ${d
  * relleno, esquinas y texto. Con `flow` (la sección usa `display: flex` o `grid`) los elementos dejan de ir
  * en su posición y se acomodan según el layout; cada uno conserva su tamaño.
  */
-export function elementBaseCss(blockId: string, def: ComponentDef, flow: boolean): string {
+export function elementBaseCss(
+  blockId: string,
+  def: ComponentDef,
+  flow: boolean,
+  device?: Device,
+  sectionClasses?: string,
+  isHeaderOrFooter?: boolean,
+): string {
+  const isNavOrFooter =
+    Boolean(isHeaderOrFooter) ||
+    def.category === "navigation" ||
+    def.id.toLowerCase().includes("footer") ||
+    def.id.toLowerCase().includes("navbar") ||
+    def.id.toLowerCase().includes("nav") ||
+    def.name.toLowerCase().includes("footer") ||
+    def.name.toLowerCase().includes("pie") ||
+    def.name.toLowerCase().includes("navegaci") ||
+    def.name.toLowerCase().includes("header");
+
   const section = `[data-target="${blockId}:${SECTION_KEY}"]`;
+  const gridConfig = sectionClasses ? parseResponsiveGridConfig(sectionClasses) : null;
+  const cols =
+    gridConfig && device
+      ? device === "mobile"
+        ? gridConfig.mobileCols
+        : device === "tablet"
+          ? gridConfig.tabletCols
+          : gridConfig.desktopCols
+      : null;
+
   const rules = [
-    rule(section, ["position: relative", "flex-shrink: 0", ...(flow ? ["min-width: 0"] : [`width: ${def.width}px`, `height: ${def.height}px`])]),
-    ...def.elements.map((element) =>
-      rule(`[data-target="${blockId}:${element.id}"]`, [
-        // En flujo, lo acoplado va dentro de su contenedor: su posición se cuenta desde la esquina de este.
-        ...placement(flow ? inside(element, def.elements) : element),
+    rule(section, [
+      "position: relative",
+      "flex-shrink: 0",
+      ...(flow || isNavOrFooter
+        ? ["min-width: 0", "width: 100%"]
+        : [`width: ${def.width}px`, `height: ${def.height}px`]),
+      ...(isNavOrFooter ? [`min-height: ${def.height}px`] : []),
+    ]),
+    ...(cols !== null
+      ? [rule(section, [`grid-template-columns: repeat(${cols}, minmax(0, 1fr)) !important`])]
+      : []),
+    ...def.elements.map((element) => {
+      // Solo una figura rectangular sin texto ni contenedor padre que cubra toda la sección es un backdrop.
+      const isBackdropElement =
+        !flow &&
+        isNavOrFooter &&
+        element.kind === "rect" &&
+        !element.text &&
+        !element.parentId &&
+        element.x === 0 &&
+        element.y === 0 &&
+        element.width >= def.width * 0.85 &&
+        element.height >= def.height * 0.85;
+
+      const isNavbar =
+        isNavOrFooter &&
+        (def.id.toLowerCase().includes("navbar") ||
+          def.id.toLowerCase().includes("nav") ||
+          def.name.toLowerCase().includes("navegaci") ||
+          def.name.toLowerCase().includes("header")) &&
+        !def.id.toLowerCase().includes("footer") &&
+        !def.name.toLowerCase().includes("footer") &&
+        !def.name.toLowerCase().includes("pie");
+
+      // Solo botones o enlaces CTA al extremo derecho en barras de navegación (no en footers ni en general).
+      const isRightSide =
+        !flow &&
+        isNavbar &&
+        !isBackdropElement &&
+        (element.role === "button" || element.x >= def.width * 0.7);
+
+      const placeStyles = isBackdropElement
+        ? [
+            "position: absolute",
+            "left: 0px !important",
+            "top: 0px !important",
+            "width: 100% !important",
+            "height: 100% !important",
+            "max-width: 100% !important",
+            "box-sizing: border-box",
+          ]
+        : isRightSide && device !== "mobile"
+          ? [
+              "position: absolute",
+              `top: ${element.y}px`,
+              `right: ${Math.max(16, def.width - (element.x + element.width))}px`,
+              "left: auto !important",
+              `width: ${element.width}px`,
+              `height: ${element.height}px`,
+            ]
+          : placement(flow ? inside(element, def.elements) : element);
+
+      return rule(`[data-target="${blockId}:${element.id}"]`, [
+        ...placeStyles,
         ...BASE_STYLES[element.kind](element),
-      ]),
-    ),
-    ...(flow ? [rule(`${section} > [data-el]`, ["position: relative", "left: auto", "top: auto"])] : []),
+      ]);
+    }),
+    ...(flow
+      ? [
+          rule(`${section} > [data-el]`, [
+            "position: relative",
+            "left: auto",
+            "top: auto",
+            "min-width: 0",
+            "max-width: 100%",
+            "box-sizing: border-box",
+          ]),
+          rule(`:where(${section}[class*="grid"]) > [data-el]`, [
+            "width: 100%",
+          ]),
+          rule(`:where(${section}[class*="flex-row"]) > [data-el]`, [
+            device === "mobile" ? "flex: 1 1 100%" : "flex: 1 1 220px",
+            device === "mobile" ? "width: 100%" : "min-width: 0",
+          ]),
+          rule(`${section} > [data-el] > [data-el]`, [
+            "max-width: 100%",
+            "min-width: 0",
+            "box-sizing: border-box",
+          ]),
+        ]
+      : []),
   ];
   return `@layer base {\n${rules.join("\n")}\n}`;
 }

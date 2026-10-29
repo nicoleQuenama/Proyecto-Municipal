@@ -138,6 +138,13 @@ export const ComponentsIcon = () => (
     <rect x="14" y="14" width="7" height="7" rx="1" />
   </Icon>
 );
+export const TemplatesIcon = () => (
+  <Icon size={18}>
+    <rect x="3" y="3" width="18" height="7" rx="1.5" />
+    <rect x="3" y="13" width="8" height="8" rx="1.5" />
+    <rect x="13" y="13" width="8" height="8" rx="1.5" />
+  </Icon>
+);
 export const RouteIcon = () => (
   <Icon size={18}>
     <circle cx="6" cy="19" r="2.5" />

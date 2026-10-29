@@ -16,6 +16,7 @@ import { HiddenList } from "./hidden-list";
 import { categoryIcon } from "../site/categories";
 import { TABS, type PanelTab } from "./data";
 import { PagesTab } from "./pages-tab";
+import { TemplatesTab } from "./templates-tab";
 import { StructureList, type StructureItem } from "./structure-list";
 import { TAB_ICONS } from "./tab-icons";
 
@@ -31,6 +32,7 @@ const clampWidth = (width: number) => Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, wi
 /** Qué se dibuja en cada sección del panel. Una sección nueva es una entrada nueva. */
 const TAB_CONTENT: Record<PanelTab, ReactNode> = {
   pages: <PagesTab />,
+  templates: <TemplatesTab />,
   components: <ComponentsTab />,
   navigation: <NavigationTab />,
   appearance: <AppearanceTab />,
@@ -48,7 +50,7 @@ export function SidePanel() {
   const panelRef = useRef<HTMLElement>(null);
 
   const page = useCurrentPage();
-  const { components, selectedId } = useSite();
+  const { components, pages, selectedId } = useSite();
   const dispatch = useSiteDispatch();
   const { currentUser } = useAuth();
 
@@ -59,11 +61,12 @@ export function SidePanel() {
       ? [{ id: block.id, name: def.name, meta: def.description, icon: categoryIcon(def.category), removable: true }]
       : [];
   };
-  const { top, body } = splitBlocks(page, components);
+  const { top, body, bottom } = splitBlocks(page, components, pages);
   const items: StructureItem[] = [
     ...top.flatMap(toItem),
     ...(page.titleRemoved ? [] : [{ id: TITLE_SELECTION, name: "Titular", meta: "", icon: "T", removable: true }]),
     ...body.flatMap(toItem),
+    ...bottom.flatMap(toItem),
   ];
 
   // Pulsar la sección abierta pliega el panel (como en VS Code); pulsar otra la abre.
@@ -140,13 +143,6 @@ export function SidePanel() {
             </button>
           );
         })}
-
-        <span
-          title={`${items.length} bloques en ${page.name}`}
-          className="mt-auto rounded bg-hover px-1.5 py-0.5 text-[11px] text-ink-dim"
-        >
-          {items.length}
-        </span>
       </nav>
 
       {!collapsed && (

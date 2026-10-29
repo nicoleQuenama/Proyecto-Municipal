@@ -419,6 +419,22 @@ const HANDLERS: Handlers = {
   }),
 
   "rule/clear": (state, action) => ({ ...state, rules: clearRule(state.rules, action.scope, action.target) }),
+  "block/slot": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, slot: action.slot })),
+  "block/scope": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, scope: action.scope })),
+  "block/placement-mode": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => {
+      if (action.mode === "flow") {
+        const { placement: _, ...rest } = b;
+        return { ...rest, placementMode: "flow" };
+      }
+      return { ...b, placementMode: "overlay" };
+    }),
+  "page/layout-toggles": (state, action) => ({
+    ...state,
+    pages: state.pages.map((p) => (p.id === action.pageId ? { ...p, ...action.patch } : p)),
+  }),
 };
 
 export function siteReducer(state: SiteState, action: SiteAction): SiteState {

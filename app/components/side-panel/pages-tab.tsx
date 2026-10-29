@@ -33,6 +33,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const [routing, setRouting] = useState(false);
   const [seoOpen, setSeoOpen] = useState(false);
   const [styling, setStyling] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const [draft, setDraft] = useState(page.name);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,6 +178,16 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
         )}
         <button
           type="button"
+          aria-label={`Estructura y disposición de ${page.name}`}
+          title="Encabezado y pie de página visibles en esta página"
+          aria-pressed={layoutOpen}
+          onClick={() => setLayoutOpen(!layoutOpen)}
+          className={`${iconButton} text-[12px] ${page.hideHeader || page.hideFooter ? "text-amber-500 font-bold" : layoutOpen ? "text-accent" : "hidden group-hover:flex focus:flex"}`}
+        >
+          ☷
+        </button>
+        <button
+          type="button"
           aria-label={`Renombrar ${page.name}`}
           title="Renombrar"
           onClick={() => {
@@ -202,6 +213,36 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
       {routing && <PageRouteForm page={page} />}
       {seoOpen && <PageSeoForm page={page} />}
       {styling && <PageBackground page={page} />}
+      {layoutOpen && (
+        <div className="flex flex-col gap-2 rounded-md border border-line bg-canvas/60 p-2.5 text-xs">
+          <p className="text-[11px] font-semibold text-ink">Encabezado y pie de página en esta página:</p>
+          <label className="flex items-center gap-2 text-ink hover:text-accent cursor-pointer text-[12px]">
+            <input
+              type="checkbox"
+              checked={!page.hideHeader}
+              onChange={(e) =>
+                dispatch({ type: "page/layout-toggles", pageId: page.id, patch: { hideHeader: !e.target.checked } })
+              }
+              className="h-3.5 w-3.5 rounded accent-accent"
+            />
+            Mostrar Encabezado (Header)
+          </label>
+          <label className="flex items-center gap-2 text-ink hover:text-accent cursor-pointer text-[12px]">
+            <input
+              type="checkbox"
+              checked={!page.hideFooter}
+              onChange={(e) =>
+                dispatch({ type: "page/layout-toggles", pageId: page.id, patch: { hideFooter: !e.target.checked } })
+              }
+              className="h-3.5 w-3.5 rounded accent-accent"
+            />
+            Mostrar Pie de página (Footer)
+          </label>
+          <p className="text-[10px] text-ink-dim">
+            Desmarca cualquiera para que esta página no muestre el encabezado o pie de página.
+          </p>
+        </div>
+      )}
     </li>
   );
 }

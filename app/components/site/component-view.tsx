@@ -12,6 +12,7 @@ import { useBehaviors } from "../behaviors/use-behaviors";
 import { LinkHandle } from "../navigation/link-handle";
 import { elementLabel, isLinkable, linkLabel } from "../navigation/links";
 import type { ElementRef, LinkTarget, NavMode, Point } from "../navigation/types";
+import type { Device } from "../responsive/devices";
 import { IconGlyph } from "../icons/icon-glyph";
 import { ControlContent } from "../forms/control-content";
 import { CodeButton } from "./code-button";
@@ -174,6 +175,10 @@ export interface ElementInteraction {
   gestures?: BlockGestures;
   /** La sección usa `display: flex` o `grid`: sus elementos se acomodan solos. */
   flow: boolean;
+  /** Dispositivo activo en el visor (escritorio, tablet, móvil). */
+  device?: Device;
+  /** Encabezado o pie de página que ocupa todo el ancho de la página. */
+  isHeaderOrFooter?: boolean;
   selectedElementId: string | null;
   /** Elementos sumados a la selección con Ctrl/⌘-clic. */
   alsoSelectedIds?: string[];
@@ -195,6 +200,18 @@ export interface ElementInteraction {
   onDropData: (ref: DataRef, elementId: string | null) => void;
   /** Al editar: abrir el código de un elemento en el editor. */
   onOpenCode: (elementId: string) => void;
+  /** Al editar: reordena una tarjeta/elemento dentro de una sección en flujo (flex/grid). */
+  onReorderFlow?: (elementId: string, direction: -1 | 1) => void;
+  /** Al editar: duplica la tarjeta seleccionada dentro del contenedor en flujo. */
+  onDuplicateCard?: (elementId: string) => void;
+  /** Al editar: agrega una nueva tarjeta al contenedor en flujo. */
+  onAddCard?: () => void;
+  /** Al editar: elimina la tarjeta seleccionada del contenedor en flujo. */
+  onDeleteCard?: (elementId: string) => void;
+  /** Al editar: etiqueta personalizada para agregar un elemento al contenedor (ej: "Tarjeta" o "Botón"). */
+  addCardLabel?: string;
+  /** Al editar: reordena elementos hijos mediante drag-and-drop dentro del contenedor en flujo. */
+  onReorderElement?: (sourceId: string, targetId: string, position: "before" | "after") => void;
   /** Algo que se dibuja encima de la sección (el botón de un menú, el título de un acordeón). */
   overlay?: ReactNode;
 }
@@ -243,11 +260,20 @@ function PositionedElement({
   // Probar: enlaces e interacciones (clic, cursor encima, al cargar…) como las vería un visitante.
   if (interaction?.mode === "preview") {
     const destination = link ? linkLabel(link, interaction.pages) : undefined;
+    const isSearchTrigger =
+      element.control?.name === "search-trigger" ||
+      element.id.toLowerCase().includes("search") ||
+      (element.text && element.text.toLowerCase().includes("buscar") && (element.role === "button" || link === undefined));
+
     const follow = () => {
+      if (isSearchTrigger) {
+        window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query: "" } }));
+        return;
+      }
       if (link) interaction.onFollow(link, element.id);
       behaviorProps.onClick?.();
     };
-    const interactive = link !== undefined || behaviorProps.onClick !== undefined;
+    const interactive = isSearchTrigger || link !== undefined || behaviorProps.onClick !== undefined;
 
     return (
       <div
@@ -283,25 +309,60 @@ function PositionedElement({
     const selected = interaction.selectedElementId === element.id;
     const alsoSelected = interaction.alsoSelectedIds?.includes(element.id);
     const { gestures } = interaction;
+    const [dropIndicator, setDropIndicator] = useState<"before" | "after" | null>(null);
+    const isFlow = Boolean(interaction.flow);
+    const isTopChild = !element.parentId;
+    const isBackdropEl = Boolean(gestures && isBackdrop(element, gestures.size));
+    const canReorder = isFlow && isTopChild && !isBackdropEl && Boolean(interaction.onReorderElement);
 
     return (
       <div
         data-target={target}
         data-el={element.id}
+        draggable={canReorder}
+        onDragStart={canReorder ? (e) => {
+          e.dataTransfer.setData("application/x-flow-element-id", element.id);
+          e.dataTransfer.effectAllowed = "move";
+        } : undefined}
+        onDragOver={canReorder ? (e) => {
+          if (!e.dataTransfer.types.includes("application/x-flow-element-id")) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          const rect = e.currentTarget.getBoundingClientRect();
+          const sectionClass = interaction.classes[SECTION_KEY] || "";
+          const isCol = sectionClass.includes("flex-col");
+          const ratio = isCol ? (e.clientY - rect.top) / rect.height : (e.clientX - rect.left) / rect.width;
+          setDropIndicator(ratio < 0.5 ? "before" : "after");
+        } : undefined}
+        onDragLeave={canReorder ? () => setDropIndicator(null) : undefined}
+        onDrop={canReorder ? (e) => {
+          const sourceId = e.dataTransfer.getData("application/x-flow-element-id");
+          if (sourceId && sourceId !== element.id) {
+            e.preventDefault();
+            e.stopPropagation();
+            interaction.onReorderElement?.(sourceId, element.id, dropIndicator ?? "after");
+          }
+          setDropIndicator(null);
+        } : undefined}
         {...(gestures && isBackdrop(element, gestures.size) ? { "data-backdrop": "" } : {})}
         {...drop.handlers}
         style={boundStyle}
-        className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${gestures ? "cursor-move touch-none select-none" : ""}`}
+        className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${
+          canReorder ? "cursor-grab active:cursor-grabbing" : gestures && !isFlow ? "cursor-move touch-none select-none" : ""
+        }`}
         onPointerDown={(e) => {
           // Los botones del elemento (ojo, enlace, código) siguen siendo botones.
           if ((e.target as Element).closest("button")) return;
-          // El fondo de una tarjeta (una pieza que ocupa toda la sección) o Mayús arrastran el bloque entero.
-          if (e.shiftKey || (gestures && isBackdrop(element, gestures.size))) return interaction.onMoveBlock?.(e);
-          gestures?.startDrag(e, element);
+          // El fondo de una tarjeta (una pieza que ocupa toda la sección) arrastra el bloque entero.
+          if (gestures && isBackdrop(element, gestures.size)) return interaction.onMoveBlock?.(e);
+          // Si el contenedor está en flujo (flex/grid), NO se mueve libremente por coordenadas absolutas x/y
+          if (!isFlow) {
+            gestures?.startDrag(e, element);
+          }
         }}
         onClick={(e) => {
           e.stopPropagation(); // el bloque no se vuelve a seleccionar encima del elemento
-          interaction.onSelect(element.id, e.ctrlKey || e.metaKey);
+          interaction.onSelect(element.id, e.shiftKey || e.ctrlKey || e.metaKey);
         }}
         onDoubleClick={() => element.kind === "text" && interaction.onEditText && setWriting(true)}
         onContextMenu={(e) => {
@@ -332,6 +393,20 @@ function PositionedElement({
         )}
         {drop.over && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-emerald-500 bg-emerald-500/10" />}
         {alsoSelected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-dashed border-sky-500" />}
+        {dropIndicator && (
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute z-30 rounded-full bg-accent shadow-md ring-2 ring-accent/40 ${
+              (interaction.classes[SECTION_KEY] || "").includes("flex-col")
+                ? dropIndicator === "before"
+                  ? "-top-1.5 left-0 right-0 h-1.5"
+                  : "-bottom-1.5 left-0 right-0 h-1.5"
+                : dropIndicator === "before"
+                  ? "-left-1.5 top-0 bottom-0 w-1.5"
+                  : "-right-1.5 top-0 bottom-0 w-1.5"
+            }`}
+          />
+        )}
         <VisibilityEye
           hidden={false}
           label={elementLabel(element)}
@@ -351,6 +426,81 @@ function PositionedElement({
             onOpen={() => interaction.onOpenCode(element.id)}
             className="absolute -top-3 -right-3"
           />
+        )}
+        {selected && interaction.flow && (
+          <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border border-line bg-canvas/95 px-1.5 py-0.5 shadow-lg backdrop-blur-xs">
+            {interaction.onReorderFlow && (
+              <>
+                <button
+                  type="button"
+                  title={(interaction.classes[SECTION_KEY] || "").includes("flex-col") || Boolean(element.parentId) ? "Subir (mover antes)" : "Mover antes"}
+                  aria-label="Mover antes en el contenedor"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    interaction.onReorderFlow?.(element.id, -1);
+                  }}
+                  className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+                >
+                  {(interaction.classes[SECTION_KEY] || "").includes("flex-col") || Boolean(element.parentId) ? "↑" : "←"}
+                </button>
+                <button
+                  type="button"
+                  title={(interaction.classes[SECTION_KEY] || "").includes("flex-col") || Boolean(element.parentId) ? "Bajar (mover después)" : "Mover después"}
+                  aria-label="Mover después en el contenedor"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    interaction.onReorderFlow?.(element.id, 1);
+                  }}
+                  className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+                >
+                  {(interaction.classes[SECTION_KEY] || "").includes("flex-col") || Boolean(element.parentId) ? "↓" : "→"}
+                </button>
+                <span className="h-3 w-px bg-line" />
+              </>
+            )}
+            {interaction.onDuplicateCard && (
+              <button
+                type="button"
+                title="Duplicar esta tarjeta dentro del contenedor"
+                aria-label="Duplicar esta tarjeta"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  interaction.onDuplicateCard?.(element.id);
+                }}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:bg-accent/15 active:scale-95"
+              >
+                <span>⎘</span> Duplicar
+              </button>
+            )}
+            {interaction.onAddCard && (
+              <button
+                type="button"
+                title={`Agregar ${interaction.addCardLabel ? interaction.addCardLabel.toLowerCase() : "tarjeta"} al contenedor`}
+                aria-label={`Agregar ${interaction.addCardLabel ? interaction.addCardLabel.toLowerCase() : "tarjeta"} al contenedor`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  interaction.onAddCard?.();
+                }}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/15 active:scale-95"
+              >
+                <span>+</span> {interaction.addCardLabel ?? "Tarjeta"}
+              </button>
+            )}
+            {interaction.onDeleteCard && (
+              <button
+                type="button"
+                title="Eliminar esta tarjeta del contenedor"
+                aria-label="Eliminar esta tarjeta"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  interaction.onDeleteCard?.(element.id);
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold text-red-500 hover:bg-red-500/15 active:scale-95"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         )}
       </div>
     );
@@ -409,7 +559,18 @@ export function ComponentView({
       style={interaction ? undefined : { width: def.width, height: def.height }}
     >
       {/* En la página, la posición, el tamaño y los estilos base van en CSS (capa de menor prioridad); en miniaturas, en línea. */}
-      {interaction && <style>{elementBaseCss(interaction.blockId, def, interaction.flow)}</style>}
+      {interaction && (
+        <style>
+          {elementBaseCss(
+            interaction.blockId,
+            def,
+            interaction.flow,
+            interaction.device,
+            interaction.classes[SECTION_KEY],
+            interaction.isHeaderOrFooter,
+          )}
+        </style>
+      )}
       {cardsOf(def.elements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
       {interaction?.overlay}
       {interaction?.gestures && (

@@ -1,5 +1,6 @@
 export type PanelTab =
   | "pages"
+  | "templates"
   | "components"
   | "navigation"
   | "appearance"
@@ -15,6 +16,7 @@ export type PanelPermission = "editContent" | "editStyles" | "editCode" | "editD
 /** Las secciones del panel lateral, en el orden de la barra de iconos. */
 export const TABS: { value: PanelTab; label: string; title: string; permission: PanelPermission }[] = [
   { value: "pages", label: "Páginas", title: "Páginas del sitio", permission: "editContent" },
+  { value: "templates", label: "Plantillas", title: "Plantillas de páginas y secciones prehechas", permission: "editContent" },
   { value: "components", label: "Agregar", title: "Componentes para agregar a la página", permission: "editContent" },
   { value: "navigation", label: "Enlaces", title: "Navegación y enlaces entre páginas", permission: "editContent" },
   { value: "appearance", label: "Estilo", title: "Variables y reglas de estilo", permission: "editStyles" },

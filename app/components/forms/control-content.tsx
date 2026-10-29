@@ -31,12 +31,32 @@ export function ControlContent({ element, live, hasClick }: { element: CanvasEle
   const wrapper = { "data-control": spec.name || undefined, "data-required": String(!!spec.required), className: "h-full w-full", style: idle } as const;
 
   if (spec.kind === "button" || spec.kind === "submit") {
+    const isSearchTrigger =
+      spec.name === "search-trigger" ||
+      element.id.toLowerCase().includes("search") ||
+      element.text.toLowerCase().includes("buscar");
+
     return (
       <button
         type="button"
         tabIndex={live ? 0 : -1}
         style={{ ...look(element, false), ...idle, textAlign: "center", cursor: "pointer" }}
-        onClick={live && spec.kind === "submit" && !hasClick ? (e) => void submitForm(e.currentTarget, "", "¡Enviado!") : undefined}
+        onClick={
+          live
+            ? (e) => {
+                if (isSearchTrigger) {
+                  const formOrBlock = e.currentTarget.closest("[data-block-id]") || e.currentTarget.closest("form") || document;
+                  const searchInput = formOrBlock.querySelector<HTMLInputElement>("input[type='search'], input[name='search-query']");
+                  const query = searchInput?.value ?? "";
+                  window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query } }));
+                  return;
+                }
+                if (spec.kind === "submit" && !hasClick) {
+                  void submitForm(e.currentTarget, "", "¡Enviado!");
+                }
+              }
+            : undefined
+        }
       >
         {element.text}
       </button>
@@ -65,6 +85,29 @@ export function ControlContent({ element, live, hasClick }: { element: CanvasEle
             <option key={option} value={option} style={{ color: "#111827" }}>{option}</option>
           ))}
         </select>
+      </div>
+    );
+  }
+  if (spec.inputType === "search" || spec.name === "search-query" || (spec.placeholder && spec.placeholder.toLowerCase().includes("buscar"))) {
+    return (
+      <div {...wrapper}>
+        <input
+          type="search"
+          name={spec.name}
+          placeholder={spec.placeholder || "Buscar trámites o servicios..."}
+          tabIndex={live ? 0 : -1}
+          style={look(element, true)}
+          onKeyDown={
+            live
+              ? (e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query: e.currentTarget.value } }));
+                  }
+                }
+              : undefined
+          }
+        />
       </div>
     );
   }

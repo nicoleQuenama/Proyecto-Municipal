@@ -1,7 +1,7 @@
 /** Reglas puras del sitio: nombres, rutas y duplicados. */
 
 import { remapLinks } from "../navigation/links";
-import type { CanvasElement, ComponentDef, Page } from "./types";
+import type { BlockInstance, CanvasElement, ComponentDef, Page } from "./types";
 
 /** "Trámites en línea" → "tramites-en-linea" */
 export function slugify(text: string): string {
@@ -49,16 +49,81 @@ export function duplicateComponent(def: ComponentDef, id: string, name: string):
   return { ...def, id, name, custom: true, elements, links: remapLinks(def.links, idMap) };
 }
 
-/**
- * Las barras de navegación van siempre arriba de la página, antes del titular;
- * el resto de bloques va debajo. Cada grupo conserva el orden en que se añadió.
- */
-export function splitBlocks(page: Page, components: ComponentDef[]) {
-  const isNavigation = (componentId: string) =>
-    components.find((c) => c.id === componentId)?.category === "navigation";
+export interface SplitBlocksResult {
+  top: BlockInstance[];
+  body: BlockInstance[];
+  bottom: BlockInstance[];
+}
 
-  return {
-    top: page.blocks.filter((block) => isNavigation(block.componentId)),
-    body: page.blocks.filter((block) => !isNavigation(block.componentId)),
+/**
+ * Determina el rol/ubicación de un bloque: encabezado (header), cuerpo (body) o pie de página (footer).
+ */
+export function getBlockSlot(block: BlockInstance, component?: ComponentDef): "header" | "body" | "footer" {
+  if (block.slot) return block.slot;
+  if (!component) return "body";
+  if (component.category === "navigation") {
+    const text = `${component.id} ${component.name}`.toLowerCase();
+    const isFooter = text.includes("footer") || text.includes("pie");
+    return isFooter ? "footer" : "header";
+  }
+  return "body";
+}
+
+/**
+ * Las barras de navegación y encabezados van arriba de la página, antes del titular (top);
+ * el contenido va en el centro (body); y los pies de página van al final (bottom).
+ * Si la página no tiene encabezado o pie propio, puede heredar los globales de otra página.
+ * Si la página tiene hideHeader o hideFooter, esa zona se oculta.
+ */
+export function splitBlocks(
+  page: Page,
+  components: ComponentDef[],
+  allPages?: Page[],
+): SplitBlocksResult {
+  const getSlot = (b: BlockInstance) => {
+    const comp = components.find((c) => c.id === b.componentId);
+    return getBlockSlot(b, comp);
   };
+
+  let top = page.blocks.filter((b) => getSlot(b) === "header");
+  const body = page.blocks.filter((b) => getSlot(b) === "body");
+  let bottom = page.blocks.filter((b) => getSlot(b) === "footer");
+
+  if (page.hideHeader) {
+    top = [];
+  } else if (top.length === 0 && allPages && allPages.length > 0) {
+    const home = allPages.find((p) => p.isHome) ?? allPages[0];
+    const candidatePages = [home, ...allPages.filter((p) => p.id !== home.id)];
+    for (const other of candidatePages) {
+      if (other.id === page.id) continue;
+      const globalHeader = other.blocks.find((b) => {
+        const slot = getSlot(b);
+        return slot === "header" && (b.scope === "global" || (b.scope !== "page" && other.isHome));
+      });
+      if (globalHeader) {
+        top = [globalHeader];
+        break;
+      }
+    }
+  }
+
+  if (page.hideFooter) {
+    bottom = [];
+  } else if (bottom.length === 0 && allPages && allPages.length > 0) {
+    const home = allPages.find((p) => p.isHome) ?? allPages[0];
+    const candidatePages = [home, ...allPages.filter((p) => p.id !== home.id)];
+    for (const other of candidatePages) {
+      if (other.id === page.id) continue;
+      const globalFooter = other.blocks.find((b) => {
+        const slot = getSlot(b);
+        return slot === "footer" && (b.scope === "global" || (b.scope !== "page" && other.isHome));
+      });
+      if (globalFooter) {
+        bottom = [globalFooter];
+        break;
+      }
+    }
+  }
+
+  return { top, body, bottom };
 }

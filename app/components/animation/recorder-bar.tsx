@@ -65,9 +65,32 @@ export function RecorderBar() {
   const site = useSite();
   const { startedAt, notice, canAddEffect, start, openPreview } = useRecorder();
   const [animating, setAnimating] = useState(false);
+  const [minimized, setMinimized] = useState(true);
   if (mode !== "edit") return null;
 
   const animations = page.animations ?? [];
+
+  if (minimized && startedAt === null) {
+    return (
+      <div className="absolute bottom-20 left-1/2 z-30 -translate-x-1/2">
+        <button
+          type="button"
+          onClick={() => setMinimized(false)}
+          title="Abrir barra de animaciones"
+          aria-label="Abrir barra de animaciones"
+          className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105"
+        >
+          <span className="text-accent font-bold">✦</span>
+          <span>Animar</span>
+          {animations.length > 0 && (
+            <span className="rounded-full bg-accent/20 px-1.5 py-0.2 text-[9px] font-semibold text-accent">
+              {animations.length}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="absolute bottom-20 left-1/2 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-col-reverse items-center gap-1.5">
@@ -88,6 +111,15 @@ export function RecorderBar() {
             <Button disabled={animations.length === 0} onClick={() => openPreview(animations[animations.length - 1].id)}>
               ▶ Animaciones ({animations.length})
             </Button>
+            <button
+              type="button"
+              onClick={() => setMinimized(true)}
+              title="Ocultar barra de animaciones"
+              aria-label="Minimizar barra de animaciones"
+              className="ml-1 flex h-6 w-6 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink"
+            >
+              ×
+            </button>
           </>
         ) : (
           <Recording since={startedAt} />

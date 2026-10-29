@@ -263,6 +263,12 @@ export interface BlockInstance {
   fold?: FoldChoices;
   /** La sección completa se oculta solo en estos dispositivos. */
   hiddenOn?: Device[];
+  /** Rol o ubicación de la sección: header (arriba), body (cuerpo), footer (abajo). */
+  slot?: "header" | "body" | "footer";
+  /** Ámbito de uso del bloque: solo esta página ("page") o compartido en todo el sitio ("global"). */
+  scope?: "page" | "global";
+  /** Modo de colocación: "flow" (ajustado según contenido en el flujo de la página) o "overlay" (sobreponer libremente con coordenadas absolutas). */
+  placementMode?: "flow" | "overlay";
 }
 
 /** Dónde vale una función reutilizable: en todo el proyecto, en una sección o en un elemento. */
@@ -314,6 +320,10 @@ export interface Page {
   js?: string;
   /** Título, descripción, imagen e idioma para buscadores y redes. */
   seo?: PageSeo;
+  /** Ocultar encabezado (header) en esta página específica. */
+  hideHeader?: boolean;
+  /** Ocultar pie de página (footer) en esta página específica. */
+  hideFooter?: boolean;
 }
 
 /** Qué se oculta o se muestra: una página, su titular, un bloque, un medio o un elemento de un componente. */
@@ -427,4 +437,8 @@ export type SiteAction =
   | { type: "animation/add"; pageId: string; animation: RecordedAnimation; trigger?: { blockId: string; behavior: Behavior } }
   | { type: "animation/steps"; pageId: string; id: string; steps: AnimationStep[] }
   | { type: "animation/rename"; pageId: string; id: string; name: string }
-  | { type: "animation/delete"; pageId: string; id: string };
+  | { type: "animation/delete"; pageId: string; id: string }
+  | { type: "block/slot"; pageId: string; blockId: string; slot: "header" | "body" | "footer" }
+  | { type: "block/scope"; pageId: string; blockId: string; scope: "page" | "global" }
+  | { type: "block/placement-mode"; pageId: string; blockId: string; mode: "flow" | "overlay" }
+  | { type: "page/layout-toggles"; pageId: string; patch: { hideHeader?: boolean; hideFooter?: boolean } };
