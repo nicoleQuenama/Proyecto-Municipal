@@ -38,6 +38,7 @@ import { useFlag } from "../responsive/flag-store";
 import { useViewport } from "../viewport/viewport-context";
 import { defaultMenu, toggleItem } from "../responsive/menu-model";
 import { GroupControls } from "./group-controls";
+import { DockablePanel } from "./dockable-panel";
 import { LayoutControls } from "./layout-controls";
 import { ControlControls } from "../forms/control-controls";
 import { MediaPerformanceControls } from "../media/media-performance-controls";
@@ -702,57 +703,52 @@ export function Inspector() {
   const element = def.elements.find((e) => e.id === selectedElementId);
   const scope = element ? element.id : SECTION_KEY;
 
-  return (
-    <aside
-      aria-label="Propiedades"
-      className="absolute top-3 right-3 bottom-3 z-30 flex w-80 max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-right-4 duration-150"
-    >
-      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-line px-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="text-[10px] tracking-wider text-ink-dim uppercase">{element ? `Elemento · ${def.name}` : "Sección"}</p>
-            {element && (
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "element/select", id: null })}
-                className="text-[10px] font-medium text-accent hover:underline"
-                title="Volver a seleccionar la sección para editar su disposición, columnas o gap"
-              >
-                (Ver sección)
-              </button>
-            )}
-          </div>
-          <p className="truncate text-sm font-medium">{element ? elementLabel(element) : def.name}</p>
-        </div>
-        {canEditCode && <ExportButton pageId={ownerPage.id} block={block} def={def} />}
-        {canEditCode && (
-          <button
-            type="button"
-            aria-label="Abrir el código en el editor"
-            title="Abrir el código en el editor (Ctrl+E)"
-            onClick={() => openFile()}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-accent px-2.5 text-xs font-medium text-white hover:opacity-90"
-          >
-            <CodeIcon />
-            Código
-          </button>
-        )}
+  const headerActions = (
+    <>
+      {canEditCode && <ExportButton pageId={ownerPage.id} block={block} def={def} />}
+      {canEditCode && (
         <button
           type="button"
-          aria-label="Cerrar propiedades"
-          title="Cerrar propiedades"
-          onClick={() => dispatch({ type: "block/select", id: TITLE_SELECTION })}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          aria-label="Abrir el código en el editor"
+          title="Abrir el código en el editor (Ctrl+E)"
+          onClick={() => openFile()}
+          className="flex h-7 shrink-0 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
         >
-          ×
+          <CodeIcon />
+          <span>Código</span>
         </button>
-      </header>
+      )}
+    </>
+  );
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {/* key: al cambiar de selección, el editor empieza de cero con lo guardado de esa selección. */}
-        <ScopeEditor key={`${block.id}:${scope}`} pageId={ownerPage.id} block={block} def={def} scope={scope} />
-      </div>
-      <RemoveButton page={ownerPage} />
-    </aside>
+  const titleNode = <span>{element ? elementLabel(element) : def.name}</span>;
+
+  const subtitleNode = (
+    <div className="flex items-center gap-1.5">
+      <span>{element ? `Elemento · ${def.name}` : "Sección"}</span>
+      {element && (
+        <button
+          type="button"
+          onClick={() => dispatch({ type: "element/select", id: null })}
+          className="text-[10px] font-medium text-accent hover:underline lowercase"
+          title="Volver a seleccionar la sección para editar su disposición, columnas o gap"
+        >
+          (ver sección)
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <DockablePanel
+      title={titleNode}
+      subtitle={subtitleNode}
+      headerActions={headerActions}
+      onClose={() => dispatch({ type: "block/select", id: TITLE_SELECTION })}
+      footer={<RemoveButton page={ownerPage} />}
+    >
+      {/* key: al cambiar de selección, el editor empieza de cero con lo guardado de esa selección. */}
+      <ScopeEditor key={`${block.id}:${scope}`} pageId={ownerPage.id} block={block} def={def} scope={scope} />
+    </DockablePanel>
   );
 }

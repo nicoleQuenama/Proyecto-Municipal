@@ -9,6 +9,7 @@ import { BuilderHost } from "../builder/builder-host";
 import { CommandPalette } from "../commands/command-palette";
 import { ShortcutsSettings } from "../commands/shortcuts-settings";
 import { Inspector } from "../customize/inspector";
+import { InspectorDockProvider } from "../customize/dockable-inspector-context";
 import { TailwindRuntime } from "../customize/tailwind-runtime";
 import { FormatMenu } from "../format/format-menu";
 import { MediaDropZone } from "../media/media-drop-zone";
@@ -53,19 +54,21 @@ export function EditorWorkspace() {
           </div>
         </header>
 
-        <main className="relative flex min-h-0 flex-1 bg-canvas overflow-hidden">
-          <SidePanel />
-          <div className="relative flex min-w-0 flex-1">
-            <CanvasSurface>
-              <CanvasPages />
-            </CanvasSurface>
-            <BottomToolbar />
-            <SectionColors />
-            <RecorderBar />
-            <MyWorkPanel />
-          </div>
-          <Inspector />
-        </main>
+        <InspectorDockProvider>
+          <main className="relative flex min-h-0 flex-1 bg-canvas overflow-hidden">
+            <SidePanel />
+            <div className="relative flex min-w-0 flex-1">
+              <CanvasSurface>
+                <CanvasPages />
+              </CanvasSurface>
+              <BottomToolbar />
+              <SectionColors />
+              <RecorderBar />
+              <MyWorkPanel />
+              <Inspector />
+            </div>
+          </main>
+        </InspectorDockProvider>
 
         <footer></footer>
       </div>

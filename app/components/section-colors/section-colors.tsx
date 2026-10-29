@@ -8,6 +8,7 @@ import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import { TITLE_SELECTION } from "../site/types";
 import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
+import { useInspectorDock } from "../customize/dockable-inspector-context";
 import { collectColors, type ColorGroup } from "./collect-colors";
 import { HexField } from "./hex-field";
 
@@ -40,6 +41,7 @@ export function SectionColors() {
   const dispatch = useSiteDispatch();
   const styles = useStyles();
   const { settings } = useCanvasSettings();
+  const { dock, minimized, width } = useInspectorDock();
 
   const block = site.selectedId === TITLE_SELECTION ? undefined : page.blocks.find((b) => b.id === site.selectedId);
   const def = site.components.find((c) => c.id === block?.componentId);
@@ -57,11 +59,15 @@ export function SectionColors() {
     dispatch(settings.scope === "component" ? { type: "component/recolor", componentId: def.id, ...change } : { type: "block/recolor", ...change });
   };
 
+  const isRightDocked = dock === "right" && !minimized;
+  const rightOffset = isRightDocked ? `${width + 24}px` : "1.5rem";
+
   return (
     <div
       role="group"
       aria-label={`Colores de ${view.name}`}
-      className="absolute top-4 right-[21.5rem] z-30 max-w-[calc(100%-23rem)] rounded-xl border border-line bg-panel p-2 text-ink shadow-2xl"
+      style={{ right: rightOffset }}
+      className="absolute top-4 z-30 max-w-[calc(100%-23rem)] rounded-xl border border-line bg-panel p-2 text-ink shadow-2xl transition-[right] duration-150"
     >
       <ul className="flex flex-wrap justify-end gap-x-1 gap-y-2">
         {groups.map((group, index) => (
