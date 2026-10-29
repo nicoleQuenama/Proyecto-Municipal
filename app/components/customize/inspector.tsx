@@ -104,7 +104,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const level: StyleLevel = settings.scope;
   const mine = mineLabel(useSharedUsage());
   const setLevel = (value: StyleLevel) => setSettings((current) => ({ ...current, scope: value }));
-  const custom = (level === "block" ? block.custom?.[scope] : def.styles?.[scope]) ?? { classes: "", css: "" };
+  const custom = (level === "block" ? (block.custom?.[scope] ?? def.styles?.[scope]) : def.styles?.[scope]) ?? { classes: "", css: "" };
   const canEditContent = hasPermission(currentUser, "editContent");
   const canEditStyles = hasPermission(currentUser, "editStyles");
   const canEditCode = hasPermission(currentUser, "editCode");
@@ -613,7 +613,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
         <LayoutControls
           isSection={scope === SECTION_KEY}
           classes={custom.classes}
-          sectionClasses={((level === "block" ? block.custom?.[SECTION_KEY] : def.styles?.[SECTION_KEY]) ?? { classes: "" }).classes}
+          sectionClasses={((level === "block" ? (block.custom?.[SECTION_KEY] ?? def.styles?.[SECTION_KEY]) : def.styles?.[SECTION_KEY]) ?? { classes: "" }).classes}
           onChange={(classes) => saveStyle({ classes }, canEditContent)}
           onSectionChange={(classes) => saveSectionStyle({ classes }, canEditContent)}
           onSelectSection={() => dispatch({ type: "element/select", id: null })}

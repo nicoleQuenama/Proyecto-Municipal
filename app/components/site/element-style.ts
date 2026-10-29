@@ -116,7 +116,12 @@ export function elementBaseCss(
       ...(isNavOrFooter ? [`min-height: ${def.height}px`] : []),
     ]),
     ...(cols !== null
-      ? [rule(section, [`grid-template-columns: repeat(${cols}, minmax(0, 1fr)) !important`])]
+      ? [
+          rule(section, [
+            "display: grid !important",
+            `grid-template-columns: repeat(${cols}, minmax(0, 1fr)) !important`,
+          ]),
+        ]
       : []),
     ...def.elements.map((element) => {
       // Solo una figura rectangular sin texto ni contenedor padre que cubra toda la sección es un backdrop.
@@ -177,39 +182,69 @@ export function elementBaseCss(
     ...(flow
       ? [
           rule(`${section} > [data-el]`, [
-            "position: relative",
-            "left: auto",
-            "top: auto",
-            "min-width: 0",
-            "max-width: 100%",
-            "box-sizing: border-box",
+            "position: relative !important",
+            "left: auto !important",
+            "top: auto !important",
+            "min-width: 0 !important",
+            "max-width: 100% !important",
+            "box-sizing: border-box !important",
           ]),
-          rule(`:where(${section}[class*="grid"]) > [data-el]`, [
-            "width: 100%",
+          rule(`${section}[class*="grid"] > [data-el]`, [
+            "width: 100% !important",
           ]),
-          rule(`:where(${section}[class*="flex-row"]) > [data-el]`, [
-            device === "mobile" ? "flex: 1 1 100%" : "flex: 1 1 220px",
-            device === "mobile" ? "width: 100%" : "min-width: 0",
+          rule(`${section}[class*="flex-row"] > [data-el]`, [
+            device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
+            device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
           ]),
           rule(`${section} > [data-el] > [data-el]`, [
-            "max-width: 100%",
-            "min-width: 0",
-            "box-sizing: border-box",
+            "max-width: 100% !important",
+            "min-width: 0 !important",
+            "box-sizing: border-box !important",
           ]),
           ...(def.id.toLowerCase().includes("bento") || def.name.toLowerCase().includes("bento")
             ? [
                 rule(`${section} > [data-el]:first-child`, [
-                  device === "mobile" ? "grid-column: span 1" : "grid-column: span 2",
-                  device === "mobile" ? "grid-row: span 1" : "grid-row: span 2",
+                  device === "mobile" ? "grid-column: span 1 !important" : "grid-column: span 2 !important",
+                  device === "mobile" ? "grid-row: span 1 !important" : "grid-row: span 2 !important",
                 ]),
                 rule(`${section} > [data-el]:nth-child(2)`, [
-                  device === "mobile" ? "grid-column: span 1" : "grid-column: span 2",
+                  device === "mobile" ? "grid-column: span 1 !important" : "grid-column: span 2 !important",
                 ]),
               ]
             : []),
         ]
       : []),
   ];
-  return `@layer base {\n${rules.join("\n")}\n}`;
+
+  const unlayeredRules: string[] = [];
+  if (cols !== null) {
+    unlayeredRules.push(
+      rule(section, [
+        "display: grid !important",
+        `grid-template-columns: repeat(${cols}, minmax(0, 1fr)) !important`,
+      ])
+    );
+  }
+  if (flow) {
+    unlayeredRules.push(
+      rule(`${section} > [data-el]`, [
+        "position: relative !important",
+        "left: auto !important",
+        "top: auto !important",
+        "min-width: 0 !important",
+        "max-width: 100% !important",
+        "box-sizing: border-box !important",
+      ]),
+      rule(`${section}[class*="grid"] > [data-el]`, [
+        "width: 100% !important",
+      ]),
+      rule(`${section}[class*="flex-row"] > [data-el]`, [
+        device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
+        device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
+      ])
+    );
+  }
+
+  return `@layer base {\n${rules.join("\n")}\n}${unlayeredRules.length > 0 ? `\n${unlayeredRules.join("\n")}` : ""}`;
 }
 

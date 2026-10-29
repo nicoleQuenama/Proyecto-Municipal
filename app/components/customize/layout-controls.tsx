@@ -175,7 +175,7 @@ export function LayoutControls({
 
   if (isSection) {
     const currentPreset = quickPresetOf(classes);
-    const inGrid = isGridLayout(currentPreset);
+    const inGrid = classes.split(/\s+/).includes("grid") || isGridLayout(currentPreset);
     const gridConfig = parseResponsiveGridConfig(classes) ?? {
       desktopCols: 4,
       tabletCols: 2,
@@ -1097,7 +1097,7 @@ export function LayoutControls({
   }
 
   // Elemento hijo seleccionado (tarjeta, botón, texto, etc.)
-  const inGridSection = isGridLayout(quickPresetOf(sectionClasses));
+  const inGridSection = sectionClasses.split(/\s+/).includes("grid") || isGridLayout(quickPresetOf(sectionClasses));
   const sectionPreset = quickPresetOf(sectionClasses);
   const currentGap = gapOf(sectionClasses);
   const cell = cellOf(classes);
