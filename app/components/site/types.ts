@@ -374,6 +374,7 @@ export interface ProjectMediaAsset {
   createdAt: number;
   local?: boolean;
   tag?: string;
+  tags?: string[];
 }
 
 export type SiteAction =
@@ -460,4 +461,6 @@ export type SiteAction =
   | { type: "page/layout-toggles"; pageId: string; patch: { hideHeader?: boolean; hideFooter?: boolean } }
   | { type: "page/apply-template"; pageId: string; componentIds: string[]; replace?: boolean }
   | { type: "project-media/add"; asset: ProjectMediaAsset }
-  | { type: "project-media/remove"; id: string };
+  | { type: "project-media/remove"; id: string }
+  | { type: "project-media/replace"; oldSrc: string; newSrc: string; newAlt?: string }
+  | { type: "project-media/update-tags"; id: string; tag: string; tags: string[] };

@@ -33,6 +33,7 @@ import {
   slugify,
   uniqueSlug,
 } from "./rules";
+import { replaceMediaInSite } from "../media/media-usage";
 import { clearRule, saveVariable, setRuleProp, withoutScope } from "../styles/mutations";
 import {
   TITLE_SELECTION,
@@ -292,6 +293,16 @@ const HANDLERS: Handlers = {
   "project-media/remove": (state, action) => ({
     ...state,
     projectMedia: (state.projectMedia ?? []).filter((m) => m.id !== action.id),
+  }),
+
+  "project-media/replace": (state, action) =>
+    replaceMediaInSite(state, action.oldSrc, action.newSrc, action.newAlt),
+
+  "project-media/update-tags": (state, action) => ({
+    ...state,
+    projectMedia: (state.projectMedia ?? []).map((m) =>
+      m.id === action.id ? { ...m, tag: action.tag, tags: action.tags } : m,
+    ),
   }),
 
   "block/remove": (state, action) => removeBlocks(state, [action.id]),
