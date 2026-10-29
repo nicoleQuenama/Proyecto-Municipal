@@ -742,69 +742,37 @@ export function Inspector() {
   const scope = element ? element.id : SECTION_KEY;
 
   const headerActions = (
-    <>
-      <div ref={paletteRef} className="relative">
-        <button
-          type="button"
-          aria-label="Paleta de colores de la sección"
-          title="Desplegar paleta de colores de la sección"
-          onClick={() => setPaletteOpen(!paletteOpen)}
-          className={`flex h-7 items-center gap-1 rounded-md px-1.5 text-xs transition-colors border border-transparent ${
-            paletteOpen
-              ? "bg-accent/20 text-accent font-semibold"
-              : "text-ink-dim hover:bg-hover hover:text-ink hover:border-line"
-          }`}
-        >
-          <PaletteIcon />
-          <span className="hidden sm:inline text-[11px] font-medium">Colores</span>
-        </button>
+    <div ref={paletteRef} className="relative">
+      <button
+        type="button"
+        aria-label="Paleta de colores de la sección"
+        title="Desplegar paleta de colores de la sección"
+        onClick={() => setPaletteOpen(!paletteOpen)}
+        className={`flex h-6 w-6 items-center justify-center rounded-md text-xs transition-colors ${
+          paletteOpen
+            ? "bg-accent/20 text-accent font-semibold"
+            : "text-ink-dim hover:bg-hover hover:text-ink"
+        }`}
+      >
+        <PaletteIcon />
+      </button>
 
-        {paletteOpen && (
-          <div className="absolute right-0 top-8 z-50 w-72 rounded-xl border border-line bg-panel p-3 text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
-            <SectionColorPalette pageId={ownerPage.id} block={block} def={def} compact />
-          </div>
-        )}
-      </div>
-
-      {canEditCode && <ExportButton pageId={ownerPage.id} block={block} def={def} />}
-      {canEditCode && (
-        <button
-          type="button"
-          aria-label="Abrir el código en el editor"
-          title="Abrir el código en el editor (Ctrl+E)"
-          onClick={() => openFile()}
-          className="flex h-7 shrink-0 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
-        >
-          <CodeIcon />
-          <span>Código</span>
-        </button>
-      )}
-    </>
-  );
-
-  const titleNode = <span>{element ? elementLabel(element) : def.name}</span>;
-
-  const subtitleNode = (
-    <div className="flex items-center gap-1.5">
-      <span>{element ? `Elemento · ${def.name}` : "Sección"}</span>
-      {element && (
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "element/select", id: null })}
-          className="text-[10px] font-medium text-accent hover:underline lowercase"
-          title="Volver a seleccionar la sección para editar su disposición, columnas o gap"
-        >
-          (ver sección)
-        </button>
+      {paletteOpen && (
+        <div className="absolute right-0 top-8 z-50 w-72 rounded-xl border border-line bg-panel p-3 text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+          <SectionColorPalette pageId={ownerPage.id} block={block} def={def} compact />
+        </div>
       )}
     </div>
   );
 
   return (
     <DockablePanel
-      title={titleNode}
-      subtitle={subtitleNode}
+      title={element ? elementLabel(element) : def.name}
+      categoryLabel={element ? `Elemento · ${def.name}` : "Sección"}
+      onSelectSection={element ? () => dispatch({ type: "element/select", id: null }) : undefined}
       headerActions={headerActions}
+      onOpenCode={() => openFile()}
+      canEditCode={canEditCode}
       onClose={() => dispatch({ type: "block/select", id: TITLE_SELECTION })}
       footer={<RemoveButton page={ownerPage} />}
     >
