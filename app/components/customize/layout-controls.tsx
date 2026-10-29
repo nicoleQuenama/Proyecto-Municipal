@@ -79,6 +79,31 @@ interface LayoutControlsProps {
   componentId?: string;
   /** Indica si la sección o el elemento padre es un pie de página (footer) */
   isFooter?: boolean;
+  /** Indica si la sección o el elemento padre es una cabecera (header / navegación) */
+  isHeader?: boolean;
+  /** Modo activo de menú en header ("drop" | "right" | "left" | "full" | "none") */
+  activeMenuMode?: "drop" | "right" | "left" | "full" | "none";
+  /** Dónde se activa el menú plegable ("mobile-tablet" | "mobile-only" | "never") */
+  menuBreakpointChoice?: "mobile-tablet" | "mobile-only" | "never";
+  /** Selecciona el modo de menú en header */
+  onSelectHeaderMenuMode?: (mode: "drop" | "right" | "left" | "full" | "none") => void;
+  /** Cambia los breakpoints donde se activa el menú plegable */
+  onSetMenuBreakpoints?: (choice: "mobile-tablet" | "mobile-only" | "never") => void;
+  /** Alterna la previsualización del menú abierto/cerrado */
+  isMenuOpenPreview?: boolean;
+  onToggleMenuPreview?: () => void;
+  /** Agrega un nuevo enlace al header */
+  onAddHeaderLink?: () => void;
+  /** Alterna o prueba el buscador en cabecera */
+  hasSearchInHeader?: boolean;
+  onToggleSearchInHeader?: () => void;
+  /** Lista de enlaces del header con su estado de inclusión en el menú móvil */
+  headerLinks?: { id: string; label: string; inMenu: boolean }[];
+  /** Alterna si un enlace del header va dentro del menú móvil */
+  onToggleHeaderItemInMenu?: (elementId: string, inMenu: boolean) => void;
+  /** Si el elemento seleccionado está dentro del menú móvil */
+  isElementInHeaderMenu?: boolean;
+  selectedElementId?: string | null;
   /** Reorganiza los elementos del footer en columnas limpias */
   onOrganizeFooter?: (cols: 1 | 2 | 3 | 4) => void;
   /** Restablece el footer a la plantilla municipal de 3 columnas */
@@ -118,6 +143,20 @@ export function LayoutControls({
   category,
   componentId,
   isFooter,
+  isHeader,
+  activeMenuMode = "drop",
+  menuBreakpointChoice = "mobile-tablet",
+  onSelectHeaderMenuMode,
+  onSetMenuBreakpoints,
+  isMenuOpenPreview,
+  onToggleMenuPreview,
+  onAddHeaderLink,
+  hasSearchInHeader,
+  onToggleSearchInHeader,
+  headerLinks,
+  onToggleHeaderItemInMenu,
+  isElementInHeaderMenu,
+  selectedElementId,
   onOrganizeFooter,
   onResetMunicipalFooter,
   onMoveElementToFooterCol,
@@ -153,8 +192,191 @@ export function LayoutControls({
 
     return (
       <Collapsible title="Disposición & Auto-Layout">
+        {/* Estructura de Cabecera (Header & Menú Responsivo) */}
+        {isHeader && (
+          <div className="flex flex-col gap-2.5 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs mb-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-ink">Estructura de Cabecera & Menú Móvil</span>
+              <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">Navegación</span>
+            </div>
+            <p className="text-[11px] text-ink-dim leading-snug">
+              Configura cómo se despliega la navegación en tabletas y celulares: menú hamburguesa, panel lateral deslizante o enlaces visibles.
+            </p>
+
+            <div className="flex flex-col gap-1.5 pt-1">
+              <span className="text-[10px] font-semibold text-ink uppercase">Modo en tablet y móvil:</span>
+              <div className="grid grid-cols-2 gap-1 text-[11px]">
+                <button
+                  type="button"
+                  aria-pressed={activeMenuMode === "drop"}
+                  onClick={() => onSelectHeaderMenuMode?.("drop")}
+                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
+                    activeMenuMode === "drop"
+                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  }`}
+                  title="Al tocar el botón de menú, las opciones caen desplegadas bajo la barra"
+                >
+                  <span className="text-xs font-bold">≡</span>
+                  <span>Hamburguesa</span>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={activeMenuMode === "right"}
+                  onClick={() => onSelectHeaderMenuMode?.("right")}
+                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
+                    activeMenuMode === "right"
+                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  }`}
+                  title="Panel deslizante lateral desde la derecha (Drawer)"
+                >
+                  <span className="text-xs font-bold">→|</span>
+                  <span>Lateral Derecho</span>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={activeMenuMode === "left"}
+                  onClick={() => onSelectHeaderMenuMode?.("left")}
+                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
+                    activeMenuMode === "left"
+                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  }`}
+                  title="Panel deslizante lateral desde la izquierda (Drawer)"
+                >
+                  <span className="text-xs font-bold">|←</span>
+                  <span>Lateral Izquierdo</span>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={activeMenuMode === "full"}
+                  onClick={() => onSelectHeaderMenuMode?.("full")}
+                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
+                    activeMenuMode === "full"
+                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  }`}
+                  title="Cubre la pantalla completa con un menú moderno e inmersivo"
+                >
+                  <span className="text-xs font-bold">[  ]</span>
+                  <span>Pantalla Completa</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                aria-pressed={activeMenuMode === "none"}
+                onClick={() => onSelectHeaderMenuMode?.("none")}
+                className={`mt-0.5 h-7 rounded border px-2 text-[11px] font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                  activeMenuMode === "none"
+                    ? "border-accent bg-accent/20 text-accent font-semibold"
+                    : "border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
+                }`}
+                title="Muestra los enlaces visibles directamente sin plegar en menú"
+              >
+                Enlaces directos visibles (Sin botón de menú)
+              </button>
+            </div>
+
+            {activeMenuMode !== "none" && (
+              <div className="flex flex-col gap-1 pt-1.5 border-t border-accent/20">
+                <span className="text-[10px] font-semibold text-ink-dim uppercase">Activar menú en:</span>
+                <div className="grid grid-cols-2 gap-1 text-[11px]">
+                  <button
+                    type="button"
+                    aria-pressed={menuBreakpointChoice === "mobile-tablet"}
+                    onClick={() => onSetMenuBreakpoints?.("mobile-tablet")}
+                    className={`h-7 rounded border font-medium transition-colors ${
+                      menuBreakpointChoice === "mobile-tablet"
+                        ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                        : "border-line bg-canvas text-ink hover:bg-hover"
+                    }`}
+                    title="Se pliega en menú hamburguesa o lateral en móvil y tablet"
+                  >
+                    Móvil y Tablet
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={menuBreakpointChoice === "mobile-only"}
+                    onClick={() => onSetMenuBreakpoints?.("mobile-only")}
+                    className={`h-7 rounded border font-medium transition-colors ${
+                      menuBreakpointChoice === "mobile-only"
+                        ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                        : "border-line bg-canvas text-ink hover:bg-hover"
+                    }`}
+                    title="En tablet se ve la barra completa, solo se pliega en móvil"
+                  >
+                    Solo en Móvil
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5 pt-1.5 border-t border-accent/20">
+              {onToggleMenuPreview && (
+                <button
+                  type="button"
+                  onClick={onToggleMenuPreview}
+                  className="flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 transition-all"
+                >
+                  {isMenuOpenPreview ? "Cerrar previsualización de menú" : "Probar menú desplegado en el lienzo"}
+                </button>
+              )}
+              <div className="flex gap-1.5">
+                {onAddHeaderLink && (
+                  <button
+                    type="button"
+                    onClick={onAddHeaderLink}
+                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95"
+                  >
+                    <span>+</span> Añadir enlace
+                  </button>
+                )}
+                {onToggleSearchInHeader && (
+                  <button
+                    type="button"
+                    onClick={onToggleSearchInHeader}
+                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95"
+                  >
+                    {hasSearchInHeader ? "Probar buscador" : "+ Añadir buscador"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {headerLinks && headerLinks.length > 0 && activeMenuMode !== "none" && (
+              <div className="flex flex-col gap-1 pt-1.5 border-t border-accent/20">
+                <span className="text-[10px] font-semibold text-ink-dim uppercase">
+                  Opciones en el menú ({headerLinks.filter((l) => l.inMenu).length}/{headerLinks.length}):
+                </span>
+                <div className="flex flex-col gap-1 max-h-36 overflow-y-auto pr-0.5">
+                  {headerLinks.map((linkItem) => (
+                    <label
+                      key={linkItem.id}
+                      className="flex items-center justify-between gap-1.5 rounded bg-canvas px-2 py-1 text-[11px] text-ink border border-line cursor-pointer hover:bg-hover"
+                    >
+                      <span className="truncate">{linkItem.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={linkItem.inMenu}
+                        onChange={(e) => onToggleHeaderItemInMenu?.(linkItem.id, e.target.checked)}
+                        className="rounded accent-accent cursor-pointer"
+                        title={linkItem.inMenu ? "Dentro del menú desplegable" : "Fijo en la barra"}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Estructura del Pie de Página (Footer) */}
-        {isFooter && (
+        {isFooter && !isHeader && (
           <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs mb-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-ink">Estructura del Pie de Página</span>
@@ -882,8 +1104,83 @@ export function LayoutControls({
 
   return (
     <Collapsible title="Disposición & Celda">
+      {/* Controles de elemento dentro de la Cabecera (Header) */}
+      {isHeader && (
+        <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs mb-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink">Cabecera: Navegación & Alineación</span>
+            {onSelectSection && (
+              <button
+                type="button"
+                onClick={onSelectSection}
+                className="text-[10px] text-accent hover:underline font-medium"
+              >
+                Ver toda la cabecera ↗
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-ink-dim leading-snug">
+            Ajusta la posición y visibilidad de este enlace o elemento de la cabecera.
+          </p>
+
+          {/* Alineación del texto / enlace */}
+          {onAlignElement && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-medium text-ink-dim">Alineación en la barra:</span>
+              <div className="grid grid-cols-3 gap-1 text-[10px]">
+                {[
+                  { val: "left", label: "Izquierda" },
+                  { val: "center", label: "Centro" },
+                  { val: "right", label: "Derecha" },
+                ].map((al) => (
+                  <button
+                    key={al.val}
+                    type="button"
+                    aria-pressed={currentAlign === al.val}
+                    onClick={() => onAlignElement(al.val as any)}
+                    className={`h-6 rounded border font-medium transition-colors ${
+                      currentAlign === al.val
+                        ? "border-accent bg-accent text-white font-semibold"
+                        : "border-line bg-canvas text-ink hover:bg-hover"
+                    }`}
+                  >
+                    {al.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Alternar si va dentro del menú desplegable móvil */}
+          {onToggleHeaderItemInMenu && selectedElementId && (
+            <label className="flex items-center justify-between gap-1.5 rounded bg-canvas p-1.5 text-[11px] text-ink border border-line cursor-pointer hover:bg-hover">
+              <span>Incluir en menú desplegable móvil</span>
+              <input
+                type="checkbox"
+                checked={isElementInHeaderMenu}
+                onChange={(e) => onToggleHeaderItemInMenu(selectedElementId, e.target.checked)}
+                className="rounded accent-accent cursor-pointer"
+              />
+            </label>
+          )}
+
+          {/* Acciones rápidas */}
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-line/60">
+            {onAddHeaderLink && (
+              <button
+                type="button"
+                onClick={onAddHeaderLink}
+                className="flex items-center justify-center gap-1 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent/90 active:scale-95"
+              >
+                + Añadir otro enlace
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Controles de elemento dentro del Pie de Página (Footer) */}
-      {isFooter && (
+      {isFooter && !isHeader && (
         <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs mb-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-ink">Pie de Página: Columna & Alineación</span>

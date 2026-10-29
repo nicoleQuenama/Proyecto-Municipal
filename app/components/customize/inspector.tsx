@@ -29,9 +29,14 @@ import {
   createDefaultMunicipalFooter,
   moveElementToFooterColumn,
   addLinkToFooterColumn,
+  addLinkToHeader,
+  addSearchButtonToHeader,
   moveElementOrderInComponent,
 } from "../site/container-card-rules";
 import { getBlockSlot } from "../site/rules";
+import { useFlag } from "../responsive/flag-store";
+import { useViewport } from "../viewport/viewport-context";
+import { defaultMenu, toggleItem } from "../responsive/menu-model";
 import { GroupControls } from "./group-controls";
 import { LayoutControls } from "./layout-controls";
 import { ControlControls } from "../forms/control-controls";
@@ -181,12 +186,142 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     dispatch({ type: "element/select", id: newButtonId });
   };
 
+  const isHeader =
+    currentSlot === "header" ||
+    (currentSlot !== "footer" &&
+      (def.id.toLowerCase().includes("navbar") ||
+       def.id.toLowerCase().includes("header") ||
+       def.name.toLowerCase().includes("cabecera") ||
+       def.name.toLowerCase().includes("navega") ||
+       def.name.toLowerCase().includes("barra") ||
+       (def.category === "navigation" &&
+        !def.id.toLowerCase().includes("footer") &&
+        !def.name.toLowerCase().includes("pie"))));
+
   const isFooter =
-    currentSlot === "footer" ||
-    def.category === "navigation" ||
-    def.id.toLowerCase().includes("footer") ||
-    def.name.toLowerCase().includes("footer") ||
-    def.name.toLowerCase().includes("pie");
+    !isHeader &&
+    (currentSlot === "footer" ||
+     def.id.toLowerCase().includes("footer") ||
+     def.name.toLowerCase().includes("footer") ||
+     def.name.toLowerCase().includes("pie") ||
+     (def.category === "navigation" &&
+      (def.id.toLowerCase().includes("footer") || def.name.toLowerCase().includes("pie"))));
+
+  const [isMenuOpenPreview, setIsMenuOpenPreview] = useFlag(`menu:${block.id}`);
+  let safeViewport: any = null;
+  try {
+    safeViewport = useViewport();
+  } catch {
+    safeViewport = null;
+  }
+
+  const currentMenu = block.menu ?? defaultMenu(def);
+  const isMenuDisabled = block.adapt?.mobile === "scale" || block.adapt?.mobile === "stack";
+  const activeMenuMode: "drop" | "right" | "left" | "full" | "none" = isMenuDisabled
+    ? "none"
+    : (currentMenu.panel ?? "drop");
+
+  const menuBreakpointChoice: "mobile-tablet" | "mobile-only" | "never" =
+    isMenuDisabled
+      ? "never"
+      : block.adapt?.tablet === "menu"
+        ? "mobile-tablet"
+        : "mobile-only";
+
+  const handleSelectHeaderMenuMode = (mode: "drop" | "right" | "left" | "full" | "none") => {
+    if (!canEditContent) return;
+    if (mode === "none") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "scale" });
+    } else {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      if (menuBreakpointChoice === "mobile-tablet" || block.adapt?.tablet === "menu") {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+      }
+      dispatch({
+        type: "responsive/menu",
+        pageId,
+        blockId: block.id,
+        patch: { panel: mode, icon: "menu" },
+      });
+    }
+  };
+
+  const handleSetMenuBreakpoints = (choice: "mobile-tablet" | "mobile-only" | "never") => {
+    if (!canEditContent) return;
+    if (choice === "mobile-tablet") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+    } else if (choice === "mobile-only") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: null });
+    } else {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "scale" });
+    }
+  };
+
+  const handleToggleMenuPreview = () => {
+    if (safeViewport && safeViewport.device === "desktop") {
+      safeViewport.setDevice("mobile");
+    }
+    if (block.adapt?.mobile !== "menu") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    }
+    setIsMenuOpenPreview(!isMenuOpenPreview);
+  };
+
+  const handleAddHeaderLink = () => {
+    if (!canEditContent) return;
+    const { component: updated, newLinkId } = addLinkToHeader(def);
+    dispatch({ type: "component/save", component: updated });
+    const menu = block.menu ?? defaultMenu(updated);
+    if (!menu.itemIds.includes(newLinkId)) {
+      dispatch({
+        type: "responsive/menu",
+        pageId,
+        blockId: block.id,
+        patch: { itemIds: [...menu.itemIds, newLinkId] },
+      });
+    }
+    dispatch({ type: "element/select", id: newLinkId });
+  };
+
+  const hasSearchInHeader = def.elements.some(
+    (e) => e.control?.name === "search-trigger" || e.text.toLowerCase().includes("buscar"),
+  );
+
+  const handleToggleSearchInHeader = () => {
+    if (!canEditContent) return;
+    if (hasSearchInHeader) {
+      window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query: "" } }));
+    } else {
+      const { component: updated, searchId } = addSearchButtonToHeader(def);
+      dispatch({ type: "component/save", component: updated });
+      dispatch({ type: "element/select", id: searchId });
+    }
+  };
+
+  const headerLinks = def.elements
+    .filter((e) => !e.hidden && (e.role === "link" || (e.kind === "text" && e.role !== "heading") || e.kind === "icon"))
+    .map((e) => ({
+      id: e.id,
+      label: e.text?.trim() || (e.kind === "icon" ? `Ícono (${e.icon ?? "estrella"})` : "Enlace"),
+      inMenu: currentMenu.itemIds.includes(e.id),
+    }));
+
+  const handleToggleHeaderItemInMenu = (elementId: string, inMenu: boolean) => {
+    if (!canEditContent) return;
+    const updatedItemIds = toggleItem(currentMenu, elementId, inMenu);
+    dispatch({
+      type: "responsive/menu",
+      pageId,
+      blockId: block.id,
+      patch: { itemIds: updatedItemIds },
+    });
+  };
+
+  const isElementInHeaderMenu = element ? currentMenu.itemIds.includes(element.id) : false;
 
   const footerColumns = def.elements.filter((e) => !e.parentId && e.role === "container");
   const totalFooterCols = footerColumns.length > 0 ? footerColumns.length : 3;
@@ -493,6 +628,20 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           componentId={def.id}
           onAddButton={canEditContent ? handleAddButton : undefined}
           isFooter={isFooter}
+          isHeader={isHeader}
+          activeMenuMode={activeMenuMode}
+          menuBreakpointChoice={menuBreakpointChoice}
+          onSelectHeaderMenuMode={canEditContent ? handleSelectHeaderMenuMode : undefined}
+          onSetMenuBreakpoints={canEditContent ? handleSetMenuBreakpoints : undefined}
+          isMenuOpenPreview={isMenuOpenPreview}
+          onToggleMenuPreview={handleToggleMenuPreview}
+          onAddHeaderLink={canEditContent ? handleAddHeaderLink : undefined}
+          hasSearchInHeader={hasSearchInHeader}
+          onToggleSearchInHeader={canEditContent ? handleToggleSearchInHeader : undefined}
+          headerLinks={headerLinks}
+          onToggleHeaderItemInMenu={canEditContent ? handleToggleHeaderItemInMenu : undefined}
+          isElementInHeaderMenu={isElementInHeaderMenu}
+          selectedElementId={element?.id}
           onOrganizeFooter={canEditContent ? handleOrganizeFooter : undefined}
           onResetMunicipalFooter={canEditContent ? handleResetMunicipalFooter : undefined}
           onMoveElementToFooterCol={canEditContent ? handleMoveElementToFooterCol : undefined}

@@ -567,3 +567,79 @@ export function addLinkToFooterColumn(
   };
 }
 
+/** Añade un nuevo enlace de navegación a la cabecera (header/navbar). */
+export function addLinkToHeader(
+  def: ComponentDef,
+  label = "Nuevo enlace",
+): { component: ComponentDef; newLinkId: string } {
+  const newLinkId = crypto.randomUUID();
+  const existingLinks = def.elements.filter((e) => e.role === "link" || (e.kind === "text" && e.role !== "heading"));
+
+  let newX = 380;
+  let newY = 21;
+  if (existingLinks.length > 0) {
+    const lastLink = existingLinks[existingLinks.length - 1];
+    newX = lastLink.x + lastLink.width + 16;
+    newY = lastLink.y;
+  }
+
+  const newLink = newElement("text", newLinkId, {
+    x: newX,
+    y: newY,
+    width: 80,
+    height: 22,
+    text: label,
+    fontSize: 14,
+    color: "#cbd5e1",
+    role: "link",
+    align: "center",
+  });
+
+  return {
+    component: {
+      ...def,
+      elements: [...def.elements, newLink],
+    },
+    newLinkId,
+  };
+}
+
+/** Agrega un botón de buscador ciudadano a la cabecera si no lo tiene. */
+export function addSearchButtonToHeader(
+  def: ComponentDef,
+): { component: ComponentDef; searchId: string } {
+  const searchId = crypto.randomUUID();
+  const existingButtons = def.elements.filter((e) => e.role === "button");
+  let newX = 720;
+  let newY = 14;
+  if (existingButtons.length > 0) {
+    const firstButton = existingButtons[0];
+    newX = Math.max(200, firstButton.x - 150);
+    newY = firstButton.y;
+  }
+
+  const searchBtn = newElement("rect", searchId, {
+    role: "button",
+    x: newX,
+    y: newY,
+    width: 140,
+    height: 36,
+    fill: "#1e293b",
+    radius: 8,
+    text: "Buscar trámites...",
+    color: "#94a3b8",
+    fontSize: 12,
+    bold: false,
+    align: "center",
+    control: { kind: "button", name: "search-trigger" },
+  });
+
+  return {
+    component: {
+      ...def,
+      elements: [...def.elements, searchBtn],
+    },
+    searchId,
+  };
+}
+

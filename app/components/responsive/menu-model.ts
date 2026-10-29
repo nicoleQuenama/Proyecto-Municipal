@@ -17,7 +17,9 @@ const fitsInMenu = (element: CanvasElement): boolean => !element.hidden && (elem
 
 /** El menú de partida: los textos con enlace van dentro; el resto (marca, logo) se queda visible. */
 export function defaultMenu(def: ComponentDef): MenuConfig {
-  const linked = def.elements.filter((element) => fitsInMenu(element) && def.links[element.id] !== undefined);
+  const linked = def.elements.filter(
+    (element) => fitsInMenu(element) && (def.links?.[element.id] !== undefined || element.role === "link"),
+  );
   return {
     itemIds: linked.sort(readingOrder).map((element) => element.id),
     panel: "right",
