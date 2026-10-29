@@ -130,13 +130,13 @@ const PAGE_TEMPLATES: PageTemplateItem[] = [
     description:
       "Portal vecinal de alto impacto con barra de navegación, hero banner, métricas de gestión, catálogo responsivo de 4 columnas, bento grid de servicios, testimonios y pie de página.",
     sections: [
-      { id: "navbar", name: "Barra de navegación" },
-      { id: "hero-banner", name: "Banner Principal" },
+      { id: "navbar", name: "Barra de navegación (Header)" },
+      { id: "hero-search", name: "Banner Hero con Buscador y Foto" },
       { id: "stats-metrics", name: "Métricas de Gestión" },
       { id: "grid-cards", name: "Catálogo de Trámites" },
       { id: "bento-grid", name: "Bento de Servicios" },
       { id: "reviews", name: "Testimonios" },
-      { id: "footer", name: "Pie de página" },
+      { id: "footer", name: "Pie de página (Footer)" },
     ],
   },
   {
@@ -200,6 +200,7 @@ export function TemplatesTab() {
   const [query, setQuery] = useState("");
   const [addedSectionId, setAddedSectionId] = useState<string | null>(null);
   const [createdPageId, setCreatedPageId] = useState<string | null>(null);
+  const [appliedPageId, setAppliedPageId] = useState<string | null>(null);
 
   const site = useSite();
   const page = useCurrentPage();
@@ -243,31 +244,33 @@ export function TemplatesTab() {
     setTimeout(() => setAddedSectionId(null), 1800);
   };
 
+  const handleApplyToCurrentPage = (tmpl: PageTemplateItem) => {
+    if (!canEditContent) return;
+    const componentIds = tmpl.sections.map((s) => s.id);
+    dispatch({
+      type: "page/apply-template",
+      pageId: page.id,
+      componentIds,
+      replace: true,
+    });
+    setAppliedPageId(tmpl.id);
+    setTimeout(() => setAppliedPageId(null), 2500);
+  };
+
   const handleCreatePage = (tmpl: PageTemplateItem) => {
     if (!canEditContent) return;
     const pageName = getUniquePageName(site.pages, tmpl.name);
     const newPageId = crypto.randomUUID();
+    const componentIds = tmpl.sections.map((s) => s.id);
 
-    // Asegurar que todos los componentes requeridos existan en el estado
-    for (const sec of tmpl.sections) {
-      if (!site.components.some((c) => c.id === sec.id)) {
-        const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === sec.id);
-        if (example) {
-          dispatch({ type: "component/save", component: example });
-        }
-      }
-    }
-
-    // Crear página
     dispatch({ type: "page/create", id: newPageId, name: pageName });
+    dispatch({
+      type: "page/apply-template",
+      pageId: newPageId,
+      componentIds,
+      replace: true,
+    });
 
-    // Agregar sus bloques en orden
-    for (const sec of tmpl.sections) {
-      dispatch({ type: "block/add", id: crypto.randomUUID(), componentId: sec.id, pageId: newPageId });
-    }
-
-    // Seleccionar y enfocar la nueva página creada
-    dispatch({ type: "page/select", id: newPageId });
     setCreatedPageId(tmpl.id);
     setTimeout(() => setCreatedPageId(null), 2500);
   };
@@ -396,18 +399,27 @@ export function TemplatesTab() {
                     ))}
                   </div>
 
-                  <div className="mt-1 flex items-center justify-end border-t border-line/60 pt-2">
+                  <div className="mt-1 flex flex-wrap items-center justify-end gap-2 border-t border-line/60 pt-2">
                     <button
                       type="button"
                       disabled={!canEditContent}
-                      onClick={() => handleCreatePage(tmpl)}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-medium transition-all ${
-                        isCreated
+                      onClick={() => handleApplyToCurrentPage(tmpl)}
+                      title={`Reemplazar el contenido de «${page.name}» con esta plantilla completa`}
+                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                        appliedPageId === tmpl.id
                           ? "bg-emerald-600 text-white"
                           : "bg-accent text-white hover:bg-accent/90 active:scale-95 disabled:opacity-50"
                       }`}
                     >
-                      {isCreated ? "Página creada" : "+ Crear esta página"}
+                      {appliedPageId === tmpl.id ? "Plantilla aplicada" : `Aplicar a ${page.name}`}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canEditContent}
+                      onClick={() => handleCreatePage(tmpl)}
+                      className="inline-flex items-center gap-1 rounded-md border border-line bg-panel px-2.5 py-1.5 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover active:scale-95 disabled:opacity-50"
+                    >
+                      {isCreated ? "Página creada" : "+ Nueva página"}
                     </button>
                   </div>
                 </div>

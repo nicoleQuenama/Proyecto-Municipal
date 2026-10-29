@@ -51,7 +51,13 @@ const BASE_STYLES: Record<ElementKind, (element: CanvasElement) => string[]> = {
 /** El elemento con su posición medida desde su contenedor, si lo tiene. */
 function inside(element: CanvasElement, all: CanvasElement[]): CanvasElement {
   const parent = element.parentId === undefined ? undefined : all.find((e) => e.id === element.parentId);
-  return parent ? { ...element, x: element.x - parent.x, y: element.y - parent.y } : element;
+  if (!parent) return element;
+  // Si las coordenadas ya fueron especificadas de forma relativa al contenedor padre, no restar las coordenadas globales del padre.
+  const isAlreadyLocalX = element.x < parent.x;
+  const isAlreadyLocalY = element.y < parent.y;
+  const x = isAlreadyLocalX ? element.x : element.x - parent.x;
+  const y = isAlreadyLocalY ? element.y : element.y - parent.y;
+  return { ...element, x: Math.max(0, x), y: Math.max(0, y) };
 }
 
 /** Dónde va y cuánto mide un elemento. En la capa base, para que `width`, `height`, `position`… propios lo reemplacen. */
@@ -190,6 +196,17 @@ export function elementBaseCss(
             "min-width: 0",
             "box-sizing: border-box",
           ]),
+          ...(def.id.toLowerCase().includes("bento") || def.name.toLowerCase().includes("bento")
+            ? [
+                rule(`${section} > [data-el]:first-child`, [
+                  device === "mobile" ? "grid-column: span 1" : "grid-column: span 2",
+                  device === "mobile" ? "grid-row: span 1" : "grid-row: span 2",
+                ]),
+                rule(`${section} > [data-el]:nth-child(2)`, [
+                  device === "mobile" ? "grid-column: span 1" : "grid-column: span 2",
+                ]),
+              ]
+            : []),
         ]
       : []),
   ];

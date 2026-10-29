@@ -150,6 +150,7 @@ export type ElementOverride = Partial<
     | "hiddenOn"
     | "removed"
     | "alt"
+    | "src"
   > & {
     radius: SizeValue;
     fontSize: SizeValue;
@@ -358,6 +359,21 @@ export interface SiteState extends StyleState {
   functions: SharedFunction[];
   /** APIs HTTP del proyecto; sus claves se arrastran a elementos y secciones. */
   sources: DataSource[];
+  /** Archivos multimedia del proyecto (imágenes y videos) al estilo Canva. */
+  projectMedia?: ProjectMediaAsset[];
+}
+
+export interface ProjectMediaAsset {
+  id: string;
+  name: string;
+  src: string;
+  kind: "image" | "video";
+  size?: number;
+  width?: number;
+  height?: number;
+  createdAt: number;
+  local?: boolean;
+  tag?: string;
 }
 
 export type SiteAction =
@@ -441,4 +457,7 @@ export type SiteAction =
   | { type: "block/slot"; pageId: string; blockId: string; slot: "header" | "body" | "footer" }
   | { type: "block/scope"; pageId: string; blockId: string; scope: "page" | "global" }
   | { type: "block/placement-mode"; pageId: string; blockId: string; mode: "flow" | "overlay" }
-  | { type: "page/layout-toggles"; pageId: string; patch: { hideHeader?: boolean; hideFooter?: boolean } };
+  | { type: "page/layout-toggles"; pageId: string; patch: { hideHeader?: boolean; hideFooter?: boolean } }
+  | { type: "page/apply-template"; pageId: string; componentIds: string[]; replace?: boolean }
+  | { type: "project-media/add"; asset: ProjectMediaAsset }
+  | { type: "project-media/remove"; id: string };

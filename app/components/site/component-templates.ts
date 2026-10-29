@@ -224,11 +224,10 @@ export const TEMPLATES: Template[] = [
         { title: "Atención Vecinal", desc: "Agenda citas y consulta el estado de tus solicitudes.", action: "Consultar cita →", color: "#8b5cf6" },
         { title: "Seguridad y Avisos", desc: "Reportes comunitarios y asistencia vecinal 24/7.", action: "Ver números →", color: "#f59e0b" },
       ];
-      return items.flatMap((item, idx) => {
+      return items.flatMap((item) => {
         const cardId = id();
-        const x = idx * 224;
         return [
-          newElement("rect", cardId, { role: "container", x, y: 0, width: 216, height: 210, fill: "#ffffff", radius: 16 }),
+          newElement("rect", cardId, { role: "container", x: 0, y: 0, width: 216, height: 210, fill: "#ffffff", radius: 16 }),
           newElement("rect", id(), { parentId: cardId, x: 16, y: 16, width: 40, height: 40, fill: item.color, radius: 10 }),
           newElement("text", id(), { parentId: cardId, x: 16, y: 68, width: 184, height: 24, text: item.title, fontSize: 16, bold: true, role: "heading", color: "#0f172a" }),
           newElement("text", id(), { parentId: cardId, x: 16, y: 96, width: 184, height: 60, text: item.desc, fontSize: 12, color: "#64748b" }),
@@ -276,14 +275,14 @@ export const TEMPLATES: Template[] = [
       const col3 = id();
       return [
         // Columna 1: Identidad y Servicios Digitales
-        newElement("rect", col1, { role: "container", x: 32, y: 24, width: 300, height: 200, fill: "transparent", radius: 0 }),
+        newElement("rect", col1, { role: "container", x: 0, y: 0, width: 300, height: 210, fill: "transparent", radius: 0 }),
         newElement("text", id(), { parentId: col1, x: 0, y: 0, width: 290, height: 32, text: "Portal Municipal", fontSize: 22, bold: true, color: "#ffffff", role: "heading" }),
         newElement("text", id(), { parentId: col1, x: 0, y: 40, width: 290, height: 50, text: "Atención ciudadana, participación y servicios comunales abiertos para todos los vecinos.", fontSize: 13, color: "#94a3b8" }),
         newElement("text", id(), { parentId: col1, x: 0, y: 98, width: 290, height: 24, text: "Horario: Lun a Vie 08:30 - 17:30 hrs", fontSize: 12, color: "#64748b" }),
         newElement("text", id(), { parentId: col1, x: 0, y: 132, width: 290, height: 36, text: "© 2026 Ilustre Municipalidad. Todos los derechos reservados.", fontSize: 11, color: "#475569" }),
 
         // Columna 2: Trámites y Enlaces Frecuentes
-        newElement("rect", col2, { role: "container", x: 364, y: 24, width: 280, height: 200, fill: "transparent", radius: 0 }),
+        newElement("rect", col2, { role: "container", x: 0, y: 0, width: 280, height: 210, fill: "transparent", radius: 0 }),
         newElement("text", id(), { parentId: col2, x: 0, y: 0, width: 270, height: 28, text: "Trámites en Línea", fontSize: 15, bold: true, color: "#38bdf8", role: "heading" }),
         newElement("text", id(), { parentId: col2, x: 0, y: 36, width: 270, height: 24, text: "• Ventanilla Única Digital", fontSize: 13, color: "#cbd5e1", role: "link" }),
         newElement("text", id(), { parentId: col2, x: 0, y: 66, width: 270, height: 24, text: "• Pago de Patentes y Permisos", fontSize: 13, color: "#cbd5e1", role: "link" }),
@@ -291,7 +290,7 @@ export const TEMPLATES: Template[] = [
         newElement("text", id(), { parentId: col2, x: 0, y: 126, width: 270, height: 24, text: "• Subsidios y Becas 2026", fontSize: 13, color: "#cbd5e1", role: "link" }),
 
         // Columna 3: Contacto y Emergencias Comunal
-        newElement("rect", col3, { role: "container", x: 676, y: 24, width: 280, height: 200, fill: "transparent", radius: 0 }),
+        newElement("rect", col3, { role: "container", x: 0, y: 0, width: 280, height: 210, fill: "transparent", radius: 0 }),
         newElement("text", id(), { parentId: col3, x: 0, y: 0, width: 270, height: 28, text: "Contacto y Emergencias", fontSize: 15, bold: true, color: "#38bdf8", role: "heading" }),
         newElement("text", id(), { parentId: col3, x: 0, y: 36, width: 270, height: 24, text: "Emergencias: 1404 (24/7)", fontSize: 13, bold: true, color: "#f87171" }),
         newElement("text", id(), { parentId: col3, x: 0, y: 66, width: 270, height: 24, text: "Mesa Central: (600) 123-4567", fontSize: 13, color: "#cbd5e1" }),
@@ -346,7 +345,7 @@ export const TEMPLATES: Template[] = [
       const card4 = id();
       return [
         // Card 1 (2 cols x 2 rows)
-        newElement("rect", card1, { role: "container", width: 460, height: 336, fill: "#0f172a", radius: 20 }),
+        newElement("rect", card1, { role: "container", x: 0, y: 0, width: 460, height: 336, fill: "#0f172a", radius: 20 }),
         newElement("rect", id(), { parentId: card1, x: 24, y: 24, width: 120, height: 24, fill: ACCENT, radius: 6 }),
         newElement("text", id(), { parentId: card1, x: 28, y: 28, width: 112, height: 16, text: "DESTACADO", fontSize: 11, bold: true, color: "#ffffff", align: "center" }),
         newElement("text", id(), { parentId: card1, x: 24, y: 68, width: 410, height: 60, text: "Postulación a Subsidios y Becas Comunales 2026", fontSize: 22, bold: true, color: "#ffffff", role: "heading" }),
@@ -354,21 +353,21 @@ export const TEMPLATES: Template[] = [
         newElement("rect", id(), { parentId: card1, role: "button", x: 24, y: 260, width: 170, height: 42, fill: ACCENT, radius: 8, text: "Postular ahora →", color: "#ffffff", bold: true, align: "center" }),
 
         // Card 2 (2 cols x 1 row)
-        newElement("rect", card2, { role: "container", width: 460, height: 160, fill: "#ffffff", radius: 20 }),
+        newElement("rect", card2, { role: "container", x: 0, y: 0, width: 460, height: 160, fill: "#ffffff", radius: 20 }),
         newElement("rect", id(), { parentId: card2, x: 20, y: 20, width: 36, height: 36, fill: "#10b981", radius: 8 }),
         newElement("text", id(), { parentId: card2, x: 68, y: 24, width: 370, height: 26, text: "Farmacia y Salud Popular", fontSize: 17, bold: true, role: "heading", color: "#0f172a" }),
         newElement("text", id(), { parentId: card2, x: 20, y: 68, width: 420, height: 44, text: "Medicamentos e insumos a precio de costo para todos los vecinos registrados.", fontSize: 13, color: "#64748b" }),
         newElement("text", id(), { parentId: card2, x: 20, y: 120, width: 200, height: 22, text: "Consultar disponibilidad →", fontSize: 12, bold: true, color: "#10b981", role: "link" }),
 
         // Card 3 (1 col x 1 row)
-        newElement("rect", card3, { role: "container", width: 220, height: 160, fill: "#ffffff", radius: 20 }),
+        newElement("rect", card3, { role: "container", x: 0, y: 0, width: 220, height: 160, fill: "#ffffff", radius: 20 }),
         newElement("rect", id(), { parentId: card3, x: 16, y: 16, width: 32, height: 32, fill: "#ef4444", radius: 8 }),
         newElement("text", id(), { parentId: card3, x: 16, y: 56, width: 188, height: 24, text: "Alerta Vecinal 24/7", fontSize: 15, bold: true, role: "heading", color: "#0f172a" }),
         newElement("text", id(), { parentId: card3, x: 16, y: 84, width: 188, height: 40, text: "Central telefónica de emergencia comunal.", fontSize: 12, color: "#64748b" }),
         newElement("text", id(), { parentId: card3, x: 16, y: 128, width: 188, height: 20, text: "Llamar al 1404 →", fontSize: 12, bold: true, color: "#ef4444", role: "link" }),
 
         // Card 4 (1 col x 1 row)
-        newElement("rect", card4, { role: "container", width: 220, height: 160, fill: "#ffffff", radius: 20 }),
+        newElement("rect", card4, { role: "container", x: 0, y: 0, width: 220, height: 160, fill: "#ffffff", radius: 20 }),
         newElement("rect", id(), { parentId: card4, x: 16, y: 16, width: 32, height: 32, fill: "#8b5cf6", radius: 8 }),
         newElement("text", id(), { parentId: card4, x: 16, y: 56, width: 188, height: 24, text: "Talleres y Cultura", fontSize: 15, bold: true, role: "heading", color: "#0f172a" }),
         newElement("text", id(), { parentId: card4, x: 16, y: 84, width: 188, height: 40, text: "Actividades deportivas y artísticas gratuitas.", fontSize: 12, color: "#64748b" }),
@@ -394,11 +393,12 @@ export const TEMPLATES: Template[] = [
         { num: "24/7", label: "Plataforma Activa" },
         { num: "15 min", label: "Tiempo de Respuesta" },
       ];
-      return stats.flatMap((st, idx) => {
-        const x = idx * 230;
+      return stats.flatMap((st) => {
+        const cardId = id();
         return [
-          newElement("text", id(), { x, y: 16, width: 210, height: 40, text: st.num, fontSize: 32, bold: true, color: ACCENT, align: "center", role: "heading" }),
-          newElement("text", id(), { x, y: 62, width: 210, height: 24, text: st.label, fontSize: 14, color: "#475569", align: "center" }),
+          newElement("rect", cardId, { role: "container", x: 0, y: 0, width: 220, height: 110, fill: "#ffffff", radius: 12 }),
+          newElement("text", id(), { parentId: cardId, x: 0, y: 16, width: 220, height: 40, text: st.num, fontSize: 30, bold: true, color: ACCENT, align: "center", role: "heading" }),
+          newElement("text", id(), { parentId: cardId, x: 0, y: 60, width: 220, height: 24, text: st.label, fontSize: 13, color: "#475569", align: "center" }),
         ];
       });
     },
@@ -420,7 +420,7 @@ export const TEMPLATES: Template[] = [
       const searchBox = id();
       return [
         // Columna izquierda: Información y Buscador (7 columnas)
-        newElement("rect", colLeft, { role: "container", x: 32, y: 24, width: 560, height: 330, fill: "transparent", radius: 0 }),
+        newElement("rect", colLeft, { role: "container", x: 0, y: 0, width: 560, height: 330, fill: "transparent", radius: 0 }),
         newElement("rect", id(), { parentId: colLeft, x: 0, y: 0, width: 160, height: 26, fill: "#1e293b", radius: 14 }),
         newElement("text", id(), { parentId: colLeft, x: 0, y: 5, width: 160, height: 16, text: "ATENCIÓN VECINAL 24/7", fontSize: 10, bold: true, color: ACCENT, align: "center" }),
         newElement("text", id(), { parentId: colLeft, x: 0, y: 38, width: 540, height: 76, text: "Encuentra trámites, pagos y servicios comunales", fontSize: 28, bold: true, color: "#ffffff", role: "heading" }),
@@ -459,7 +459,7 @@ export const TEMPLATES: Template[] = [
         newElement("text", id(), { parentId: colLeft, x: 4, y: 236, width: 510, height: 24, text: "Frecuentes: Permiso de circulación · Farmacia · Subsidios · Audiencias", fontSize: 12, color: "#64748b" }),
 
         // Columna derecha: Foto comunal
-        newElement("rect", colRight, { role: "container", x: 610, y: 24, width: 380, height: 330, fill: "transparent", radius: 0 }),
+        newElement("rect", colRight, { role: "container", x: 0, y: 0, width: 380, height: 330, fill: "transparent", radius: 0 }),
         newElement("image", id(), {
           parentId: colRight,
           x: 0,

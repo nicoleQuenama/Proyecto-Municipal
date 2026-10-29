@@ -2,6 +2,7 @@ export type PanelTab =
   | "pages"
   | "templates"
   | "components"
+  | "media"
   | "navigation"
   | "appearance"
   | "libraries"
@@ -18,6 +19,7 @@ export const TABS: { value: PanelTab; label: string; title: string; permission: 
   { value: "pages", label: "Páginas", title: "Páginas del sitio", permission: "editContent" },
   { value: "templates", label: "Plantillas", title: "Plantillas de páginas y secciones prehechas", permission: "editContent" },
   { value: "components", label: "Agregar", title: "Componentes para agregar a la página", permission: "editContent" },
+  { value: "media", label: "Archivos", title: "Imágenes y videos del proyecto (tipo Canva)", permission: "editContent" },
   { value: "navigation", label: "Enlaces", title: "Navegación y enlaces entre páginas", permission: "editContent" },
   { value: "appearance", label: "Estilo", title: "Variables y reglas de estilo", permission: "editStyles" },
   { value: "libraries", label: "Librerías", title: "Librerías de código", permission: "installLibraries" },

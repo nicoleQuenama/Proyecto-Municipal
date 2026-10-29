@@ -17,6 +17,7 @@ import { categoryIcon } from "../site/categories";
 import { TABS, type PanelTab } from "./data";
 import { PagesTab } from "./pages-tab";
 import { TemplatesTab } from "./templates-tab";
+import { MediaTab } from "./media-tab";
 import { StructureList, type StructureItem } from "./structure-list";
 import { TAB_ICONS } from "./tab-icons";
 
@@ -34,6 +35,7 @@ const TAB_CONTENT: Record<PanelTab, ReactNode> = {
   pages: <PagesTab />,
   templates: <TemplatesTab />,
   components: <ComponentsTab />,
+  media: <MediaTab />,
   navigation: <NavigationTab />,
   appearance: <AppearanceTab />,
   libraries: <LibrariesTab />,
