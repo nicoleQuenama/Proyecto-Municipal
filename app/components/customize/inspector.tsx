@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { ExportButton } from "../export/export-button";
@@ -39,6 +39,7 @@ import { useViewport } from "../viewport/viewport-context";
 import { defaultMenu, toggleItem } from "../responsive/menu-model";
 import { GroupControls } from "./group-controls";
 import { DockablePanel } from "./dockable-panel";
+import { SectionColorPalette } from "../section-colors/section-color-palette";
 import { LayoutControls } from "./layout-controls";
 import { ControlControls } from "../forms/control-controls";
 import { MediaPerformanceControls } from "../media/media-performance-controls";
@@ -412,6 +413,11 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}
       {!element && <SectionBackground pageId={pageId} block={block} />}
       {!element && canEditContent && <LayerControls pageId={pageId} block={block} />}
+      {canEditStyles && (
+        <Collapsible title="Colores de la sección" defaultOpen={!element}>
+          <SectionColorPalette pageId={pageId} block={block} def={def} />
+        </Collapsible>
+      )}
       {!element && canEditContent && (
         <div role="group" aria-label="Rol y ubicación de la sección" className="flex flex-col gap-2 rounded-lg border border-line bg-canvas/40 p-2.5">
           <p className="text-[11px] font-semibold text-ink">Rol y ubicación de sección</p>
@@ -680,6 +686,18 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   );
 }
 
+function PaletteIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+    </svg>
+  );
+}
+
 /**
  * El inspector de propiedades: aparece a la derecha solo cuando hay una sección o un elemento seleccionado,
  * con su código propio e interacciones. Así el panel izquierdo queda para agregar y organizar.
@@ -690,6 +708,26 @@ export function Inspector() {
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
   const canEditCode = hasPermission(currentUser, "editCode");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const paletteRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target as Node)) {
+        setPaletteOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPaletteOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [paletteOpen]);
 
   const page = pages.find((p) => p.id === currentPageId);
   const block =
@@ -705,6 +743,29 @@ export function Inspector() {
 
   const headerActions = (
     <>
+      <div ref={paletteRef} className="relative">
+        <button
+          type="button"
+          aria-label="Paleta de colores de la sección"
+          title="Desplegar paleta de colores de la sección"
+          onClick={() => setPaletteOpen(!paletteOpen)}
+          className={`flex h-7 items-center gap-1 rounded-md px-1.5 text-xs transition-colors border border-transparent ${
+            paletteOpen
+              ? "bg-accent/20 text-accent font-semibold"
+              : "text-ink-dim hover:bg-hover hover:text-ink hover:border-line"
+          }`}
+        >
+          <PaletteIcon />
+          <span className="hidden sm:inline text-[11px] font-medium">Colores</span>
+        </button>
+
+        {paletteOpen && (
+          <div className="absolute right-0 top-8 z-50 w-72 rounded-xl border border-line bg-panel p-3 text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+            <SectionColorPalette pageId={ownerPage.id} block={block} def={def} compact />
+          </div>
+        )}
+      </div>
+
       {canEditCode && <ExportButton pageId={ownerPage.id} block={block} def={def} />}
       {canEditCode && (
         <button

@@ -1,21 +1,17 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useRef,
-  useState,
   type CSSProperties,
   type PointerEvent,
   type ReactNode,
 } from "react";
 import {
-  DEFAULT_INSPECTOR_WIDTH,
   MAX_INSPECTOR_WIDTH,
   MIN_INSPECTOR_HEIGHT,
   MIN_INSPECTOR_WIDTH,
   useInspectorDock,
-  type DockPosition,
 } from "./dockable-inspector-context";
 
 interface DockablePanelProps {
@@ -49,70 +45,34 @@ export function DockablePanel({
     toggleMinimized,
     isDragging,
     setIsDragging,
-    snapCandidate,
-    setSnapCandidate,
   } = useInspectorDock();
 
   const panelRef = useRef<HTMLDivElement>(null);
-  const [dockMenuOpen, setDockMenuOpen] = useState(false);
-  const dockMenuRef = useRef<HTMLDivElement>(null);
 
-  // Cerrar menú de acople al hacer clic fuera o presionar escape
-  useEffect(() => {
-    if (!dockMenuOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (dockMenuRef.current && !dockMenuRef.current.contains(e.target as Node)) {
-        setDockMenuOpen(false);
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDockMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [dockMenuOpen]);
-
-  // Arrastre del encabezado
+  // Arrastre libre de la ventana flotante (sin acoplamiento automático)
   const dragRef = useRef<{
     startX: number;
     startY: number;
     initialPanelX: number;
     initialPanelY: number;
-    initialDock: DockPosition;
     active: boolean;
   } | null>(null);
 
   const onHeaderPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    // Si está acoplado, el usuario no arrastra; usa el botón explícito para desacoplar
+    if (dock !== "float") return;
+
     // Ignorar clics en botones, inputs, enlaces
     if ((e.target as HTMLElement).closest("button, input, select, a, textarea")) {
       return;
     }
     if (e.button !== 0) return;
 
-    const parent = panelRef.current?.parentElement;
-    const parentRect = parent?.getBoundingClientRect();
-
-    let curX = x;
-    let curY = y;
-
-    if (dock === "right" && parentRect) {
-      curX = parentRect.width - width - 12;
-      curY = 12;
-    } else if (dock === "left") {
-      curX = 12;
-      curY = 12;
-    }
-
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      initialPanelX: curX,
-      initialPanelY: curY,
-      initialDock: dock,
+      initialPanelX: x,
+      initialPanelY: y,
       active: false,
     };
 
@@ -127,13 +87,9 @@ export function DockablePanel({
     const deltaY = e.clientY - drag.startY;
 
     if (!drag.active) {
-      if (Math.hypot(deltaX, deltaY) > 5) {
+      if (Math.hypot(deltaX, deltaY) > 4) {
         drag.active = true;
         setIsDragging(true);
-        if (dock !== "float") {
-          setDock("float");
-          setPosition({ x: drag.initialPanelX, y: drag.initialPanelY });
-        }
       }
       return;
     }
@@ -145,19 +101,9 @@ export function DockablePanel({
     const rawX = drag.initialPanelX + deltaX;
     const rawY = drag.initialPanelY + deltaY;
 
-    // Detectar zonas de acoplamiento al lateral (estilo Photoshop / Illustrator)
-    const cursorXInside = e.clientX - parentRect.left;
-    if (cursorXInside >= parentRect.width - 90 || rawX + width >= parentRect.width - 45) {
-      setSnapCandidate("right");
-    } else if (cursorXInside <= 90 || rawX <= 45) {
-      setSnapCandidate("left");
-    } else {
-      setSnapCandidate(null);
-    }
-
-    // Limitar dentro del lienzo de trabajo
-    const clampedX = Math.max(8, Math.min(rawX, parentRect.width - width - 8));
-    const clampedY = Math.max(8, Math.min(rawY, parentRect.height - 48));
+    // Movimiento libre acotado al contenedor (sin auto-acoplamiento)
+    const clampedX = Math.max(12, Math.min(rawX, parentRect.width - width - 12));
+    const clampedY = Math.max(12, Math.min(rawY, parentRect.height - 48));
 
     setPosition({ x: clampedX, y: clampedY });
   };
@@ -170,22 +116,11 @@ export function DockablePanel({
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
 
-    if (drag.active) {
-      if (snapCandidate === "right") {
-        setDock("right");
-      } else if (snapCandidate === "left") {
-        setDock("left");
-      } else {
-        setDock("float");
-      }
-      setIsDragging(false);
-      setSnapCandidate(null);
-    }
-
+    setIsDragging(false);
     dragRef.current = null;
   };
 
-  // Redimensionar ancho
+  // Redimensionamiento de ancho y alto
   const resizeRef = useRef<{
     edge: "left" | "right" | "bottom" | "corner";
     startX: number;
@@ -223,14 +158,13 @@ export function DockablePanel({
     const parentRect = parent?.getBoundingClientRect();
 
     if (r.edge === "left") {
-      // Al arrastrar hacia la izquierda, el ancho crece
       let nextW = r.startWidth - deltaX;
       nextW = Math.max(MIN_INSPECTOR_WIDTH, Math.min(MAX_INSPECTOR_WIDTH, nextW));
       setWidth(nextW);
 
       if (dock === "float") {
         const nextX = r.startPanelX + (r.startWidth - nextW);
-        if (nextX >= 8) setPosition({ x: nextX, y });
+        if (nextX >= 12) setPosition({ x: nextX, y });
       }
     } else if (r.edge === "right") {
       let nextW = r.startWidth + deltaX;
@@ -258,61 +192,27 @@ export function DockablePanel({
     resizeRef.current = null;
   };
 
-  // Calcular estilos de posición del panel según el modo de acople
+  // Estilos según el modo de acople
   const containerStyle: CSSProperties = (() => {
+    if (dock === "right") {
+      // Acoplado a la derecha en el flujo flex: no se sobrepone al lienzo
+      return {
+        width: `${width}px`,
+        maxWidth: "calc(100% - 1.5rem)",
+      };
+    }
+
+    // dock === "float": ventana flotante libre
     if (minimized) {
-      if (dock === "right") {
-        return {
-          position: "absolute",
-          top: "12px",
-          right: "12px",
-          width: `${Math.min(width, 360)}px`,
-          zIndex: 35,
-        };
-      }
-      if (dock === "left") {
-        return {
-          position: "absolute",
-          top: "12px",
-          left: "12px",
-          width: `${Math.min(width, 360)}px`,
-          zIndex: 35,
-        };
-      }
       return {
         position: "absolute",
         top: `${y}px`,
         left: `${x}px`,
         width: `${Math.min(width, 360)}px`,
-        zIndex: 35,
+        zIndex: 40,
       };
     }
 
-    if (dock === "right") {
-      return {
-        position: "absolute",
-        top: "12px",
-        right: "12px",
-        bottom: "12px",
-        width: `${width}px`,
-        maxWidth: "calc(100% - 1.5rem)",
-        zIndex: 35,
-      };
-    }
-
-    if (dock === "left") {
-      return {
-        position: "absolute",
-        top: "12px",
-        left: "12px",
-        bottom: "12px",
-        width: `${width}px`,
-        maxWidth: "calc(100% - 1.5rem)",
-        zIndex: 35,
-      };
-    }
-
-    // dock === "float"
     return {
       position: "absolute",
       top: `${y}px`,
@@ -321,184 +221,118 @@ export function DockablePanel({
       height: height ? `${height}px` : "calc(100% - 24px)",
       maxHeight: "calc(100% - 24px)",
       maxWidth: "calc(100% - 1.5rem)",
-      zIndex: 35,
+      zIndex: 40,
     };
   })();
 
+  const isDocked = dock === "right";
+
   return (
-    <>
-      {/* Vista previa visual de zona de acoplamiento al arrastrar (estilo Photoshop / Illustrator) */}
-      {isDragging && snapCandidate === "right" && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-3 right-3 bottom-3 z-30 flex w-80 items-center justify-center rounded-xl border-2 border-dashed border-accent bg-accent/15 backdrop-blur-xs animate-in fade-in duration-100"
-        >
-          <div className="flex items-center gap-2 rounded-lg border border-accent/40 bg-panel px-3 py-1.5 shadow-xl">
-            <span className="text-sm font-bold text-accent">⇥</span>
-            <span className="text-xs font-semibold text-accent">Acoplar a la derecha</span>
-          </div>
-        </div>
-      )}
-
-      {isDragging && snapCandidate === "left" && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-3 left-3 bottom-3 z-30 flex w-80 items-center justify-center rounded-xl border-2 border-dashed border-accent bg-accent/15 backdrop-blur-xs animate-in fade-in duration-100"
-        >
-          <div className="flex items-center gap-2 rounded-lg border border-accent/40 bg-panel px-3 py-1.5 shadow-xl">
-            <span className="text-sm font-bold text-accent">⇤</span>
-            <span className="text-xs font-semibold text-accent">Acoplar a la izquierda</span>
-          </div>
-        </div>
-      )}
-
-      {/* Contenedor principal de la ventana/panel */}
-      <aside
-        ref={panelRef}
-        aria-label="Panel de propiedades"
-        style={containerStyle}
-        className={`flex flex-col overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl backdrop-blur-md transition-shadow ${
-          isDragging ? "ring-2 ring-accent opacity-95 shadow-accent/20 cursor-grabbing" : ""
-        }`}
+    <aside
+      ref={panelRef}
+      aria-label="Panel de propiedades"
+      style={containerStyle}
+      className={`flex flex-col overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl transition-[width] duration-75 ${
+        isDocked
+          ? "relative my-3 mr-3 shrink-0 self-stretch"
+          : "backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
+      } ${isDragging ? "ring-2 ring-accent opacity-95 cursor-grabbing" : ""}`}
+    >
+      {/* Encabezado */}
+      <header
+        onPointerDown={onHeaderPointerDown}
+        onPointerMove={onHeaderPointerMove}
+        onPointerUp={onHeaderPointerUp}
+        onDoubleClick={toggleMinimized}
+        title={
+          isDocked
+            ? "Panel acoplado a la derecha (haz clic en 'Flotante' para moverlo libremente)"
+            : "Arrastrar para mover libremente por la pantalla (doble clic para minimizar/expandir)"
+        }
+        className={`flex h-12 shrink-0 select-none items-center gap-1.5 border-b border-line px-3 ${
+          !isDocked ? (isDragging ? "cursor-grabbing" : "cursor-grab") : "cursor-default"
+        } bg-canvas/40 hover:bg-canvas/60 transition-colors`}
       >
-        {/* Barra superior / Encabezado arrastrable */}
-        <header
-          onPointerDown={onHeaderPointerDown}
-          onPointerMove={onHeaderPointerMove}
-          onPointerUp={onHeaderPointerUp}
-          onDoubleClick={toggleMinimized}
-          title="Arrastrar para mover o acoplar al lateral (doble clic para minimizar/expandir)"
-          className={`flex h-12 shrink-0 select-none items-center gap-1.5 border-b border-line px-3 ${
-            isDragging ? "cursor-grabbing" : "cursor-grab"
-          } bg-canvas/40 hover:bg-canvas/60 transition-colors`}
+        {/* Manija de agarre visual */}
+        <div
+          title={isDocked ? "Panel acoplado lateral" : "Arrastrar ventana libremente"}
+          className="flex h-7 w-5 items-center justify-center text-ink-dim"
         >
-          {/* Manija de agarre */}
-          <div
-            title="Arrastrar para mover o acoplar"
-            className="flex h-7 w-5 items-center justify-center text-ink-dim hover:text-ink"
-          >
-            <span className="text-base leading-none tracking-tighter opacity-70">⠿</span>
-          </div>
+          <span className="text-base leading-none tracking-tighter opacity-70">⠿</span>
+        </div>
 
-          {/* Información y título */}
-          <div className="min-w-0 flex-1">
-            {subtitle && <div className="text-[10px] uppercase tracking-wider text-ink-dim">{subtitle}</div>}
-            <div className="truncate text-sm font-semibold">{title}</div>
-          </div>
+        {/* Título y subtítulo */}
+        <div className="min-w-0 flex-1">
+          {subtitle && <div className="text-[10px] uppercase tracking-wider text-ink-dim">{subtitle}</div>}
+          <div className="truncate text-sm font-semibold">{title}</div>
+        </div>
 
-          {/* Acciones de cabecera personalizadas (código, exportar, etc.) */}
-          {!minimized && headerActions}
+        {/* Acciones de cabecera (paleta de colores, código, exportar, etc.) */}
+        {!minimized && headerActions}
 
-          {/* Menú de opciones de acople */}
-          <div ref={dockMenuRef} className="relative">
-            <button
-              type="button"
-              aria-label="Opciones de posición del panel"
-              title={
-                dock === "right"
-                  ? "Panel acoplado a la derecha"
-                  : dock === "left"
-                    ? "Panel acoplado a la izquierda"
-                    : "Ventana flotante libre"
-              }
-              onClick={() => setDockMenuOpen(!dockMenuOpen)}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
-            >
-              <span className="text-xs font-mono font-bold">
-                {dock === "right" ? "⇥" : dock === "left" ? "⇤" : "❐"}
-              </span>
-            </button>
+        {/* Botón explícito para alternar entre acoplado a la derecha y ventana flotante */}
+        <button
+          type="button"
+          aria-label={isDocked ? "Desacoplar a ventana flotante" : "Acoplar a la derecha"}
+          title={
+            isDocked
+              ? "Desacoplar panel y convertir en ventana flotante (mover libremente)"
+              : "Acoplar al lateral derecho del lienzo (sin sobreponerse)"
+          }
+          onClick={() => setDock(isDocked ? "float" : "right")}
+          className="flex h-7 items-center gap-1 rounded-md px-1.5 text-xs text-ink-dim hover:bg-hover hover:text-ink transition-colors border border-transparent hover:border-line"
+        >
+          <span className="text-xs font-mono font-bold">{isDocked ? "❐" : "⇥"}</span>
+          <span className="hidden sm:inline text-[11px] font-medium">
+            {isDocked ? "Flotante" : "Acoplar"}
+          </span>
+        </button>
 
-            {dockMenuOpen && (
-              <div className="absolute right-0 top-8 z-50 flex w-48 flex-col rounded-xl border border-line bg-panel p-1 text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDock("right");
-                    setDockMenuOpen(false);
-                  }}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
-                    dock === "right" ? "bg-accent/15 text-accent font-semibold" : "text-ink hover:bg-hover"
-                  }`}
-                >
-                  <span className="text-xs">⇥</span>
-                  <span>Acoplar a la derecha</span>
-                </button>
+        {/* Botón Minimizar / Expandir */}
+        <button
+          type="button"
+          aria-label={minimized ? "Expandir panel" : "Minimizar panel"}
+          title={minimized ? "Expandir panel" : "Minimizar panel"}
+          onClick={toggleMinimized}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+        >
+          <span className="text-xs font-bold leading-none">{minimized ? "□" : "—"}</span>
+        </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDock("left");
-                    setDockMenuOpen(false);
-                  }}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
-                    dock === "left" ? "bg-accent/15 text-accent font-semibold" : "text-ink hover:bg-hover"
-                  }`}
-                >
-                  <span className="text-xs">⇤</span>
-                  <span>Acoplar a la izquierda</span>
-                </button>
+        {/* Botón Cerrar */}
+        <button
+          type="button"
+          aria-label="Cerrar panel"
+          title="Cerrar panel"
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+        >
+          <span className="text-sm font-semibold leading-none">×</span>
+        </button>
+      </header>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDock("float");
-                    setDockMenuOpen(false);
-                  }}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
-                    dock === "float" ? "bg-accent/15 text-accent font-semibold" : "text-ink hover:bg-hover"
-                  }`}
-                >
-                  <span className="text-xs">❐</span>
-                  <span>Ventana flotante libre</span>
-                </button>
-              </div>
-            )}
-          </div>
+      {/* Contenido expandido */}
+      {!minimized && (
+        <>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
+          {footer}
+        </>
+      )}
 
-          {/* Botón Minimizar / Expandir */}
-          <button
-            type="button"
-            aria-label={minimized ? "Expandir panel" : "Minimizar panel"}
-            title={minimized ? "Expandir panel" : "Minimizar panel"}
-            onClick={toggleMinimized}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
-          >
-            <span className="text-xs font-bold leading-none">{minimized ? "□" : "—"}</span>
-          </button>
+      {/* Manija de redimensionamiento izquierda (disponible tanto acoplado a la derecha como flotante) */}
+      {!minimized && (
+        <div
+          title="Arrastrar para cambiar ancho"
+          onPointerDown={(e) => startResize("left", e)}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeUp}
+          className="absolute -left-1 top-0 bottom-0 z-40 w-2.5 cursor-ew-resize hover:bg-accent/40 active:bg-accent transition-colors"
+        />
+      )}
 
-          {/* Botón Cerrar */}
-          <button
-            type="button"
-            aria-label="Cerrar panel"
-            title="Cerrar panel"
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
-          >
-            <span className="text-sm font-semibold leading-none">×</span>
-          </button>
-        </header>
-
-        {/* Contenido expandido */}
-        {!minimized && (
-          <>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
-            {footer}
-          </>
-        )}
-
-        {/* Manijas de redimensionamiento */}
-        {!minimized && (dock === "right" || dock === "float") && (
-          <div
-            title="Arrastrar para cambiar ancho"
-            onPointerDown={(e) => startResize("left", e)}
-            onPointerMove={onResizeMove}
-            onPointerUp={onResizeUp}
-            className="absolute -left-1 top-0 bottom-0 z-40 w-2.5 cursor-ew-resize hover:bg-accent/40 active:bg-accent transition-colors"
-          />
-        )}
-
-        {!minimized && (dock === "left" || dock === "float") && (
+      {/* Manijas adicionales exclusivas para modo flotante libre */}
+      {!minimized && !isDocked && (
+        <>
           <div
             title="Arrastrar para cambiar ancho"
             onPointerDown={(e) => startResize("right", e)}
@@ -506,27 +340,22 @@ export function DockablePanel({
             onPointerUp={onResizeUp}
             className="absolute -right-1 top-0 bottom-0 z-40 w-2.5 cursor-ew-resize hover:bg-accent/40 active:bg-accent transition-colors"
           />
-        )}
-
-        {!minimized && dock === "float" && (
-          <>
-            <div
-              title="Arrastrar para cambiar alto"
-              onPointerDown={(e) => startResize("bottom", e)}
-              onPointerMove={onResizeMove}
-              onPointerUp={onResizeUp}
-              className="absolute -bottom-1 left-0 right-0 z-40 h-2.5 cursor-ns-resize hover:bg-accent/40 active:bg-accent transition-colors"
-            />
-            <div
-              title="Arrastrar esquina para cambiar tamaño"
-              onPointerDown={(e) => startResize("corner", e)}
-              onPointerMove={onResizeMove}
-              onPointerUp={onResizeUp}
-              className="absolute -bottom-1 -right-1 z-50 size-3.5 cursor-nwse-resize rounded-br-md hover:bg-accent active:bg-accent transition-colors"
-            />
-          </>
-        )}
-      </aside>
-    </>
+          <div
+            title="Arrastrar para cambiar alto"
+            onPointerDown={(e) => startResize("bottom", e)}
+            onPointerMove={onResizeMove}
+            onPointerUp={onResizeUp}
+            className="absolute -bottom-1 left-0 right-0 z-40 h-2.5 cursor-ns-resize hover:bg-accent/40 active:bg-accent transition-colors"
+          />
+          <div
+            title="Arrastrar esquina para cambiar tamaño"
+            onPointerDown={(e) => startResize("corner", e)}
+            onPointerMove={onResizeMove}
+            onPointerUp={onResizeUp}
+            className="absolute -bottom-1 -right-1 z-50 size-3.5 cursor-nwse-resize rounded-br-md hover:bg-accent active:bg-accent transition-colors"
+          />
+        </>
+      )}
+    </aside>
   );
 }

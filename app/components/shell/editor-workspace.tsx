@@ -19,7 +19,6 @@ import { ConnectionOverlay } from "../navigation/connection-overlay";
 import { LinkPopover } from "../navigation/link-popover";
 import { ModeBar } from "../navigation/mode-bar";
 import { PreviewToggle } from "../navigation/preview-toggle";
-import { SectionColors } from "../section-colors/section-colors";
 import { SidePanel } from "../side-panel/side-panel";
 import { SiteStyles } from "../site/site-styles";
 import { FormatBar } from "../title-editor/format-bar";
@@ -62,11 +61,10 @@ export function EditorWorkspace() {
                 <CanvasPages />
               </CanvasSurface>
               <BottomToolbar />
-              <SectionColors />
               <RecorderBar />
               <MyWorkPanel />
-              <Inspector />
             </div>
+            <Inspector />
           </main>
         </InspectorDockProvider>
 
