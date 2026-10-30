@@ -238,7 +238,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const { pages, components } = useSite();
   const pageBlocksSlot = splitBlocks(page, components, pages);
   const hasTopHeader = !page.hideHeader && (shellPage ? true : pageBlocksSlot.top.length > 0);
-  const pagePy = hasTopHeader ? "0rem" : "3rem";
+  const hasBottomFooter = !page.hideFooter && pageBlocksSlot.bottom.length > 0;
+  const pagePt = hasTopHeader ? "0rem" : "3rem";
+  const pagePb = hasBottomFooter ? "0rem" : "3rem";
 
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden });
@@ -336,11 +338,24 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           ref={pageRef}
           data-site-page
           className={`relative isolate flex flex-col bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
-            production
-              ? hasTopHeader ? "px-10 pb-12 pt-0" : "px-10 py-12"
-              : hasTopHeader ? "rounded-sm px-10 pb-12 pt-0 shadow-2xl" : "rounded-sm px-10 py-12 shadow-2xl"
-          } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...(hasTopHeader ? { paddingTop: 0 } : {}), ...({ "--page-px": pagePx, "--page-py": pagePy, "--cms-w": `${layoutWidth}px` } as CSSProperties), ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+            production ? "px-10" : "rounded-sm px-10 shadow-2xl"
+          } ${hasTopHeader ? "pt-0" : "pt-12"} ${hasBottomFooter ? "pb-0" : "pb-12"} ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
+          style={{
+            ...boxStyle(styles.page),
+            ...(page.color ? { background: page.color } : {}),
+            ...sideStyle,
+            paddingTop: hasTopHeader ? 0 : undefined,
+            paddingBottom: hasBottomFooter ? 0 : undefined,
+            ...({
+              "--page-px": pagePx,
+              "--page-pt": pagePt,
+              "--page-pb": pagePb,
+              "--page-py": pagePt,
+              "--cms-w": `${layoutWidth}px`,
+            } as CSSProperties),
+            ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}),
+            minHeight: `max(${baseHeight}, ${placedExtent}px)`,
+          }}
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
           {mode === "edit" && !production && <CommentLayer page={page} />}
@@ -353,8 +368,11 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           {/* Lo que cambia de una página a otra: la clave lo vuelve a montar y reproduce la transición. */}
           <div
             key={`${page.id}:${transitionKey}`}
-            className={`flex flex-col flex-1 min-h-full ${animation ? `nav-anim-${animation.kind}` : ""}`}
-            style={animation ? { animationDuration: `${animation.seconds}s` } : undefined}
+            className={`flex flex-col flex-1 w-full ${animation ? `nav-anim-${animation.kind}` : ""}`}
+            style={{
+              minHeight: "inherit",
+              ...(animation ? { animationDuration: `${animation.seconds}s` } : {}),
+            }}
           >
             {!shellPage && <PageBlocks page={page} slot="top" interactive={active} />}
             <TitleCanvas page={page} interactive={active} />

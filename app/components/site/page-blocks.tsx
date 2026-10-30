@@ -471,9 +471,9 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
     <div
       className={`flex flex-col ${
         isTop
-          ? "-mx-10 -mt-12 mb-8 w-[calc(100%+5rem)] max-w-none rounded-t-sm overflow-hidden"
+          ? "-mx-10 mb-8 w-[calc(100%+5rem)] max-w-none rounded-t-sm overflow-hidden"
           : isBottom
-            ? "-mx-10 -mb-12 mt-auto pt-12 w-[calc(100%+5rem)] max-w-none rounded-b-sm overflow-hidden"
+            ? "-mx-10 mt-auto w-[calc(100%+5rem)] max-w-none rounded-b-sm overflow-hidden"
             : "mt-8 gap-6 flex-1"
       }`}
       style={{
@@ -482,7 +482,7 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
           ? {
               marginLeft: "calc(var(--page-px, 2.5rem) * -1)",
               marginRight: "calc(var(--page-px, 2.5rem) * -1)",
-              marginTop: "calc(var(--page-py, 3rem) * -1)",
+              marginTop: "calc(var(--page-pt, var(--page-py, 3rem)) * -1)",
               top: 0,
               width: "calc(100% + 2 * var(--page-px, 2.5rem))",
               maxWidth: "none",
@@ -491,7 +491,8 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
             ? {
                 marginLeft: "calc(var(--page-px, 2.5rem) * -1)",
                 marginRight: "calc(var(--page-px, 2.5rem) * -1)",
-                marginBottom: "calc(var(--page-py, 3rem) * -1)",
+                marginBottom: "calc(var(--page-pb, 3rem) * -1)",
+                bottom: 0,
                 width: "calc(100% + 2 * var(--page-px, 2.5rem))",
                 maxWidth: "none",
               }
