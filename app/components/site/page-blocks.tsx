@@ -483,6 +483,7 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
               marginLeft: "calc(var(--page-px, 2.5rem) * -1)",
               marginRight: "calc(var(--page-px, 2.5rem) * -1)",
               marginTop: "calc(var(--page-py, 3rem) * -1)",
+              top: 0,
               width: "calc(100% + 2 * var(--page-px, 2.5rem))",
               maxWidth: "none",
             }

@@ -163,7 +163,7 @@ export function elementBaseCss(
             "max-width: 100% !important",
             "box-sizing: border-box",
           ]
-        : isRightSide && device !== "mobile"
+        : isRightSide && device === "desktop"
           ? [
               "position: absolute",
               `top: ${element.y}px`,

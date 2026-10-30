@@ -15,13 +15,33 @@ export const readingOrder = (a: CanvasElement, b: CanvasElement): number => a.y 
 /** Un elemento puede ir en un menú si tiene algo que mostrar: un texto o un ícono. */
 const fitsInMenu = (element: CanvasElement): boolean => !element.hidden && (element.kind === "icon" || element.text.trim() !== "");
 
-/** El menú de partida: los textos con enlace van dentro; el resto (marca, logo) se queda visible. */
+/** El menú de partida: los textos con enlace, botones y buscador van dentro; el resto (marca, logo) se queda visible. */
 export function defaultMenu(def: ComponentDef): MenuConfig {
-  const linked = def.elements.filter(
-    (element) => fitsInMenu(element) && (def.links?.[element.id] !== undefined || element.role === "link"),
-  );
+  const isNav =
+    def.category === "navigation" ||
+    def.id.toLowerCase().includes("navbar") ||
+    def.id.toLowerCase().includes("nav") ||
+    def.name.toLowerCase().includes("navegaci") ||
+    def.name.toLowerCase().includes("header");
+
+  const items = def.elements.filter((element) => {
+    if (!fitsInMenu(element)) return false;
+    if (element.role === "heading") return false;
+    if (element.x < 120 && (element.kind === "rect" || element.kind === "image" || element.kind === "icon") && !element.text?.trim()) return false;
+    if (isNav) {
+      return (
+        element.role === "link" ||
+        element.role === "button" ||
+        element.control?.name === "search-trigger" ||
+        element.text?.toLowerCase().includes("buscar") ||
+        def.links?.[element.id] !== undefined
+      );
+    }
+    return def.links?.[element.id] !== undefined || element.role === "link";
+  });
+
   return {
-    itemIds: linked.sort(readingOrder).map((element) => element.id),
+    itemIds: items.sort(readingOrder).map((element) => element.id),
     panel: "right",
     icon: "menu",
     iconSize: 28,
@@ -43,7 +63,8 @@ export interface MenuSetup {
 
 /** El menú de una sección en un dispositivo; `null` si ahí no se adapta con «Menú». */
 export function menuSetup(formatted: ComponentDef, block: BlockInstance, device: Device): MenuSetup | null {
-  if (!isAdaptive(device) || block.responsive?.[device] || block.adapt?.[device] !== "menu") return null;
+  if (isAdaptive(device) && block.responsive?.[device]) return null;
+  if (block.adapt?.[device] !== "menu") return null;
   const shown = { ...formatted, elements: visibleOn(formatted.elements, device) };
   const config = block.menu ?? defaultMenu(shown);
   return { config, items: menuSplit(shown, config).items };

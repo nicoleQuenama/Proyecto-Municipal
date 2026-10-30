@@ -20,6 +20,7 @@ interface DockablePanelProps {
   categoryLabel: string;
   onSelectSection?: () => void;
   headerActions?: ReactNode;
+  subHeader?: ReactNode;
   onOpenCode?: () => void;
   canEditCode?: boolean;
   onClose: () => void;
@@ -32,6 +33,7 @@ export function DockablePanel({
   categoryLabel,
   onSelectSection,
   headerActions,
+  subHeader,
   onOpenCode,
   canEditCode,
   onClose,
@@ -460,6 +462,8 @@ export function DockablePanel({
           </h2>
         </div>
       </header>
+
+      {subHeader}
 
       {/* Contenido del inspector */}
       <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>

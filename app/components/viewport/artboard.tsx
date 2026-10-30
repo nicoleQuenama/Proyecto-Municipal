@@ -12,7 +12,7 @@ import { usePageCode } from "../behaviors/use-page-code";
 import { MediaList } from "../media/media-list";
 import { VisibilityEye } from "../site/visibility-eye";
 import { PageBlocks } from "../site/page-blocks";
-import { routeOf } from "../site/rules";
+import { routeOf, splitBlocks } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { useClipboardKeys } from "../site/use-clipboard-keys";
 import { useHistoryKeys } from "../site/use-history-keys";
@@ -235,6 +235,11 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const dropProps = tiled ? { [DROP_ATTRIBUTE]: pageDrop(page.id) } : {};
   const isHot = hotDrop === pageDrop(page.id);
 
+  const { pages, components } = useSite();
+  const pageBlocksSlot = splitBlocks(page, components, pages);
+  const hasTopHeader = !page.hideHeader && (shellPage ? true : pageBlocksSlot.top.length > 0);
+  const pagePy = hasTopHeader ? "0rem" : "3rem";
+
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden });
 
@@ -331,9 +336,11 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           ref={pageRef}
           data-site-page
           className={`relative isolate flex flex-col bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
-            production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
+            production
+              ? hasTopHeader ? "px-10 pb-12 pt-0" : "px-10 py-12"
+              : hasTopHeader ? "rounded-sm px-10 pb-12 pt-0 shadow-2xl" : "rounded-sm px-10 py-12 shadow-2xl"
           } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...({ "--page-px": pagePx, "--page-py": "3rem", "--cms-w": `${layoutWidth}px` } as CSSProperties), ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...(hasTopHeader ? { paddingTop: 0 } : {}), ...({ "--page-px": pagePx, "--page-py": pagePy, "--cms-w": `${layoutWidth}px` } as CSSProperties), ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
           {mode === "edit" && !production && <CommentLayer page={page} />}

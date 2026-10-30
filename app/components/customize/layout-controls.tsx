@@ -83,12 +83,12 @@ interface LayoutControlsProps {
   isHeader?: boolean;
   /** Modo activo de menú en header ("drop" | "right" | "left" | "full" | "none") */
   activeMenuMode?: "drop" | "right" | "left" | "full" | "none";
-  /** Dónde se activa el menú plegable ("mobile-tablet" | "mobile-only" | "never") */
-  menuBreakpointChoice?: "mobile-tablet" | "mobile-only" | "never";
+  /** Dónde se activa el menú plegable ("all" | "mobile-tablet" | "mobile-only" | "never") */
+  menuBreakpointChoice?: "all" | "mobile-tablet" | "mobile-only" | "never";
   /** Selecciona el modo de menú en header */
   onSelectHeaderMenuMode?: (mode: "drop" | "right" | "left" | "full" | "none") => void;
   /** Cambia los breakpoints donde se activa el menú plegable */
-  onSetMenuBreakpoints?: (choice: "mobile-tablet" | "mobile-only" | "never") => void;
+  onSetMenuBreakpoints?: (choice: "all" | "mobile-tablet" | "mobile-only" | "never") => void;
   /** Alterna la previsualización del menú abierto/cerrado */
   isMenuOpenPreview?: boolean;
   onToggleMenuPreview?: () => void;
@@ -285,7 +285,20 @@ export function LayoutControls({
             {activeMenuMode !== "none" && (
               <div className="flex flex-col gap-1 pt-1.5 border-t border-accent/20">
                 <span className="text-[10px] font-semibold text-ink-dim uppercase">Activar menú en:</span>
-                <div className="grid grid-cols-2 gap-1 text-[11px]">
+                <div className="grid grid-cols-3 gap-1 text-[11px]">
+                  <button
+                    type="button"
+                    aria-pressed={menuBreakpointChoice === "all"}
+                    onClick={() => onSetMenuBreakpoints?.("all")}
+                    className={`h-7 rounded border font-medium transition-colors ${
+                      menuBreakpointChoice === "all"
+                        ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                        : "border-line bg-canvas text-ink hover:bg-hover"
+                    }`}
+                    title="Se pliega en menú hamburguesa o lateral en PC, tablet y móvil"
+                  >
+                    PC, Tablet y Móvil
+                  </button>
                   <button
                     type="button"
                     aria-pressed={menuBreakpointChoice === "mobile-tablet"}
@@ -308,7 +321,7 @@ export function LayoutControls({
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
                     }`}
-                    title="En tablet se ve la barra completa, solo se pliega en móvil"
+                    title="En PC y tablet se ve la barra completa, solo se pliega en móvil"
                   >
                     Solo en Móvil
                   </button>

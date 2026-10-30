@@ -218,27 +218,40 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   }
 
   const currentMenu = block.menu ?? defaultMenu(def);
-  const isMenuDisabled = block.adapt?.mobile === "scale" || block.adapt?.mobile === "stack";
+  const isMenuDisabled =
+    block.adapt?.mobile === "scale" && block.adapt?.tablet === "scale" && block.adapt?.desktop !== "menu";
   const activeMenuMode: "drop" | "right" | "left" | "full" | "none" = isMenuDisabled
     ? "none"
     : (currentMenu.panel ?? "drop");
 
-  const menuBreakpointChoice: "mobile-tablet" | "mobile-only" | "never" =
+  const menuBreakpointChoice: "all" | "mobile-tablet" | "mobile-only" | "never" =
     isMenuDisabled
       ? "never"
-      : block.adapt?.tablet === "menu"
-        ? "mobile-tablet"
-        : "mobile-only";
+      : block.adapt?.desktop === "menu"
+        ? "all"
+        : block.adapt?.tablet === "menu"
+          ? "mobile-tablet"
+          : "mobile-only";
 
   const handleSelectHeaderMenuMode = (mode: "drop" | "right" | "left" | "full" | "none") => {
     if (!canEditContent) return;
     if (mode === "none") {
-      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
       dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
     } else {
-      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
-      if (menuBreakpointChoice === "mobile-tablet" || block.adapt?.tablet === "menu") {
+      if (menuBreakpointChoice === "all") {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: "menu" });
         dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      } else if (menuBreakpointChoice === "mobile-tablet" || block.adapt?.tablet === "menu") {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      } else {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: null });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
       }
       dispatch({
         type: "responsive/menu",
@@ -249,25 +262,32 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     }
   };
 
-  const handleSetMenuBreakpoints = (choice: "mobile-tablet" | "mobile-only" | "never") => {
+  const handleSetMenuBreakpoints = (choice: "all" | "mobile-tablet" | "mobile-only" | "never") => {
     if (!canEditContent) return;
-    if (choice === "mobile-tablet") {
-      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    if (choice === "all") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: "menu" });
       dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
-    } else if (choice === "mobile-only") {
       dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    } else if (choice === "mobile-tablet") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    } else if (choice === "mobile-only") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
       dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
     } else {
-      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
       dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
     }
   };
 
   const handleToggleMenuPreview = () => {
-    if (safeViewport && safeViewport.device === "desktop") {
+    if (safeViewport && safeViewport.device === "desktop" && menuBreakpointChoice !== "all") {
       safeViewport.setDevice("mobile");
     }
-    if (block.adapt?.mobile !== "menu") {
+    if (block.adapt?.mobile !== "menu" && menuBreakpointChoice !== "all") {
       dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
     }
     setIsMenuOpenPreview(!isMenuOpenPreview);
@@ -305,10 +325,12 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   };
 
   const headerLinks = def.elements
-    .filter((e) => !e.hidden && (e.role === "link" || (e.kind === "text" && e.role !== "heading") || e.kind === "icon"))
+    .filter((e) => !e.hidden && (e.role === "link" || e.role === "button" || (e.kind === "text" && e.role !== "heading") || e.kind === "icon" || e.control?.name === "search-trigger"))
     .map((e) => ({
       id: e.id,
-      label: e.text?.trim() || (e.kind === "icon" ? `Ícono (${e.icon ?? "estrella"})` : "Enlace"),
+      label: e.control?.name === "search-trigger"
+        ? (e.text?.trim() || "Buscador de trámites")
+        : (e.text?.trim() || (e.kind === "icon" ? `Ícono (${e.icon ?? "estrella"})` : "Elemento")),
       inMenu: currentMenu.itemIds.includes(e.id),
     }));
 
@@ -709,7 +731,7 @@ export function Inspector() {
   const { currentUser } = useAuth();
   const canEditCode = hasPermission(currentUser, "editCode");
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const paletteRef = useRef<HTMLDivElement>(null);
+  const paletteRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!paletteOpen) return;
@@ -742,28 +764,27 @@ export function Inspector() {
   const scope = element ? element.id : SECTION_KEY;
 
   const headerActions = (
-    <div ref={paletteRef} className="relative">
-      <button
-        type="button"
-        aria-label="Paleta de colores de la sección"
-        title="Desplegar paleta de colores de la sección"
-        onClick={() => setPaletteOpen(!paletteOpen)}
-        className={`flex h-6 w-6 items-center justify-center rounded-md text-xs transition-colors ${
-          paletteOpen
-            ? "bg-accent/20 text-accent font-semibold"
-            : "text-ink-dim hover:bg-hover hover:text-ink"
-        }`}
-      >
-        <PaletteIcon />
-      </button>
-
-      {paletteOpen && (
-        <div className="absolute right-0 top-8 z-50 w-72 rounded-xl border border-line bg-panel p-3 text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
-          <SectionColorPalette pageId={ownerPage.id} block={block} def={def} compact />
-        </div>
-      )}
-    </div>
+    <button
+      ref={paletteRef}
+      type="button"
+      aria-label="Paleta de colores de la sección"
+      title="Mostrar / ocultar paleta de colores de la sección"
+      onClick={() => setPaletteOpen(!paletteOpen)}
+      className={`flex h-6 w-6 items-center justify-center rounded-md text-xs transition-colors ${
+        paletteOpen
+          ? "bg-accent/20 text-accent font-semibold"
+          : "text-ink-dim hover:bg-hover hover:text-ink"
+      }`}
+    >
+      <PaletteIcon />
+    </button>
   );
+
+  const subHeader = paletteOpen ? (
+    <div className="border-b border-line bg-canvas/60 p-3 text-xs shadow-inner animate-in fade-in slide-in-from-top-1 duration-150">
+      <SectionColorPalette pageId={ownerPage.id} block={block} def={def} />
+    </div>
+  ) : null;
 
   return (
     <DockablePanel
@@ -771,6 +792,7 @@ export function Inspector() {
       categoryLabel={element ? `Elemento · ${def.name}` : "Sección"}
       onSelectSection={element ? () => dispatch({ type: "element/select", id: null }) : undefined}
       headerActions={headerActions}
+      subHeader={subHeader}
       onOpenCode={() => openFile()}
       canEditCode={canEditCode}
       onClose={() => dispatch({ type: "block/select", id: TITLE_SELECTION })}

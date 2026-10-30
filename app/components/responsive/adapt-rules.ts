@@ -6,7 +6,7 @@ import { MARGIN_LIMITS } from "./page-margin";
 import type { AutoStrategy } from "./types";
 
 /** Quita la entrada de un dispositivo; un registro vacío se guarda como «sin nada». */
-function withoutDevice<T>(record: Partial<Record<AdaptiveDevice, T>> | undefined, device: AdaptiveDevice) {
+function withoutDevice<T>(record: Partial<Record<Device, T>> | undefined, device: Device) {
   const rest = { ...record };
   delete rest[device];
   return Object.keys(rest).length > 0 ? rest : undefined;
@@ -18,17 +18,17 @@ const updatePage = (state: SiteState, pageId: string, update: (page: Page) => Pa
 });
 
 /** Elige cómo se adapta solo una sección (`null` = la inteligente); deja de ser un diseño a mano. */
-export function chooseStrategy(block: BlockInstance, device: AdaptiveDevice, strategy: AutoStrategy | null): BlockInstance {
+export function chooseStrategy(block: BlockInstance, device: Device, strategy: AutoStrategy | null): BlockInstance {
   const adapt = withoutDevice(block.adapt, device);
   return {
     ...block,
-    responsive: withoutDevice(block.responsive, device),
+    responsive: withoutDevice(block.responsive, device as AdaptiveDevice),
     adapt: strategy ? { ...adapt, [device]: strategy } : adapt,
   };
 }
 
 export type AdaptAction =
-  | { type: "responsive/adapt"; pageId: string; blockId: string; device: AdaptiveDevice; strategy: AutoStrategy | null }
+  | { type: "responsive/adapt"; pageId: string; blockId: string; device: Device; strategy: AutoStrategy | null }
   | { type: "responsive/adapt-page"; pageId: string; device: AdaptiveDevice; includeManual: boolean }
   | { type: "responsive/hide"; pageId: string; blockId: string; elementId?: string; device: Device; hidden: boolean }
   | { type: "responsive/margin"; pageId: string; device: AdaptiveDevice; margin: number | null };
