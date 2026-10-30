@@ -22,7 +22,12 @@ export function adaptToDevice(
 ): ComponentDef {
   const elements = visibleOn(view.elements, device);
   const shown = elements === view.elements ? view : { ...view, elements };
-  if (!isAdaptive(device)) return shown;
+  if (!isAdaptive(device)) {
+    if (block.adapt?.desktop === "menu") {
+      return STRATEGIES.menu(shown, available, block);
+    }
+    return shown;
+  }
 
   const layout = block.responsive?.[device];
   if (layout) return applyLayout(shown, layout);

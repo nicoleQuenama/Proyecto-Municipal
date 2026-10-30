@@ -28,10 +28,12 @@ import { patchComponentElement, resizeComponent } from "./component-scope-rules"
 import { placeBlock, placeMedia, placeTitle, transferBlock, transferMedia } from "../placement/placement-rules";
 import { mergePatch, moveBlock, resetFormat, resizeSection, styleBox, styleElements, updateBlock } from "./overrides";
 import {
+  getBlockSlot,
   isPageNameTaken,
   slugify,
   uniqueSlug,
 } from "./rules";
+import { replaceMediaInSite } from "../media/media-usage";
 import { clearRule, saveVariable, setRuleProp, withoutScope } from "../styles/mutations";
 import {
   TITLE_SELECTION,
@@ -210,22 +212,98 @@ const HANDLERS: Handlers = {
     updateCurrentPage(state, (page) => ({ ...page, media: page.media.filter((item) => item.id !== action.id) })),
 
   "block/add": (state, action) => {
-    if (!state.components.some((c) => c.id === action.componentId)) return state;
+    let components = state.components;
+    if (!components.some((c) => c.id === action.componentId)) {
+      const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === action.componentId);
+      if (example) {
+        components = [...components, example];
+      } else {
+        return state;
+      }
+    }
     const pageId = action.pageId ?? state.currentPageId;
     if (!state.pages.some((p) => p.id === pageId)) return state;
+
+    const comp = components.find((c) => c.id === action.componentId);
+    const slot = comp ? getBlockSlot({ id: action.id, componentId: action.componentId }, comp) : undefined;
 
     // Un bloque de código nace con un ejemplo que ya funciona.
     const block = {
       id: action.id,
       componentId: action.componentId,
+      ...(slot ? { slot } : {}),
       ...(action.componentId === CODE_COMPONENT_ID ? { code: DEFAULT_CODE } : {}),
     };
     const next = {
       ...state,
+      components,
       pages: state.pages.map((page) => (page.id === pageId ? { ...page, blocks: [...page.blocks, block] } : page)),
     };
     return { ...next, selectedId: action.id, selectedElementId: null };
   },
+
+  "page/apply-template": (state, action) => {
+    let components = [...state.components];
+    for (const compId of action.componentIds) {
+      if (!components.some((c) => c.id === compId)) {
+        const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === compId);
+        if (example) components.push(example);
+      }
+    }
+
+    const pageId = action.pageId ?? state.currentPageId;
+    if (!state.pages.some((p) => p.id === pageId)) return state;
+
+    const newBlocks = action.componentIds.map((componentId) => {
+      const comp = components.find((c) => c.id === componentId);
+      const slot = comp ? getBlockSlot({ id: "", componentId }, comp) : "body";
+      return {
+        id: crypto.randomUUID(),
+        componentId,
+        slot,
+        ...(componentId === CODE_COMPONENT_ID ? { code: DEFAULT_CODE } : {}),
+      };
+    });
+
+    return {
+      ...state,
+      components,
+      pages: state.pages.map((p) =>
+        p.id === pageId
+          ? {
+              ...p,
+              hideHeader: false,
+              hideFooter: false,
+              titleRemoved: true,
+              blocks: action.replace !== false ? newBlocks : [...p.blocks, ...newBlocks],
+            }
+          : p,
+      ),
+      currentPageId: pageId,
+      selectedId: newBlocks[0]?.id ?? TITLE_SELECTION,
+      selectedElementId: null,
+    };
+  },
+
+  "project-media/add": (state, action) => ({
+    ...state,
+    projectMedia: [action.asset, ...(state.projectMedia ?? [])],
+  }),
+
+  "project-media/remove": (state, action) => ({
+    ...state,
+    projectMedia: (state.projectMedia ?? []).filter((m) => m.id !== action.id),
+  }),
+
+  "project-media/replace": (state, action) =>
+    replaceMediaInSite(state, action.oldSrc, action.newSrc, action.newAlt),
+
+  "project-media/update-tags": (state, action) => ({
+    ...state,
+    projectMedia: (state.projectMedia ?? []).map((m) =>
+      m.id === action.id ? { ...m, tag: action.tag, tags: action.tags } : m,
+    ),
+  }),
 
   "block/remove": (state, action) => removeBlocks(state, [action.id]),
 
@@ -419,6 +497,22 @@ const HANDLERS: Handlers = {
   }),
 
   "rule/clear": (state, action) => ({ ...state, rules: clearRule(state.rules, action.scope, action.target) }),
+  "block/slot": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, slot: action.slot })),
+  "block/scope": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, scope: action.scope })),
+  "block/placement-mode": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => {
+      if (action.mode === "flow") {
+        const { placement: _, ...rest } = b;
+        return { ...rest, placementMode: "flow" };
+      }
+      return { ...b, placementMode: "overlay" };
+    }),
+  "page/layout-toggles": (state, action) => ({
+    ...state,
+    pages: state.pages.map((p) => (p.id === action.pageId ? { ...p, ...action.patch } : p)),
+  }),
 };
 
 export function siteReducer(state: SiteState, action: SiteAction): SiteState {

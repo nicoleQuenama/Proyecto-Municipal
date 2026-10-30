@@ -81,10 +81,15 @@ export function updateBlock(
   blockId: string,
   update: (block: BlockInstance) => BlockInstance,
 ): SiteState {
+  const targetPage =
+    state.pages.find((p) => p.id === pageId && p.blocks.some((b) => b.id === blockId)) ??
+    state.pages.find((p) => p.blocks.some((b) => b.id === blockId));
+  const effectivePageId = targetPage ? targetPage.id : pageId;
+
   return {
     ...state,
     pages: state.pages.map((page) =>
-      page.id === pageId
+      page.id === effectivePageId
         ? { ...page, blocks: page.blocks.map((block) => (block.id === blockId ? update(block) : block)) }
         : page,
     ),
@@ -154,8 +159,8 @@ export function moveBlock(state: SiteState, pageId: string, blockId: string, dir
   const page = state.pages.find((p) => p.id === pageId);
   if (!page) return state;
 
-  const { top, body } = splitBlocks(page, state.components);
-  const group = [top, body].find((blocks) => blocks.some((block) => block.id === blockId));
+  const { top, body, bottom } = splitBlocks(page, state.components);
+  const group = [top, body, bottom].find((blocks) => blocks.some((block) => block.id === blockId));
   const index = group?.findIndex((block) => block.id === blockId) ?? -1;
   const neighbour = group?.[index + direction];
   if (!group || index < 0 || !neighbour) return state;

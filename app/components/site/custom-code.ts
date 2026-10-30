@@ -1,6 +1,7 @@
 /** Reglas puras del código propio (clases de Tailwind y CSS) de una sección o elemento. */
 
 import { SECTION_KEY, type BlockInstance, type ComponentDef, type CustomStyle } from "./types";
+import { LAYOUT_CLASS } from "../customize/layout-presets";
 
 /** Identifica en el DOM una sección o elemento de un bloque (`data-target`). */
 export const targetKey = (blockId: string, key: string) => `${blockId}:${key}`;
@@ -53,8 +54,22 @@ export function componentCss(def: ComponentDef): string {
 }
 
 /** Las clases de Tailwind de una sección o elemento: las de todo el componente y, encima, las del bloque. */
-export const customClasses = (block: BlockInstance, key: string, def?: ComponentDef): string =>
-  [def?.styles?.[key]?.classes, block.custom?.[key]?.classes].filter(Boolean).join(" ");
+export const customClasses = (block: BlockInstance, key: string, def?: ComponentDef): string => {
+  const defClasses = def?.styles?.[key]?.classes;
+  const blockClasses = block.custom?.[key]?.classes;
+  if (!defClasses) return blockClasses ?? "";
+  if (!blockClasses) return defClasses;
+
+  if (key === SECTION_KEY && blockClasses.split(/\s+/).some((name) => LAYOUT_CLASS.test(name))) {
+    const cleanDef = defClasses
+      .split(/\s+/)
+      .filter((name) => !LAYOUT_CLASS.test(name))
+      .join(" ");
+    return [cleanDef, blockClasses].filter(Boolean).join(" ");
+  }
+
+  return [defClasses, blockClasses].filter(Boolean).join(" ");
+};
 
 /** `display: flex` o `grid`, en CSS o con clases: los elementos de la sección se acomodan solos en lugar de ir en su posición. */
 const FLOW_CSS = /(^|[;{\s])display\s*:\s*(inline-)?(flex|grid)\b/i;

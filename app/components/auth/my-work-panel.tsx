@@ -95,7 +95,9 @@ export function MyWorkPanel() {
           {works.map((work) => (
             <li key={work.pageId} className="flex flex-col gap-1">
               <button type="button" onClick={() => { go(work); setOpen(false); }} className="flex items-center gap-2 rounded-md bg-accent/10 px-2 py-1.5 text-left font-medium hover:bg-accent/20">
-                <span aria-hidden>✏</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+                  <path d="M11 2l3 3-8 8H3v-3l8-8z" />
+                </svg>
                 <span className="min-w-0 flex-1 truncate">{work.pageName}</span>
                 <span className="font-normal text-ink-dim">{work.whole ? "página entera" : `${work.blocks.length} ${work.blocks.length === 1 ? "sección" : "secciones"}`}</span>
               </button>

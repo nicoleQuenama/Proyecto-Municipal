@@ -11,6 +11,8 @@ import { VersioningProvider } from "../versioning/versioning-context";
 import { ViewportProvider } from "../viewport/viewport-context";
 import { WorkbenchProvider } from "../workbench/workbench-context";
 
+import { SearchDialog } from "../search/search-dialog";
+
 const Passthrough = ({ children }: { children: ReactNode }) => <>{children}</>;
 
 /** `viewer`: el sitio publicado para el público: parte de ese sitio, no guarda nada y no sale de «Probar». */
@@ -26,7 +28,10 @@ export function CmsProviders({ children, viewer }: { children: ReactNode; viewer
                   <WorkbenchProvider>
                     <CommandsProvider>
                       <FormatMenuProvider>
-                        <RecorderProvider>{children}</RecorderProvider>
+                        <RecorderProvider>
+                          {children}
+                          <SearchDialog />
+                        </RecorderProvider>
                       </FormatMenuProvider>
                     </CommandsProvider>
                   </WorkbenchProvider>

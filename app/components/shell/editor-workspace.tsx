@@ -9,6 +9,7 @@ import { BuilderHost } from "../builder/builder-host";
 import { CommandPalette } from "../commands/command-palette";
 import { ShortcutsSettings } from "../commands/shortcuts-settings";
 import { Inspector } from "../customize/inspector";
+import { InspectorDockProvider } from "../customize/dockable-inspector-context";
 import { TailwindRuntime } from "../customize/tailwind-runtime";
 import { FormatMenu } from "../format/format-menu";
 import { MediaDropZone } from "../media/media-drop-zone";
@@ -18,7 +19,6 @@ import { ConnectionOverlay } from "../navigation/connection-overlay";
 import { LinkPopover } from "../navigation/link-popover";
 import { ModeBar } from "../navigation/mode-bar";
 import { PreviewToggle } from "../navigation/preview-toggle";
-import { SectionColors } from "../section-colors/section-colors";
 import { SidePanel } from "../side-panel/side-panel";
 import { SiteStyles } from "../site/site-styles";
 import { FormatBar } from "../title-editor/format-bar";
@@ -53,19 +53,20 @@ export function EditorWorkspace() {
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 bg-canvas">
-          <SidePanel />
-          <div className="relative flex min-w-0 flex-1">
-            <CanvasSurface>
-              <CanvasPages />
-            </CanvasSurface>
-            <BottomToolbar />
-            <SectionColors />
-            <RecorderBar />
-            <MyWorkPanel />
-          </div>
-          <Inspector />
-        </main>
+        <InspectorDockProvider>
+          <main className="relative flex min-h-0 flex-1 bg-canvas overflow-hidden">
+            <SidePanel />
+            <div className="relative flex min-w-0 flex-1">
+              <CanvasSurface>
+                <CanvasPages />
+              </CanvasSurface>
+              <BottomToolbar />
+              <RecorderBar />
+              <MyWorkPanel />
+            </div>
+            <Inspector />
+          </main>
+        </InspectorDockProvider>
 
         <footer></footer>
       </div>

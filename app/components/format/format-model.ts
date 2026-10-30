@@ -84,8 +84,8 @@ function commonOf<T>(values: T[]): T | undefined {
   return values.length > 0 && values.every((value) => value === values[0]) ? values[0] : undefined;
 }
 
-/** Quita todo el formato propio de un elemento (lo oculto no se toca). */
-const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden" | "removed" | "hiddenOn" | "alt">]: undefined } = {
+/** Quita todo el formato propio de un elemento (lo oculto y contenido no se tocan). */
+const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden" | "removed" | "hiddenOn" | "alt" | "src">]: undefined } = {
   x: undefined,
   y: undefined,
   width: undefined,

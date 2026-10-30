@@ -22,6 +22,7 @@ export function AdaptAssistant() {
   const dispatch = useSiteDispatch();
   const { components, sources } = useSite();
   const [explaining, setExplaining] = useState(false);
+  const [minimized, setMinimized] = useState(true);
   if (!isAdaptive(device) || !page) return null;
 
   const summary = summarizeAdaptation(page.blocks, device);
@@ -35,12 +36,41 @@ export function AdaptAssistant() {
     copies: copiesFrom(sources),
   });
 
+  if (minimized) {
+    return (
+      <div className="absolute bottom-[8.5rem] left-1/2 z-30 -translate-x-1/2">
+        <button
+          type="button"
+          onClick={() => setMinimized(false)}
+          title={`Ver asistente de sugerencias para ${name}`}
+          className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105"
+        >
+          <span>Sugerencias {name}</span>
+          {suggestions.length > 0 && (
+            <span className="rounded-full bg-emerald-600 px-1.5 py-0.2 text-[9px] font-semibold text-white">
+              {suggestions.length}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       role="region"
       aria-label={`Asistente responsive para ${name}`}
       className="absolute bottom-[8.5rem] left-1/2 z-30 flex w-max max-w-[min(42rem,calc(100%-1rem))] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-panel px-3 py-2 text-xs text-ink shadow-2xl"
     >
+      <button
+        type="button"
+        onClick={() => setMinimized(true)}
+        title="Ocultar asistente"
+        aria-label="Ocultar asistente"
+        className="ml-auto order-last flex h-6 w-6 items-center justify-center rounded text-sm text-ink-dim hover:bg-hover hover:text-ink"
+      >
+        ×
+      </button>
       <button type="button" onClick={() => adaptAll(false)} className={`${button} bg-accent text-white hover:opacity-90`}>
         Adaptar toda la página a {name}
       </button>

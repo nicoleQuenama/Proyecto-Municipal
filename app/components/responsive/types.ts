@@ -1,5 +1,5 @@
 import type { IconName } from "../icons/icon-set";
-import type { AdaptiveDevice } from "./devices";
+import type { AdaptiveDevice, Device } from "./devices";
 
 /** Posición y tamaño de un elemento dentro de su sección. */
 export interface Frame {
@@ -26,7 +26,7 @@ export type AutoStrategy = "scale" | "stack" | "menu";
 export type AdaptMode = AutoStrategy | "manual";
 
 /** La estrategia automática elegida a mano por dispositivo; el que falta usa la inteligente. */
-export type AdaptChoices = Partial<Record<AdaptiveDevice, AutoStrategy>>;
+export type AdaptChoices = Partial<Record<Device, AutoStrategy>>;
 
 /** Cómo se abre el panel de un menú: cae bajo la cabecera, entra por un lado o cubre la pantalla. */
 export type MenuPanel = "drop" | "left" | "right" | "full";

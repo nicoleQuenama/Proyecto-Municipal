@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground } from "../background/background-css";
 import { useShapeDrawing } from "../drawing/use-shape-drawing";
@@ -12,7 +12,7 @@ import { usePageCode } from "../behaviors/use-page-code";
 import { MediaList } from "../media/media-list";
 import { VisibilityEye } from "../site/visibility-eye";
 import { PageBlocks } from "../site/page-blocks";
-import { routeOf } from "../site/rules";
+import { routeOf, splitBlocks } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { useClipboardKeys } from "../site/use-clipboard-keys";
 import { useHistoryKeys } from "../site/use-history-keys";
@@ -48,7 +48,7 @@ const CURSORS: Partial<Record<Tool, string>> = {
 };
 
 export function CanvasSurface({ children }: { children: ReactNode }) {
-  const { tool } = useViewport();
+  const { tool, zoom, setZoom } = useViewport();
   useAutoFit();
   const deselect = useDeselect();
   const drawing = useShapeDrawing();
@@ -60,6 +60,71 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
   const marquee = useMarquee();
   const gradient = useGradientTool();
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const anchorRef = useRef<{
+    pointerX: number;
+    pointerY: number;
+    contentX: number;
+    contentY: number;
+    oldZoom: number;
+    newZoom: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const currentZoom = zoomRef.current;
+        const normalizedDelta = e.deltaMode === 1 ? e.deltaY * 20 : e.deltaY;
+        const factor = Math.exp(-normalizedDelta * 0.002);
+        let nextZoom = Math.round(currentZoom * factor);
+        if (nextZoom === currentZoom) {
+          nextZoom = currentZoom + (normalizedDelta < 0 ? 1 : -1);
+        }
+        nextZoom = Math.min(300, Math.max(10, nextZoom));
+
+        if (nextZoom !== currentZoom) {
+          const rect = surface.getBoundingClientRect();
+          const pointerX = e.clientX - rect.left;
+          const pointerY = e.clientY - rect.top;
+          const contentX = pointerX + surface.scrollLeft;
+          const contentY = pointerY + surface.scrollTop;
+
+          anchorRef.current = {
+            pointerX,
+            pointerY,
+            contentX,
+            contentY,
+            oldZoom: currentZoom,
+            newZoom: nextZoom,
+          };
+
+          setZoom(nextZoom);
+        }
+      }
+    };
+
+    surface.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    return () => surface.removeEventListener("wheel", onWheel, { capture: true });
+  }, [setZoom]);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    const anchor = anchorRef.current;
+    if (!surface || !anchor) return;
+
+    const scaleRatio = anchor.newZoom / anchor.oldZoom;
+    surface.scrollLeft = anchor.contentX * scaleRatio - anchor.pointerX;
+    surface.scrollTop = anchor.contentY * scaleRatio - anchor.pointerY;
+    anchorRef.current = null;
+  }, [zoom]);
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (tool !== "hand") {
@@ -83,6 +148,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
 
   return (
     <div
+      ref={surfaceRef}
       id={CANVAS_SURFACE_ID}
       onPointerDownCapture={(e) => {
         drawing.onPointerDownCapture(e);
@@ -120,7 +186,7 @@ interface PageArtboardProps {
 
 /** Un marco de página: su etiqueta y la página con su titular, bloques y medios. */
 export function PageArtboard({ page, active, tiled, production = false, shellPage }: PageArtboardProps) {
-  const { device, zoom } = useViewport();
+  const { device, zoom, focusMode, setFocusMode } = useViewport();
   const styles = useStyles(page.id);
   const dispatch = useSiteDispatch();
   const { mode, hotDrop, transition, transitionKey } = useNavigation();
@@ -155,6 +221,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
     : fullWidth
       ? { paddingLeft: centered, paddingRight: centered }
       : undefined;
+  const pagePx = isAdaptive(device) ? `${margin}px` : fullWidth ? centered : ownSide;
   // El ancho (sin zoom) en que se maqueta la página: de él depende el tamaño de los textos adaptables.
   const layoutWidth = production && fitScale === 1 ? frameWidth || current.width : current.width;
   const baseHeight = production ? `${100 / fitScale}vh` : "600px";
@@ -167,6 +234,13 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   // Cada marco es un destino donde soltar la flecha de un enlace.
   const dropProps = tiled ? { [DROP_ATTRIBUTE]: pageDrop(page.id) } : {};
   const isHot = hotDrop === pageDrop(page.id);
+
+  const { pages, components } = useSite();
+  const pageBlocksSlot = splitBlocks(page, components, pages);
+  const hasTopHeader = !page.hideHeader && (shellPage ? true : pageBlocksSlot.top.length > 0);
+  const hasBottomFooter = !page.hideFooter && pageBlocksSlot.bottom.length > 0;
+  const pagePt = hasTopHeader ? "0rem" : "3rem";
+  const pagePb = hasBottomFooter ? "0rem" : "3rem";
 
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden });
@@ -193,47 +267,95 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       className={
         tiled
           ? `shrink-0 ${limited && !hasMine ? "opacity-35 saturate-50" : ""}`
-          : `mx-auto w-full transition-[max-width] duration-200 ${production ? "min-h-full bg-white" : ""}`
+          : production
+            ? `mx-auto w-full transition-[max-width] duration-200 min-h-full bg-white`
+            : `shrink-0 mx-auto`
       }
-      // En fila, el marco ocupa su ancho ya escalado y solo la página se escala; a solas, todo junto.
+      // En fila o enfoque, el marco ocupa su ancho ya escalado y la página interna se escala con zoom.
       // En producción, en tablet y móvil, la página tiene el ancho del dispositivo.
-      style={tiled ? { width: current.width * scale } : fits ? undefined : { maxWidth: current.width }}
+      style={production ? (fits ? undefined : { maxWidth: current.width }) : { width: current.width * scale }}
     >
       {!production && (
-      <p className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
-        {tiled ? (
-          <>
-            <button
-              type="button"
-              onClick={select}
-              className={`min-w-0 truncate rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""}`}
-            >
-              {page.name} · {routeOf(page)}
-            </button>
-            {limited && hasMine && <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white">✏ Puedes editar</span>}
-            {limited && !hasMine && <span className="shrink-0 text-[10px]">sin cambios para ti</span>}
-            <span title="Zoom de la vista: el tamaño real es 100 %" className="shrink-0 text-xs tabular-nums">
-              {zoom}%
-            </span>
-            <VisibilityEye hidden={false} zoomed={false} label={page.name} onToggle={() => setHidden(true)} className="flex shrink-0" />
-            <PageLabelActions page={page} />
-          </>
-        ) : (
-          <>
-            {page.name} · {current.label} · {current.width}px
-          </>
-        )}
-      </p>
+        <div className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
+          {tiled ? (
+            <>
+              <button
+                type="button"
+                onClick={select}
+                className={`min-w-0 truncate rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""}`}
+              >
+                {page.name} · {routeOf(page)}
+              </button>
+              {limited && hasMine && <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white">Puedes editar</span>}
+              {limited && !hasMine && <span className="shrink-0 text-[10px]">sin cambios para ti</span>}
+              <span title="Zoom de la vista: el tamaño real es 100 %" className="shrink-0 text-xs tabular-nums">
+                {zoom}%
+              </span>
+              <button
+                type="button"
+                title="Enfocar esta página para editar cómodamente"
+                onClick={() => {
+                  select();
+                  setFocusMode(true);
+                }}
+                className="flex shrink-0 items-center gap-1 rounded bg-panel border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors"
+              >
+                Enfocar
+              </button>
+              <VisibilityEye hidden={false} zoomed={false} label={page.name} onToggle={() => setHidden(true)} className="flex shrink-0" />
+              <PageLabelActions page={page} />
+            </>
+          ) : (
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className="font-semibold text-ink">{page.name} · {routeOf(page)} · {current.label} · {current.width}px</span>
+              {focusMode && (
+                <button
+                  type="button"
+                  onClick={() => setFocusMode(false)}
+                  className="flex items-center gap-1.5 rounded-md bg-panel border border-line px-2.5 py-1 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors"
+                  title="Volver a la vista con todas las páginas en mosaico"
+                >
+                  Ver todas las páginas
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
-      <div ref={frame} className="relative" style={tiled ? { width: current.width, zoom: scale } : fitScale > 1 ? { width: current.width, zoom: fitScale } : undefined}>
+      <div
+        ref={frame}
+        className="relative"
+        style={
+          production
+            ? fitScale > 1
+              ? { width: current.width, zoom: fitScale }
+              : undefined
+            : { width: current.width, zoom: scale }
+        }
+      >
         <div
           ref={pageRef}
           data-site-page
-          className={`relative isolate bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
-            production ? "px-10 py-12" : "rounded-sm px-10 py-12 shadow-2xl"
-          } ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
-          style={{ ...boxStyle(styles.page), ...(page.color ? { background: page.color } : {}), ...sideStyle, ...({ "--cms-w": `${layoutWidth}px` } as CSSProperties), ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}), minHeight: `max(${baseHeight}, ${placedExtent}px)` }}
+          className={`relative isolate flex flex-col bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
+            production ? "px-10" : "rounded-sm px-10 shadow-2xl"
+          } ${hasTopHeader ? "pt-0" : "pt-12"} ${hasBottomFooter ? "pb-0" : "pb-12"} ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
+          style={{
+            ...boxStyle(styles.page),
+            ...(page.color ? { background: page.color } : {}),
+            ...sideStyle,
+            paddingTop: hasTopHeader ? 0 : undefined,
+            paddingBottom: hasBottomFooter ? 0 : undefined,
+            ...({
+              "--page-px": pagePx,
+              "--page-pt": pagePt,
+              "--page-pb": pagePb,
+              "--page-py": pagePt,
+              "--cms-w": `${layoutWidth}px`,
+            } as CSSProperties),
+            ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}),
+            minHeight: `max(${baseHeight}, ${placedExtent}px)`,
+          }}
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
           {mode === "edit" && !production && <CommentLayer page={page} />}
@@ -241,18 +363,24 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           <FullBleedContext value={fullWidth}>
           <PageGuidesProvider>
           {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
-          {shellPage && <PageBlocks page={shellPage} slot="top" interactive={false} />}
+          {shellPage && !page.hideHeader && <PageBlocks page={shellPage} slot="top" interactive={false} />}
 
           {/* Lo que cambia de una página a otra: la clave lo vuelve a montar y reproduce la transición. */}
           <div
             key={`${page.id}:${transitionKey}`}
-            className={animation ? `nav-anim-${animation.kind}` : ""}
-            style={animation ? { animationDuration: `${animation.seconds}s` } : undefined}
+            className={`flex flex-col flex-1 w-full ${animation ? `nav-anim-${animation.kind}` : ""}`}
+            style={{
+              minHeight: "inherit",
+              ...(animation ? { animationDuration: `${animation.seconds}s` } : {}),
+            }}
           >
             {!shellPage && <PageBlocks page={page} slot="top" interactive={active} />}
             <TitleCanvas page={page} interactive={active} />
-            <PageBlocks page={page} slot="body" interactive={active} />
-            <MediaList page={page} interactive={active} />
+            <div className="flex-1 flex flex-col relative" style={placedExtent > 0 ? { minHeight: `${placedExtent}px` } : undefined}>
+              <PageBlocks page={page} slot="body" interactive={active} />
+              <MediaList page={page} interactive={active} />
+            </div>
+            <PageBlocks page={page} slot="bottom" interactive={active} />
           </div>
           </PageGuidesProvider>
           </FullBleedContext>
@@ -280,8 +408,23 @@ export function CanvasPages() {
   const { mode } = useNavigation();
   const { pages, currentPageId } = useSite();
   const { currentUser } = useAuth();
+  const { focusMode } = useViewport();
 
   if (mode === "preview") return <><ProductionView /><ModalLayer /></>;
+
+  if (focusMode) {
+    const activePage = pages.find((p) => p.id === currentPageId) ?? pages[0];
+    if (activePage) {
+      return (
+        <>
+          <div className="flex w-full min-w-full justify-center items-start py-4">
+            <PageArtboard key={activePage.id} page={activePage} active={true} tiled={false} />
+          </div>
+          <ModalLayer />
+        </>
+      );
+    }
+  }
 
   // Con acceso limitado solo se muestran las páginas donde hay algo que cambiar: lo demás sería ruido.
   const mine = currentUser?.access?.scope

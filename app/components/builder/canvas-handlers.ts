@@ -23,7 +23,7 @@ export const CANVAS_HANDLERS: Handlers<"meta" | "template" | "link" | "select"> 
         ([, link]) => !targetsPage(link) || action.pageIds.includes(link.pageId),
       ),
     );
-    return { ...state, width: template.width, height: template.height, elements, links, selectedId: null };
+    return { ...state, width: template.width, height: template.height, elements, links, styles: template.styles, selectedId: null };
   },
 
   link: (state, action) => {

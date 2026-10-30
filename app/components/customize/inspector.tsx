@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { ExportButton } from "../export/export-button";
@@ -17,7 +17,29 @@ import { LinkParamsControls } from "../dynamic/link-params-controls";
 import { RepeatControls } from "../data-sources/repeat-controls";
 import { SectionBackground } from "../background/section-background";
 import { IconPicker } from "../icons/icon-picker";
+import {
+  addCardToComponent,
+  addButtonToComponent,
+  deleteCardFromComponent,
+  duplicateCardInComponent,
+  fillComponentWithThreeCards,
+  findRootCardId,
+  getContainerCards,
+  organizeFooterIntoColumns,
+  createDefaultMunicipalFooter,
+  moveElementToFooterColumn,
+  addLinkToFooterColumn,
+  addLinkToHeader,
+  addSearchButtonToHeader,
+  moveElementOrderInComponent,
+} from "../site/container-card-rules";
+import { getBlockSlot } from "../site/rules";
+import { useFlag } from "../responsive/flag-store";
+import { useViewport } from "../viewport/viewport-context";
+import { defaultMenu, toggleItem } from "../responsive/menu-model";
 import { GroupControls } from "./group-controls";
+import { DockablePanel } from "./dockable-panel";
+import { SectionColorPalette } from "../section-colors/section-color-palette";
 import { LayoutControls } from "./layout-controls";
 import { ControlControls } from "../forms/control-controls";
 import { MediaPerformanceControls } from "../media/media-performance-controls";
@@ -84,7 +106,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const level: StyleLevel = settings.scope;
   const mine = mineLabel(useSharedUsage());
   const setLevel = (value: StyleLevel) => setSettings((current) => ({ ...current, scope: value }));
-  const custom = (level === "block" ? block.custom?.[scope] : def.styles?.[scope]) ?? { classes: "", css: "" };
+  const custom = (level === "block" ? (block.custom?.[scope] ?? def.styles?.[scope]) : def.styles?.[scope]) ?? { classes: "", css: "" };
   const canEditContent = hasPermission(currentUser, "editContent");
   const canEditStyles = hasPermission(currentUser, "editStyles");
   const canEditCode = hasPermission(currentUser, "editCode");
@@ -95,6 +117,14 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       level === "block"
         ? { type: "block/custom", pageId, blockId: block.id, key: scope, patch }
         : { type: "component/styles", componentId: def.id, key: scope, patch },
+    );
+  };
+  const saveSectionStyle = (patch: Partial<CustomStyle>, allowed = canEditStyles) => {
+    if (!allowed) return;
+    dispatch(
+      level === "block"
+        ? { type: "block/custom", pageId, blockId: block.id, key: SECTION_KEY, patch }
+        : { type: "component/styles", componentId: def.id, key: SECTION_KEY, patch },
     );
   };
   const openCss = () => {
@@ -118,10 +148,277 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   };
 
   const element = def.elements.find((e) => e.id === scope);
+  const currentSlot = getBlockSlot(block, def);
+  const currentScope = block.scope ?? (pages.find((p) => p.id === pageId)?.isHome ? "global" : "page");
+
+  const containerCards = getContainerCards(def);
+  const rootCardId = element ? findRootCardId(def.elements, element.id) : null;
+
+  const handleAddCard = () => {
+    if (!canEditContent) return;
+    const { component: updated, newCardId } = addCardToComponent(def);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newCardId });
+  };
+
+  const handleDuplicateCard = (cardId: string) => {
+    if (!canEditContent) return;
+    const { component: updated, newCardId } = duplicateCardInComponent(def, cardId);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newCardId });
+  };
+
+  const handleDeleteCard = (cardId: string) => {
+    if (!canEditContent) return;
+    const updated = deleteCardFromComponent(def, cardId);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: null });
+  };
+
+  const handleFillThreeCards = () => {
+    if (!canEditContent) return;
+    const updated = fillComponentWithThreeCards(def);
+    dispatch({ type: "component/save", component: updated });
+  };
+
+  const handleAddButton = () => {
+    if (!canEditContent) return;
+    const { component: updated, newButtonId } = addButtonToComponent(def);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newButtonId });
+  };
+
+  const isHeader =
+    currentSlot === "header" ||
+    (currentSlot !== "footer" &&
+      (def.id.toLowerCase().includes("navbar") ||
+       def.id.toLowerCase().includes("header") ||
+       def.name.toLowerCase().includes("cabecera") ||
+       def.name.toLowerCase().includes("navega") ||
+       def.name.toLowerCase().includes("barra") ||
+       (def.category === "navigation" &&
+        !def.id.toLowerCase().includes("footer") &&
+        !def.name.toLowerCase().includes("pie"))));
+
+  const isFooter =
+    !isHeader &&
+    (currentSlot === "footer" ||
+     def.id.toLowerCase().includes("footer") ||
+     def.name.toLowerCase().includes("footer") ||
+     def.name.toLowerCase().includes("pie") ||
+     (def.category === "navigation" &&
+      (def.id.toLowerCase().includes("footer") || def.name.toLowerCase().includes("pie"))));
+
+  const [isMenuOpenPreview, setIsMenuOpenPreview] = useFlag(`menu:${block.id}`);
+  let safeViewport: any = null;
+  try {
+    safeViewport = useViewport();
+  } catch {
+    safeViewport = null;
+  }
+
+  const currentMenu = block.menu ?? defaultMenu(def);
+  const isMenuDisabled =
+    block.adapt?.mobile === "scale" && block.adapt?.tablet === "scale" && block.adapt?.desktop !== "menu";
+  const activeMenuMode: "drop" | "right" | "left" | "full" | "none" = isMenuDisabled
+    ? "none"
+    : (currentMenu.panel ?? "drop");
+
+  const menuBreakpointChoice: "all" | "mobile-tablet" | "mobile-only" | "never" =
+    isMenuDisabled
+      ? "never"
+      : block.adapt?.desktop === "menu"
+        ? "all"
+        : block.adapt?.tablet === "menu"
+          ? "mobile-tablet"
+          : "mobile-only";
+
+  const handleSelectHeaderMenuMode = (mode: "drop" | "right" | "left" | "full" | "none") => {
+    if (!canEditContent) return;
+    if (mode === "none") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
+    } else {
+      if (menuBreakpointChoice === "all") {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: "menu" });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      } else if (menuBreakpointChoice === "mobile-tablet" || block.adapt?.tablet === "menu") {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      } else {
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: null });
+        dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+      }
+      dispatch({
+        type: "responsive/menu",
+        pageId,
+        blockId: block.id,
+        patch: { panel: mode, icon: "menu" },
+      });
+    }
+  };
+
+  const handleSetMenuBreakpoints = (choice: "all" | "mobile-tablet" | "mobile-only" | "never") => {
+    if (!canEditContent) return;
+    if (choice === "all") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: "menu" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    } else if (choice === "mobile-tablet") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "menu" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    } else if (choice === "mobile-only") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    } else {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "desktop", strategy: null });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "tablet", strategy: "scale" });
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "scale" });
+    }
+  };
+
+  const handleToggleMenuPreview = () => {
+    if (safeViewport && safeViewport.device === "desktop" && menuBreakpointChoice !== "all") {
+      safeViewport.setDevice("mobile");
+    }
+    if (block.adapt?.mobile !== "menu" && menuBreakpointChoice !== "all") {
+      dispatch({ type: "responsive/adapt", pageId, blockId: block.id, device: "mobile", strategy: "menu" });
+    }
+    setIsMenuOpenPreview(!isMenuOpenPreview);
+  };
+
+  const handleAddHeaderLink = () => {
+    if (!canEditContent) return;
+    const { component: updated, newLinkId } = addLinkToHeader(def);
+    dispatch({ type: "component/save", component: updated });
+    const menu = block.menu ?? defaultMenu(updated);
+    if (!menu.itemIds.includes(newLinkId)) {
+      dispatch({
+        type: "responsive/menu",
+        pageId,
+        blockId: block.id,
+        patch: { itemIds: [...menu.itemIds, newLinkId] },
+      });
+    }
+    dispatch({ type: "element/select", id: newLinkId });
+  };
+
+  const hasSearchInHeader = def.elements.some(
+    (e) => e.control?.name === "search-trigger" || e.text.toLowerCase().includes("buscar"),
+  );
+
+  const handleToggleSearchInHeader = () => {
+    if (!canEditContent) return;
+    if (hasSearchInHeader) {
+      window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query: "" } }));
+    } else {
+      const { component: updated, searchId } = addSearchButtonToHeader(def);
+      dispatch({ type: "component/save", component: updated });
+      dispatch({ type: "element/select", id: searchId });
+    }
+  };
+
+  const headerLinks = def.elements
+    .filter((e) => !e.hidden && (e.role === "link" || e.role === "button" || (e.kind === "text" && e.role !== "heading") || e.kind === "icon" || e.control?.name === "search-trigger"))
+    .map((e) => ({
+      id: e.id,
+      label: e.control?.name === "search-trigger"
+        ? (e.text?.trim() || "Buscador de trámites")
+        : (e.text?.trim() || (e.kind === "icon" ? `Ícono (${e.icon ?? "estrella"})` : "Elemento")),
+      inMenu: currentMenu.itemIds.includes(e.id),
+    }));
+
+  const handleToggleHeaderItemInMenu = (elementId: string, inMenu: boolean) => {
+    if (!canEditContent) return;
+    const updatedItemIds = toggleItem(currentMenu, elementId, inMenu);
+    dispatch({
+      type: "responsive/menu",
+      pageId,
+      blockId: block.id,
+      patch: { itemIds: updatedItemIds },
+    });
+  };
+
+  const isElementInHeaderMenu = element ? currentMenu.itemIds.includes(element.id) : false;
+
+  const footerColumns = def.elements.filter((e) => !e.parentId && e.role === "container");
+  const totalFooterCols = footerColumns.length > 0 ? footerColumns.length : 3;
+
+  const currentParentColId = element?.parentId;
+  const currentColIndex = currentParentColId
+    ? footerColumns.findIndex((c) => c.id === currentParentColId)
+    : -1;
+
+  const handleOrganizeFooter = (cols: 1 | 2 | 3 | 4) => {
+    if (!canEditContent) return;
+    const updated = organizeFooterIntoColumns(def, cols);
+    dispatch({ type: "component/save", component: updated });
+  };
+
+  const handleResetMunicipalFooter = () => {
+    if (!canEditContent) return;
+    const updated = createDefaultMunicipalFooter(def.id);
+    dispatch({ type: "component/save", component: updated });
+  };
+
+  const handleMoveElementToFooterCol = (colIdx: number) => {
+    if (!canEditContent || !element) return;
+    const updated = moveElementToFooterColumn(def, element.id, colIdx);
+    dispatch({ type: "component/save", component: updated });
+  };
+
+  const handleAddFooterLink = (colIdx: number) => {
+    if (!canEditContent) return;
+    const { component: updated, newLinkId } = addLinkToFooterColumn(def, colIdx);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newLinkId });
+  };
+
+  const handleAlignElement = (align: "left" | "center" | "right") => {
+    if (!canEditContent || !element) return;
+    dispatch({
+      type: "component/element",
+      componentId: def.id,
+      pageId,
+      blockId: block.id,
+      elementId: element.id,
+      patch: { align },
+    });
+  };
+
+  const handleMoveElementOrder = (direction: -1 | 1) => {
+    if (!canEditContent || !element) return;
+    const updated = moveElementOrderInComponent(def, element.id, direction);
+    dispatch({ type: "component/save", component: updated });
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <HideOnControls pageId={pageId} block={block} def={def} elementId={element?.id} />
+      {(def.id.includes("search") || element?.control?.name?.includes("search") || element?.text.toLowerCase().includes("buscar")) && (
+        <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink">Buscador Ciudadano</span>
+            <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">Activo</span>
+          </div>
+          <p className="text-[11px] text-ink-dim leading-snug">
+            Al hacer clic o presionar Enter, se despliegan automáticamente todos los trámites, páginas y servicios municipales encontrados.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query: "" } }))}
+            className="flex items-center justify-center gap-1.5 h-8 rounded-md bg-accent px-3 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 transition-all cursor-pointer"
+          >
+            Probar buscador ahora
+          </button>
+        </div>
+      )}
       {element?.kind === "icon" && canEditContent && (
         <Collapsible title="Ícono">
           <IconPicker
@@ -138,9 +435,152 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}
       {!element && <SectionBackground pageId={pageId} block={block} />}
       {!element && canEditContent && <LayerControls pageId={pageId} block={block} />}
+      {canEditStyles && (
+        <Collapsible title="Colores de la sección" defaultOpen={!element}>
+          <SectionColorPalette pageId={pageId} block={block} def={def} />
+        </Collapsible>
+      )}
+      {!element && canEditContent && (
+        <div role="group" aria-label="Rol y ubicación de la sección" className="flex flex-col gap-2 rounded-lg border border-line bg-canvas/40 p-2.5">
+          <p className="text-[11px] font-semibold text-ink">Rol y ubicación de sección</p>
+          <div className="grid grid-cols-3 gap-1 rounded-md bg-canvas p-1 text-[11px]">
+            <button
+              type="button"
+              aria-pressed={currentSlot === "header"}
+              onClick={() => dispatch({ type: "block/slot", pageId, blockId: block.id, slot: "header" })}
+              className={`h-7 rounded flex items-center justify-center gap-1 font-medium transition-colors ${
+                currentSlot === "header" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink hover:bg-hover"
+              }`}
+              title="Se ubica siempre arriba de la página ocupando el ancho completo"
+            >
+              Encabezado
+            </button>
+            <button
+              type="button"
+              aria-pressed={currentSlot === "body"}
+              onClick={() => dispatch({ type: "block/slot", pageId, blockId: block.id, slot: "body" })}
+              className={`h-7 rounded flex items-center justify-center gap-1 font-medium transition-colors ${
+                currentSlot === "body" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink hover:bg-hover"
+              }`}
+              title="Contenido en el cuerpo de la página"
+            >
+              Cuerpo
+            </button>
+            <button
+              type="button"
+              aria-pressed={currentSlot === "footer"}
+              onClick={() => dispatch({ type: "block/slot", pageId, blockId: block.id, slot: "footer" })}
+              className={`h-7 rounded flex items-center justify-center gap-1 font-medium transition-colors ${
+                currentSlot === "footer" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink hover:bg-hover"
+              }`}
+              title="Se ubica siempre al final de la página ocupando el ancho completo"
+            >
+              Pie de página
+            </button>
+          </div>
+
+          {(currentSlot === "header" || currentSlot === "footer") && (
+            <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
+              <span className="text-[10px] text-ink-dim font-medium">Ámbito de uso:</span>
+              <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
+                <button
+                  type="button"
+                  aria-pressed={currentScope === "global"}
+                  onClick={() => dispatch({ type: "block/scope", pageId, blockId: block.id, scope: "global" })}
+                  className={`h-7 rounded font-medium transition-colors ${
+                    currentScope === "global" ? "bg-accent/20 text-accent font-semibold" : "text-ink-dim hover:text-ink"
+                  }`}
+                  title="Aparece automáticamente en todas las páginas del sitio"
+                >
+                  En todo el sitio
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={currentScope === "page"}
+                  onClick={() => dispatch({ type: "block/scope", pageId, blockId: block.id, scope: "page" })}
+                  className={`h-7 rounded font-medium transition-colors ${
+                    currentScope === "page" ? "bg-accent/20 text-accent font-semibold" : "text-ink-dim hover:text-ink"
+                  }`}
+                  title="Solo visible en esta página"
+                >
+                  Solo esta página
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
+            <span className="text-[10px] text-ink-dim font-medium">Posicionamiento en la página:</span>
+            <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
+              <button
+                type="button"
+                aria-pressed={block.placementMode !== "overlay"}
+                onClick={() => dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" })}
+                className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
+                  block.placementMode !== "overlay" ? "bg-accent text-white shadow-xs font-semibold" : "text-ink-dim hover:text-ink hover:bg-hover"
+                }`}
+                title="Se ajusta automáticamente según el contenido de la página sin sobreponerse"
+              >
+                Ajustar a contenido
+              </button>
+              <button
+                type="button"
+                aria-pressed={block.placementMode === "overlay"}
+                onClick={() => dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "overlay" })}
+                className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
+                  block.placementMode === "overlay" ? "bg-accent text-white shadow-xs font-semibold" : "text-ink-dim hover:text-ink hover:bg-hover"
+                }`}
+                title="Permite mover libremente y sobreponer sobre otros elementos"
+              >
+                Sobreponer (libre)
+              </button>
+            </div>
+            <p className="text-[10px] text-ink-dim">
+              {block.placementMode === "overlay"
+                ? "Modo libre: arrastra la sección en el lienzo para moverla o sobreponerla a otras."
+                : currentSlot === "footer"
+                  ? "Modo recomendado: el footer permanece siempre al final de la página y se adapta automáticamente al contenido."
+                  : "Modo recomendado: la sección respeta el flujo de la página y se ajusta automáticamente según el contenido."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
+            <span className="text-[10px] text-ink-dim font-medium">Orden en la página:</span>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: -1 })}
+                className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors"
+                title="Mover esta sección más arriba"
+              >
+                <span className="font-bold">↑</span> Subir sección
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: 1 })}
+                className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors"
+                title="Mover esta sección más abajo"
+              >
+                <span className="font-bold">↓</span> Bajar sección
+              </button>
+            </div>
+            <p className="text-[10px] text-ink-dim">
+              Cambia la posición de esta sección respecto a las demás en el orden vertical de la página.
+            </p>
+          </div>
+
+          <Hint>
+            {currentSlot === "footer"
+              ? "El pie de página se ancla siempre al final de la página a ancho completo."
+              : currentSlot === "header"
+                ? "El encabezado se ubica siempre arriba de la página a ancho completo."
+                : "Sección dentro del flujo de la página."}
+          </Hint>
+        </div>
+      )}
 
       {canEditContent && (
-        <Collapsible title="Interacciones" badge={count(behaviors.length)}>
+        <Collapsible title="Interacciones" defaultOpen={false}>
           <Hint>Qué pasa al hacer clic, pasar el cursor… Se ven al pulsar «Probar» (▶).</Hint>
           {behaviors.length > 0 && (
             <ul className="flex flex-col gap-2">
@@ -202,13 +642,49 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
         <LayoutControls
           isSection={scope === SECTION_KEY}
           classes={custom.classes}
-          sectionClasses={((level === "block" ? block.custom?.[SECTION_KEY] : def.styles?.[SECTION_KEY]) ?? { classes: "" }).classes}
+          sectionClasses={((level === "block" ? (block.custom?.[SECTION_KEY] ?? def.styles?.[SECTION_KEY]) : def.styles?.[SECTION_KEY]) ?? { classes: "" }).classes}
           onChange={(classes) => saveStyle({ classes }, canEditContent)}
+          onSectionChange={(classes) => saveSectionStyle({ classes }, canEditContent)}
+          onSelectSection={() => dispatch({ type: "element/select", id: null })}
+          containerCards={containerCards}
+          selectedCardId={rootCardId}
+          onAddCard={canEditContent ? handleAddCard : undefined}
+          onDuplicateCard={canEditContent ? handleDuplicateCard : undefined}
+          onDeleteCard={canEditContent ? handleDeleteCard : undefined}
+          onFillThreeCards={canEditContent ? handleFillThreeCards : undefined}
+          onSelectCard={(id) => dispatch({ type: "element/select", id })}
+          category={def.category}
+          componentId={def.id}
+          onAddButton={canEditContent ? handleAddButton : undefined}
+          isFooter={isFooter}
+          isHeader={isHeader}
+          activeMenuMode={activeMenuMode}
+          menuBreakpointChoice={menuBreakpointChoice}
+          onSelectHeaderMenuMode={canEditContent ? handleSelectHeaderMenuMode : undefined}
+          onSetMenuBreakpoints={canEditContent ? handleSetMenuBreakpoints : undefined}
+          isMenuOpenPreview={isMenuOpenPreview}
+          onToggleMenuPreview={handleToggleMenuPreview}
+          onAddHeaderLink={canEditContent ? handleAddHeaderLink : undefined}
+          hasSearchInHeader={hasSearchInHeader}
+          onToggleSearchInHeader={canEditContent ? handleToggleSearchInHeader : undefined}
+          headerLinks={headerLinks}
+          onToggleHeaderItemInMenu={canEditContent ? handleToggleHeaderItemInMenu : undefined}
+          isElementInHeaderMenu={isElementInHeaderMenu}
+          selectedElementId={element?.id}
+          onOrganizeFooter={canEditContent ? handleOrganizeFooter : undefined}
+          onResetMunicipalFooter={canEditContent ? handleResetMunicipalFooter : undefined}
+          onMoveElementToFooterCol={canEditContent ? handleMoveElementToFooterCol : undefined}
+          onAddFooterLink={canEditContent ? handleAddFooterLink : undefined}
+          onAlignElement={canEditContent ? handleAlignElement : undefined}
+          onMoveElementOrder={canEditContent ? handleMoveElementOrder : undefined}
+          currentAlign={element?.align as any}
+          currentColIndex={currentColIndex}
+          totalFooterCols={totalFooterCols}
         />
       )}
 
       {canEditStyles && (
-        <Collapsible title="Clases de Tailwind" badge={count(custom.classes.split(/\s+/).filter(Boolean).length)}>
+        <Collapsible title="Clases de Tailwind" defaultOpen={false}>
           {/* key: al cambiar de alcance el campo empieza con lo guardado de ese alcance. */}
           <ClassesField key={level} value={custom.classes} onChange={(classes) => saveStyle({ classes })} />
           <Hint>Se aplican al escribir. Cualquier clase de Tailwind; las variables del proyecto también: «color-primario» da «bg-primario» y «text-primario».</Hint>
@@ -216,7 +692,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       )}
 
       {canEditCode && (
-        <Collapsible title="CSS propio" defaultOpen={false} badge={count(custom.css.trim() ? 1 : 0)}>
+        <Collapsible title="CSS propio" defaultOpen={false}>
           <button
             type="button"
             onClick={openCss}
@@ -232,6 +708,18 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   );
 }
 
+function PaletteIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+    </svg>
+  );
+}
+
 /**
  * El inspector de propiedades: aparece a la derecha solo cuando hay una sección o un elemento seleccionado,
  * con su código propio e interacciones. Así el panel izquierdo queda para agregar y organizar.
@@ -242,54 +730,76 @@ export function Inspector() {
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
   const canEditCode = hasPermission(currentUser, "editCode");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const paletteRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target as Node)) {
+        setPaletteOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPaletteOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [paletteOpen]);
 
   const page = pages.find((p) => p.id === currentPageId);
-  const block = page?.blocks.find((b) => b.id === selectedId);
+  const block =
+    page?.blocks.find((b) => b.id === selectedId) ??
+    pages.flatMap((p) => p.blocks).find((b) => b.id === selectedId);
   const def = components.find((c) => c.id === block?.componentId);
   if (!page || !block || !def) return null;
+
+  const ownerPage = pages.find((p) => p.blocks.some((b) => b.id === selectedId)) ?? page;
 
   const element = def.elements.find((e) => e.id === selectedElementId);
   const scope = element ? element.id : SECTION_KEY;
 
-  return (
-    <aside
-      aria-label="Propiedades"
-      className="my-3 mr-3 flex w-80 shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-line bg-panel text-ink shadow-2xl"
+  const headerActions = (
+    <button
+      ref={paletteRef}
+      type="button"
+      aria-label="Paleta de colores de la sección"
+      title="Mostrar / ocultar paleta de colores de la sección"
+      onClick={() => setPaletteOpen(!paletteOpen)}
+      className={`flex h-6 w-6 items-center justify-center rounded-md text-xs transition-colors ${
+        paletteOpen
+          ? "bg-accent/20 text-accent font-semibold"
+          : "text-ink-dim hover:bg-hover hover:text-ink"
+      }`}
     >
-      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-line px-4">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] tracking-wider text-ink-dim uppercase">{element ? `Elemento · ${def.name}` : "Sección"}</p>
-          <p className="truncate text-sm font-medium">{element ? elementLabel(element) : def.name}</p>
-        </div>
-        {canEditCode && <ExportButton pageId={page.id} block={block} def={def} />}
-        {canEditCode && (
-          <button
-            type="button"
-            aria-label="Abrir el código en el editor"
-            title="Abrir el código en el editor (Ctrl+E)"
-            onClick={() => openFile()}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-accent px-2.5 text-xs font-medium text-white hover:opacity-90"
-          >
-            <CodeIcon />
-            Código
-          </button>
-        )}
-        <button
-          type="button"
-          aria-label="Cerrar propiedades"
-          title="Cerrar propiedades"
-          onClick={() => dispatch({ type: "block/select", id: TITLE_SELECTION })}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
-        >
-          ×
-        </button>
-      </header>
+      <PaletteIcon />
+    </button>
+  );
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {/* key: al cambiar de selección, el editor empieza de cero con lo guardado de esa selección. */}
-        <ScopeEditor key={`${block.id}:${scope}`} pageId={page.id} block={block} def={def} scope={scope} />
-      </div>
-      <RemoveButton page={page} />
-    </aside>
+  const subHeader = paletteOpen ? (
+    <div className="border-b border-line bg-canvas/60 p-3 text-xs shadow-inner animate-in fade-in slide-in-from-top-1 duration-150">
+      <SectionColorPalette pageId={ownerPage.id} block={block} def={def} />
+    </div>
+  ) : null;
+
+  return (
+    <DockablePanel
+      title={element ? elementLabel(element) : def.name}
+      categoryLabel={element ? `Elemento · ${def.name}` : "Sección"}
+      onSelectSection={element ? () => dispatch({ type: "element/select", id: null }) : undefined}
+      headerActions={headerActions}
+      subHeader={subHeader}
+      onOpenCode={() => openFile()}
+      canEditCode={canEditCode}
+      onClose={() => dispatch({ type: "block/select", id: TITLE_SELECTION })}
+      footer={<RemoveButton page={ownerPage} />}
+    >
+      {/* key: al cambiar de selección, el editor empieza de cero con lo guardado de esa selección. */}
+      <ScopeEditor key={`${block.id}:${scope}`} pageId={ownerPage.id} block={block} def={def} scope={scope} />
+    </DockablePanel>
   );
 }

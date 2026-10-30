@@ -19,6 +19,7 @@ export function ModalPage({ page }: { page: Page }) {
         <TitleCanvas page={page} interactive={false} />
         <PageBlocks page={page} interactive={false} slot="body" />
         <MediaList page={page} interactive={false} />
+        <PageBlocks page={page} interactive={false} slot="bottom" />
       </div>
     </PageGuidesProvider>
   );

@@ -17,26 +17,22 @@ import { useFormatMenu } from "../format/format-menu-context";
 import { useLinkResolver } from "../dynamic/use-link-resolver";
 import { useNavigation } from "../navigation/navigation-context";
 import { boxStyle, pixelsOf } from "../styles/apply";
-import { adaptToDevice, strategyFor } from "../responsive/adapt";
+import { adaptToDevice } from "../responsive/adapt";
 import { CellWidth } from "../responsive/available-context";
 import { availableWidth, DEVICE_NAME, isAdaptive } from "../responsive/devices";
 import { isHiddenOn } from "../responsive/hidden-on";
 import { sideMargin } from "../responsive/page-margin";
-import { pickAction } from "../responsive/pick-mode";
-import { smartStrategy } from "../responsive/strategies";
-import { seedLayout } from "../responsive/manual-layout";
-import { AdaptOptions } from "../responsive/adapt-options";
 import { foldOf } from "../responsive/fold-model";
 import { FoldedView } from "../responsive/folded-view";
 import { MenuLayer } from "../responsive/menu-layer";
 import { menuSetup } from "../responsive/menu-model";
-import { ResponsiveChip } from "../responsive/responsive-chip";
 import { useStyles } from "../styles/use-styles";
 import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground, spanStyle, stretches } from "../background/background-css";
 import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
 import { ComponentView, type ElementInteraction } from "./component-view";
+import { addCardToComponent, addButtonToComponent, deleteCardFromComponent, duplicateCardInComponent, reorderCardInComponent, reorderElementInComponent, moveElementOrderInComponent } from "./container-card-rules";
 import { customClasses, customCss, isFlowLayout, targetKey } from "./custom-code";
 import { HiddenPlaceholder } from "./hidden-placeholder";
 import { applyOverrides, type Resolver } from "./overrides";
@@ -62,10 +58,11 @@ interface PageBlockProps {
   block: BlockInstance;
   /** Solo los bloques de la página actual se seleccionan y se quitan. */
   interactive: boolean;
+  slot?: "top" | "body" | "bottom";
 }
 
 /** Un componente colocado en una página, con las reglas de apariencia y su formato propio aplicados. */
-function PageBlock({ page, block, interactive }: PageBlockProps) {
+function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const { components, pages, selectedId, selectedElementId, alsoSelectedIds, selectedBlockIds, libraries } = useSite();
   const dispatch = useSiteDispatch();
   const styles = useStyles(page.id);
@@ -101,8 +98,18 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   }, [ref, fullPage, wideEnough, block.custom, def?.styles, view]);
   const manual = adaptive && block.responsive?.[device] !== undefined;
   const menu = formatted ? menuSetup(formatted, block, device) : null;
+
+  const isHeaderOrFooter =
+    slot === "top" ||
+    slot === "bottom" ||
+    block.slot === "header" ||
+    block.slot === "footer" ||
+    def?.category === "navigation";
+
+  const isOverlay = block.placementMode === "overlay";
   // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es del escritorio.
-  const placement = adaptive ? undefined : block.placement;
+  // Encabezados y pies de página se mantienen en flujo salvo que se elija explícitamente sobreponer.
+  const placement = adaptive || (isHeaderOrFooter && !isOverlay) || block.placementMode === "flow" ? undefined : block.placement;
 
   // Una cuenta con acceso limitado solo edita las secciones que se le asignaron; el resto se ve pero no se toca.
   const { currentUser } = useAuth();
@@ -121,8 +128,9 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
   });
   // Con varias secciones marcadas, arrastrar una mueve todas: se anota dónde estaba cada una al agarrar.
   const groupOrigins = useRef<Record<string, Placement> | null>(null);
+  const canDragPlacement = editing && !adaptive && (isOverlay || !isHeaderOrFooter) && block.placementMode !== "flow";
   const move = usePlacementDrag({
-    enabled: editing && !adaptive,
+    enabled: canDragPlacement,
     onBegin: () => {
       const ids = selectionOf({ selectedId, selectedBlockIds });
       const group = ids.length > 1 && ids.includes(block.id) ? page.blocks.filter((b) => ids.includes(b.id) && b.placement) : [];
@@ -182,7 +190,9 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       [...new Set([...Object.keys(def.styles ?? {}), ...Object.keys(block.custom ?? {})])].map((key) => [key, customClasses(block, key, def)]),
     ),
     flow,
-    onMoveBlock: editing && !adaptive ? move.startDrag : undefined,
+    device,
+    isHeaderOrFooter,
+    onMoveBlock: canDragPlacement ? move.startDrag : undefined,
     // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón.
     // En tablet o móvil solo se arrastra si la persona definió ese diseño; en automático lo calcula el CMS.
     gestures: editing && !flow && (!adaptive || manual) ? gestures : undefined,
@@ -196,6 +206,46 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
     onContextMenu: (elementId, point) =>
       openFormatMenu({ kind: "element", pageId: page.id, blockId: block.id, elementId }, point),
     onOpenCode: (elementId) => openFile({ kind: "custom-css", pageId: page.id, blockId: block.id, key: elementId }),
+    onReorderFlow: editing
+      ? (elementId, direction) => {
+          const updated = moveElementOrderInComponent(def, elementId, direction);
+          dispatch({ type: "component/save", component: updated });
+        }
+      : undefined,
+    onReorderElement: editing
+      ? (sourceId, targetId, position) => {
+          const updated = reorderElementInComponent(def, sourceId, targetId, position);
+          dispatch({ type: "component/save", component: updated });
+        }
+      : undefined,
+    onDuplicateCard: editing
+      ? (elementId) => {
+          const { component: updated, newCardId } = duplicateCardInComponent(def, elementId);
+          dispatch({ type: "component/save", component: updated });
+          dispatch({ type: "element/select", id: newCardId });
+        }
+      : undefined,
+    onAddCard: editing
+      ? () => {
+          const { component: updated, newCardId } =
+            def.category === "buttons"
+              ? (() => {
+                  const res = addButtonToComponent(def);
+                  return { component: res.component, newCardId: res.newButtonId };
+                })()
+              : addCardToComponent(def);
+          dispatch({ type: "component/save", component: updated });
+          dispatch({ type: "element/select", id: newCardId });
+        }
+      : undefined,
+    addCardLabel: def.category === "buttons" ? "Botón" : "Tarjeta",
+    onDeleteCard: editing
+      ? (elementId) => {
+          const updated = deleteCardFromComponent(def, elementId);
+          dispatch({ type: "component/save", component: updated });
+          dispatch({ type: "element/select", id: null });
+        }
+      : undefined,
     bindings: block.bindings,
     repeat: block.repeat,
     onDropData: dropData,
@@ -209,7 +259,6 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
 
   const backdrop = block.box?.backdrop;
   const background = (block.box?.background && resolve(block.box.background)) || box.background;
-  const chipMode = manual ? "manual" : strategyFor(formatted ?? view, block, device, available);
 
   // El botón del menú va sobre la sección, junto con su panel.
   const menuLayer = menu && (
@@ -252,7 +301,13 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       {...behaviorProps}
       {...(behaviorProps.onClick ? { "data-interactive": "" } : {})}
       {...sectionDrop.handlers}
-      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${block.code || stretches(block.box?.span) || autoFill ? "w-full" : "w-fit"} max-w-full ${stretches(block.box?.span) ? "" : "rounded-md"} ${
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${
+        customClasses(block, SECTION_KEY, def).includes("w-fit")
+          ? "w-fit"
+          : flow || block.code || stretches(block.box?.span) || autoFill || isHeaderOrFooter
+            ? "w-full"
+            : "w-fit"
+      } ${customClasses(block, SECTION_KEY, def).includes("mx-auto") ? "mx-auto" : ""} max-w-full ${stretches(block.box?.span) ? "" : "rounded-md"} ${
         (selected && selectedElementId === null) || (editing && selectedBlockIds?.includes(block.id))
           ? "ring-2 ring-accent"
           : editing
@@ -271,11 +326,6 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
       }}
     >
       {css && <style>{css}</style>}
-      {limited && !locked && (
-        <span className="pointer-events-none absolute top-1 left-1 z-10 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white shadow">
-          ✏ Puedes editar
-        </span>
-      )}
       {sectionDrop.over && <span aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md border-2 border-emerald-500 bg-emerald-500/10" />}
       {editing && block.repeat && (
         <BindingBadge
@@ -290,12 +340,16 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
         {...(editing ? editProps : {})}
         // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
         // la sección no hace aparecer barras de desplazamiento.
-        className={`max-w-full p-1 ${editing ? "" : "overflow-x-clip"}`}
+        className={`max-w-full ${isHeaderOrFooter ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
         style={{
-          padding: box.padding,
+          padding: isHeaderOrFooter ? 0 : box.padding,
           background: background ?? autoFill ?? undefined,
-          borderRadius: stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
-          ...spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined && !placement.fixed, fullPage),
+          borderRadius: isHeaderOrFooter || stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
+          ...(customClasses(block, SECTION_KEY, def).includes("w-fit")
+            ? { width: "fit-content" }
+            : isHeaderOrFooter
+              ? { width: "100%", display: "block" }
+              : spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined && !placement.fixed, fullPage)),
           ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),
         }}
       >
@@ -331,29 +385,45 @@ function PageBlock({ page, block, interactive }: PageBlockProps) {
             onToggle={() => setHidden(blockTarget, true)}
             className={`absolute -top-2 -left-2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
           />
-          <PlacementGrip
-            label={def.name}
-            onStart={move.startDrag}
-            className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
-          />
-          {selected && adaptive && !block.code && !flow && (
-            <ResponsiveChip
-              device={device}
-              mode={chipMode}
-              onPick={(picked) =>
-                dispatch(
-                  pickAction(picked, {
-                    pageId: page.id,
-                    blockId: block.id,
-                    device,
-                    smart: smartStrategy(formatted ?? view, available),
-                    seed: () => seedLayout(view),
-                  }),
-                )
-              }
-            >
-              <AdaptOptions mode={chipMode} pageId={page.id} block={block} view={formatted ?? view} device={device} />
-            </ResponsiveChip>
+          {selected && selectedElementId === null ? (
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border border-line bg-canvas/95 px-1.5 py-0.5 shadow-lg backdrop-blur-xs">
+              <button
+                type="button"
+                title="Subir sección en la página"
+                aria-label="Subir sección"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: -1 });
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                title="Bajar sección en la página"
+                aria-label="Bajar sección"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: 1 });
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+              >
+                ↓
+              </button>
+              {canDragPlacement && (
+                <>
+                  <span className="h-3 w-px bg-line" />
+                  <PlacementGrip label={def.name} onStart={move.startDrag} className="relative flex" />
+                </>
+              )}
+            </div>
+          ) : (
+            <PlacementGrip
+              label={def.name}
+              onStart={move.startDrag}
+              className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
+            />
           )}
           {selected && selectedElementId === null && !block.code && (
             <CodeButton
@@ -380,28 +450,58 @@ interface PageBlocksProps {
   page: Page;
   /** Solo los bloques de la página actual se seleccionan y se quitan. */
   interactive: boolean;
-  /** Las barras de navegación van arriba, antes del titular; el resto, debajo. */
-  slot: "top" | "body";
+  /** Las barras de navegación van arriba (top), el contenido en el centro (body) y el pie abajo (bottom). */
+  slot: "top" | "body" | "bottom";
 }
 
 /** Los componentes colocados en una página. */
 export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
-  const { components } = useSite();
+  const { components, pages } = useSite();
   const styles = useStyles(page.id);
 
   const { device } = useViewport();
-  const blocks = splitBlocks(page, components)[slot];
-  if (blocks.length === 0) return null;
+  const blocks = splitBlocks(page, components, pages)[slot];
+  if (!blocks || blocks.length === 0) return null;
   const margin = sideMargin(device, page.sideMargin);
+
+  const isTop = slot === "top";
+  const isBottom = slot === "bottom";
 
   return (
     <div
-      className={`flex flex-col gap-6 ${slot === "top" ? "mb-6" : "mt-8"}`}
-      style={{ gap: styles.page.gap }}
+      className={`flex flex-col ${
+        isTop
+          ? "-mx-10 mb-8 w-[calc(100%+5rem)] max-w-none rounded-t-sm overflow-hidden"
+          : isBottom
+            ? "-mx-10 mt-auto w-[calc(100%+5rem)] max-w-none rounded-b-sm overflow-hidden"
+            : "mt-8 gap-6 flex-1"
+      }`}
+      style={{
+        gap: isTop || isBottom ? undefined : styles.page.gap,
+        ...(isTop
+          ? {
+              marginLeft: "calc(var(--page-px, 2.5rem) * -1)",
+              marginRight: "calc(var(--page-px, 2.5rem) * -1)",
+              marginTop: "calc(var(--page-pt, var(--page-py, 3rem)) * -1)",
+              top: 0,
+              width: "calc(100% + 2 * var(--page-px, 2.5rem))",
+              maxWidth: "none",
+            }
+          : isBottom
+            ? {
+                marginLeft: "calc(var(--page-px, 2.5rem) * -1)",
+                marginRight: "calc(var(--page-px, 2.5rem) * -1)",
+                marginBottom: "calc(var(--page-pb, 3rem) * -1)",
+                bottom: 0,
+                width: "calc(100% + 2 * var(--page-px, 2.5rem))",
+                maxWidth: "none",
+              }
+            : {}),
+      }}
     >
       {blocks.map((block) => (
         <RepeatedBlock key={block.id} block={block} margin={margin}>
-          {(copy) => <PageBlock key={copy} page={page} block={block} interactive={interactive && copy === 0} />}
+          {(copy) => <PageBlock key={copy} page={page} block={block} interactive={interactive && copy === 0} slot={slot} />}
         </RepeatedBlock>
       ))}
     </div>

@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { siteReducer } from "./site-reducer";
 import { INITIAL_SITE } from "./initial-site";
 import { CODE_COMPONENT_ID } from "./code-defaults";
+import type { SiteState } from "./types";
 
 // Creates base state for tests
-const base = () => ({ ...INITIAL_SITE, pages: [], components: INITIAL_SITE.components });
+const base = (): SiteState => ({ ...INITIAL_SITE, pages: [], components: INITIAL_SITE.components });
 // Creates a test component
 const comp = (id: string) => ({ id, name: "C", description: "", category: "sections", width: 800, height: 400, elements: [], links: {}, custom: true });
 

@@ -16,6 +16,7 @@ export function PreviewStage({ page, steps, stageRef }: { page: Page; steps: Ani
     <div ref={stageRef} className="pointer-events-none relative min-h-0 min-w-0 flex-1 overflow-auto bg-white p-8 text-neutral-900">
       <PageBlocks page={stagePage} interactive={false} slot="top" />
       <PageBlocks page={stagePage} interactive={false} slot="body" />
+      <PageBlocks page={stagePage} interactive={false} slot="bottom" />
     </div>
   );
 }

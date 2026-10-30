@@ -1637,14 +1637,16 @@ salto visual.
 
 ### 8.18 customize — el inspector derecho
 
-**4 archivos, 471 líneas.**
+El panel contextual de propiedades cuenta con modos de acoplamiento lateral (en el flujo flex sin sobreponerse al lienzo), modo ventana flotante desacoplada con arrastre libre y modo colapsable a barra de iconos lateral (estilo Adobe Illustrator y panel izquierdo):
 
 ```
 customize/
-├── inspector.tsx        (206 L)  ★ El panel derecho contextual
-├── behavior-editor.tsx  ( 88 L)  Editor de una interacción
-├── behavior-fields.tsx  (149 L)  Los campos según la acción
-└── tailwind-runtime.tsx ( 28 L)  Carga @tailwindcss/browser en la página
+├── inspector.tsx                  ★ El panel derecho contextual con paleta de colores integrada
+├── dockable-panel.tsx             ★ Contenedor acoplable/flotante con plegado a iconos
+├── dockable-inspector-context.tsx ★ Contexto y persistencia de acople, posición y dimensiones
+├── behavior-editor.tsx            Editor de una interacción
+├── behavior-fields.tsx            Los campos según la acción
+└── tailwind-runtime.tsx           Carga @tailwindcss/browser en la página
 ```
 
 `TailwindRuntime` inyecta el script de Tailwind para que las clases `bg-primario` funcionen en el
