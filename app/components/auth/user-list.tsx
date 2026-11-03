@@ -2,16 +2,9 @@
 
 import { useState } from "react";
 import { resetPassword } from "./auth-api";
-import { ResetPasswordDialog } from "./reset-password-dialog";
 import { UserRow } from "./user-row";
 import type { User } from "./types";
 import { useToast } from "../ui/toast";
-
-interface TemporaryPassword {
-  name: string;
-  username: string;
-  password: string;
-}
 
 interface UserListProps {
   users: User[];
@@ -21,18 +14,16 @@ interface UserListProps {
   onRemove: (id: string, username: string) => void;
 }
 
-/** Lista de cuentas y sus acciones. El restablecimiento muestra la clave en un modal y avisa con un toast. */
+/** Lista de cuentas y sus acciones. La contraseña temporal se envía por correo, nunca se muestra en pantalla. */
 export function UserList({ users, currentUserId, loading, removingId, onRemove }: UserListProps) {
   const toast = useToast();
   const [resetting, setResetting] = useState<string | null>(null);
-  const [temporary, setTemporary] = useState<TemporaryPassword | null>(null);
 
   const doReset = async (user: User) => {
     setResetting(user.id);
     try {
-      const password = await resetPassword(user.id);
-      setTemporary({ name: user.name, username: user.username, password });
-      toast.success(`Contraseña restablecida para @${user.username}.`);
+      await resetPassword(user.id);
+      toast.success(`Contraseña restablecida. Se envió a su correo.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo restablecer la contraseña.");
     } finally {
@@ -66,15 +57,6 @@ export function UserList({ users, currentUserId, loading, removingId, onRemove }
           onRemove={() => onRemove(user.id, user.username)}
         />
       ))}
-
-      {temporary && (
-        <ResetPasswordDialog
-          name={temporary.name}
-          username={temporary.username}
-          password={temporary.password}
-          onClose={() => setTemporary(null)}
-        />
-      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { sameOriginRequest } from "../../../server/proxy-guard";
 import { sessionUser } from "../../../server/auth-session";
-import { resetPassword } from "../../../server/auth-store";
+import { findStored, resetPassword } from "../../../server/auth-store";
+import { sendTemporaryPasswordEmail } from "../../../server/mail";
 
 const refuse = (error: string, status = 403) => Response.json({ error }, { status });
 
@@ -16,7 +17,12 @@ export async function POST(request: Request) {
 
   try {
     const tempPassword = await resetPassword(body.userId);
-    return Response.json({ ok: true, tempPassword });
+
+    // La contraseña temporal solo se envía al correo de la cuenta, nunca al cliente.
+    const target = await findStored(body.userId);
+    if (target) await sendTemporaryPasswordEmail(target.email, target.name, tempPassword);
+
+    return Response.json({ ok: true });
   } catch (error) {
     return refuse(error instanceof Error ? error.message : "No se pudo restablecer la contraseña.", 400);
   }

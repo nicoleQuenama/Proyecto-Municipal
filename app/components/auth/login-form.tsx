@@ -85,12 +85,7 @@ export function LoginForm() {
               </button>
             </form>
 
-            {forgotOpen && (
-              <ForgotPasswordDialog
-                onClose={() => setForgotOpen(false)}
-                onRecovered={(user, pass) => { setUsername(user); setPassword(pass); setForgotOpen(false); }}
-              />
-            )}
+            {forgotOpen && <ForgotPasswordDialog onClose={() => setForgotOpen(false)} />}
           </div>
         </section>
       </div>

@@ -62,19 +62,25 @@ export async function changePassword(currentPassword: string, newPassword: strin
   });
 }
 
-export async function resetPassword(userId: string): Promise<string> {
-  const res = await request<{ ok: true; tempPassword: string }>("/api/auth/reset-password", {
+export async function resetPassword(userId: string): Promise<void> {
+  await request<{ ok: true }>("/api/auth/reset-password", {
     method: "POST",
     body: JSON.stringify({ userId }),
   });
-  return res.tempPassword;
 }
 
-/** Reestablecimiento simulado desde el login: solo usuario y clave temporal en pantalla. */
-export async function forgotPassword(username: string): Promise<string> {
-  const res = await request<{ ok: true; tempPassword: string }>("/api/auth/forgot-password", {
+/** Pide el enlace por correo. El servidor responde igual exista o no la cuenta. */
+export async function forgotPassword(username: string, email: string): Promise<void> {
+  await request<{ ok: true }>("/api/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({ username, email }),
   });
-  return res.tempPassword;
+}
+
+/** Confirma el token del correo y guarda la contraseña nueva. */
+export async function confirmReset(token: string, password: string): Promise<void> {
+  await request<{ ok: true }>("/api/auth/confirm-reset", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
 }

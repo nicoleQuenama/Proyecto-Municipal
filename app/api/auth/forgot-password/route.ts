@@ -1,19 +1,33 @@
+import { findUserByIdentity } from "../../../server/auth-password";
+import { sendPasswordResetEmail } from "../../../server/mail";
+import { allowResetAttempt, issueResetToken } from "../../../server/password-reset-store";
 import { sameOriginRequest } from "../../../server/proxy-guard";
-import { recoverPassword } from "../../../server/auth-recovery";
 
-const refuse = (error: string, status = 400) => Response.json({ error }, { status });
+/*verificacion de que los correos existan*/
+const generic = () =>
+  Response.json({ ok: true, message: "Si el usuario y el correo coinciden, enviamos un enlace." }, { status: 202 });
 
-/** Restablecimiento simulado desde el login: no hay correo, se devuelve la clave en pantalla. */
 export async function POST(request: Request) {
-  if (!sameOriginRequest(request)) return refuse("Petición no permitida.", 403);
+  if (!sameOriginRequest(request)) return Response.json({ error: "Petición no permitida." }, { status: 403 });
 
-  const body = (await request.json().catch(() => null)) as { username?: string } | null;
-  if (!body?.username?.trim()) return refuse("Indica tu usuario.");
+  const body = (await request.json().catch(() => null)) as { username?: string; email?: string } | null;
+  const username = body?.username?.trim();
+  const email = body?.email?.trim().toLowerCase();
+  if (!username || !email) return Response.json({ error: "Indica tu usuario y tu correo." }, { status: 400 });
 
-  try {
-    const tempPassword = await recoverPassword(body.username);
-    return Response.json({ ok: true, tempPassword });
-  } catch (error) {
-    return refuse(error instanceof Error ? error.message : "No se pudo restablecer la contraseña.");
+  // Límite por IP + usuario + correo para evitar spam de enlaces.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  if (!allowResetAttempt(`${ip}:${username}:${email}`)) return generic();
+
+  const user = await findUserByIdentity(username, email);
+  if (user) {
+    try {
+      const token = await issueResetToken(user.id);
+      await sendPasswordResetEmail(user.email, user.name, token);
+    } catch (error) {
+      console.error("[auth] no se pudo enviar el enlace de restablecimiento", error);
+    }
   }
+
+  return generic();
 }

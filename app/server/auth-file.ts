@@ -9,6 +9,8 @@ const FILE = join(process.cwd(), ".cms-data", "users.json");
 export interface StoredUser extends User {
   passwordHash: string;
   salt: string;
+  /** Sube al cambiar la contraseña para invalidar las sesiones anteriores. */
+  sessionVersion?: number;
 }
 
 export interface Store {

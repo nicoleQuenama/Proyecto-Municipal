@@ -1,32 +1,33 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { FIELD, GHOST_BUTTON, LABEL, PRIMARY_BUTTON } from "../ui/ui-classes";
+import { MailIcon, UserIcon } from "../viewport/icons";
+import { GHOST_BUTTON, PRIMARY_BUTTON } from "../ui/ui-classes";
 import { Modal } from "../ui/modal";
 import { forgotPassword } from "./auth-api";
-import { ForgotPasswordResult } from "./forgot-password-result";
+import { FloatingField } from "./login-field";
 
 interface ForgotPasswordDialogProps {
   onClose: () => void;
-  /** Rellena el formulario de acceso con la clave temporal. */
-  onRecovered: (username: string, password: string) => void;
 }
 
-/** Recuperación simulada desde el login: sin correo, muestra la clave nueva en el modal. */
-export function ForgotPasswordDialog({ onClose, onRecovered }: ForgotPasswordDialogProps) {
+/** Pide usuario + correo y dispara el enlace de restablecimiento con Resend. */
+export function ForgotPasswordDialog({ onClose }: ForgotPasswordDialogProps) {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setPending(true);
     setError("");
     try {
-      setTempPassword(await forgotPassword(username));
+      await forgotPassword(username, email);
+      setSent(true);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo restablecer la contraseña.");
+      setError(reason instanceof Error ? reason.message : "No se pudo enviar el enlace.");
     } finally {
       setPending(false);
     }
@@ -37,7 +38,7 @@ export function ForgotPasswordDialog({ onClose, onRecovered }: ForgotPasswordDia
       <header className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
         <div>
           <h2 className="text-base font-semibold text-ink">Recuperar contraseña</h2>
-          <p className="mt-0.5 text-xs text-ink-dim">Escribe tu usuario y te mostraremos una contraseña temporal.</p>
+          <p className="mt-0.5 text-xs text-ink-dim">Confirma tu usuario y correo para enviarte un enlace.</p>
         </div>
         <button
           type="button"
@@ -48,28 +49,36 @@ export function ForgotPasswordDialog({ onClose, onRecovered }: ForgotPasswordDia
           ×
         </button>
       </header>
-      {tempPassword ? (
-        <ForgotPasswordResult
-          username={username.trim()}
-          password={tempPassword}
-          onUse={() => onRecovered(username.trim(), tempPassword)}
-          onClose={onClose}
-        />
+
+      {sent ? (
+        <div className="flex flex-col gap-4 p-5">
+          <p className="text-xs leading-relaxed text-ink-dim">
+            Si el usuario <b className="text-ink">@{username.trim()}</b> y el correo{" "}
+            <b className="text-ink">{email.trim()}</b> coinciden con una cuenta, recibirás un enlace. Revisa también
+            la carpeta de spam. Vence en 30 minutos.
+          </p>
+          <div className="flex justify-end">
+            <button type="button" onClick={onClose} className={PRIMARY_BUTTON}>
+              Entendido
+            </button>
+          </div>
+        </div>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-3 p-5">
-          <p className="rounded-md bg-hover px-3 py-2 text-xs text-ink-dim">
-            Modo demostración: no hay correo vinculado, así que la nueva contraseña se muestra aquí mismo.
-          </p>
-          <label className="flex flex-col gap-1">
-            <span className={LABEL}>Usuario</span>
-            <input
-              aria-label="Usuario"
-              value={username}
-              autoComplete="username"
-              onChange={(event) => { setUsername(event.target.value); setError(""); }}
-              className={FIELD}
-            />
-          </label>
+          <FloatingField
+            label="Usuario"
+            icon={<UserIcon />}
+            value={username}
+            autoComplete="username"
+            onChange={(value) => { setUsername(value); setError(""); }}
+          />
+          <FloatingField
+            label="Correo"
+            icon={<MailIcon />}
+            value={email}
+            autoComplete="email"
+            onChange={(value) => { setEmail(value); setError(""); }}
+          />
           {error && (
             <p role="alert" className="text-xs text-red-400">
               {error}
@@ -79,8 +88,8 @@ export function ForgotPasswordDialog({ onClose, onRecovered }: ForgotPasswordDia
             <button type="button" onClick={onClose} className={GHOST_BUTTON}>
               Cancelar
             </button>
-            <button type="submit" disabled={pending || !username.trim()} className={PRIMARY_BUTTON}>
-              {pending ? "Restableciendo…" : "Restablecer"}
+            <button type="submit" disabled={pending || !username.trim() || !email.trim()} className={PRIMARY_BUTTON}>
+              {pending ? "Enviando…" : "Enviar enlace"}
             </button>
           </div>
         </form>

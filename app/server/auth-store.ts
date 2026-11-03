@@ -3,6 +3,7 @@ import { combineAccess, isExpired, type Access } from "../components/auth/access
 import type { NewUser, User, UserRole } from "../components/auth/types";
 import { readStore, toPublic, writeStore, type StoredUser } from "./auth-file";
 import { hashPassword, newSalt, passwordMatches } from "./auth-passwords";
+import { assertPassword, setPassword } from "./auth-password";
 import { readPart } from "./project-store";
 
 const ROLES: UserRole[] = ["superadmin", "dev", "designer"];
@@ -151,9 +152,7 @@ export async function findStored(id: string): Promise<StoredUser | null> {
 
 /** Change password for authenticated user */
 export async function changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
-  if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
-  }
+  assertPassword(newPassword);
 
   const store = await readStore();
   const user = store.users.find((entry) => entry.id === id);
@@ -163,10 +162,8 @@ export async function changePassword(id: string, currentPassword: string, newPas
     throw new Error("La contraseña actual es incorrecta.");
   }
 
-  const salt = newSalt();
-  user.salt = salt;
-  user.passwordHash = hashPassword(newPassword, salt);
-  await writeStore(store);
+  // setPassword sube sessionVersion: se cierran las demás sesiones abiertas.
+  await setPassword(id, newPassword);
 }
 
 /** Reset password by admin (no current password required) */
@@ -176,9 +173,7 @@ export async function resetPassword(id: string): Promise<string> {
   if (!user) throw new Error("El usuario no existe.");
 
   const tempPassword = `Temp${randomUUID().slice(0, 8)}!`;
-  const salt = newSalt();
-  user.salt = salt;
-  user.passwordHash = hashPassword(tempPassword, salt);
-  await writeStore(store);
+  // También invalida las sesiones de esa cuenta.
+  await setPassword(id, tempPassword);
   return tempPassword;
 }
