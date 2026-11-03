@@ -373,6 +373,12 @@ const HANDLERS: Handlers = {
 
   "block/move": (state, action) => moveBlock(state, action.pageId, action.blockId, action.direction),
 
+  "block/lock": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => ({
+      ...b,
+      locked: action.locked !== undefined ? action.locked : !b.locked,
+    })),
+
   "block/reset": (state, action) => resetFormat(state, action.pageId, action.blockId),
 
   "hidden/set": (state, action) => setHidden(state, action.target, action.hidden),

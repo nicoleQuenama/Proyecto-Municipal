@@ -232,6 +232,8 @@ export interface BlockInstance {
   id: string;
   componentId: string;
   hidden?: boolean;
+  /** Bloqueado estilo Canva: no se puede mover la sección ni su contenido en el lienzo. */
+  locked?: boolean;
   /** Solo en los bloques de código. */
   code?: CodeSource;
   /** Código propio por clave: la sección (`SECTION_KEY`) o el id de un elemento. */
@@ -443,6 +445,7 @@ export type SiteAction =
   | { type: "media/transfer"; fromPageId: string; toPageId: string; mediaId: string; placement: Placement }
   | { type: "block/size"; pageId: string; blockId: string; size: Partial<{ width: number; height: number }>; backdropId?: string }
   | { type: "block/move"; pageId: string; blockId: string; direction: -1 | 1 }
+  | { type: "block/lock"; pageId: string; blockId: string; locked?: boolean }
   | { type: "block/reset"; pageId: string; blockId: string }
   | { type: "link/set"; componentId: string; elementId: string; link: LinkTarget | null }
   | { type: "nav/transition"; transition: Transition }

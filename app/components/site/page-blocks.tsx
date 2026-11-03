@@ -43,6 +43,7 @@ import { useSite, useSiteDispatch } from "./site-context";
 import { useBlockGestures } from "./use-block-gestures";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
 import { PlacementGrip } from "../placement/placement-grip";
+import { LockClosedIcon, LockOpenIcon } from "../icons/lock-icons";
 import { usePlacementDrag } from "../placement/use-placement-drag";
 import { PLACE_KEY, SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
 import { VisibilityEye } from "./visibility-eye";
@@ -113,8 +114,9 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
 
   // Una cuenta con acceso limitado solo edita las secciones que se le asignaron; el resto se ve pero no se toca.
   const { currentUser } = useAuth();
-  const locked = !canEditBlock(currentUser, page.id, block.id);
-  const editing = interactive && mode === "edit" && !locked;
+  const permissionLocked = !canEditBlock(currentUser, page.id, block.id);
+  const editing = interactive && mode === "edit" && !permissionLocked;
+  const isBlockLocked = Boolean(block.locked);
   // Con acceso limitado se remarca lo que sí puede cambiar y se atenúa el resto.
   const limited = interactive && mode === "edit" && !!currentUser?.access?.scope;
   const selected = editing && block.id === selectedId;
@@ -128,7 +130,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   });
   // Con varias secciones marcadas, arrastrar una mueve todas: se anota dónde estaba cada una al agarrar.
   const groupOrigins = useRef<Record<string, Placement> | null>(null);
-  const canDragPlacement = editing && !adaptive && (isOverlay || !isHeaderOrFooter) && block.placementMode !== "flow";
+  const canDragPlacement = editing && !adaptive && !isBlockLocked;
   const move = usePlacementDrag({
     enabled: canDragPlacement,
     onBegin: () => {
@@ -195,7 +197,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onMoveBlock: canDragPlacement ? move.startDrag : undefined,
     // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón.
     // En tablet o móvil solo se arrastra si la persona definió ese diseño; en automático lo calcula el CMS.
-    gestures: editing && !flow && (!adaptive || manual) ? gestures : undefined,
+    gestures: editing && !isBlockLocked && !flow && (!adaptive || manual) ? gestures : undefined,
     selectedElementId: selected ? selectedElementId : null,
     alsoSelectedIds: selected ? alsoSelectedIds : undefined,
     onFollow: (link, elementId) => followLink(withParams(link, elementId)),
@@ -206,26 +208,26 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onContextMenu: (elementId, point) =>
       openFormatMenu({ kind: "element", pageId: page.id, blockId: block.id, elementId }, point),
     onOpenCode: (elementId) => openFile({ kind: "custom-css", pageId: page.id, blockId: block.id, key: elementId }),
-    onReorderFlow: editing
+    onReorderFlow: editing && !isBlockLocked
       ? (elementId, direction) => {
           const updated = moveElementOrderInComponent(def, elementId, direction);
           dispatch({ type: "component/save", component: updated });
         }
       : undefined,
-    onReorderElement: editing
+    onReorderElement: editing && !isBlockLocked
       ? (sourceId, targetId, position) => {
           const updated = reorderElementInComponent(def, sourceId, targetId, position);
           dispatch({ type: "component/save", component: updated });
         }
       : undefined,
-    onDuplicateCard: editing
+    onDuplicateCard: editing && !isBlockLocked
       ? (elementId) => {
           const { component: updated, newCardId } = duplicateCardInComponent(def, elementId);
           dispatch({ type: "component/save", component: updated });
           dispatch({ type: "element/select", id: newCardId });
         }
       : undefined,
-    onAddCard: editing
+    onAddCard: editing && !isBlockLocked
       ? () => {
           const { component: updated, newCardId } =
             def.category === "buttons"
@@ -239,7 +241,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         }
       : undefined,
     addCardLabel: def.category === "buttons" ? "Botón" : "Tarjeta",
-    onDeleteCard: editing
+    onDeleteCard: editing && !isBlockLocked
       ? (elementId) => {
           const updated = deleteCardFromComponent(def, elementId);
           dispatch({ type: "component/save", component: updated });
@@ -253,7 +255,9 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onSelect: (elementId, add) => {
       if (!interactive) return;
       if (!add || !selected) select();
-      dispatch({ type: "element/select", id: elementId, add: add && selected });
+      if (!isBlockLocked) {
+        dispatch({ type: "element/select", id: elementId, add: add && selected });
+      }
     },
   };
 
@@ -301,7 +305,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       {...behaviorProps}
       {...(behaviorProps.onClick ? { "data-interactive": "" } : {})}
       {...sectionDrop.handlers}
-      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && locked ? "opacity-40 saturate-50" : ""} ${limited && !locked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${
+      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && permissionLocked ? "opacity-40 saturate-50" : ""} ${limited && !permissionLocked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${
         customClasses(block, SECTION_KEY, def).includes("w-fit")
           ? "w-fit"
           : flow || block.code || stretches(block.box?.span) || autoFill || isHeaderOrFooter
@@ -309,9 +313,13 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
             : "w-fit"
       } ${customClasses(block, SECTION_KEY, def).includes("mx-auto") ? "mx-auto" : ""} max-w-full ${stretches(block.box?.span) ? "" : "rounded-md"} ${
         (selected && selectedElementId === null) || (editing && selectedBlockIds?.includes(block.id))
-          ? "ring-2 ring-accent"
+          ? isBlockLocked
+            ? "ring-2 ring-amber-500/80"
+            : "ring-2 ring-accent"
           : editing
-            ? "hover:ring-1 hover:ring-accent/50"
+            ? isBlockLocked
+              ? "hover:ring-1 hover:ring-amber-500/60"
+              : "hover:ring-1 hover:ring-accent/50"
             : ""
       } ${block.code ? customClasses(block, SECTION_KEY) : ""}`}
       style={{
@@ -386,38 +394,98 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
             className={`absolute -top-2 -left-2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
           />
           {selected && selectedElementId === null ? (
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border border-line bg-canvas/95 px-1.5 py-0.5 shadow-lg backdrop-blur-xs">
+            <div
+              className={`absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border px-1.5 py-0.5 shadow-lg backdrop-blur-xs transition-colors ${
+                isBlockLocked
+                  ? "border-amber-500/50 bg-canvas/95 ring-1 ring-amber-500/20"
+                  : "border-line bg-canvas/95"
+              }`}
+            >
               <button
                 type="button"
-                title="Subir sección en la página"
+                title={isBlockLocked ? "Sección bloqueada · Desbloquea para mover" : "Subir sección en la página"}
                 aria-label="Subir sección"
+                disabled={isBlockLocked}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isBlockLocked) return;
                   dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: -1 });
                 }}
-                className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+                className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
+                  isBlockLocked
+                    ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
+                    : "text-ink hover:bg-hover active:scale-95"
+                }`}
               >
                 ↑
               </button>
               <button
                 type="button"
-                title="Bajar sección en la página"
+                title={isBlockLocked ? "Sección bloqueada · Desbloquea para mover" : "Bajar sección en la página"}
                 aria-label="Bajar sección"
+                disabled={isBlockLocked}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isBlockLocked) return;
                   dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: 1 });
                 }}
-                className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+                className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
+                  isBlockLocked
+                    ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
+                    : "text-ink hover:bg-hover active:scale-95"
+                }`}
               >
                 ↓
               </button>
-              {canDragPlacement && (
-                <>
-                  <span className="h-3 w-px bg-line" />
-                  <PlacementGrip label={def.name} onStart={move.startDrag} className="relative flex" />
-                </>
-              )}
+              <span className="h-3 w-px bg-line" />
+              <PlacementGrip
+                label={def.name}
+                onStart={move.startDrag}
+                disabled={isBlockLocked}
+                className="relative flex"
+              />
+              <span className="h-3 w-px bg-line" />
+              <button
+                type="button"
+                aria-label={isBlockLocked ? "Desbloquear sección" : "Bloquear sección"}
+                aria-pressed={isBlockLocked}
+                title={
+                  isBlockLocked
+                    ? "Desbloquear sección (actualmente bloqueada)"
+                    : "Bloquear sección (no se podrá mover)"
+                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch({
+                    type: "block/lock",
+                    pageId: page.id,
+                    blockId: block.id,
+                    locked: !isBlockLocked,
+                  });
+                }}
+                className={`flex h-5 w-5 items-center justify-center rounded transition-colors active:scale-95 ${
+                  isBlockLocked
+                    ? "bg-amber-500/25 text-amber-400 hover:bg-amber-500/35 shadow-xs"
+                    : "text-ink-dim hover:text-ink hover:bg-hover"
+                }`}
+              >
+                {isBlockLocked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
+              </button>
             </div>
+          ) : isBlockLocked ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                select();
+              }}
+              title={`${def.name} está bloqueada · Clic para desbloquear`}
+              className={`absolute -top-3 left-1/2 -translate-x-1/2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-amber-500/40 bg-canvas/95 text-amber-400 shadow backdrop-blur-xs transition-transform active:scale-95 ${
+                selected ? "flex" : "hidden group-hover:flex"
+              }`}
+            >
+              <LockClosedIcon className="h-3.5 w-3.5" />
+            </button>
           ) : (
             <PlacementGrip
               label={def.name}
@@ -432,14 +500,16 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               className="absolute -top-2 right-5"
             />
           )}
-          <button
-            type="button"
-            aria-label={`Quitar ${def.name} de la página`}
-            onClick={() => dispatch({ type: "block/remove", id: block.id })}
-            className="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex"
-          >
-            ×
-          </button>
+          {!isBlockLocked && (
+            <button
+              type="button"
+              aria-label={`Quitar ${def.name} de la página`}
+              onClick={() => dispatch({ type: "block/remove", id: block.id })}
+              className="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex"
+            >
+              ×
+            </button>
+          )}
         </>
       )}
     </div>

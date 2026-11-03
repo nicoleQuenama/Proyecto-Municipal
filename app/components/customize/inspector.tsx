@@ -17,6 +17,7 @@ import { LinkParamsControls } from "../dynamic/link-params-controls";
 import { RepeatControls } from "../data-sources/repeat-controls";
 import { SectionBackground } from "../background/section-background";
 import { IconPicker } from "../icons/icon-picker";
+import { LockClosedIcon, LockOpenIcon } from "../icons/lock-icons";
 import {
   addCardToComponent,
   addButtonToComponent,
@@ -514,58 +515,96 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
             <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
               <button
                 type="button"
+                disabled={block.locked}
                 aria-pressed={block.placementMode !== "overlay"}
                 onClick={() => dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" })}
                 className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
-                  block.placementMode !== "overlay" ? "bg-accent text-white shadow-xs font-semibold" : "text-ink-dim hover:text-ink hover:bg-hover"
+                  block.locked
+                    ? "cursor-not-allowed opacity-40 text-ink-dim"
+                    : block.placementMode !== "overlay"
+                      ? "bg-accent text-white shadow-xs font-semibold"
+                      : "text-ink-dim hover:text-ink hover:bg-hover"
                 }`}
-                title="Se ajusta automáticamente según el contenido de la página sin sobreponerse"
+                title={block.locked ? "Sección bloqueada" : "Se ajusta automáticamente según el contenido de la página sin sobreponerse"}
               >
                 Ajustar a contenido
               </button>
               <button
                 type="button"
+                disabled={block.locked}
                 aria-pressed={block.placementMode === "overlay"}
                 onClick={() => dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "overlay" })}
                 className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
-                  block.placementMode === "overlay" ? "bg-accent text-white shadow-xs font-semibold" : "text-ink-dim hover:text-ink hover:bg-hover"
+                  block.locked
+                    ? "cursor-not-allowed opacity-40 text-ink-dim"
+                    : block.placementMode === "overlay"
+                      ? "bg-accent text-white shadow-xs font-semibold"
+                      : "text-ink-dim hover:text-ink hover:bg-hover"
                 }`}
-                title="Permite mover libremente y sobreponer sobre otros elementos"
+                title={block.locked ? "Sección bloqueada" : "Permite mover libremente y sobreponer sobre otros elementos"}
               >
                 Sobreponer (libre)
               </button>
             </div>
             <p className="text-[10px] text-ink-dim">
-              {block.placementMode === "overlay"
-                ? "Modo libre: arrastra la sección en el lienzo para moverla o sobreponerla a otras."
-                : currentSlot === "footer"
-                  ? "Modo recomendado: el footer permanece siempre al final de la página y se adapta automáticamente al contenido."
-                  : "Modo recomendado: la sección respeta el flujo de la página y se ajusta automáticamente según el contenido."}
+              {block.locked
+                ? "Sección bloqueada estilo Canva: desbloquea la sección para cambiar su modo o moverla."
+                : block.placementMode === "overlay"
+                  ? "Modo libre: arrastra la sección en el lienzo para moverla o sobreponerla a otras."
+                  : currentSlot === "footer"
+                    ? "Modo recomendado: el footer permanece siempre al final de la página y se adapta automáticamente al contenido."
+                    : "Modo recomendado: la sección respeta el flujo de la página y se ajusta automáticamente según el contenido."}
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
-            <span className="text-[10px] text-ink-dim font-medium">Orden en la página:</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-ink-dim font-medium">Orden en la página:</span>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: "block/lock", pageId, blockId: block.id, locked: !block.locked })}
+                className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
+                  block.locked
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
+                    : "text-ink-dim hover:text-ink hover:bg-hover"
+                }`}
+                title={block.locked ? "Desbloquear sección" : "Bloquear sección"}
+              >
+                {block.locked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
+                disabled={block.locked}
                 onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: -1 })}
-                className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors"
-                title="Mover esta sección más arriba"
+                className={`flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium transition-colors ${
+                  block.locked
+                    ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
+                    : "text-ink hover:bg-hover active:scale-95"
+                }`}
+                title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más arriba"}
               >
                 <span className="font-bold">↑</span> Subir sección
               </button>
               <button
                 type="button"
+                disabled={block.locked}
                 onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: 1 })}
-                className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors"
-                title="Mover esta sección más abajo"
+                className={`flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium transition-colors ${
+                  block.locked
+                    ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
+                    : "text-ink hover:bg-hover active:scale-95"
+                }`}
+                title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más abajo"}
               >
                 <span className="font-bold">↓</span> Bajar sección
               </button>
             </div>
             <p className="text-[10px] text-ink-dim">
-              Cambia la posición de esta sección respecto a las demás en el orden vertical de la página.
+              {block.locked
+                ? "Esta sección está bloqueada: su posición y contenido están fijos estilo Canva."
+                : "Cambia la posición de esta sección respecto a las demás en el orden vertical de la página."}
             </p>
           </div>
 

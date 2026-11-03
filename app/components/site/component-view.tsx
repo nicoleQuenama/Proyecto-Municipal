@@ -235,6 +235,9 @@ function PositionedElement({
   const [writing, setWriting] = useState(
     element.kind === "text" && element.text === "" && interaction?.selectedElementId === element.id,
   );
+  // Indicador de "soltar antes/después" al reordenar en flujo. Va aquí arriba porque este componente
+  // tiene returns tempranos (oculto, probar, editar) y los hooks no pueden quedar detrás de ellos.
+  const [dropIndicator, setDropIndicator] = useState<"before" | "after" | null>(null);
 
   const box: CSSProperties = { left: element.x, top: element.y, width: shown.width, height: shown.height };
   // Un dato que cambia el ancho, el alto o el color se pinta en el contenedor (ahí está el CSS base).
@@ -309,7 +312,6 @@ function PositionedElement({
     const selected = interaction.selectedElementId === element.id;
     const alsoSelected = interaction.alsoSelectedIds?.includes(element.id);
     const { gestures } = interaction;
-    const [dropIndicator, setDropIndicator] = useState<"before" | "after" | null>(null);
     const isFlow = Boolean(interaction.flow);
     const isTopChild = !element.parentId;
     const isBackdropEl = Boolean(gestures && isBackdrop(element, gestures.size));

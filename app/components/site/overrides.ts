@@ -159,6 +159,9 @@ export function moveBlock(state: SiteState, pageId: string, blockId: string, dir
   const page = state.pages.find((p) => p.id === pageId);
   if (!page) return state;
 
+  const current = page.blocks.find((b) => b.id === blockId);
+  if (current?.locked) return state;
+
   const { top, body, bottom } = splitBlocks(page, state.components);
   const group = [top, body, bottom].find((blocks) => blocks.some((block) => block.id === blockId));
   const index = group?.findIndex((block) => block.id === blockId) ?? -1;

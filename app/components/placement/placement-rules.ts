@@ -13,6 +13,7 @@ const updatePage = (state: SiteState, pageId: string, update: (page: Page) => Pa
 /** Mover o cambiar el tamaño no quita lo de «fija»; solo se cambia pidiéndolo (`fixed` explícito). */
 export const placeBlock = (state: SiteState, pageId: string, blockId: string, placement: Placement): SiteState =>
   updateBlock(state, pageId, blockId, (block) => {
+    if (block.locked) return block;
     const { fixed: asked, ...rest } = placement;
     const fixed = asked ?? block.placement?.fixed;
     return { ...block, placement: fixed ? { ...rest, fixed: true } : rest };
@@ -63,6 +64,8 @@ export const transferBlock = (
   blockId: string,
   placement: Placement,
 ): SiteState => {
+  const current = state.pages.find((p) => p.id === fromPageId)?.blocks.find((b) => b.id === blockId);
+  if (current?.locked) return state;
   const next = transfer(
     state,
     fromPageId,
