@@ -3,6 +3,7 @@
 import { PROP_DEFS } from "../styles/registry";
 import { asVariableRef, variableNameOf } from "../styles/resolve";
 import type { StyleProp, Variable } from "../styles/types";
+import { PaletteSelect } from "../section-colors/palette-select";
 import { LiteralInput } from "./literal-input";
 
 const selectClass =
@@ -18,15 +19,18 @@ interface StyleFieldProps {
   variables: Variable[];
   resolve: (value: string) => string | undefined;
   onChange: (value: string | null) => void;
+  /** Fuera del ámbito global, los roles sin permiso solo eligen colores de la paleta. */
+  restrictToPalette?: boolean;
 }
 
 /** Una propiedad de una regla: valor directo o variable, con el valor heredado como pista. */
-export function StyleField({ prop, raw, inherited, variables, resolve, onChange }: StyleFieldProps) {
+export function StyleField({ prop, raw, inherited, variables, resolve, onChange, restrictToPalette = false }: StyleFieldProps) {
   const { label, kind } = PROP_DEFS[prop];
   const boundName = raw ? variableNameOf(raw) : null;
   const bindable = kind === "color" || kind === "size" || kind === "font";
   const candidates = bindable ? variables.filter((variable) => variable.kind === kind) : [];
   const resolved = raw ? resolve(raw) : undefined;
+  const paletteOnly = restrictToPalette && kind === "color" && !boundName;
 
   return (
     <div className="flex flex-col gap-1">
@@ -64,6 +68,15 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange 
                 <option value={boundName}>--{boundName} (no definida)</option>
               )}
             </select>
+          ) : paletteOnly ? (
+            <PaletteSelect
+              options={candidates.map((variable) => ({ name: variable.name, value: variable.value }))}
+              value={resolved ?? ""}
+              onChange={(color) => {
+                const match = candidates.find((variable) => variable.value === color);
+                if (match) onChange(asVariableRef(match.name));
+              }}
+            />
           ) : (
             <LiteralInput
               kind={kind}
@@ -77,7 +90,7 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange 
           )}
         </div>
 
-        {!boundName && candidates.length > 0 && (
+        {!boundName && !paletteOnly && candidates.length > 0 && (
           <select
             aria-label={`Usar una variable en ${label}`}
             value=""

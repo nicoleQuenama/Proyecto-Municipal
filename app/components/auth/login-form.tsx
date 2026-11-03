@@ -7,6 +7,7 @@ import { LoginBackground } from "./login-background";
 import { LoginBrandPanel } from "./login-brand-panel";
 import { LoginFields } from "./login-fields";
 import { LoginIntro } from "./login-intro";
+import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 export function LoginForm() {
   const dispatch = useAuthDispatch();
@@ -15,6 +16,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -55,6 +57,16 @@ export function LoginForm() {
                 onTogglePassword={() => setShowPassword((value) => !value)}
               />
 
+              <div className="-mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="text-xs font-medium text-ink-dim transition-colors hover:text-accent"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
               {error && (
                 <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
                   {error}
@@ -72,6 +84,13 @@ export function LoginForm() {
                 {pending ? "Comprobando acceso…" : "Iniciar sesión"}
               </button>
             </form>
+
+            {forgotOpen && (
+              <ForgotPasswordDialog
+                onClose={() => setForgotOpen(false)}
+                onRecovered={(user, pass) => { setUsername(user); setPassword(pass); setForgotOpen(false); }}
+              />
+            )}
           </div>
         </section>
       </div>

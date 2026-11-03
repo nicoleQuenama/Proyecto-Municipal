@@ -24,10 +24,11 @@ interface TargetCardProps {
   styles: StyleState;
   onSet: (prop: StyleProp, value: string | null) => void;
   onClear: () => void;
+  restrictColorsToPalette?: boolean;
 }
 
 /** Las reglas de un tipo de elemento en el ámbito elegido. */
-export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onClear }: TargetCardProps) {
+export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onClear, restrictColorsToPalette = false }: TargetCardProps) {
   const [open, setOpen] = useState(false);
   const def = TARGET_DEFS[target];
   const count = Object.keys(rule?.props ?? {}).length;
@@ -60,6 +61,7 @@ export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onC
               variables={variables}
               resolve={(value) => resolveValue(value, styles.variables, ctx)}
               onChange={(value) => onSet(prop, value)}
+              restrictToPalette={restrictColorsToPalette}
             />
           ))}
 

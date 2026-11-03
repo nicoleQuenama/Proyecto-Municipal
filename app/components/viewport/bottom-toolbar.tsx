@@ -8,6 +8,7 @@ import { AdaptAssistant } from "./adapt-assistant";
 import { CursorIcon, HandIcon, SearchIcon } from "./icons";
 import { InsertMenus } from "./insert-menus";
 import { MoreMenu } from "./more-menu";
+import { PageSelector } from "./page-selector";
 import { active, Divider, iconButton, idle } from "./toolbar-parts";
 import { useViewport, type Tool } from "./viewport-context";
 import { ZoomControls } from "./zoom-controls";
@@ -59,6 +60,10 @@ export function BottomToolbar() {
           {basic.icon}
         </button>
       ))}
+
+      <Divider />
+
+      <PageSelector />
 
       <Divider />
 

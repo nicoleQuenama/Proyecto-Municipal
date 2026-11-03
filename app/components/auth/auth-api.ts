@@ -69,3 +69,12 @@ export async function resetPassword(userId: string): Promise<string> {
   });
   return res.tempPassword;
 }
+
+/** Reestablecimiento simulado desde el login: solo usuario y clave temporal en pantalla. */
+export async function forgotPassword(username: string): Promise<string> {
+  const res = await request<{ ok: true; tempPassword: string }>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+  return res.tempPassword;
+}

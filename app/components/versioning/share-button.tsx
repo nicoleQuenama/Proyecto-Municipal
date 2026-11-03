@@ -21,6 +21,9 @@ function ShareDialog({ onClose }: { onClose: () => void }) {
       </header>
 
       <div className="flex max-h-[70vh] flex-col gap-6 overflow-y-auto p-5">
+        <p className="rounded-md bg-hover px-3 py-2 text-xs text-ink-dim">
+          Cada etiqueta resume el acceso de una persona: dónde puede trabajar, hasta cuándo y qué no puede hacer.
+        </p>
         <AccessSection />
 
         <details className="rounded-xl border border-line">

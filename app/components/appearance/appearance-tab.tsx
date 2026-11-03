@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "../auth/auth-context";
+import { canManageGlobalDesign } from "../auth/global-design";
 import { Badge } from "../ui/badge";
 import { Collapsible } from "../ui/collapsible";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
@@ -45,19 +47,25 @@ export function AppearanceTab() {
   const site = useSite();
   const dispatch = useSiteDispatch();
   const page = useCurrentPage();
-  const [choice, setChoice] = useState<ScopeChoice>({ kind: "global" });
+  const { currentUser } = useAuth();
+  const canManageGlobals = canManageGlobalDesign(currentUser);
+  const [choice, setChoice] = useState<ScopeChoice>(() => (canManageGlobals ? { kind: "global" } : { kind: "page" }));
 
   // Si el componente elegido se eliminó, se vuelve al ámbito global.
   const component =
     choice.kind === "component" ? site.components.find((c) => c.id === choice.componentId) : undefined;
-  const activeKind = choice.kind === "component" && !component ? "global" : choice.kind;
+  // Solo el superadministrador puede trabajar en el ámbito global (paleta, colores y paddings del sitio).
+  const fallback: ScopeChoice = canManageGlobals ? { kind: "global" } : { kind: "page" };
+  const activeKind = choice.kind === "component" && !component ? fallback.kind : choice.kind === "global" && !canManageGlobals ? "page" : choice.kind;
 
   const scope: StyleScope =
     activeKind === "page"
       ? { kind: "page", pageId: page.id }
-      : component
-        ? { kind: "component", componentId: component.id }
-        : GLOBAL_SCOPE;
+      : activeKind === "global"
+        ? GLOBAL_SCOPE
+        : component
+          ? { kind: "component", componentId: component.id }
+          : GLOBAL_SCOPE;
   const ctx: StyleContext = { pageId: page.id, componentId: component?.id };
 
   // Un componente solo tiene su propia caja (su categoría) y los roles de sus elementos.
@@ -74,10 +82,24 @@ export function AppearanceTab() {
         pageName={page.name}
         components={site.components}
         onChange={setChoice}
+        canManageGlobals={canManageGlobals}
       />
       <p className="-mt-3 text-xs text-ink-dim">{SCOPE_HELP[activeKind]}</p>
 
-      <VariablesSection scope={scope} ctx={ctx} variables={site.variables} dispatch={dispatch} />
+      {!canManageGlobals && (
+        <p className="rounded-lg bg-hover px-3 py-2 text-[11px] text-ink-dim">
+          La paleta, los colores globales y los paddings del sitio los define el superadministrador. Aquí puedes usar
+          sus colores predefinidos.
+        </p>
+      )}
+
+      <VariablesSection
+        scope={scope}
+        ctx={ctx}
+        variables={site.variables}
+        dispatch={dispatch}
+        canEdit={canManageGlobals}
+      />
 
       {groups.map(({ group, targets: groupTargets }) => (
         <Collapsible
@@ -100,6 +122,7 @@ export function AppearanceTab() {
                 styles={site}
                 onSet={(prop, value) => dispatch({ type: "rule/set", scope, target, prop, value })}
                 onClear={() => dispatch({ type: "rule/clear", scope, target })}
+                restrictColorsToPalette={!canManageGlobals}
               />
             ))}
           </ul>

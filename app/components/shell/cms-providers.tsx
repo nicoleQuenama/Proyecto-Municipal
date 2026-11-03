@@ -8,6 +8,7 @@ import { NavigationProvider } from "../navigation/navigation-context";
 import { SiteProvider } from "../site/site-context";
 import type { SiteState } from "../site/types";
 import { VersioningProvider } from "../versioning/versioning-context";
+import { ToastProvider } from "../ui/toast";
 import { ViewportProvider } from "../viewport/viewport-context";
 import { WorkbenchProvider } from "../workbench/workbench-context";
 
@@ -19,6 +20,7 @@ const Passthrough = ({ children }: { children: ReactNode }) => <>{children}</>;
 export function CmsProviders({ children, viewer }: { children: ReactNode; viewer?: SiteState }) {
   const Versions = viewer ? Passthrough : VersioningProvider;
   return (
+    <ToastProvider>
     <SiteProvider initial={viewer} persist={!viewer}>
       <MediaProvider>
           <Versions>
@@ -41,5 +43,6 @@ export function CmsProviders({ children, viewer }: { children: ReactNode; viewer
           </Versions>
       </MediaProvider>
     </SiteProvider>
+    </ToastProvider>
   );
 }

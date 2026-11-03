@@ -23,29 +23,40 @@ interface VariablesSectionProps {
   ctx: StyleContext;
   variables: Variable[];
   dispatch: Dispatch<SiteAction>;
+  /** Solo el superadministrador crea o cambia la paleta; el resto solo la usa. */
+  canEdit?: boolean;
 }
 
-function VariableRow({ variable, dispatch }: { variable: Variable; dispatch: Dispatch<SiteAction> }) {
+function VariableRow({ variable, dispatch, readOnly }: { variable: Variable; dispatch: Dispatch<SiteAction>; readOnly: boolean }) {
   return (
     <li className="flex items-center gap-2">
       <code className="w-28 shrink-0 truncate text-xs" title={`--${variable.name}`}>--{variable.name}</code>
       <div className="min-w-0 flex-1">
-        <LiteralInput
-          kind={variable.kind}
-          label={`Valor de --${variable.name}`}
-          value={variable.value}
-          onCommit={(value) => value && dispatch({ type: "variable/save", variable: { ...variable, value } })}
-        />
+        {readOnly ? (
+          <span className="flex items-center gap-1.5 text-xs text-ink-dim">
+            <span className="size-3 rounded-full border border-line" style={{ background: variable.value }} />
+            {variable.value}
+          </span>
+        ) : (
+          <LiteralInput
+            kind={variable.kind}
+            label={`Valor de --${variable.name}`}
+            value={variable.value}
+            onCommit={(value) => value && dispatch({ type: "variable/save", variable: { ...variable, value } })}
+          />
+        )}
       </div>
-      <button
-        type="button"
-        aria-label={`Eliminar --${variable.name}`}
-        title="Eliminar variable"
-        onClick={() => dispatch({ type: "variable/delete", id: variable.id })}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400"
-      >
-        ×
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          aria-label={`Eliminar --${variable.name}`}
+          title="Eliminar variable"
+          onClick={() => dispatch({ type: "variable/delete", id: variable.id })}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400"
+        >
+          ×
+        </button>
+      )}
     </li>
   );
 }
@@ -133,24 +144,30 @@ function NewVariableForm({
 }
 
 /** Variables del ámbito elegido (como un `:root`) y, aparte, las que hereda de más arriba. */
-export function VariablesSection({ scope, ctx, variables, dispatch }: VariablesSectionProps) {
+export function VariablesSection({ scope, ctx, variables, dispatch, canEdit = true }: VariablesSectionProps) {
   const own = variables.filter((variable) => sameScope(variable.scope, scope));
   const inherited = availableVariables(variables, ctx).filter(
     (variable) => !sameScope(variable.scope, scope) && !own.some((v) => v.name === variable.name),
   );
 
   return (
-    <Collapsible title={`Variables (${own.length})`} defaultOpen={false}>
+    <Collapsible title={`Paleta y variables (${own.length})`} defaultOpen={!canEdit}>
+      {!canEdit && (
+        <p className="rounded-md bg-hover px-3 py-2 text-[11px] text-ink-dim">
+          Los colores predefinidos los administra el superadministrador. Puedes usarlos en tus secciones, pero no
+          crear ni cambiar la paleta global.
+        </p>
+      )}
 
       {own.length > 0 && (
         <ul className="flex flex-col gap-2">
           {own.map((variable) => (
-            <VariableRow key={variable.id} variable={variable} dispatch={dispatch} />
+            <VariableRow key={variable.id} variable={variable} dispatch={dispatch} readOnly={!canEdit} />
           ))}
         </ul>
       )}
 
-      <NewVariableForm scope={scope} variables={variables} dispatch={dispatch} />
+      {canEdit && <NewVariableForm scope={scope} variables={variables} dispatch={dispatch} />}
 
       {inherited.length > 0 && (
         <details className="text-xs text-ink-dim">

@@ -1,14 +1,17 @@
 "use client";
 
 import { useCanvasSettings } from "../canvas-editing/settings-context";
+import { useAuth } from "../auth/auth-context";
+import { canManageGlobalDesign } from "../auth/global-design";
 import { colorInputValue } from "../format/format-options";
 import { applyOverrides } from "../site/overrides";
-import { useSiteDispatch } from "../site/site-context";
+import { useSite, useSiteDispatch } from "../site/site-context";
 import type { BlockInstance, ComponentDef } from "../site/types";
 import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
 import { collectColors, type ColorGroup } from "./collect-colors";
 import { HexField } from "./hex-field";
+import { PaletteSelect, type PaletteOption } from "./palette-select";
 
 interface SectionColorPaletteProps {
   pageId: string;
@@ -21,6 +24,13 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
   const dispatch = useSiteDispatch();
   const styles = useStyles();
   const { settings, setSettings } = useCanvasSettings();
+  const { variables } = useSite();
+  const { currentUser } = useAuth();
+  const canManageGlobals = canManageGlobalDesign(currentUser);
+  const palette: PaletteOption[] = variables
+    .filter((variable) => variable.kind === "color")
+    .filter((variable, index, all) => all.findIndex((item) => item.value === variable.value) === index)
+    .map((variable) => ({ name: variable.name, value: variable.value }));
 
   const resolve = styles.resolver(def.id);
   const view = applyOverrides(styles.component(def), block, resolve);
@@ -51,24 +61,36 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
           {settings.scope === "component" ? "En todo el sitio" : "Solo en esta sección"}
         </button>
       </div>
-
       <ul className={`grid ${compact ? "grid-cols-4 gap-1.5" : "grid-cols-3 sm:grid-cols-4 gap-2"} rounded-lg border border-line bg-canvas/40 p-2`}>
         {groups.map((group, index) => (
           <li key={index} className="flex flex-col items-center gap-1 rounded-md border border-line/60 bg-panel p-1.5 shadow-xs">
-            <label
-              title={`Cambiar color ${group.value}`}
-              className="relative block size-7 cursor-pointer rounded-full border border-line shadow-sm hover:scale-105 transition-transform"
-              style={{ background: group.value }}
-            >
-              <input
-                type="color"
-                aria-label={`Color ${group.value}`}
-                value={colorInputValue(group.value)}
-                onChange={(e) => recolor(group, e.target.value)}
-                className="absolute inset-0 size-full cursor-pointer opacity-0"
-              />
-            </label>
-            <HexField value={group.value} onChange={(color) => recolor(group, color)} />
+            {canManageGlobals ? (
+              <>
+                <label
+                  title={`Cambiar color ${group.value}`}
+                  className="relative block size-7 cursor-pointer rounded-full border border-line shadow-sm hover:scale-105 transition-transform"
+                  style={{ background: group.value }}
+                >
+                  <input
+                    type="color"
+                    aria-label={`Color ${group.value}`}
+                    value={colorInputValue(group.value)}
+                    onChange={(e) => recolor(group, e.target.value)}
+                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  />
+                </label>
+                <HexField value={group.value} onChange={(color) => recolor(group, color)} />
+              </>
+            ) : (
+              <>
+                <span
+                  aria-hidden
+                  className="size-7 rounded-full border border-line shadow-sm"
+                  style={{ background: group.value }}
+                />
+                <PaletteSelect options={palette} value={group.value} onChange={(color) => recolor(group, color)} />
+              </>
+            )}
           </li>
         ))}
       </ul>

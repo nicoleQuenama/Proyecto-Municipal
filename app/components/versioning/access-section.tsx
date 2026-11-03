@@ -4,56 +4,9 @@ import { useEffect, useState } from "react";
 import type { Access } from "../auth/access";
 import { fetchUsers, removeUser, saveAccess } from "../auth/auth-api";
 import { hasPermission, useAuth, useAuthDispatch } from "../auth/auth-context";
-import { ROLE_LABELS, type User } from "../auth/types";
-import { Avatar } from "../ui/avatar";
-import { AccessEditor } from "./access-editor";
-import { describeAccess } from "./access-presets";
+import type { User } from "../auth/types";
 import { InviteAccountForm } from "./invite-account-form";
-
-interface PersonRowProps {
-  user: User;
-  open: boolean;
-  saving: boolean;
-  onToggle: () => void;
-  onSave: (access: Access) => void;
-  onRemove: () => void;
-}
-
-function PersonRow({ user, open, saving, onToggle, onSave, onRemove }: PersonRowProps) {
-  const { where, limits, expiry, expired } = describeAccess(user);
-  return (
-    <li className="flex flex-col gap-3 rounded-xl border border-line p-3">
-      <div className="flex items-center gap-3">
-        <Avatar name={user.name} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium">
-            {user.name} <span className="font-normal text-ink-dim">· {ROLE_LABELS[user.role]}</span>
-          </p>
-          <p className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-ink-dim">
-            <span className="text-ink">{where}</span>
-            {limits.map((limit) => (
-              <span key={limit}>· {limit}</span>
-            ))}
-            <span className={expired ? "font-medium text-red-400" : ""}>· {expiry}</span>
-          </p>
-        </div>
-        <button type="button" aria-expanded={open} onClick={onToggle} className="h-8 shrink-0 rounded-md border border-line px-3 text-xs hover:bg-hover">
-          {open ? "Cerrar" : expired ? "Renovar acceso" : "Cambiar acceso"}
-        </button>
-        <button
-          type="button"
-          title={`Quitar a ${user.name} del proyecto ahora mismo`}
-          aria-label={`Quitar a ${user.name}`}
-          onClick={onRemove}
-          className="h-8 shrink-0 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400"
-        >
-          Quitar
-        </button>
-      </div>
-      {open && <AccessEditor user={user} saving={saving} onSave={onSave} onCancel={onToggle} />}
-    </li>
-  );
-}
+import { PersonRow } from "./person-row";
 
 /** Tu grupo de trabajo: las personas que invitaste y lo que puede hacer cada una (el superadministrador ve a todas). */
 export function AccessSection() {

@@ -82,22 +82,22 @@ export const ACTIONS: { [K in ActionKind]: ActionDef<K> } = {
   },
 
   toast: {
-    label: "Mostrar una notificación",
+    label: "Mostrar una notificación (toast)",
     create: () => ({ kind: "toast", message: "¡Listo!", tone: "success", place: "bottom-right", seconds: 3 }),
     fields: [
-      { key: "message", label: "Mensaje", type: "text", placeholder: "Se guardó correctamente" },
-      { key: "tone", label: "Tipo", type: "select", options: Object.entries(TONE_LABELS).map(([value, label]) => ({ value, label })) },
-      { key: "place", label: "Posición", type: "select", options: Object.entries(PLACE_LABELS).map(([value, label]) => ({ value, label })) },
-      { key: "seconds", label: "Dura (s)", type: "number", min: 0.5, max: MAX_NOTICE_SECONDS, step: 0.5 },
+      { key: "message", label: "Mensaje que verá la persona", type: "text", placeholder: "Se guardó correctamente" },
+      { key: "tone", label: "Estilo del aviso", type: "select", options: Object.entries(TONE_LABELS).map(([value, label]) => ({ value, label })) },
+      { key: "place", label: "Dónde aparece", type: "select", options: Object.entries(PLACE_LABELS).map(([value, label]) => ({ value, label })) },
+      { key: "seconds", label: "Cuánto dura (s)", type: "number", min: 0.5, max: MAX_NOTICE_SECONDS, step: 0.5 },
     ],
     run: (action) => void showToast(action.message, action.tone, action.place, action.seconds),
   },
 
   dialog: {
-    label: "Mostrar un diálogo",
+    label: "Mostrar un diálogo (modal)",
     create: () => ({ kind: "dialog", title: "Aviso", message: "Escribe aquí el mensaje.", button: "Aceptar" }),
     fields: [
-      { key: "title", label: "Título", type: "text", placeholder: "Aviso" },
+      { key: "title", label: "Título de la ventana", type: "text", placeholder: "Aviso" },
       { key: "message", label: "Mensaje", type: "text", placeholder: "Escribe aquí el mensaje." },
       { key: "button", label: "Texto del botón", type: "text", placeholder: "Aceptar" },
     ],

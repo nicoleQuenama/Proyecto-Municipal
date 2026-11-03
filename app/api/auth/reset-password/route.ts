@@ -1,6 +1,6 @@
 import { sameOriginRequest } from "../../../server/proxy-guard";
 import { sessionUser } from "../../../server/auth-session";
-import { findStored, resetPassword } from "../../../server/auth-store";
+import { resetPassword } from "../../../server/auth-store";
 
 const refuse = (error: string, status = 403) => Response.json({ error }, { status });
 

@@ -7,6 +7,7 @@ import { previewBehavior } from "../behaviors/preview-in-editor";
 import { TRIGGERS } from "../behaviors/triggers";
 import type { ActionKind, Behavior, BehaviorAction, CodeMode, TriggerKind } from "../behaviors/types";
 import type { CanvasElement, Page } from "../site/types";
+import { ACTION_HINTS } from "./action-hints";
 import { FIELD_RENDERERS, type FieldContext } from "./behavior-fields";
 
 const selectClass =
@@ -106,6 +107,12 @@ export function BehaviorEditor({ behavior, blockId, pages, elements, onChange, o
         </select>
       ) : (
         <p className="text-[11px] text-ink-dim">Esta interacción ejecuta código y tu rol no puede editarla.</p>
+      )}
+
+      {ACTION_HINTS[action.kind] && (
+        <p className="rounded-md bg-hover px-2 py-1.5 text-[11px] leading-relaxed text-ink-dim">
+          {ACTION_HINTS[action.kind]}
+        </p>
       )}
 
       {definition.fields.map(draw)}

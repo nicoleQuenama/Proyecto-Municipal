@@ -25,9 +25,11 @@ interface ScopePickerProps {
   pageName: string;
   components: ComponentDef[];
   onChange: (choice: ScopeChoice) => void;
+  /** Solo el superadministrador puede aplicar reglas a todo el sitio. */
+  canManageGlobals: boolean;
 }
 
-export function ScopePicker({ choice, pageName, components, onChange }: ScopePickerProps) {
+export function ScopePicker({ choice, pageName, components, onChange, canManageGlobals }: ScopePickerProps) {
   return (
     <label className="flex flex-col gap-1 text-[11px] text-ink-dim">
       Aplicar reglas a
@@ -36,7 +38,7 @@ export function ScopePicker({ choice, pageName, components, onChange }: ScopePic
         onChange={(e) => onChange(fromValue(e.target.value))}
         className="h-9 rounded-md border border-line bg-canvas px-2 text-[13px] text-ink outline-none focus:border-accent [&>option]:bg-panel [&>optgroup]:bg-panel"
       >
-        <option value="global">Todo el sitio (global)</option>
+        {canManageGlobals && <option value="global">Todo el sitio (global)</option>}
         <option value="page">Solo esta página: {pageName}</option>
         <optgroup label="Un componente concreto">
           {components.map((component) => (
