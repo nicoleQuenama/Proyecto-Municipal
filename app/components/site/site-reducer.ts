@@ -495,6 +495,8 @@ const HANDLERS: Handlers = {
     navigation: { defaultTransition: normalizeTransition(action.transition) },
   }),
 
+  "brand/require": (state, action) => ({ ...state, brandRequired: action.value }),
+
   "variable/save": (state, action) => ({ ...state, variables: saveVariable(state.variables, action.variable) }),
 
   "variable/delete": (state, action) => ({ ...state, variables: state.variables.filter((v) => v.id !== action.id) }),

@@ -364,6 +364,8 @@ export interface SiteState extends StyleState {
   sources: DataSource[];
   /** Archivos multimedia del proyecto (imágenes y videos) al estilo Canva. */
   projectMedia?: ProjectMediaAsset[];
+  /** Manual de marca obligatorio: quien no es superadministrador debe usar las variables de la marca, no valores sueltos. */
+  brandRequired?: boolean;
 }
 
 export interface ProjectMediaAsset {
@@ -452,6 +454,7 @@ export type SiteAction =
   | { type: "block/reset"; pageId: string; blockId: string }
   | { type: "link/set"; componentId: string; elementId: string; link: LinkTarget | null }
   | { type: "nav/transition"; transition: Transition }
+  | { type: "brand/require"; value: boolean }
   | { type: "variable/save"; variable: Variable }
   | { type: "variable/delete"; id: string }
   | { type: "rule/set"; scope: StyleScope; target: StyleTarget; prop: StyleProp; value: string | null }

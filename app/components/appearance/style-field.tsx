@@ -31,6 +31,7 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange,
   const candidates = bindable ? variables.filter((variable) => variable.kind === kind) : [];
   const resolved = raw ? resolve(raw) : undefined;
   const paletteOnly = restrictToPalette && kind === "color" && !boundName;
+  const fontsOnly = restrictToPalette && kind === "font" && !boundName;
 
   return (
     <div className="flex flex-col gap-1">
@@ -77,6 +78,13 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange,
                 if (match) onChange(asVariableRef(match.name));
               }}
             />
+          ) : fontsOnly ? (
+            <select aria-label={`Tipografía de la marca para ${label}`} value="" onChange={(e) => e.target.value && onChange(asVariableRef(e.target.value))} className={`${selectClass} w-full`}>
+              <option value="">{resolved ?? "Elige una tipografía de la marca"}</option>
+              {candidates.map((variable) => (
+                <option key={variable.id} value={variable.name}>--{variable.name}</option>
+              ))}
+            </select>
           ) : (
             <LiteralInput
               kind={kind}
@@ -90,7 +98,7 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange,
           )}
         </div>
 
-        {!boundName && !paletteOnly && candidates.length > 0 && (
+        {!boundName && !paletteOnly && !fontsOnly && candidates.length > 0 && (
           <select
             aria-label={`Usar una variable en ${label}`}
             value=""
