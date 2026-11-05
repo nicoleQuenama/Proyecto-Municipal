@@ -1,6 +1,6 @@
 # Portal — CMS visual
 
-Editor visual de sitios web (estilo Figma/Canva) con colaboración en vivo, versiones y ramas como GitHub, publicación y
+Editor visual de sitios web con colaboración en vivo, versiones y ramas, publicación y
 despliegue. Next.js + React, **Postgres** para todos los datos, **ImageKit** para imágenes y videos y un servidor de
 **WebSockets** para el tiempo real.
 
@@ -49,9 +49,9 @@ Lo creas copiando `.env.example`. Para desarrollo local casi todo ya viene bien;
 
 | Variable | Obligatoria | Qué es |
 |---|---|---|
-| `DATABASE_URL` | sí | conexión de la **app** (usuario `portal_api`, sujeto a las reglas de seguridad por fila). Nunca el dueño de las tablas |
+| `DATABASE_URL` | sí | (Docker o tu Postgres, ver abajo) conexión de la **app** (usuario `portal_api`, sujeto a las reglas de seguridad por fila). Nunca el dueño de las tablas |
 | `DATABASE_ADMIN_URL` | sí, para `db:setup`, `db:seed` y `maintenance` | conexión del **dueño** de las tablas (migraciones y mantenimiento). No la uses en la app |
-| `POSTGRES_PORT` | si el 5432 está ocupado | puerto del Postgres de Docker. **Debe coincidir** con el de las dos URLs (en Windows el 5432 a veces está reservado: usa p. ej. `55433`) |
+| `POSTGRES_PORT` | solo con Docker | puerto que Docker abre. **Debe coincidir** con el de las dos URLs (en Windows el 5432 a veces está reservado: usa p. ej. `55433`) |
 | `PORTAL_ORG_SLUG` / `PORTAL_ORG_NAME` | sí | organización que crea `db:setup`; el slug lleva de 3 a 40 letras minúsculas, números o guiones |
 | `AUTH_SECRET` | **sí en producción** | firma las sesiones y los boletos del tiempo real: `openssl rand -base64 48`. En desarrollo hay un valor por defecto |
 | `DATA_KEY` | **sí en producción** | cifra las claves guardadas en la base (servidores de despliegue, cabeceras de APIs): `openssl rand -base64 32`. Si la cambias hay que volver a guardar esas claves |
@@ -64,12 +64,53 @@ Lo creas copiando `.env.example`. Para desarrollo local casi todo ya viene bien;
 
 > `.env.local` **nunca se sube a git** (está en `.gitignore`); `.env.example` sí, sin valores secretos.
 
-### Usar tu propio Postgres (sin Docker)
+### Elegir la base de datos: Docker o tu propio Postgres (pgAdmin)
 
-1. Crea la base vacía: `createdb portal` (Postgres 15 o superior; en 18 usa `uuidv7` nativo).
-2. Pon en `.env.local` tus datos: `DATABASE_ADMIN_URL` con un usuario que pueda crear roles y tablas, y `DATABASE_URL` con el
-   usuario de la app (`portal_api` y la contraseña que quieras; se crea solo).
-3. `pnpm db:setup`. Es repetible: aplica solo las migraciones que falten.
+El archivo `.env.local` apunta a **una sola** base a la vez, con dos URLs que se cambian juntas. `.env.example` trae las dos
+opciones: la de Docker activa y la de tu Postgres comentada.
+
+| | Opción 1 — Docker (por defecto) | Opción 2 — tu Postgres (el de pgAdmin) |
+|---|---|---|
+| Para quién | empezar rápido, sin instalar Postgres | ya tienes Postgres y pgAdmin |
+| `DATABASE_ADMIN_URL` | `postgres://postgres:portal_dev@127.0.0.1:<POSTGRES_PORT>/portal` | `postgres://postgres:TU_CLAVE@127.0.0.1:5432/portal` |
+| `DATABASE_URL` | `postgres://portal_api:portal_api_dev@127.0.0.1:<POSTGRES_PORT>/portal` | `postgres://portal_api:UNA_CLAVE@127.0.0.1:5432/portal` |
+| `POSTGRES_PORT` | sí: el puerto que Docker abre (5432, o p. ej. 55433 en Windows). Debe coincidir con las URLs | no hace falta |
+| Crear la base | `pnpm db:up` la crea sola | tú la creas vacía (paso de abajo) |
+| Tablas y datos | `pnpm db:setup` | `pnpm db:setup` |
+
+Las dos son bases **independientes**: no se sincronizan. Cambiar de una a otra es cambiar las URLs de `.env.local`.
+
+#### Opción 2: crear la base en tu Postgres con pgAdmin
+
+1. En pgAdmin conéctate a tu servidor (normalmente puerto `5432`, usuario `postgres`).
+2. Clic derecho en **Databases** → **Create** → **Database…** → Name = `portal` → **Save**. Queda vacía: no crees tablas a mano.
+3. En `.env.local` comenta las tres líneas de la opción 1 y descomenta las dos de la opción 2, con tu contraseña y tu puerto.
+   `portal_api` no lo creas tú: `db:setup` lo crea con la contraseña que pongas en `DATABASE_URL`.
+4. `pnpm db:setup` — aplica las 18 migraciones, crea el usuario `portal_api` y carga la organización con las cuentas de prueba.
+   Es repetible: aplica solo las migraciones que falten. Necesita **Postgres 15 o superior**.
+5. En pgAdmin, **F5** sobre `portal`: aparece el esquema `app` con sus tablas. Después `pnpm dev`.
+
+Sin pgAdmin, el paso 2 es `createdb portal` en la terminal.
+
+### Ver los datos en pgAdmin (también con la base de Docker)
+
+Para comprobar que lo que editas se guarda, conecta pgAdmin a la base que uses:
+
+1. Clic derecho en **Servers** → **Register** → **Server…**
+2. **General:** Name = `Portal (Docker)` (o el que quieras).
+3. **Connection:** Host `127.0.0.1` · Port el de tu URL (`POSTGRES_PORT` con Docker; normalmente `5432` con tu Postgres) ·
+   Maintenance database `portal` · Username `postgres` · Password la de `DATABASE_ADMIN_URL` → **Save**.
+4. **Servers → … → Databases → portal → Schemas → app → Tables**; clic derecho en una tabla → **View/Edit Data → All Rows**.
+   pgAdmin no se refresca solo: pulsa **F5** tras cada cambio.
+
+Tablas útiles: `pages` y `blocks` (el sitio en `main`), `commits` y `branches` (versiones y ramas), `edit_operations` (ediciones
+en una rama que no es `main`), `assets` (archivos de ImageKit), `users`. El editor guarda solo, unos 0,8 s después de cada
+cambio, y **no muestra un aviso de «guardado»** (solo avisa si falla): para saber si guardó, mira la tabla o la pestaña Red del
+navegador (`PUT /api/cms/site`, respuesta 200). Con la terminal:
+
+```bash
+docker exec portal-db-postgres-1 psql -U postgres -d portal -c "select (select count(*) from app.pages) paginas, (select count(*) from app.blocks) secciones, (select count(*) from app.commits) versiones"
+```
 
 ## Comandos
 
@@ -129,8 +170,6 @@ Dónde leer más:
 
 ## Cosas que conviene saber
 
-- **Todo vive en la base de datos.** No hay archivos JSON de datos. Lo único que el navegador guarda es si el explorador
-  izquierdo está recogido.
 - **Quien no puede publicar en `main` trabaja en su propia rama** y envía pull requests a quien lo invitó (como GitHub).
 - **Despliegue:** Vercel construye la app; FTP, SFTP y cPanel suben el paquete del proyecto y sirven para servidores donde corre
   Node (un VPS, o la «aplicación Node.js» de cPanel). Un hosting de solo archivos estáticos no sirve todavía.
