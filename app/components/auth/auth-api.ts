@@ -25,10 +25,10 @@ export async function fetchCurrentUser(): Promise<User | null> {
   }
 }
 
-export async function login(username: string, password: string): Promise<User> {
+export async function login(email: string, password: string): Promise<User> {
   return (await request<{ user: User }>("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ email, password }),
   })).user;
 }
 

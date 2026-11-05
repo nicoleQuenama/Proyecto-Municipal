@@ -30,8 +30,8 @@ export const COMPOSE = `services:
 export const DOCKERIGNORE = `node_modules
 .next
 .git
-.cms-data/backups
-.cms-data/users.json
+.env
+.env.local
 `;
 
 export const ENV_EXAMPLE = `# Copia este archivo a .env y cambia los valores.
@@ -50,13 +50,13 @@ export function readme(kind: BundleKind, published: boolean): string {
 
 Paquete exportado desde el CMS.
 
-${published ? "Incluye el sitio **publicado** (`.cms-data/published-site.json`)." : "Aún no se había publicado nada: incluye el diseño tal como estaba guardado."}
+${published ? "Incluye el sitio **publicado** (`app/server/exported-site.ts`)." : "Aún no se había publicado nada: incluye el diseño tal como estaba guardado."}
 
 ${how}
 ## Qué hay dentro
 
 - \`app/\` — el código del CMS y del visor del sitio (\`/ver\`).
-- \`.cms-data/published-site.json\` — el contenido del sitio.
+- \`app/server/exported-site.ts\` — el contenido del sitio, escrito como código (se compila con la aplicación).
 - \`Dockerfile\`, \`docker-compose.yml\` — para ejecutarlo en cualquier servidor con Docker.
 `;
 }

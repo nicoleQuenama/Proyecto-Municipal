@@ -2,7 +2,8 @@
 
 import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
-import { readAsDataUrl } from "../media/image-file";
+import { StorageMeter } from "../media/storage-meter";
+import { uploadMedia } from "../media/upload-media";
 import {
   extractKeywords,
   findMediaUsage,
@@ -203,7 +204,7 @@ export function MediaTab() {
     }
 
     try {
-      const dataUrl = await readAsDataUrl(file);
+      const dataUrl = URL.createObjectURL(file); // solo para la vista previa: al confirmar se sube
       setPendingFile(file);
       setPendingPreviewUrl(dataUrl);
       if (!uploadTitle.trim()) {
@@ -215,8 +216,17 @@ export function MediaTab() {
   };
 
   // Subir el archivo confirmado desde el modal
-  const handleCommitUploadModal = () => {
+  const handleCommitUploadModal = async () => {
     if (!pendingFile || !pendingPreviewUrl || !canEdit) return;
+    showFeedback("Subiendo…");
+    let uploadedUrl: string;
+    try {
+      uploadedUrl = await uploadMedia(pendingFile);
+    } catch (failure) {
+      showFeedback(failure instanceof Error ? failure.message : "No se pudo subir el archivo.");
+      return;
+    }
+    URL.revokeObjectURL(pendingPreviewUrl);
 
     const isVideo = pendingFile.type.startsWith("video/");
     const cleanTag = uploadTag.trim() || "General";
@@ -226,13 +236,13 @@ export function MediaTab() {
     const newAsset: ProjectMediaAsset = {
       id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: title,
-      src: pendingPreviewUrl,
+      src: uploadedUrl,
       kind: isVideo ? "video" : "image",
       size: pendingFile.size,
       tag: cleanTag,
       tags: derivedKeywords,
       createdAt: Date.now(),
-      local: true,
+      local: false,
     };
 
     dispatch({ type: "project-media/add", asset: newAsset });
@@ -258,7 +268,7 @@ export function MediaTab() {
       if (!isVideo && !isImage) return;
 
       try {
-        const dataUrl = await readAsDataUrl(file);
+        const dataUrl = URL.createObjectURL(file); // solo para la vista previa: al confirmar se sube
         setPendingFile(file);
         setPendingPreviewUrl(dataUrl);
         setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
@@ -418,6 +428,7 @@ export function MediaTab() {
 
   return (
     <div className="flex flex-col gap-3.5">
+      <StorageMeter />
       {/* Botones principales de subida y enlaces */}
       <div className="flex flex-col gap-2">
         <button

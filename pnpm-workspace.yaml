@@ -1,4 +1,6 @@
 # Scripts de instalación de dependencias: ninguno se ejecuta (esbuild y unrs-resolver funcionan sin ellos).
 allowBuilds:
+  cpu-features: set this to true or false
   esbuild: false
+  ssh2: set this to true or false
   unrs-resolver: false

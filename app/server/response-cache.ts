@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { db } from "./db";
 
 /** Una respuesta guardada en el servidor con el momento en que llegó. */
 export interface CachedResponse {
@@ -12,34 +11,25 @@ export interface CachedResponse {
 
 export type ServerCachePolicy = { kind: "none" } | { kind: "ttl"; seconds: number } | { kind: "persistent" };
 
-const DIR = path.join(process.cwd(), ".cache", "data-sources");
-const MAX_ENTRIES = 200;
-/** Copia en memoria (rápida); la de «persistent» además va a disco para sobrevivir a un reinicio. */
-const memory = new Map<string, CachedResponse>();
-
 export const cacheKey = (parts: unknown): string => createHash("sha256").update(JSON.stringify(parts)).digest("hex");
 
-const fileOf = (key: string) => path.join(DIR, `${key}.json`);
+/**
+ * La caché vive en la base de datos (`data_source_cache`), compartida entre visitantes y servidores. El proxy atiende también
+ * a visitantes sin sesión, así que se entra por funciones acotadas a la organización que este servidor atiende.
+ * Sin organización configurada no hay caché (se pide de nuevo cada vez).
+ */
+const org = () => process.env.PORTAL_ORG_SLUG ?? null;
 
 export async function readCache(key: string, policy: ServerCachePolicy): Promise<CachedResponse | null> {
-  if (policy.kind === "none") return null;
-
-  let entry = memory.get(key) ?? null;
-  if (!entry && policy.kind === "persistent") {
-    entry = await readFile(fileOf(key), "utf8").then((text) => JSON.parse(text) as CachedResponse, () => null);
-    if (entry) memory.set(key, entry);
-  }
-  if (!entry) return null;
-  return policy.kind === "ttl" && Date.now() - entry.at > policy.seconds * 1000 ? null : entry;
+  const slug = org();
+  if (policy.kind === "none" || !slug) return null;
+  const [row] = (await db()`select status, content_type, body, fetched_at from app.cache_get(${slug}, ${Buffer.from(key, "hex")})`) as unknown as { status: number; content_type: string; body: string; fetched_at: Date }[];
+  return row ? { at: row.fetched_at.getTime(), status: row.status, contentType: row.content_type, body: row.body } : null;
 }
 
 export async function writeCache(key: string, policy: ServerCachePolicy, entry: CachedResponse): Promise<void> {
-  if (policy.kind === "none") return;
-
-  if (memory.size >= MAX_ENTRIES) memory.delete(memory.keys().next().value as string);
-  memory.set(key, entry);
-  if (policy.kind !== "persistent") return;
-
-  // Sin disco (hosting sin escritura) se queda solo en memoria.
-  await mkdir(DIR, { recursive: true }).then(() => writeFile(fileOf(key), JSON.stringify(entry))).catch(() => undefined);
+  const slug = org();
+  if (policy.kind === "none" || !slug) return;
+  const ttl = policy.kind === "ttl" ? Math.max(1, Math.round(policy.seconds)) : null;
+  await db()`select app.cache_put(${slug}, ${Buffer.from(key, "hex")}, ${entry.status}, ${entry.contentType}, ${entry.body}, ${ttl})`.catch(() => undefined);
 }

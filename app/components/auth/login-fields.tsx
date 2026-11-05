@@ -4,30 +4,31 @@ import { EyeIcon, EyeOffIcon, LockIcon, UserIcon } from "../viewport/icons";
 import { FloatingField } from "./login-field";
 
 interface LoginFieldsProps {
-  username: string;
+  email: string;
   password: string;
   showPassword: boolean;
-  onUsername: (value: string) => void;
+  onEmail: (value: string) => void;
   onPassword: (value: string) => void;
   onTogglePassword: () => void;
 }
 
 export function LoginFields({
-  username,
+  email,
   password,
   showPassword,
-  onUsername,
+  onEmail,
   onPassword,
   onTogglePassword,
 }: LoginFieldsProps) {
   return (
     <>
       <FloatingField
-        label="Usuario"
+        label="Correo"
         icon={<UserIcon />}
-        value={username}
-        autoComplete="username"
-        onChange={onUsername}
+        value={email}
+        type="email"
+        autoComplete="email"
+        onChange={onEmail}
       />
 
       <FloatingField

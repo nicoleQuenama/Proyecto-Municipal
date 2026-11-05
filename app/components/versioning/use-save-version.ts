@@ -3,19 +3,15 @@
 import { useVersioning } from "./versioning-context";
 import { useWorkingChanges } from "./use-working-changes";
 
-/**
- * Guardar una versión: entran los cambios que la persona eligió o, si no eligió ninguno, todos.
- * Así quien no conoce el flujo solo escribe un mensaje, y quien quiere control elige qué entra.
- */
+/** Guardar una versión: entra todo lo que cambió en la rama (la versión es una foto de la rama, no una selección). */
 export function useSaveVersion() {
-  const { dispatch } = useVersioning();
-  const { changes, staged } = useWorkingChanges();
-  const toSave = staged.length > 0 ? staged : changes;
+  const { saveVersion } = useVersioning();
+  const { changes } = useWorkingChanges();
 
-  const save = (message: string) => {
-    if (toSave.length === 0) return "No hay cambios para guardar.";
-    dispatch({ type: "commit", message, changes: toSave, at: new Date().toISOString() });
+  const save = async (message: string) => {
+    if (changes.length === 0) return "No hay cambios para guardar.";
+    return saveVersion(message, changes);
   };
 
-  return { toSave, save, hasChanges: changes.length > 0 };
+  return { toSave: changes, save, hasChanges: changes.length > 0 };
 }

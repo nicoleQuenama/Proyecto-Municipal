@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { Modal } from "../ui/modal";
 import { AccessSection } from "./access-section";
-import { InviteForm } from "./invite-form";
-import { InviteLink } from "./invite-link";
-import { MemberList } from "./member-list";
 
 function ShareDialog({ onClose }: { onClose: () => void }) {
   return (
@@ -26,27 +23,6 @@ function ShareDialog({ onClose }: { onClose: () => void }) {
         </p>
         <AccessSection />
 
-        <details className="rounded-xl border border-line">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Invitar por enlace o correo (prototipo)</summary>
-          <div className="flex flex-col gap-4 border-t border-line p-4">
-            <p className="rounded-md bg-hover px-3 py-2 text-xs text-ink-dim">
-              Esta parte funciona solo en este navegador y todavía no envía invitaciones reales. Para dar acceso de verdad, crea la cuenta de la persona en <b>Usuarios</b>.
-            </p>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold">Enlace de invitación</h3>
-              <InviteLink />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold">Invitar a alguien</h3>
-              <p className="text-xs text-ink-dim">Un Editor puede cambiar el diseño; un Revisor solo revisa y aprueba cambios.</p>
-              <InviteForm />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold">Invitados</h3>
-              <MemberList />
-            </div>
-          </div>
-        </details>
       </div>
     </Modal>
   );

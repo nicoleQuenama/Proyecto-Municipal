@@ -7,7 +7,7 @@ interface FloatingFieldProps {
   icon: ReactNode;
   value: string;
   autoComplete: string;
-  type?: "text" | "password";
+  type?: "text" | "email" | "password";
   onChange: (value: string) => void;
   trailing?: ReactNode;
 }

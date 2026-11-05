@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { PublishPanel } from "./publish-panel";
-import { ResetHistory } from "./reset-history";
 import { SaveVersionForm } from "./save-version-form";
 import { StatusCard } from "./status-card";
 import { formatDateTime } from "./format-date";
@@ -76,8 +75,6 @@ export function OverviewTab({ onGoTo }: { onGoTo: (tab: "changes" | "history") =
       <Block step={2} title="Publicar en la página oficial">
         <PublishPanel />
       </Block>
-
-      {(state.commits.length > 0 || state.releases.length > 0) && <ResetHistory />}
 
       {state.commits.length > 0 && (
         <button type="button" onClick={() => onGoTo("history")} className="self-start text-xs text-accent hover:underline">

@@ -9,7 +9,7 @@ import { useDeploy, type TargetKind } from "./use-deploy";
 const link = "flex h-9 items-center justify-center rounded-md border border-line px-3 text-xs hover:bg-hover";
 
 function DeployDialog({ onClose }: { onClose: () => void }) {
-  const { kinds, targets, error, outcome, save, remove, run } = useDeploy();
+  const { kinds, targets, history, error, outcome, save, remove, run } = useDeploy();
 
   return (
     <Modal label="Desplegar el sitio" size="lg" onClose={onClose}>
@@ -58,11 +58,32 @@ function DeployDialog({ onClose }: { onClose: () => void }) {
                 outcome={outcome}
                 onSave={(values) => save(kind, values)}
                 onRemove={() => remove(kind)}
-                onRun={() => run(kind)}
+                onRun={(what) => run(kind, what)}
               />
             ))}
-          <p className="text-[11px] text-ink-dim">Hoy se despliega directo a Vercel. FTP, SFTP y cPanel guardan sus datos, pero todavía no se pueden ejecutar: necesitan exportar el sitio como archivos estáticos.</p>
+          <p className="text-[11px] text-ink-dim">
+            Se despliega lo que está <b>publicado</b>. Vercel construye la aplicación; FTP, SFTP y cPanel suben el mismo paquete que el ZIP, pensado para servidores donde puedes ejecutar Node (un VPS o la «aplicación Node.js» de cPanel). La cuenta (servidor, usuario, clave) es de toda la organización y solo la cambia su superadministrador; la carpeta es de este proyecto.
+          </p>
         </section>
+
+        {history.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h3 className="text-xs font-semibold">Últimos despliegues</h3>
+            <ul className="flex flex-col gap-1">
+              {history.map((item) => (
+                <li key={item.at} className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-1.5 text-xs">
+                  <span className="min-w-0 truncate">
+                    {item.kind ? kinds?.[item.kind]?.label ?? item.kind : "Destino quitado"} · {new Date(item.at).toLocaleString("es")}
+                    {item.by ? ` · ${item.by}` : ""}
+                  </span>
+                  <span className={`shrink-0 ${item.status === "succeeded" ? "text-emerald-400" : item.status === "failed" ? "text-red-400" : "text-ink-dim"}`} title={item.error ?? undefined}>
+                    {item.status === "succeeded" ? "Listo" : item.status === "failed" ? "Falló" : "En curso"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </Modal>
   );

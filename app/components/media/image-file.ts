@@ -11,13 +11,3 @@ export function imageFileProblem(file: File): string | null {
   if (file.size > MAX_IMAGE_BYTES) return `«${file.name}» pesa más de 10 MB.`;
   return null;
 }
-
-/** El contenido del archivo como URL de datos: viaja con el componente y no hay que liberarla después. */
-export function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error(`No se pudo leer «${file.name}».`));
-    reader.readAsDataURL(file);
-  });
-}

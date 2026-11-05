@@ -5,6 +5,7 @@ import { pendingFor } from "./group-rules";
 import { useVersioning } from "./versioning-context";
 import { useCommands } from "../commands/commands-context";
 import { UploadIcon } from "../viewport/icons";
+import { PresenceStack } from "../realtime/presence-stack";
 import { ShareButton } from "./share-button";
 import { useWorkingChanges } from "./use-working-changes";
 
@@ -19,6 +20,7 @@ export function PublishButton() {
 
   return (
     <div className="flex shrink-0 items-center gap-2 border-l border-line px-3">
+      <PresenceStack />
       <ShareButton className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover" />
       {canViewAudit && (
         <button

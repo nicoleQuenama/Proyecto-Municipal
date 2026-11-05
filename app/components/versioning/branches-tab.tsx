@@ -206,13 +206,13 @@ function BranchRow({ branch, commits, isCurrent, isMerged, onSwitch, onDelete }:
 }
 
 export function BranchesTab() {
-  const { state, dispatch } = useVersioning();
+  const { state, createBranch: create, switchBranch, deleteBranch } = useVersioning();
 
   const createBranch = (input: string) => {
     const name = slugifyBranchName(input);
     if (!name) return "Escribe un nombre válido.";
     if (state.branches.some((b) => b.name === name)) return "Ya existe una rama con ese nombre.";
-    dispatch({ type: "branch/create", name });
+    return create(name);
   };
 
   return (
@@ -239,8 +239,8 @@ export function BranchesTab() {
             commits={state.commits.filter((c) => c.branch === branch.name)}
             isCurrent={branch.name === state.current}
             isMerged={isBranchMerged(state.pullRequests, branch.name)}
-            onSwitch={() => dispatch({ type: "branch/switch", name: branch.name })}
-            onDelete={() => dispatch({ type: "branch/delete", name: branch.name })}
+            onSwitch={() => void switchBranch(branch.name)}
+            onDelete={() => void deleteBranch(branch.name)}
           />
         ))}
       </ul>

@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useCurrentPage, useSiteDispatch } from "../site/site-context";
 import { parseMediaUrl, type ParsedMedia } from "./media-url";
+import { uploadMedia } from "./upload-media";
 import type { MediaItem } from "./types";
 
 interface MediaContextValue {
@@ -77,20 +78,21 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const addFiles = useCallback(
     (files: Iterable<File>) => {
       const problems: string[] = [];
-
+      const valid: File[] = [];
       for (const file of files) {
         const problem = rejectionOf(file);
-        if (problem) {
-          problems.push(problem);
-          continue;
-        }
-        addItem(
-          { kind: "image", src: URL.createObjectURL(file), name: file.name, embed: false },
-          true,
+        if (problem) problems.push(problem);
+        else valid.push(file);
+      }
+      if (problems.length) notify([...new Set(problems)].join(" "));
+
+      // Cada imagen se sube a ImageKit y entra al diseño con su dirección pública cuando termina.
+      for (const file of valid) {
+        uploadMedia(file).then(
+          (src) => addItem({ kind: "image", src, name: file.name, embed: false }, false),
+          (error) => notify(error instanceof Error ? error.message : `No se pudo subir «${file.name}».`),
         );
       }
-
-      if (problems.length) notify([...new Set(problems)].join(" "));
     },
     [addItem, notify],
   );

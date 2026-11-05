@@ -1,5 +1,6 @@
 /** Del modelo de fondo al CSS y a los atributos del video (lógica pura, sin React). */
 
+import { optimizedSrc } from "../media/optimize-src";
 import type { CSSProperties } from "react";
 import type { Anchor, BackgroundFit, BlockBackground, BoxSpan } from "./types";
 
@@ -63,7 +64,7 @@ const blurStyle = (blur: number): CSSProperties =>
 /** La capa de imagen (también la portada de un video). */
 export function imageLayerStyle(bg: BlockBackground, src: string): CSSProperties {
   return {
-    backgroundImage: `url("${src.replace(/"/g, "%22")}")`,
+    backgroundImage: `url("${optimizedSrc(src).replace(/"/g, "%22")}")`,
     backgroundPosition: ANCHOR_CSS[bg.anchor],
     backgroundAttachment: bg.fixed ? "fixed" : "scroll",
     ...FIT_CSS[bg.fit],

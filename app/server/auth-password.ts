@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { passwordIssues } from "../components/auth/password-rules";
 import type { User } from "../components/auth/types";
-import { readStore, toPublic, writeStore } from "./auth-file";
-import { hashPassword, newSalt } from "./auth-passwords";
+import { loadAccount, type Actor } from "./auth-accounts";
+import { withOrg } from "./db";
+import { hashPassword, passwordMatches } from "./password-hash";
 
 /** Mismas reglas que muestra el formulario; el servidor no confía en el cliente. */
 export function assertPassword(password: string): void {
@@ -9,28 +11,37 @@ export function assertPassword(password: string): void {
   if (missing.length) throw new Error(`La contraseña debe cumplir: ${missing.join(", ")}.`);
 }
 
-/** El usuario y el correo deben coincidir: dos pruebas antes de enviar el enlace. */
-export async function findUserByIdentity(username: string, email: string): Promise<User | null> {
-  const user = username.trim().toLowerCase();
-  const mail = email.trim().toLowerCase();
-  const stored = (await readStore()).users.find(
-    (entry) => entry.username.toLowerCase() === user && entry.email.toLowerCase() === mail,
-  );
-  return stored ? toPublic(stored) : null;
+/**
+ * Cambia la contraseña de quien tiene la sesión. Sube la versión de sesión: las demás sesiones abiertas dejan de valer.
+ * Devuelve la versión nueva para renovar solo esta sesión.
+ */
+export async function changePassword(actor: Actor, currentPassword: string, newPassword: string): Promise<number> {
+  assertPassword(newPassword);
+  const newHash = await hashPassword(newPassword);
+
+  return withOrg(actor.orgId, actor.user.id, async (tx) => {
+    const [row] = await tx<{ password_hash: string }[]>`select password_hash from app.users where id = ${actor.user.id}`;
+    if (!row || !(await passwordMatches(currentPassword, row.password_hash))) throw new Error("La contraseña actual es incorrecta.");
+
+    const [updated] = await tx<{ session_version: number }[]>`
+      update app.users set password_hash = ${newHash}, session_version = session_version + 1
+      where id = ${actor.user.id} returning session_version`;
+    return updated.session_version;
+  });
 }
 
 /**
- * Guarda la contraseña nueva y sube `sessionVersion`.
- * Al subir la versión, todas las sesiones abiertas dejan de ser válidas.
+ * Un superadministrador le pone una contraseña temporal a una cuenta (también cierra sus sesiones).
+ * Devuelve la cuenta y la contraseña: solo se envía al correo de esa persona, nunca al navegador.
  */
-export async function setPassword(userId: string, password: string): Promise<void> {
-  const store = await readStore();
-  const user = store.users.find((entry) => entry.id === userId);
-  if (!user) throw new Error("El usuario no existe.");
+export async function resetPassword(actor: Actor, id: string): Promise<{ user: User; password: string }> {
+  const password = `Temp${randomUUID().slice(0, 8)}!`;
+  const passwordHash = await hashPassword(password);
 
-  const salt = newSalt();
-  user.salt = salt;
-  user.passwordHash = hashPassword(password, salt);
-  user.sessionVersion = (user.sessionVersion ?? 0) + 1;
-  await writeStore(store);
+  return withOrg(actor.orgId, actor.user.id, async (tx) => {
+    const account = await loadAccount(tx, id);
+    if (!account || account.removed) throw new Error("El usuario no existe.");
+    await tx`update app.users set password_hash = ${passwordHash}, session_version = session_version + 1 where id = ${id}`;
+    return { user: account.user, password };
+  });
 }

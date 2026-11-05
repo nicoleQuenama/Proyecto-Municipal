@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { imageFileProblem, readAsDataUrl } from "../media/image-file";
+import { imageFileProblem } from "../media/image-file";
+import { uploadMedia } from "../media/upload-media";
 
 const button = "h-8 rounded-md border border-line px-2 text-xs hover:bg-hover";
 
@@ -20,7 +21,11 @@ export function PosterField({ poster, onChange }: PosterFieldProps) {
     const problem = imageFileProblem(file);
     if (problem) return setError(problem);
     setError(null);
-    onChange(await readAsDataUrl(file));
+    try {
+      onChange(await uploadMedia(file));
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "No se pudo subir la portada.");
+    }
   };
 
   return (

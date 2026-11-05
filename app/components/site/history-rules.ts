@@ -18,7 +18,7 @@ export const HISTORY_LIMIT = 100;
 export const COALESCE_MS = 600;
 
 /** Lo que no es un cambio del sitio: seleccionar o cargar no se deshace. */
-const UNTRACKED = new Set<SiteAction["type"]>(["project/load", "block/select", "element/select", "page/select", "block/select-many"]);
+const UNTRACKED = new Set<SiteAction["type"]>(["project/load", "remote/patch", "block/select", "element/select", "page/select", "block/select-many"]);
 
 export const isTracked = (action: SiteAction): boolean => !UNTRACKED.has(action.type);
 

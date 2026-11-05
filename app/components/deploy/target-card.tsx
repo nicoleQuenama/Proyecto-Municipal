@@ -12,7 +12,7 @@ interface TargetCardProps {
   outcome: Outcome;
   onSave: (values: Record<string, string>) => Promise<void>;
   onRemove: () => Promise<void>;
-  onRun: () => Promise<void>;
+  onRun: (what: "test" | "deploy") => Promise<void>;
 }
 
 /** Un destino de despliegue: sus datos, con los secretos que solo se escriben (nunca se muestran), y su botón de desplegar. */
@@ -48,8 +48,11 @@ export function TargetCard({ kind, info, saved, outcome, onSave, onRemove, onRun
             </button>
             {saved && (
               <>
-                <button type="button" onClick={() => void onRun()} className="h-8 rounded-md bg-accent px-3 text-xs text-white">
-                  {mine && outcome.kind === "working" ? "Desplegando…" : "Desplegar ahora"}
+                <button type="button" disabled={mine && outcome.kind === "working"} onClick={() => void onRun("test")} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover disabled:opacity-50">
+                  {mine && outcome.kind === "working" && outcome.what === "test" ? "Probando…" : "Probar conexión"}
+                </button>
+                <button type="button" disabled={mine && outcome.kind === "working"} onClick={() => void onRun("deploy")} className="h-8 rounded-md bg-accent px-3 text-xs text-white disabled:opacity-50">
+                  {mine && outcome.kind === "working" && outcome.what === "deploy" ? "Desplegando…" : "Desplegar ahora"}
                 </button>
                 <button type="button" onClick={() => void onRemove()} className="h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover">
                   Quitar
@@ -59,7 +62,7 @@ export function TargetCard({ kind, info, saved, outcome, onSave, onRemove, onRun
           </div>
           {mine && outcome.kind === "ok" && (
             <p className="text-xs text-emerald-400">
-              Listo.{" "}
+              {outcome.detail ?? "Listo."}{" "}
               {outcome.url && (
                 <a href={outcome.url} target="_blank" rel="noopener noreferrer" className="underline">
                   {outcome.url}

@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { Change } from "./types";
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -23,14 +22,11 @@ export function DiffValue({ text, className }: { text: string; className: string
 
 interface DiffRowProps {
   change: Change;
-  /** Contenido antes del nombre, p. ej. una casilla para añadir el cambio. */
-  leading?: ReactNode;
 }
 
-export function DiffRow({ change, leading }: DiffRowProps) {
+export function DiffRow({ change }: DiffRowProps) {
   return (
     <li className="flex items-center justify-between gap-3 rounded-md bg-canvas px-3 py-2 text-xs">
-      {leading}
       <span className="min-w-0 flex-1 truncate">
         <span className="font-medium">{change.node}</span>
         <span className="text-ink-dim"> · {change.property}</span>

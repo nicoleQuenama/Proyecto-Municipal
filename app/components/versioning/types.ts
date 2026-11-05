@@ -1,13 +1,5 @@
 export const CURRENT_USER = "Tú";
 
-export type MemberRole = "Editor" | "Revisor";
-
-/** Persona del equipo: nombre o correo y lo que puede hacer. */
-export interface Member {
-  name: string;
-  role: MemberRole;
-}
-
 export interface Branch {
   name: string;
   author: string;
@@ -119,45 +111,28 @@ export interface Issue {
   open: boolean;
 }
 
-export interface VersioningState {
+/** Lo que el servidor guarda de verdad (ramas, versiones, pull requests) más lo que todavía vive aparte (issues, equipo, publicaciones). */
+export interface LocalVersioningState {
   branches: Branch[];
-  current: string;
   /** De más reciente a más antiguo. */
   commits: Commit[];
   pullRequests: PullRequest[];
   issues: Issue[];
   labels: Label[];
-  members: Member[];
-  /** Diseño tal como quedó en la última versión guardada. */
-  baseline: DesignSnapshot;
-  /** Claves de los cambios añadidos para la próxima versión (el «git add»). */
-  staged: string[];
+  /** Quienes tienen acceso al proyecto (a ellos se asignan los issues). */
+  people: string[];
   /** Publicaciones a la página oficial, de más reciente a más antigua. */
   releases: Release[];
 }
 
+export interface VersioningState extends LocalVersioningState {
+  /** La rama en la que se está trabajando (la guarda el proveedor de ramas, no el reductor). */
+  current: string;
+}
+
 export type VersioningAction =
-  | { type: "project/load"; state: VersioningState }
-  /** Borra las versiones y publicaciones guardadas y toma el diseño de ahora como punto de partida. */
-  | { type: "history/reset"; baseline: DesignSnapshot }
-  | { type: "branch/create"; name: string; author?: string }
-  | { type: "branch/switch"; name: string }
-  | { type: "branch/delete"; name: string }
-  | { type: "stage/toggle"; key: string }
-  | { type: "stage/set"; keys: string[] }
-  | { type: "commit"; message: string; changes: WorkingChange[]; at: string; author?: string }
-  | { type: "publish"; at: string; author?: string }
-  | { type: "pr/open"; title: string; from: string; into: string; author?: string }
-  /** Las pull requests que el servidor entrega a esta persona (enviadas por ella o para que las revise). */
-  | { type: "reviews/sync"; pullRequests: PullRequest[] }
-  /** Una pull request del servidor se fusionó: queda su versión de fusión en la rama de destino. */
-  | { type: "review/merged"; number: number; at: string }
-  | { type: "pr/approve"; number: number; by?: string }
-  | { type: "pr/resolve"; number: number; index: number; resolution: "into" | "from" }
-  | { type: "pr/merge"; number: number; at: string }
-  | { type: "pr/close"; number: number }
-  | { type: "issue/create"; title: string; label: Label; assignees: string[] }
-  | { type: "issue/toggle"; number: number }
-  | { type: "issue/toggle-assignee"; number: number; member: string }
-  | { type: "member/add"; name: string; role: MemberRole }
-  | { type: "member/remove"; name: string };
+  /** Ramas, versiones, pull requests e issues tal como los tiene el servidor. */
+  | { type: "server/load"; branches: Branch[]; commits: Commit[]; pullRequests: PullRequest[]; issues: Issue[]; labels: Label[]; people: string[]; releases: Release[] }
+  /** Conflictos que el servidor encontró al intentar fusionar una pull request. */
+  | { type: "review/conflicts"; number: number; conflicts: Conflict[] }
+  | { type: "pr/resolve"; number: number; index: number; resolution: "into" | "from" };

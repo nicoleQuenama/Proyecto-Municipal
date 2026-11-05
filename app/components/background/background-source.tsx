@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { imageFileProblem, readAsDataUrl } from "../media/image-file";
+import { imageFileProblem } from "../media/image-file";
+import { uploadMedia } from "../media/upload-media";
 import { parseImageUrl, parseVideoUrl, type ParseResult, type ParsedMedia } from "../media/media-url";
 
 export interface PickedMedia {
@@ -32,10 +33,10 @@ export function BackgroundSource({ onPick }: { onPick: (media: PickedMedia) => v
     const problem = imageFileProblem(file);
     if (problem) return setError(problem);
     try {
-      onPick({ kind: "image", src: await readAsDataUrl(file), embed: false });
+      onPick({ kind: "image", src: await uploadMedia(file), embed: false });
       setError(null);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "No se pudo leer el archivo.");
+      setError(failure instanceof Error ? failure.message : "No se pudo subir el archivo.");
     }
   };
 

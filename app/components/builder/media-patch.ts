@@ -1,6 +1,7 @@
 /** Qué cambia en un elemento al darle contenido (lógica pura salvo la lectura del archivo). */
 
-import { imageFileProblem, readAsDataUrl } from "../media/image-file";
+import { imageFileProblem } from "../media/image-file";
+import { uploadMedia } from "../media/upload-media";
 import { parseImageUrl, parseVideoUrl, type ParseResult } from "../media/media-url";
 import type { CanvasElement } from "../site/types";
 
@@ -8,7 +9,7 @@ export type MediaPatch = Partial<Pick<CanvasElement, "src" | "embed" | "poster">
 export type MediaKind = "image" | "video";
 
 /** Qué hace un archivo de imagen soltado o subido: en una imagen es el contenido; en un video, su portada. */
-const FILE_PATCH: Record<MediaKind, (dataUrl: string) => MediaPatch> = {
+const FILE_PATCH: Record<MediaKind, (url: string) => MediaPatch> = {
   image: (src) => ({ src, embed: false }),
   video: (poster) => ({ poster }),
 };
@@ -34,8 +35,8 @@ export async function patchFromFile(kind: MediaKind, file: File): Promise<ParseR
   const problem = imageFileProblem(file);
   if (problem) return { ok: false, error: problem };
   try {
-    return { ok: true, value: FILE_PATCH[kind](await readAsDataUrl(file)) };
+    return { ok: true, value: FILE_PATCH[kind](await uploadMedia(file)) };
   } catch (failure) {
-    return { ok: false, error: failure instanceof Error ? failure.message : "No se pudo leer el archivo." };
+    return { ok: false, error: failure instanceof Error ? failure.message : "No se pudo subir el archivo." };
   }
 }

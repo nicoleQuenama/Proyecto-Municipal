@@ -7,7 +7,7 @@ import { AssigneePicker } from "./assignee-picker";
 import type { Label, LabelTone } from "./types";
 import { useVersioning } from "./versioning-context";
 import { IssueIcon } from "./versioning-icons";
-import { findLabel, matchesAssignee, memberNames, type AssigneeFilter } from "./versioning-rules";
+import { findLabel, matchesAssignee, type AssigneeFilter } from "./versioning-rules";
 
 const CUSTOM = "__custom__";
 
@@ -26,26 +26,28 @@ const toggleIn = (list: string[], item: string) =>
   list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 
 export function IssuesTab() {
-  const { state, dispatch } = useVersioning();
-  const [selected, setSelected] = useState(state.labels[0].name);
+  const { state, createIssue: create, toggleIssue, toggleAssignee } = useVersioning();
+  const [chosen, setSelected] = useState<string | null>(null);
+  const selected = chosen ?? state.labels[0]?.name ?? CUSTOM;
   const [customName, setCustomName] = useState("");
   const [customTone, setCustomTone] = useState<LabelTone>("accent");
   const [assignees, setAssignees] = useState<string[]>([]);
   const [filter, setFilter] = useState<AssigneeFilter>("all");
 
-  const names = memberNames(state.members);
+  const names = state.people;
   const isCustom = selected === CUSTOM;
   const toneOf = (name: string): LabelTone => findLabel(state.labels, name)?.tone ?? "neutral";
   const visibleIssues = state.issues.filter((issue) => matchesAssignee(issue, filter));
 
-  const createIssue = (title: string) => {
+  const createIssue = async (title: string) => {
     const label: Label | undefined = isCustom
       ? { name: customName.trim(), tone: customTone }
       : findLabel(state.labels, selected);
 
     if (!label?.name) return "Escribe un nombre para la etiqueta personalizada.";
 
-    dispatch({ type: "issue/create", title, label, assignees });
+    const problem = await create(title, label, assignees);
+    if (problem) return problem;
     setAssignees([]);
 
     if (isCustom) {
@@ -154,14 +156,12 @@ export function IssuesTab() {
               label={`Asignar el issue #${issue.number}`}
               members={names}
               value={issue.assignees}
-              onToggle={(member) =>
-                dispatch({ type: "issue/toggle-assignee", number: issue.number, member })
-              }
+              onToggle={(member) => void toggleAssignee(issue.number, member)}
             />
 
             <button
               type="button"
-              onClick={() => dispatch({ type: "issue/toggle", number: issue.number })}
+              onClick={() => void toggleIssue(issue.number)}
               className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover"
             >
               {issue.open ? "Cerrar" : "Reabrir"}

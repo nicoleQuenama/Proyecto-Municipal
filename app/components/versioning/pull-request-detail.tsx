@@ -6,12 +6,11 @@ import { ConflictCard } from "./conflict-card";
 import { CommitCard } from "./commit-card";
 import { applyChanges, DEFAULT_MODEL } from "./preview-model";
 import { VisualDiff } from "./visual-diff";
-import { ApproveControl } from "./approve-control";
 import { TeamReview } from "./team-review";
 import { type PullRequest, type PullRequestStatus } from "./types";
 import { AlertIcon, CheckIcon } from "./versioning-icons";
 import { useVersioning } from "./versioning-context";
-import { canDeleteBranch, headOf, mergeBlockers, plural } from "./versioning-rules";
+import { canDeleteBranch, headOf, plural } from "./versioning-rules";
 
 export const STATUS_LABELS: Record<PullRequestStatus, { label: string; tone: BadgeTone }> = {
   open: { label: "Abierto", tone: "success" },
@@ -20,11 +19,10 @@ export const STATUS_LABELS: Record<PullRequestStatus, { label: string; tone: Bad
 };
 
 export function PullRequestDetail({ pr }: { pr: PullRequest }) {
-  const { state, dispatch } = useVersioning();
+  const { state, dispatch, deleteBranch } = useVersioning();
   const mergedBranch = state.branches.find((b) => b.name === pr.from);
   const head = headOf(state.commits, pr.from);
   const isOpen = pr.status === "open";
-  const blockers = mergeBlockers(pr);
   const status = STATUS_LABELS[pr.status];
 
   return (
@@ -49,7 +47,7 @@ export function PullRequestDetail({ pr }: { pr: PullRequest }) {
           </p>
           <button
             type="button"
-            onClick={() => dispatch({ type: "branch/delete", name: pr.from })}
+            onClick={() => void deleteBranch(pr.from)}
             className="h-7 shrink-0 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15"
           >
             Eliminar rama
@@ -108,38 +106,7 @@ export function PullRequestDetail({ pr }: { pr: PullRequest }) {
           )}
         </div>
 
-        {pr.authorId !== undefined && <TeamReview pr={pr} />}
-
-        {isOpen && pr.authorId === undefined && (
-          <>
-            {blockers.length > 0 && (
-              <ul className="flex flex-col gap-1 text-xs text-amber-400">
-                {blockers.map((reason) => (
-                  <li key={reason}>• {reason}</li>
-                ))}
-              </ul>
-            )}
-
-            <div className="flex flex-wrap gap-2">
-              <ApproveControl pr={pr} />
-              <button
-                type="button"
-                disabled={blockers.length > 0}
-                onClick={() => dispatch({ type: "pr/merge", number: pr.number, at: new Date().toISOString() })}
-                className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40"
-              >
-                Hacer merge
-              </button>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "pr/close", number: pr.number })}
-                className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink"
-              >
-                Cerrar PR
-              </button>
-            </div>
-          </>
-        )}
+        <TeamReview pr={pr} />
       </Section>
     </div>
   );

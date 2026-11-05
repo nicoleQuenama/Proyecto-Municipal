@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { optimizedSrc } from "../media/optimize-src";
 import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
 import { ElementHandles } from "../canvas-editing/element-handles";
@@ -110,7 +111,7 @@ const RENDERERS: Record<ElementKind, Renderer> = {
       // <img> en lugar de next/image: las URLs vienen de dominios arbitrarios.
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={element.src}
+        src={optimizedSrc(element.src)}
         alt={element.alt ?? ""}
         draggable={false}
         loading={element.eager ? "eager" : "lazy"}

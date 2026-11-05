@@ -1,0 +1,28 @@
+# Postgres local para desarrollo. Las migraciones de db/migrations se aplican solas al crear el volumen (dev-init.sh).
+#   docker compose -f db/docker-compose.yml up -d
+# La API debe conectarse con el usuario portal_api (rol portal_app, sujeto a RLS), nunca con "postgres".
+name: portal-db
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-portal_dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./migrations:/migrations:ro
+      - ./dev-init.sh:/docker-entrypoint-initdb.d/dev-init.sh:ro
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "log_min_duration_statement=200"]
+  # Solo hace falta si corres VARIAS instancias del tiempo real (REDIS_URL); con una sola no se usa.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    profiles: ["cluster"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+volumes:
+  pgdata:

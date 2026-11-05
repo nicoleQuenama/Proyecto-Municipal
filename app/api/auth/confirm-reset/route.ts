@@ -1,7 +1,6 @@
-import { assertPassword, setPassword } from "../../../server/auth-password";
-import { findStored } from "../../../server/auth-store";
+import { assertPassword } from "../../../server/auth-password";
 import { sendPasswordChangedEmail } from "../../../server/mail";
-import { consumeResetToken } from "../../../server/password-reset-store";
+import { resetWithToken } from "../../../server/password-reset-store";
 import { sameOriginRequest } from "../../../server/proxy-guard";
 
 const refuse = (error: string, status = 400) => Response.json({ error }, { status });
@@ -18,16 +17,12 @@ export async function POST(request: Request) {
     return refuse(error instanceof Error ? error.message : "La contraseña no es válida.");
   }
 
-  // Consume el token antes de tocar la contraseña: si ya se usó o venció, no se cambia nada.
-  const userId = await consumeResetToken(body.token);
-  if (!userId) return refuse("El enlace no es válido, ya se usó o venció.");
-
-  const stored = await findStored(userId);
-  if (!stored) return refuse("El usuario no existe.");
-
   try {
-    await setPassword(userId, body.password);
-    await sendPasswordChangedEmail(stored.email, stored.name);
+    // El token se gasta y la contraseña cambia en un solo paso: si ya se usó o venció, no se cambia nada.
+    const changed = await resetWithToken(body.token, body.password);
+    if (!changed) return refuse("El enlace no es válido, ya se usó o venció.");
+
+    await sendPasswordChangedEmail(changed.email, changed.name);
     return Response.json({ ok: true });
   } catch (error) {
     return refuse(error instanceof Error ? error.message : "No se pudo cambiar la contraseña.", 500);

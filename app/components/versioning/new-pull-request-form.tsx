@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { nextNumber } from "./versioning-reducer";
 import { useVersioning } from "./versioning-context";
 
 const selectClass =
   "h-9 min-w-0 flex-1 rounded-md border border-line bg-canvas px-2 text-[13px] outline-none focus:border-accent [&>option]:bg-panel";
 
 export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) => void }) {
-  const { state, dispatch, mustBranch, submitReview } = useVersioning();
+  const { state, mustBranch, submitReview } = useVersioning();
   const names = state.branches.map((b) => b.name);
   const main = state.branches.find((b) => b.base === null)?.name ?? "main";
 
@@ -30,15 +29,9 @@ export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) 
     const problem = problemWith();
     if (problem) return setError(problem);
 
-    // Quien no puede publicar en main la envía por el servidor: la recibe quien lo invitó.
-    if (mustBranch) {
-      setError(null);
-      submitReview(title.trim(), from, into).then(onCreated, (reason) => setError(reason instanceof Error ? reason.message : "No se pudo enviar."));
-      return;
-    }
-    const number = nextNumber(state.pullRequests);
-    dispatch({ type: "pr/open", title: title.trim(), from, into });
-    onCreated(number);
+    // La recibe quien invitó a su autor (o un superadministrador): el servidor lo decide.
+    setError(null);
+    submitReview(title.trim(), from, into).then(onCreated, (reason) => setError(reason instanceof Error ? reason.message : "No se pudo enviar."));
   };
 
   return (

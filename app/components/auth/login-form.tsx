@@ -11,7 +11,7 @@ import { ForgotPasswordDialog } from "./forgot-password-dialog";
 
 export function LoginForm() {
   const dispatch = useAuthDispatch();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -20,15 +20,15 @@ export function LoginForm() {
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!username.trim() || !password) {
-      setError("Indica tu usuario y contraseña.");
+    if (!email.trim() || !password) {
+      setError("Indica tu correo y contraseña.");
       return;
     }
 
     setPending(true);
     setError("");
     try {
-      const user = await login(username, password);
+      const user = await login(email, password);
       dispatch({ type: "auth/login", user });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo iniciar sesión.");
@@ -49,10 +49,10 @@ export function LoginForm() {
 
             <form onSubmit={handleLogin} className="flex flex-col gap-5" noValidate>
               <LoginFields
-                username={username}
+                email={email}
                 password={password}
                 showPassword={showPassword}
-                onUsername={setUsername}
+                onEmail={setEmail}
                 onPassword={setPassword}
                 onTogglePassword={() => setShowPassword((value) => !value)}
               />

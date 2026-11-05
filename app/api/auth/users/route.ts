@@ -1,7 +1,8 @@
 import { RESTRICTION_LABELS, parseAccess, type Access, type Restriction } from "../../../components/auth/access";
-import type { NewUser, User, UserRole } from "../../../components/auth/types";
-import { sessionUser } from "../../../server/auth-session";
-import { createUser, deleteUser, findStored, listManaged, setAccess } from "../../../server/auth-store";
+import type { NewUser, UserRole } from "../../../components/auth/types";
+import type { Actor } from "../../../server/auth-accounts";
+import { sessionActor } from "../../../server/auth-session";
+import { createUser, deleteUser, findUser, listManaged, setAccess } from "../../../server/auth-users";
 import { sameOriginRequest } from "../../../server/proxy-guard";
 
 /** Cuánto puede un rol: nadie invita a alguien con más rol que el suyo. */
@@ -13,15 +14,15 @@ const refuse = (error: string, status = 403) => Response.json({ error }, { statu
 const notAllowed = () => refuse("Petición no permitida.");
 
 /** Quien hace la petición, si puede compartir el proyecto (todos, salvo quien tenga vetado invitar). */
-async function sharer(): Promise<User | null> {
-  const user = await sessionUser();
-  return user && !user.access?.denied.includes("invite") ? user : null;
+async function sharer(): Promise<Actor | null> {
+  const actor = await sessionActor();
+  return actor && !actor.user.access?.denied.includes("invite") ? actor : null;
 }
 
 /** ¿Puede gestionar esta cuenta? El superadministrador cualquiera; los demás, las que ellos invitaron. */
-async function manages(manager: User, targetId: string): Promise<boolean> {
-  if (manager.role === "superadmin") return true;
-  return (await findStored(targetId))?.invitedBy === manager.id;
+async function manages(manager: Actor, targetId: string): Promise<boolean> {
+  if (manager.user.role === "superadmin") return true;
+  return (await findUser(manager, targetId))?.invitedBy === manager.user.id;
 }
 
 export async function GET(request: Request) {
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
   const manager = await sharer();
   if (!manager) return refuse("No tienes permiso para compartir el proyecto.");
 
-  return Response.json({ users: await listManaged(manager.id, manager.role === "superadmin") });
+  return Response.json({ users: await listManaged(manager, manager.user.role === "superadmin") });
 }
 
 export async function POST(request: Request) {
@@ -49,20 +50,20 @@ export async function POST(request: Request) {
   ) {
     return refuse("Faltan datos del usuario.", 400);
   }
-  if (manager.role !== "superadmin" && RANK[body.role] > RANK[manager.role]) {
+  if (manager.user.role !== "superadmin" && RANK[body.role] > RANK[manager.user.role]) {
     return refuse("No puedes invitar a alguien con más permisos que los tuyos.");
   }
-  if (manager.role !== "superadmin" && body.role === "superadmin") return refuse("No puedes crear superadministradores.");
+  if (manager.user.role !== "superadmin" && body.role === "superadmin") return refuse("No puedes crear superadministradores.");
 
   // La persona nueva queda a cargo de quien la invita (también si es superadministrador): él recibirá sus pull requests.
   // Si quien invita no es superadministrador, empieza solo mirando y por una semana.
   const starter: Access | undefined =
-    manager.role === "superadmin"
+    manager.user.role === "superadmin"
       ? undefined
       : { scope: { pageIds: [], blockIds: [] }, denied: EVERYTHING_DENIED, expiresAt: new Date(Date.now() + WEEK_MS).toISOString() };
 
   try {
-    const user = await createUser(body as NewUser, manager.id, starter);
+    const user = await createUser(manager, body as NewUser, starter);
     return Response.json({ user }, { status: 201 });
   } catch (error) {
     return refuse(error instanceof Error ? error.message : "No se pudo crear el usuario.", 400);
@@ -78,10 +79,10 @@ export async function PATCH(request: Request) {
   const body = (await request.json().catch(() => null)) as { id?: unknown; access?: unknown } | null;
   const access = parseAccess(body?.access);
   if (typeof body?.id !== "string" || !access) return refuse("Faltan datos del acceso.", 400);
-  if (body.id === manager.id || !(await manages(manager, body.id))) return refuse("No puedes cambiar el acceso de esta cuenta.");
+  if (body.id === manager.user.id || !(await manages(manager, body.id))) return refuse("No puedes cambiar el acceso de esta cuenta.");
 
   try {
-    return Response.json({ user: await setAccess(body.id, access, manager.role === "superadmin" ? undefined : manager.id) });
+    return Response.json({ user: await setAccess(manager, body.id, access) });
   } catch (error) {
     return refuse(error instanceof Error ? error.message : "No se pudo guardar el acceso.", 400);
   }
@@ -94,11 +95,11 @@ export async function DELETE(request: Request) {
 
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return refuse("Falta el usuario que se quiere eliminar.", 400);
-  if (id === manager.id) return refuse("No puedes eliminar tu propia cuenta.", 400);
+  if (id === manager.user.id) return refuse("No puedes eliminar tu propia cuenta.", 400);
   if (!(await manages(manager, id))) return refuse("No puedes eliminar esta cuenta.");
 
   try {
-    await deleteUser(id);
+    await deleteUser(manager, id);
     return Response.json({ ok: true });
   } catch (error) {
     return refuse(error instanceof Error ? error.message : "No se pudo eliminar el usuario.", 400);

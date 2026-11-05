@@ -1,3 +1,4 @@
+import { applyPatchToSite } from "../../server/site/site-apply";
 import { addAnimation, deleteAnimation, finishRecording, renameAnimation, setAnimationSteps } from "../animation/animation-rules";
 import { RESPONSIVE_HANDLERS } from "../responsive/responsive-rules";
 import { LAYER_HANDLERS } from "../layers/layer-rules";
@@ -77,6 +78,7 @@ type Handlers = {
 const HANDLERS: Handlers = {
   // Reemplaza todo el sitio por el que se guardó la última vez.
   "project/load": (_state, action) => action.state,
+  "remote/patch": (state, action) => applyPatchToSite(state, action.patch),
   ...SOURCE_HANDLERS,
   ...SEO_HANDLERS,
   ...DRAW_HANDLERS,

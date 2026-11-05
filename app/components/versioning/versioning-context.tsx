@@ -1,34 +1,41 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  type Dispatch,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import { useAuth } from "../auth/auth-context";
-import { useAutosave } from "../persistence/use-autosave";
-import { defaultBranchOf, mustUseBranch } from "./group-rules";
+import { useSiteSyncState } from "../persistence/site-sync-context";
+import { useBranch } from "./branch-context";
+import { mustUseBranch } from "./group-rules";
 import { INITIAL_STATE } from "./initial-state";
-import { decideReview, fetchReviews, sendReview } from "./reviews-api";
-import type { VersioningAction, VersioningState } from "./types";
+import { snapshotDesign } from "./design-snapshot";
+import type { DesignSnapshot, Label, VersioningAction, VersioningState, WorkingChange } from "./types";
 import { useDesignSnapshot } from "./use-design-snapshot";
-import { summarizeChanges } from "./versioning-rules";
+import { useVersionActions } from "./use-version-actions";
+import { ApiError, closeReviewApi, createIssueApi, mergeReviewApi, publishApi, sendReview, toggleAssigneeApi, toggleIssueApi } from "./versions-api";
 import { versioningReducer } from "./versioning-reducer";
 
 interface VersioningContextValue {
   state: VersioningState;
+  /** El diseño tal como quedó en la última versión guardada de la rama: contra él se calculan los cambios sin guardar. */
+  baseline: DesignSnapshot;
   dispatch: Dispatch<VersioningAction>;
   /** Esta persona no puede publicar en main: trabaja en su rama y envía pull requests a quien la invitó. */
   mustBranch: boolean;
+  /** Cambiar de rama, crear o eliminar una; devuelven el problema (o nada si salió bien). */
+  switchBranch: (name: string) => Promise<string | undefined>;
+  createBranch: (name: string) => Promise<string | undefined>;
+  deleteBranch: (name: string) => Promise<string | undefined>;
+  /** Guarda una versión de la rama actual. */
+  saveVersion: (message: string, changes: WorkingChange[]) => Promise<string | undefined>;
+  /** Publica la última versión guardada de la rama actual en la página oficial. */
+  publish: () => Promise<void>;
   /** Envía los cambios de una rama como pull request a quien debe recibirla. */
   submitReview: (title: string, from: string, into: string) => Promise<number>;
   /** Fusiona o cierra una pull request que le llegó (solo quien la recibe puede fusionar). */
   decide: (number: number, decision: "merge" | "close") => Promise<void>;
+  /** Issues: reportar uno, cerrarlo o reabrirlo, y asignarlo (o quitar la asignación). Devuelven el problema, si lo hubo. */
+  createIssue: (title: string, label: Label, assignees: string[]) => Promise<string | undefined>;
+  toggleIssue: (number: number) => Promise<string | undefined>;
+  toggleAssignee: (number: number, member: string) => Promise<string | undefined>;
 }
 
 const VersioningContext = createContext<VersioningContextValue | null>(null);
@@ -39,90 +46,77 @@ export function useVersioning() {
   return ctx;
 }
 
-/** Cada cuánto se pregunta al servidor si llegaron pull requests nuevas o ya se decidió alguna. */
-const SYNC_MS = 15_000;
-
-/** Las acciones que registran quién las hizo. */
-const SIGNED: VersioningAction["type"][] = ["commit", "publish", "pr/open", "branch/create"];
-
 export function VersioningProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
-  // Al iniciar, el diseño que se ve en el lienzo es la versión guardada de partida.
-  const initialDesign = useDesignSnapshot();
-  const [state, rawDispatch] = useReducer(versioningReducer, initialDesign, (baseline) => ({
-    ...INITIAL_STATE,
-    baseline,
-  }));
+  const branches = useBranch();
+  const sync = useSiteSyncState();
+  const design = useDesignSnapshot();
+  const [local, rawDispatch] = useReducer(versioningReducer, INITIAL_STATE);
 
+  const current = branches?.branch ?? "main";
+  const main = local.branches.find((branch) => branch.base === null)?.name ?? "main";
   const mustBranch = mustUseBranch(currentUser);
-  const main = state.branches.find((branch) => branch.base === null)?.name ?? "main";
-  // Quien trabaja solo en sus ramas solo puede estar en las que creó él.
-  const owns = useCallback((name: string) => state.branches.find((branch) => branch.name === name)?.author === currentUser?.name, [state.branches, currentUser?.name]);
+  const state = useMemo<VersioningState>(() => ({ ...local, current }), [local, current]);
 
-  // Las pull requests de equipo viven en el servidor, no en este archivo compartido: no se guardan aquí. Y la rama
-  // en la que trabaja un miembro es solo suya: a los demás les queda la principal.
-  const toSave = useMemo(
-    () => ({ ...state, current: mustBranch ? main : state.current, pullRequests: state.pullRequests.filter((pr) => !pr.authorId) }),
-    [state, mustBranch, main],
-  );
-  useAutosave<VersioningState>("versions", toSave, (saved) => rawDispatch({ type: "project/load", state: saved }));
-
-  const dispatch = useCallback<Dispatch<VersioningAction>>(
-    (action) => {
-      if (mustBranch) {
-        // Sin permiso para main: ni guardar versiones ahí, ni volver a esa rama, ni publicar directo.
-        if (action.type === "commit" && !owns(state.current)) return;
-        if (action.type === "branch/switch" && !owns(action.name)) return;
-        if (action.type === "publish" || action.type === "history/reset") return;
-        if (action.type === "pr/merge" || action.type === "pr/approve") return;
-      }
-      rawDispatch(SIGNED.includes(action.type) && currentUser ? ({ ...action, author: currentUser.name } as VersioningAction) : action);
-    },
-    [mustBranch, state.current, owns, currentUser],
-  );
-
-  // El sistema crea (o retoma) la rama de trabajo por defecto y deja a la persona en ella.
-  const username = currentUser?.username;
+  // Ramas, versiones y pull requests vienen del servidor.
+  const payload = branches?.payload;
   useEffect(() => {
-    if (!mustBranch || !username || owns(state.current)) return;
-    const name = defaultBranchOf(username);
-    dispatch(state.branches.some((branch) => branch.name === name) ? { type: "branch/switch", name } : { type: "branch/create", name });
-  }, [mustBranch, username, state.current, state.branches, owns, dispatch]);
+    if (payload) rawDispatch({ type: "server/load", branches: payload.branches, commits: payload.commits, pullRequests: payload.pullRequests, issues: payload.issues, labels: payload.labels, people: payload.people, releases: payload.releases });
+  }, [payload]);
 
-  const sync = useCallback(async () => {
-    try {
-      rawDispatch({ type: "reviews/sync", pullRequests: await fetchReviews() });
-    } catch {
-      // Sin conexión o sesión terminada: se queda lo que había.
-    }
-  }, []);
+  const baseline = useMemo(() => (sync.head ? snapshotDesign(sync.head) : design), [sync.head, design]);
 
-  const userId = currentUser?.id;
-  useEffect(() => {
-    if (!userId) return;
-    sync();
-    const timer = setInterval(sync, SYNC_MS);
-    return () => clearInterval(timer);
-  }, [userId, sync]);
+  const publish = useCallback(async () => {
+    await publishApi(current);
+    await branches?.reload();
+  }, [current, branches]);
+
+  const actions = useVersionActions({ branch: current, main, setBranch: branches?.setBranch ?? (() => undefined), reload: branches?.reload ?? (async () => undefined), sync });
+  const reload = branches?.reload;
 
   const submitReview = useCallback(
     async (title: string, from: string, into: string) => {
-      const changes = summarizeChanges(state.commits.filter((commit) => commit.branch === from));
-      const { pullRequest } = await sendReview({ title, from, into, changes });
-      await sync();
+      const { pullRequest } = await sendReview({ title, from, into });
+      await reload?.();
       return pullRequest.number;
     },
-    [state.commits, sync],
+    [reload],
   );
 
   const decide = useCallback(
     async (number: number, decision: "merge" | "close") => {
-      await decideReview(number, decision);
-      if (decision === "merge") rawDispatch({ type: "review/merged", number, at: new Date().toISOString() });
-      await sync();
+      if (decision === "close") await closeReviewApi(number);
+      else {
+        const resolutions = (local.pullRequests.find((pr) => pr.number === number)?.conflicts ?? []).flatMap(({ node, property, resolution }) => (resolution ? [{ node, property, resolution }] : []));
+        try {
+          await mergeReviewApi(number, resolutions);
+        } catch (error) {
+          // El servidor no escribe nada a medias: devuelve los conflictos para que se elija qué valor conservar.
+          if (error instanceof ApiError && error.data.conflicts) rawDispatch({ type: "review/conflicts", number, conflicts: error.data.conflicts });
+          throw error;
+        }
+        // Fusionar escribe en main: si se está viendo main, se vuelve a abrir con lo fusionado.
+        if (current === main) await sync.refresh();
+      }
+      await reload?.();
     },
-    [sync],
+    [local.pullRequests, current, main, sync, reload],
   );
 
-  return <VersioningContext value={{ state, dispatch, mustBranch, submitReview, decide }}>{children}</VersioningContext>;
+  const issue = useCallback(
+    async (work: () => Promise<unknown>) => {
+      try {
+        await work();
+        await reload?.();
+      } catch (error) {
+        return error instanceof Error ? error.message : "No se pudo completar la operación.";
+      }
+    },
+    [reload],
+  );
+  const createIssue = useCallback((title: string, label: Label, assignees: string[]) => issue(() => createIssueApi({ title, label: label.name, tone: label.tone, assignees })), [issue]);
+  const toggleIssue = useCallback((number: number) => issue(() => toggleIssueApi(number)), [issue]);
+  const toggleAssignee = useCallback((number: number, member: string) => issue(() => toggleAssigneeApi(number, member)), [issue]);
+
+  return <VersioningContext value={{ state, baseline, dispatch: rawDispatch, mustBranch, publish, submitReview, decide, createIssue, toggleIssue, toggleAssignee, ...actions }}>{children}</VersioningContext>;
 }

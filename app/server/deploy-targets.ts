@@ -1,16 +1,29 @@
-/** Los destinos de despliegue y sus datos. Las claves y contraseñas se guardan solo en el servidor y nunca vuelven al navegador. */
+/**
+ * Los destinos de despliegue, en la base de datos y en DOS niveles: la CUENTA (servidor, usuario, token…) es de la organización
+ * (`organization_integrations`, solo la cambia su superadministrador) y el DESTINO (carpeta, nombre del proyecto…) es de cada
+ * proyecto (`deploy_targets`). Los secretos van cifrados y nunca vuelven al navegador.
+ */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { decryptJson, encryptJson } from "./secret-box";
+import type { Tx } from "./db";
+import type { Scope } from "./site/site-sql";
 
 export type TargetKind = "vercel" | "ftp" | "sftp" | "cpanel";
 
+interface Field {
+  key: string;
+  label: string;
+  secret?: boolean;
+  /** `org`: es de la cuenta de la organización; `project`: es de este proyecto. */
+  level: "org" | "project";
+}
+
 /** Qué pide cada destino: los datos se ven; los secretos solo se escriben. */
-export const TARGET_FIELDS: Record<TargetKind, { label: string; fields: { key: string; label: string; secret?: boolean }[] }> = {
-  vercel: { label: "Vercel", fields: [{ key: "project", label: "Nombre del proyecto" }, { key: "team", label: "Equipo (opcional)" }, { key: "token", label: "Token de Vercel", secret: true }] },
-  ftp: { label: "FTP", fields: [{ key: "host", label: "Servidor" }, { key: "port", label: "Puerto" }, { key: "user", label: "Usuario" }, { key: "dir", label: "Carpeta" }, { key: "password", label: "Contraseña", secret: true }] },
-  sftp: { label: "SFTP / SSH", fields: [{ key: "host", label: "Servidor" }, { key: "port", label: "Puerto" }, { key: "user", label: "Usuario" }, { key: "dir", label: "Carpeta" }, { key: "password", label: "Contraseña", secret: true }] },
-  cpanel: { label: "cPanel", fields: [{ key: "host", label: "Dirección del cPanel" }, { key: "user", label: "Usuario" }, { key: "dir", label: "Carpeta (public_html)" }, { key: "token", label: "Token de API", secret: true }] },
+export const TARGET_FIELDS: Record<TargetKind, { label: string; fields: Field[] }> = {
+  vercel: { label: "Vercel", fields: [{ key: "project", label: "Nombre del proyecto", level: "project" }, { key: "team", label: "Equipo (opcional)", level: "org" }, { key: "token", label: "Token de Vercel", secret: true, level: "org" }] },
+  ftp: { label: "FTP", fields: [{ key: "host", label: "Servidor", level: "org" }, { key: "port", label: "Puerto (21 por defecto)", level: "org" }, { key: "secure", label: "Conexión cifrada FTPS (escribe «si» para activarla)", level: "org" }, { key: "user", label: "Usuario", level: "org" }, { key: "dir", label: "Carpeta del servidor (p. ej. /public_html/sitio)", level: "project" }, { key: "password", label: "Contraseña", secret: true, level: "org" }] },
+  sftp: { label: "SFTP / SSH", fields: [{ key: "host", label: "Servidor", level: "org" }, { key: "port", label: "Puerto (22 por defecto)", level: "org" }, { key: "user", label: "Usuario", level: "org" }, { key: "dir", label: "Carpeta del servidor (p. ej. /var/www/sitio)", level: "project" }, { key: "password", label: "Contraseña", secret: true, level: "org" }] },
+  cpanel: { label: "cPanel", fields: [{ key: "host", label: "Dirección del cPanel (p. ej. servidor.com:2083)", level: "org" }, { key: "user", label: "Usuario de cPanel", level: "org" }, { key: "dir", label: "Carpeta (p. ej. public_html/sitio)", level: "project" }, { key: "token", label: "Token de API (cPanel › Seguridad › Administrar tokens de API)", secret: true, level: "org" }] },
 };
 
 export interface Target {
@@ -24,50 +37,57 @@ export interface PublicTarget extends Target {
   secretsSet: string[];
 }
 
-const DIR = join(process.cwd(), ".cms-data");
-const FILE = join(DIR, "deploy-targets.json");
-
+type Strings = Record<string, string>;
 interface Stored {
-  targets: Partial<Record<TargetKind, Target & { secrets: Record<string, string> }>>;
+  values: Strings;
+  secrets: Strings;
 }
 
-const read = async (): Promise<Stored> => {
-  try {
-    return JSON.parse(await readFile(FILE, "utf8")) as Stored;
-  } catch {
-    return { targets: {} };
-  }
-};
+const keysOf = (kind: TargetKind, level: Field["level"], secret: boolean) => TARGET_FIELDS[kind].fields.filter((field) => field.level === level && !!field.secret === secret).map((field) => field.key);
+const pick = (source: Strings, keys: string[]): Strings => Object.fromEntries(keys.filter((key) => key in source).map((key) => [key, source[key]]));
 
-const secretKeys = (kind: TargetKind) => TARGET_FIELDS[kind].fields.filter((f) => f.secret).map((f) => f.key);
-
-export async function listTargets(): Promise<PublicTarget[]> {
-  const { targets } = await read();
-  return Object.values(targets).flatMap((target) => (target ? [{ kind: target.kind, values: target.values, secretsSet: Object.keys(target.secrets).filter((k) => target.secrets[k]) }] : []));
+/** La cuenta de la organización y el destino del proyecto, juntos (solo si el proyecto usa este destino). */
+async function read(tx: Tx, scope: Scope, kind: TargetKind): Promise<Stored | null> {
+  const [project] = await tx.unsafe(`select config from app.deploy_targets where organization_id = $1 and project_id = $2 and kind = $3`, [scope.org, scope.project, kind]);
+  if (!project) return null;
+  const [account] = await tx.unsafe(`select config, secrets_enc from app.organization_integrations where organization_id = $1 and kind = $2`, [scope.org, kind]);
+  const secrets = account?.secrets_enc ? (decryptJson(account.secrets_enc as Buffer) as Strings) : {};
+  return { values: { ...(account?.config as Strings | undefined), ...(project.config as Strings) }, secrets };
 }
 
-/** Guarda un destino; un secreto vacío conserva el que ya había. */
-export async function saveTarget(kind: TargetKind, input: Record<string, string>): Promise<void> {
-  const stored = await read();
-  const previous = stored.targets[kind];
-  const secrets = secretKeys(kind);
-  const values = Object.fromEntries(Object.entries(input).filter(([key]) => !secrets.includes(key)).map(([k, v]) => [k, String(v).trim()]));
-  const kept = Object.fromEntries(secrets.map((key) => [key, input[key]?.trim() || previous?.secrets[key] || ""]));
-  stored.targets[kind] = { kind, values, secrets: kept };
-  await mkdir(DIR, { recursive: true });
-  await writeFile(FILE, JSON.stringify(stored, null, 2));
+export async function listTargets(tx: Tx, scope: Scope): Promise<PublicTarget[]> {
+  const found = await Promise.all((Object.keys(TARGET_FIELDS) as TargetKind[]).map(async (kind) => ({ kind, stored: await read(tx, scope, kind) })));
+  return found.flatMap(({ kind, stored }) => (stored ? [{ kind, values: stored.values, secretsSet: Object.keys(stored.secrets).filter((key) => stored.secrets[key]) }] : []));
 }
 
-export async function removeTarget(kind: TargetKind): Promise<void> {
-  const stored = await read();
-  delete stored.targets[kind];
-  await mkdir(DIR, { recursive: true });
-  await writeFile(FILE, JSON.stringify(stored, null, 2));
+/** Guarda un destino; un secreto vacío conserva el que ya había. La cuenta solo se escribe si cambió (solo el superadministrador puede). */
+export async function saveTarget(tx: Tx, scope: Scope, userId: string, kind: TargetKind, input: Strings): Promise<void> {
+  const clean = Object.fromEntries(Object.entries(input).map(([key, value]) => [key, String(value).trim()]));
+  const previous = await read(tx, scope, kind);
+
+  await tx.unsafe(
+    `insert into app.deploy_targets (organization_id, project_id, kind, config, created_by) values ($1, $2, $3, $4::jsonb, $5)
+     on conflict (organization_id, project_id, kind) do update set config = excluded.config, updated_at = now(), row_version = app.deploy_targets.row_version + 1`,
+    [scope.org, scope.project, kind, pick(clean, keysOf(kind, "project", false)) as never, userId],
+  );
+
+  const accountValues = pick(clean, keysOf(kind, "org", false));
+  const accountSecrets = Object.fromEntries(keysOf(kind, "org", true).map((key) => [key, clean[key] || previous?.secrets[key] || ""]));
+  const unchanged = previous && JSON.stringify(pick(previous.values, keysOf(kind, "org", false))) === JSON.stringify(accountValues) && JSON.stringify(previous.secrets) === JSON.stringify(accountSecrets);
+  if (unchanged) return;
+  await tx.unsafe(
+    `insert into app.organization_integrations (organization_id, kind, config, secrets_enc, updated_by) values ($1, $2, $3::jsonb, $4, $5)
+     on conflict (organization_id, kind) do update set config = excluded.config, secrets_enc = excluded.secrets_enc, updated_by = excluded.updated_by, updated_at = now()`,
+    [scope.org, kind, accountValues as never, encryptJson(accountSecrets), userId],
+  );
+}
+
+/** Quita el destino de este proyecto (la cuenta de la organización se queda: otros proyectos pueden usarla). */
+export async function removeTarget(tx: Tx, scope: Scope, kind: TargetKind): Promise<void> {
+  await tx.unsafe(`delete from app.deploy_targets where organization_id = $1 and project_id = $2 and kind = $3`, [scope.org, scope.project, kind]);
 }
 
 /** Para ejecutar un despliegue: datos y secretos juntos (solo en el servidor). */
-export async function readTargetWithSecrets(kind: TargetKind) {
-  return (await read()).targets[kind] ?? null;
-}
+export const readTargetWithSecrets = read;
 
 export const isTargetKind = (value: unknown): value is TargetKind => typeof value === "string" && value in TARGET_FIELDS;

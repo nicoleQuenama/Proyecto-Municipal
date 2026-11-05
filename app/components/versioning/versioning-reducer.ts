@@ -1,262 +1,41 @@
-import {
-  CURRENT_USER,
-  type Change,
-  type PullRequest,
-  type VersioningAction,
-  type VersioningState,
-} from "./types";
-import {
-  canDeleteBranch,
-  findLabel,
-  headOf,
-  memberProblem,
-  mergeBlockers,
-  summarizeChanges,
-} from "./versioning-rules";
+import type { LocalVersioningState, PullRequest, VersioningAction } from "./types";
 
-export const nextNumber = (items: { number: number }[]) =>
-  items.reduce((max, item) => Math.max(max, item.number), 0) + 1;
-
-function updatePullRequest(
-  state: VersioningState,
-  number: number,
-  update: (pr: PullRequest) => PullRequest,
-): VersioningState {
-  return {
-    ...state,
-    pullRequests: state.pullRequests.map((pr) => (pr.number === number ? update(pr) : pr)),
-  };
-}
-
-function withCommit(
-  state: VersioningState,
-  branch: string,
-  message: string,
-  at: string,
-  changes: Change[] = [],
-  author: string = CURRENT_USER,
-): VersioningState {
-  const lastId = Math.max(0, ...state.commits.map((c) => Number(c.id.slice(1))));
-  const commit = {
-    id: `c${lastId + 1}`,
-    branch,
-    message,
-    author,
-    at,
-    changes,
-  };
-  return { ...state, commits: [commit, ...state.commits] };
+function updatePullRequest(state: LocalVersioningState, number: number, update: (pr: PullRequest) => PullRequest): LocalVersioningState {
+  return { ...state, pullRequests: state.pullRequests.map((pr) => (pr.number === number ? update(pr) : pr)) };
 }
 
 /** Un manejador por tipo de acción: añadir una acción nueva es añadir una entrada aquí. */
 type Handlers = {
-  [K in VersioningAction["type"]]: (state: VersioningState, action: Extract<VersioningAction, { type: K }>) => VersioningState;
+  [K in VersioningAction["type"]]: (state: LocalVersioningState, action: Extract<VersioningAction, { type: K }>) => LocalVersioningState;
 };
 
 const HANDLERS: Handlers = {
-  // Reemplaza todo por lo que se guardó la última vez (ramas, versiones, publicaciones…).
-  "project/load": (_state, action) => ({ ...action.state, pullRequests: action.state.pullRequests.filter((pr) => !pr.authorId) }),
-  "history/reset": (state, action) => ({
+  // Lo del servidor manda. Los conflictos que ya se mostraron (y lo que se eligió en ellos) se conservan mientras la pull request siga abierta.
+  "server/load": (state, action) => ({
     ...state,
-    commits: [],
-    releases: [],
-    pullRequests: [],
-    staged: [],
-    baseline: action.baseline,
-  }),
-  "branch/create": (state, action) => ({
-    ...state,
-    branches: [...state.branches, { name: action.name, author: action.author ?? CURRENT_USER, base: state.current }],
-    current: action.name,
-  }),
-
-  "branch/switch": (state, action) => ({ ...state, current: action.name }),
-
-  "branch/delete": (state, action) => {
-    const branch = state.branches.find((b) => b.name === action.name);
-    const main = state.branches.find((b) => b.base === null);
-    if (!branch || !main || !canDeleteBranch(branch)) return state;
-
-    return {
-      ...state,
-      branches: state.branches.filter((b) => b.name !== action.name),
-      current: state.current === action.name ? main.name : state.current,
-      commits: state.commits.filter((c) => c.branch !== action.name),
-      // Los PR abiertos de una rama eliminada ya no se pueden revisar: se cierran.
-      pullRequests: state.pullRequests.map((pr) =>
-        pr.status === "open" && (pr.from === action.name || pr.into === action.name)
-          ? { ...pr, status: "closed" }
-          : pr,
-      ),
-    };
-  },
-
-  "stage/toggle": (state, action) => ({
-    ...state,
-    staged: state.staged.includes(action.key)
-      ? state.staged.filter((key) => key !== action.key)
-      : [...state.staged, action.key],
+    branches: action.branches,
+    commits: action.commits,
+    issues: action.issues,
+    labels: action.labels,
+    people: action.people,
+    releases: action.releases,
+    pullRequests: action.pullRequests.map((pr) => {
+      const known = state.pullRequests.find((item) => item.number === pr.number);
+      return known && pr.status === "open" ? { ...pr, conflicts: known.conflicts } : pr;
+    }),
   }),
 
-  "stage/set": (state, action) => ({ ...state, staged: action.keys }),
+  "review/conflicts": (state, action) => updatePullRequest(state, action.number, (pr) => ({ ...pr, conflicts: action.conflicts })),
 
-  "commit": (state, action) => {
-    if (action.changes.length === 0) return state;
-
-    // Lo guardado pasa a ser la nueva referencia para detectar cambios.
-    const baseline = { ...state.baseline };
-    for (const { key, current } of action.changes) {
-      if (current) baseline[key] = current;
-      else delete baseline[key];
-    }
-
-    const saved = new Set(action.changes.map((change) => change.key));
-    const changes = action.changes.map(({ node, property, before, after }) => ({
-      node,
-      property,
-      before,
-      after,
-    }));
-
-    return {
-      ...withCommit(state, state.current, action.message, action.at, changes, action.author),
-      baseline,
-      staged: state.staged.filter((key) => !saved.has(key)),
-    };
-  },
-
-  "publish": (state, action) => {
-    const head = headOf(state.commits, state.current);
-    if (!head || state.releases[0]?.commitId === head.id) return state;
-
-    const release = {
-      id: `r${state.releases.length + 1}`,
-      commitId: head.id,
-      branch: state.current,
-      message: head.message,
-      author: action.author ?? CURRENT_USER,
-      at: action.at,
-    };
-    return { ...state, releases: [release, ...state.releases] };
-  },
-
-  "pr/open": (state, action) => {
-    const changes = summarizeChanges(state.commits.filter((c) => c.branch === action.from));
-
-    const pr: PullRequest = {
-      number: nextNumber(state.pullRequests),
-      title: action.title,
-      from: action.from,
-      into: action.into,
-      author: action.author ?? CURRENT_USER,
-      status: "open",
-      approvals: [],
-      requiredApprovals: 1,
-      changes,
-      conflicts: [],
-    };
-    return { ...state, pullRequests: [pr, ...state.pullRequests] };
-  },
-
-  "reviews/sync": (state, action) => ({
-    ...state,
-    // Las del servidor mandan; las de antes (sin autor del servidor) se conservan tal cual.
-    pullRequests: [...action.pullRequests, ...state.pullRequests.filter((pr) => !pr.authorId)],
-  }),
-
-  "review/merged": (state, action) => {
-    const pr = state.pullRequests.find((p) => p.number === action.number);
-    return pr ? withCommit(state, pr.into, `Merge del PR #${pr.number}: ${pr.title}`, action.at) : state;
-  },
-
-  "pr/approve": (state, action) => {
-    return updatePullRequest(state, action.number, (pr) => ({
+  "pr/resolve": (state, action) =>
+    updatePullRequest(state, action.number, (pr) => ({
       ...pr,
-      approvals: [...pr.approvals, action.by ?? CURRENT_USER],
-    }));
-  },
-
-  "pr/resolve": (state, action) => {
-    return updatePullRequest(state, action.number, (pr) => ({
-      ...pr,
-      conflicts: pr.conflicts.map((c, i) =>
-        i === action.index ? { ...c, resolution: action.resolution } : c,
-      ),
-    }));
-  },
-
-  "pr/close": (state, action) => updatePullRequest(state, action.number, (pr) => ({ ...pr, status: "closed" })),
-
-  "pr/merge": (state, action) => {
-    const pr = state.pullRequests.find((p) => p.number === action.number);
-    if (!pr || pr.status !== "open" || mergeBlockers(pr).length > 0) return state;
-
-    const merged = updatePullRequest(state, pr.number, (p) => ({ ...p, status: "merged" }));
-    return withCommit(merged, pr.into, `Merge del PR #${pr.number}: ${pr.title}`, action.at);
-  },
-
-  "issue/create": (state, action) => {
-    const existing = findLabel(state.labels, action.label.name);
-    const label = existing ?? { ...action.label, name: action.label.name.trim() };
-
-    return {
-      ...state,
-      labels: existing ? state.labels : [...state.labels, label],
-      issues: [
-        {
-          number: nextNumber(state.issues),
-          title: action.title,
-          label: label.name,
-          author: CURRENT_USER,
-          assignees: action.assignees,
-          open: true,
-        },
-        ...state.issues,
-      ],
-    };
-  },
-
-  "issue/toggle-assignee": (state, action) => ({
-    ...state,
-    issues: state.issues.map((issue) =>
-      issue.number === action.number
-        ? {
-            ...issue,
-            assignees: issue.assignees.includes(action.member)
-              ? issue.assignees.filter((name) => name !== action.member)
-              : [...issue.assignees, action.member],
-          }
-        : issue,
-    ),
-  }),
-
-  "member/add": (state, action) => {
-    const name = action.name.trim();
-    if (memberProblem(state.members, name)) return state;
-    return { ...state, members: [...state.members, { name, role: action.role }] };
-  },
-
-  "member/remove": (state, action) => {
-    // La persona actual no se puede quitar a sí misma.
-    if (action.name === CURRENT_USER) return state;
-    return {
-      ...state,
-      members: state.members.filter((m) => m.name !== action.name),
-      issues: state.issues.map((i) => ({ ...i, assignees: i.assignees.filter((n) => n !== action.name) })),
-    };
-  },
-
-  "issue/toggle": (state, action) => ({
-    ...state,
-    issues: state.issues.map((i) => (i.number === action.number ? { ...i, open: !i.open } : i)),
-  }),
+      conflicts: pr.conflicts.map((conflict, index) => (index === action.index ? { ...conflict, resolution: action.resolution } : conflict)),
+    })),
 };
 
-export function versioningReducer(
-  state: VersioningState,
-  action: VersioningAction,
-): VersioningState {
+export function versioningReducer(state: LocalVersioningState, action: VersioningAction): LocalVersioningState {
   // TypeScript no puede relacionar el tipo de la acción con su manejador, pero `Handlers` lo garantiza.
-  const handle = HANDLERS[action.type] as (state: VersioningState, action: VersioningAction) => VersioningState;
+  const handle = HANDLERS[action.type] as (state: LocalVersioningState, action: VersioningAction) => LocalVersioningState;
   return handle(state, action);
 }

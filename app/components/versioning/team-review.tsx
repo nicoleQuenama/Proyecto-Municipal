@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "../auth/auth-context";
 import { canReview } from "./group-rules";
+import { mergeBlockers } from "./versioning-rules";
 import type { PullRequest } from "./types";
 import { useVersioning } from "./versioning-context";
 
@@ -17,6 +18,8 @@ export function TeamReview({ pr }: { pr: PullRequest }) {
   const [error, setError] = useState("");
   const reviewer = canReview(currentUser, pr);
   const open = pr.status === "open";
+  // La aprobación de quien fusiona va incluida: solo los conflictos sin resolver impiden fusionar.
+  const unresolved = mergeBlockers({ ...pr, requiredApprovals: 0 });
 
   const act = async (decision: "merge" | "close") => {
     setBusy(true);
@@ -47,7 +50,7 @@ export function TeamReview({ pr }: { pr: PullRequest }) {
       </p>
       <div className="flex flex-wrap gap-2">
         {reviewer && (
-          <button type="button" disabled={busy} onClick={() => act("merge")} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40">
+          <button type="button" disabled={busy || unresolved.length > 0} onClick={() => act("merge")} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40">
             Aprobar y fusionar en {pr.into}
           </button>
         )}
@@ -55,6 +58,7 @@ export function TeamReview({ pr }: { pr: PullRequest }) {
           {reviewer ? "Rechazar" : "Cancelar solicitud"}
         </button>
       </div>
+      {reviewer && unresolved.length > 0 && <p className="text-xs text-amber-400">{unresolved[0]}</p>}
       {error && (
         <p role="alert" className="text-xs text-red-400">
           {error}

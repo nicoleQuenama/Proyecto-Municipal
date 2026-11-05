@@ -30,9 +30,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
 # vercel
 .vercel
 
@@ -45,3 +42,37 @@ next-env.d.ts
 
 # lo publicado en sitios de clientes (servidor)
 /.cms-data/
+
+# variables de entorno con secretos (se documentan en .env.example)
+.env*
+!.env.example
+
+# herramientas y asistentes de cada persona (configuración y memoria locales)
+/.agents/
+/.claude/
+/skills-lock.json
+
+# editores y sistema operativo
+/.idea/
+/.vscode/
+Thumbs.db
+desktop.ini
+*.log
+*.swp
+
+# archivos temporales de pruebas y scripts locales
+/scripts/_*.mts
+/scripts/_*.mjs
+/tmp/
+/*.tmp
+
+# bases de datos y respaldos locales (la base de datos real vive en Postgres)
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+
+# informes de pruebas
+/coverage/
+/test-results/
+/playwright-report/

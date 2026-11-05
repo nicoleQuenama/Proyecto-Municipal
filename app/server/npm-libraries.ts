@@ -8,12 +8,13 @@
 
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { db, type Tx } from "./db";
 import { REQUEST_HEADER } from "./request-header";
+import type { Scope } from "./site/site-sql";
 
 const ROOT = process.cwd();
-const MANIFEST = path.join(ROOT, "portal-libraries.json");
 const INSTALL_TIMEOUT_MS = 3 * 60 * 1000;
 
 
@@ -46,26 +47,20 @@ export function guardRequest(request: Request): Response | null {
   return available ? null : Response.json({ error: reason }, { status: 403 });
 }
 
-// ---------- lista de librerías instaladas por el usuario ----------
+// ---------- lista de librerías instaladas por cada organización (en la base de datos) ----------
 
-async function readManifest(): Promise<string[]> {
-  try {
-    const data = JSON.parse(await readFile(MANIFEST, "utf8"));
-    return Array.isArray(data.libraries) ? data.libraries.filter((n: unknown) => typeof n === "string") : [];
-  } catch {
-    return [];
-  }
-}
+/** Los paquetes que instaló esta organización. */
+const ownNames = async (tx: Tx, scope: Scope): Promise<string[]> =>
+  (await tx.unsafe(`select name from app.organization_packages where organization_id = $1 order by name`, [scope.org])).map((row) => row.name as string);
 
-const writeManifest = (libraries: string[]) =>
-  writeFile(MANIFEST, JSON.stringify({ libraries: [...new Set(libraries)].sort() }, null, 2) + "\n");
+/** Los que instaló cualquier organización (el disco es compartido). */
+const everyonesNames = async (): Promise<Set<string>> => new Set((await db()`select app.installed_package_names() as name`).map((row) => row.name as string));
 
-/** Los paquetes de `package.json` que no son del usuario (next, react…): no se tocan. */
+/** Los paquetes de `package.json` que no instaló ninguna organización (next, react…): no se tocan. */
 async function protectedPackages(): Promise<Set<string>> {
   const pkg = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
-  const own = new Set(await readManifest());
-  const all = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
-  return new Set(all.filter((name) => !own.has(name)));
+  const installed = await everyonesNames();
+  return new Set(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((name) => !installed.has(name)));
 }
 
 export interface InstalledLibrary {
@@ -82,9 +77,9 @@ async function versionOf(name: string): Promise<string | null> {
   }
 }
 
-/** Las librerías que el usuario instaló desde la app y siguen en `node_modules`. */
-export async function listInstalled(): Promise<InstalledLibrary[]> {
-  const names = await readManifest();
+/** Las librerías que esta organización instaló desde la app y siguen en `node_modules`. */
+export async function listInstalled(tx: Tx, scope: Scope): Promise<InstalledLibrary[]> {
+  const names = await ownNames(tx, scope);
   const found = await Promise.all(names.map(async (name) => ({ name, version: await versionOf(name) })));
   return found.filter((lib): lib is InstalledLibrary => lib.version !== null);
 }
@@ -120,7 +115,7 @@ function runPnpm(args: string[]): Promise<void> {
 }
 
 /** `pnpm add nombre@versión`. Los scripts del paquete no se ejecutan. */
-export async function installLibrary(name: string, version: string): Promise<InstalledLibrary> {
+export async function installLibrary(tx: Tx, scope: Scope, userId: string, name: string, version: string): Promise<InstalledLibrary> {
   if ((await protectedPackages()).has(name)) throw new Error(`«${name}» es parte de este proyecto y no se puede cambiar.`);
 
   await runPnpm(["add", `${name}@${version || "latest"}`, "--ignore-scripts"]);
@@ -128,16 +123,20 @@ export async function installLibrary(name: string, version: string): Promise<Ins
   const installed = await versionOf(name);
   if (!installed) throw new Error(`No se pudo instalar «${name}».`);
 
-  await writeManifest([...(await readManifest()), name]);
+  await tx.unsafe(
+    `insert into app.organization_packages (organization_id, name, version, installed_by) values ($1, $2, $3, $4)
+     on conflict (organization_id, name) do update set version = excluded.version, installed_by = excluded.installed_by, installed_at = now()`,
+    [scope.org, name, installed, userId],
+  );
   return { name, version: installed };
 }
 
-/** `pnpm remove`, solo de lo que instaló esta función. */
-export async function uninstallLibrary(name: string): Promise<void> {
-  if (!(await readManifest()).includes(name)) throw new Error(`«${name}» no se instaló desde la app.`);
+/** Quita la librería de esta organización; del disco solo si ninguna otra la tiene (`pnpm remove`). */
+export async function uninstallLibrary(tx: Tx, scope: Scope, name: string): Promise<void> {
+  if (!(await ownNames(tx, scope)).includes(name)) throw new Error(`«${name}» no se instaló desde la app.`);
 
-  await runPnpm(["remove", name]);
-  await writeManifest((await readManifest()).filter((n) => n !== name));
+  await tx.unsafe(`delete from app.organization_packages where organization_id = $1 and name = $2`, [scope.org, name]);
+  if (!(await everyonesNames()).has(name)) await runPnpm(["remove", name]);
 }
 
 // ---------- empaquetado para el navegador ----------
@@ -147,7 +146,7 @@ const bundles = new Map<string, string>();
 /** El código ES de una librería ya instalada, con sus dependencias, listo para `import` en el navegador. */
 export async function bundleLibrary(name: string): Promise<string> {
   const version = await versionOf(name);
-  if (!version || !(await readManifest()).includes(name)) throw new Error("Librería no instalada.");
+  if (!version || !(await everyonesNames()).has(name)) throw new Error("Librería no instalada.");
 
   const cached = bundles.get(`${name}@${version}`);
   if (cached) return cached;

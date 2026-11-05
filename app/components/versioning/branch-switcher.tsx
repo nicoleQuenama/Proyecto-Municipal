@@ -11,7 +11,7 @@ const MANAGE = "__manage";
 
 /** Selector de rama del header: cambia de rama o abre el panel de versiones. */
 export function BranchSwitcher() {
-  const { state, dispatch, mustBranch } = useVersioning();
+  const { state, switchBranch, mustBranch } = useVersioning();
   const { openDialog, withShortcut } = useCommands();
   const { currentUser } = useAuth();
 
@@ -26,7 +26,7 @@ export function BranchSwitcher() {
   ];
 
   const onSelect = (value: string) =>
-    value === MANAGE ? openDialog("versions") : dispatch({ type: "branch/switch", name: value });
+    value === MANAGE ? openDialog("versions") : void switchBranch(value);
 
   return (
     <div className="flex shrink-0 items-center border-l border-line px-3" title={withShortcut("Rama actual", "versions.open")}>

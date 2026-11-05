@@ -14,7 +14,10 @@ import {
 import { guardAction } from "../auth/guard-actions";
 import { useAuth } from "../auth/auth-context";
 import { INITIAL_SITE } from "./initial-site";
-import { useAutosave } from "../persistence/use-autosave";
+import { SiteSyncContext } from "../persistence/site-sync-context";
+import type { SitePatch } from "../../server/site/site-patch";
+import { useSiteSync } from "../persistence/use-site-sync";
+import { useBranch } from "../versioning/branch-context";
 import { siteReducer } from "./site-reducer";
 import { HistoryContext } from "./history-context";
 import { UndoToast } from "./undo-toast";
@@ -42,7 +45,10 @@ function useNotice() {
 /** `initial` + `persist: false`: el visor del sitio publicado, que parte de un sitio dado y no guarda nada. */
 export function SiteProvider({ children, initial = INITIAL_SITE, persist = true }: { children: ReactNode; initial?: SiteState; persist?: boolean }) {
   const [state, rawDispatch] = useReducer(siteReducer, initial);
-  useAutosave<SiteState>("site", state, (saved) => rawDispatch({ type: "project/load", state: saved }), persist);
+  const { message, say } = useNotice();
+  const branches = useBranch();
+  const remote = useCallback((patch: SitePatch) => rawDispatch({ type: "remote/patch", patch }), []);
+  const sync = useSiteSync(state, (saved) => rawDispatch({ type: "project/load", state: saved }), say, persist ? (branches?.branch ?? null) : null, remote);
   // Lo destructivo avisa con «Deshacer».
   const { dispatch: undoable, toast, dismiss } = useUndoableDispatch(state, rawDispatch);
 
@@ -55,7 +61,6 @@ export function SiteProvider({ children, initial = INITIAL_SITE, persist = true 
   // Todo cambio se anota para poder deshacerlo y rehacerlo (Ctrl+Z, Ctrl+Mayús+Z) hasta muchos pasos atrás.
   const load = useCallback((saved: SiteState) => rawDispatch({ type: "project/load", state: saved }), []);
   const history = useHistory(latest, load);
-  const { message, say } = useNotice();
   const dispatch = useCallback<Dispatch<SiteAction>>(
     (action) => {
       const result = guardAction(action, currentUser, latest.current.pages);
@@ -72,6 +77,7 @@ export function SiteProvider({ children, initial = INITIAL_SITE, persist = true 
   return (
     <StateContext value={state}>
       <DispatchContext value={dispatch}>
+        <SiteSyncContext value={sync}>
         <HistoryContext value={history.controls}>
         {children}
         {message && (
@@ -88,6 +94,7 @@ export function SiteProvider({ children, initial = INITIAL_SITE, persist = true 
           onDismiss={dismiss}
         />
         </HistoryContext>
+        </SiteSyncContext>
       </DispatchContext>
     </StateContext>
   );

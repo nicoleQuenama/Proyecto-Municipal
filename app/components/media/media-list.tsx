@@ -1,5 +1,6 @@
 "use client";
 
+import { optimizedSrc } from "./optimize-src";
 import { useState } from "react";
 import type { Placement } from "../placement/types";
 import type { Page } from "../site/types";
@@ -66,7 +67,7 @@ function MediaPreview({ item, editing, onError }: { item: MediaItem; editing: bo
   if (item.kind === "image") {
     // <img> en lugar de next/image: las fuentes son object URLs o dominios arbitrarios.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={item.src} alt={item.alt ?? item.name} draggable={false} onError={onError} loading="lazy" decoding="async" className="w-full" />;
+    return <img src={optimizedSrc(item.src)} alt={item.alt ?? item.name} draggable={false} onError={onError} loading="lazy" decoding="async" className="w-full" />;
   }
 
   if (item.embed) {

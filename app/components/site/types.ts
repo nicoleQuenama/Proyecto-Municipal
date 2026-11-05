@@ -1,3 +1,4 @@
+import type { SitePatch } from "../../server/site/site-patch";
 import type { RecordingBaseline } from "../animation/animation-rules";
 import type { AnimationStep, RecordedAnimation } from "../animation/types";
 import type { LayerAction } from "../layers/layer-rules";
@@ -381,6 +382,8 @@ export interface ProjectMediaAsset {
 
 export type SiteAction =
   | { type: "project/load"; state: SiteState }
+  /** Lo que otra persona acaba de cambiar en la misma rama (llega en vivo): se aplica sobre el estado actual, sin tocar lo que cada quien tiene seleccionado. */
+  | { type: "remote/patch"; patch: SitePatch }
   | { type: "page/create"; id: string; name: string }
   | { type: "page/rename"; id: string; name: string }
   | { type: "page/delete"; id: string }

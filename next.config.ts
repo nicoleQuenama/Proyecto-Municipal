@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
     cpus: 1,
   },
   cacheComponents: true,
-  // esbuild es un binario nativo: se usa desde el servidor (app/api/libs/bundle), no se empaqueta.
-  serverExternalPackages: ["esbuild"],
+  // esbuild es un binario nativo y postgres abre conexiones: se usan desde el servidor, no se empaquetan.
+  serverExternalPackages: ["esbuild", "postgres"],
   partialPrefetching: true,
   turbopack: {
     rules: {

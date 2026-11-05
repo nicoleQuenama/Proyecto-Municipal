@@ -1,67 +1,47 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { isIP } from "node:net";
+import { db, withOrg } from "./db";
+import { hashPassword } from "./password-hash";
 
 /**
- * Tokens de restablecimiento. No hay base de datos: se guardan en JSON.
- * En el archivo solo queda el hash del token, nunca el token en claro.
+ * Enlaces de restablecimiento. En la base de datos solo queda el SHA-256 del token, nunca el token en claro;
+ * es de un solo uso y vence en 30 minutos.
  */
-const FILE = join(process.cwd(), ".cms-data", "password-resets.json");
-const TTL_MS = 30 * 60 * 1000;
+const digest = (token: string): Buffer => createHash("sha256").update(token).digest();
 
-interface ResetRecord {
-  userId: string;
-  tokenHash: string;
-  expiresAt: number;
-  usedAt?: number;
+interface IdentityRow {
+  user_id: string;
+  organization_id: string;
+  username: string;
+  email: string;
+  name: string;
 }
 
-const digest = (token: string) => createHash("sha256").update(token).digest("hex");
-
-async function read(): Promise<ResetRecord[]> {
-  try {
-    const data = JSON.parse(await readFile(FILE, "utf8")) as ResetRecord[];
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
+/** La cuenta cuyo correo Y usuario coinciden (dos pruebas antes de enviar el enlace); si no, `null`. */
+export async function findByIdentity(username: string, email: string): Promise<IdentityRow | null> {
+  const [found] = await db()<IdentityRow[]>`
+    select user_id, organization_id, username, email, name from app.login_lookup(${email.trim().toLowerCase()})`;
+  return found && found.username.toLowerCase() === username.trim().toLowerCase() ? found : null;
 }
 
-async function write(records: ResetRecord[]): Promise<void> {
-  await mkdir(dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(records, null, 2));
-}
-
-// Crea un token nuevo e invalida los enlaces anteriores del mismo usuario. 
-export async function issueResetToken(userId: string): Promise<string> {
+/** Crea un enlace nuevo e invalida los anteriores de la misma cuenta. Devuelve el token (solo existe aquí y en el correo). */
+export async function issueResetToken(account: IdentityRow, requestIp: string): Promise<string> {
   const token = randomBytes(32).toString("base64url");
-  const now = Date.now();
-  const records = (await read()).filter((r) => r.userId !== userId && !r.usedAt && r.expiresAt > now);
-  records.push({ userId, tokenHash: digest(token), expiresAt: now + TTL_MS });
-  await write(records);
+  await withOrg(account.organization_id, null, async (tx) => {
+    await tx`delete from app.password_reset_tokens where user_id = ${account.user_id} and used_at is null`;
+    await tx`
+      insert into app.password_reset_tokens (organization_id, user_id, token_hash, expires_at, requested_ip)
+      values (${account.organization_id}, ${account.user_id}, ${digest(token)}, now() + interval '30 minutes', ${isIP(requestIp) ? requestIp : null})`;
+  });
   return token;
 }
 
-// Marca como usado el token (un solo uso). 
-export async function consumeResetToken(token: string): Promise<string | null> {
-  const records = await read();
-  const record = records.find((r) => r.tokenHash === digest(token));
-  if (!record || record.usedAt || record.expiresAt < Date.now()) return null;
-  record.usedAt = Date.now();
-  await write(records);
-  return record.userId;
-}
-
 /**
- * Límite simple en memoria: 3 solicitudes cada 15 minutos por IP + correo.
- * Se reinicia al reiniciar el servidor; suficiente mientras no haya base de datos.
+ * Gasta el token y guarda la contraseña nueva en un solo paso (atómico: un enlace no se puede usar dos veces).
+ * Devuelve a quién se le cambió, o `null` si el enlace no vale, ya se usó o venció.
  */
-const attempts = new Map<string, number[]>();
-
-export function allowResetAttempt(key: string): boolean {
-  const now = Date.now();
-  const recent = (attempts.get(key) ?? []).filter((time) => now - time < 15 * 60 * 1000);
-  if (recent.length >= 3) return false;
-  attempts.set(key, [...recent, now]);
-  return true;
+export async function resetWithToken(token: string, password: string): Promise<{ email: string; name: string } | null> {
+  const [changed] = await db()<{ email: string; name: string }[]>`
+    select email, name from app.reset_password_with_token(${digest(token)}, ${await hashPassword(password)})`;
+  return changed ?? null;
 }

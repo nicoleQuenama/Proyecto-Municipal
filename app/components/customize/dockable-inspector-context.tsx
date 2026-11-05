@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { usePreference } from "../persistence/use-preference";
 
 export type DockPosition = "right" | "float";
 
@@ -30,7 +31,18 @@ interface InspectorDockContextValue {
   setIsDragging: (dragging: boolean) => void;
 }
 
-const STORAGE_KEY = "cms_inspector_dock_v2";
+const PREFERENCE = "editor.inspector-dock";
+
+interface SavedDock {
+  dock?: DockPosition;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  collapsed?: boolean;
+}
+
+const NOTHING_SAVED: SavedDock = {};
 
 const InspectorDockContext = createContext<InspectorDockContextValue | null>(null);
 
@@ -69,37 +81,26 @@ export function InspectorDockProvider({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsedState] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // La disposición del inspector se guarda en la cuenta: al llegar lo guardado se aplica una vez, y después cada cambio se guarda.
+  const [saved, save, ready] = usePreference<SavedDock>(PREFERENCE, NOTHING_SAVED);
+  const applied = useRef(false);
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.dock === "right" || parsed.dock === "float") {
-          setDockState(parsed.dock);
-        }
-        if (typeof parsed.x === "number") setX(parsed.x);
-        if (typeof parsed.y === "number") setY(parsed.y);
-        if (typeof parsed.width === "number") {
-          setWidthState(Math.min(MAX_INSPECTOR_WIDTH, Math.max(MIN_INSPECTOR_WIDTH, parsed.width)));
-        }
-        if (typeof parsed.height === "number") setHeightState(parsed.height);
-        if (typeof parsed.collapsed === "boolean") setCollapsedState(parsed.collapsed);
-      }
-    } catch {
-      // Ignorar errores en entornos restringidos
-    }
-  }, []);
+    if (!ready || applied.current) return;
+    applied.current = true;
+    /* Se copia lo guardado en la cuenta al estado local, una sola vez, cuando llega. */
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (saved.dock === "right" || saved.dock === "float") setDockState(saved.dock);
+    if (typeof saved.x === "number") setX(saved.x);
+    if (typeof saved.y === "number") setY(saved.y);
+    if (typeof saved.width === "number") setWidthState(Math.min(MAX_INSPECTOR_WIDTH, Math.max(MIN_INSPECTOR_WIDTH, saved.width)));
+    if (typeof saved.height === "number") setHeightState(saved.height);
+    if (typeof saved.collapsed === "boolean") setCollapsedState(saved.collapsed);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [ready, saved]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ dock, x, y, width, height, collapsed }),
-      );
-    } catch {
-      // Ignorar errores de almacenamiento
-    }
-  }, [dock, x, y, width, height, collapsed]);
+    if (applied.current) save({ dock, x, y, width, height, collapsed });
+  }, [dock, x, y, width, height, collapsed, save]);
 
   const setDock = useCallback((next: DockPosition) => {
     setDockState(next);

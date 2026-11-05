@@ -7,6 +7,7 @@ import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { parsePosterUrl, posterFileProblem, providerThumbnail } from "./poster";
 import type { MediaItem } from "./types";
+import { uploadMedia } from "./upload-media";
 
 const WIDTH = 288;
 const MARGIN = 8;
@@ -46,7 +47,8 @@ export function PosterMenu({ item, pageId, point, onClose }: PosterMenuProps) {
       if (!file) return;
       const problem = posterFileProblem(file);
       if (problem) return setError(problem);
-      apply(URL.createObjectURL(file), true);
+      setError(null);
+      uploadMedia(file).then((poster) => apply(poster), (failure) => setError(failure instanceof Error ? failure.message : "No se pudo subir la portada."));
     };
     input.click();
   };

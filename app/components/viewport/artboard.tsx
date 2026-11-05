@@ -1,5 +1,6 @@
 "use client";
 
+import { PeerCursors } from "../realtime/peer-cursors";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground } from "../background/background-css";
@@ -359,6 +360,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
         >
           {hasBackground(page.backdrop) && <BackgroundLayers bg={page.backdrop} />}
           {mode === "edit" && !production && <CommentLayer page={page} />}
+          {mode === "edit" && !production && <PeerCursors pageId={page.id} />}
           {fullWidth && <style>{"[data-site-page] [data-placed]:not([data-bleed]){margin-left:var(--cms-offset)!important}"}</style>}
           <FullBleedContext value={fullWidth}>
           <PageGuidesProvider>

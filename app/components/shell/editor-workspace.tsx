@@ -24,6 +24,7 @@ import { SiteStyles } from "../site/site-styles";
 import { FormatBar } from "../title-editor/format-bar";
 import { BranchSwitcher } from "../versioning/branch-switcher";
 import { DeployButton } from "../deploy/deploy-button";
+import { PeerSelections } from "../realtime/peer-selections";
 import { PublishButton } from "../versioning/publish-button";
 import { VersionsDialog } from "../versioning/versions-dialog";
 import { CanvasPages, CanvasSurface } from "../viewport/artboard";
@@ -55,6 +56,7 @@ export function EditorWorkspace() {
 
         <InspectorDockProvider>
           <main className="relative flex min-h-0 flex-1 bg-canvas overflow-hidden">
+            <PeerSelections />
             <SidePanel />
             <div className="relative flex min-w-0 flex-1">
               <CanvasSurface>

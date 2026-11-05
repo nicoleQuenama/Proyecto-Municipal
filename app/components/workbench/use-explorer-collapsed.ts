@@ -9,7 +9,7 @@ let collapsed: boolean | null = null;
 const read = (): boolean => {
   if (collapsed === null) {
     try {
-      collapsed = sessionStorage.getItem(KEY) === "1";
+      collapsed = localStorage.getItem(KEY) === "1";
     } catch {
       collapsed = false;
     }
@@ -20,14 +20,14 @@ const read = (): boolean => {
 const write = (next: boolean) => {
   collapsed = next;
   try {
-    sessionStorage.setItem(KEY, next ? "1" : "0");
+    localStorage.setItem(KEY, next ? "1" : "0");
   } catch {
     // Sin almacenamiento: el estado vive solo mientras la página siga abierta.
   }
   listeners.forEach((listener) => listener());
 };
 
-/** ¿Está recogido el explorador de archivos? Se recuerda durante la sesión; Ctrl+B lo alterna. */
+/** ¿Está recogido el explorador de archivos? Es lo único que se recuerda en este navegador (no en la cuenta); Ctrl+B lo alterna. */
 export function useExplorerCollapsed(): [boolean, () => void] {
   const value = useSyncExternalStore(
     (listener) => {

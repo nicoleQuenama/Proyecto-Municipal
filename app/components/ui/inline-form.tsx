@@ -6,8 +6,8 @@ interface InlineFormProps {
   label: string;
   placeholder: string;
   submitLabel: string;
-  /** Devuelve un mensaje de error para mostrarlo, o nada si todo salió bien. */
-  onSubmit: (value: string) => string | void;
+  /** Devuelve un mensaje de error para mostrarlo, o nada si todo salió bien (puede tardar: se espera). */
+  onSubmit: (value: string) => string | void | Promise<string | void>;
   /** Controles extra entre el campo y el botón (p. ej. un select). */
   children?: ReactNode;
 }
@@ -22,12 +22,12 @@ export function InlineForm({
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const text = value.trim();
     if (!text) return;
 
-    const problem = onSubmit(text);
+    const problem = await onSubmit(text);
     if (problem) return setError(problem);
 
     setValue("");
