@@ -22,6 +22,12 @@
   font-style: italic;
 }
 
+/* La línea del elemento que se eligió en la vista previa del editor de código. */
+.editor-picked-line {
+  background: rgba(99, 102, 241, 0.22);
+  box-shadow: inset 3px 0 0 #6366f1;
+}
+
 html {
   /* El editor es oscuro: barras de desplazamiento y controles nativos también. */
   color-scheme: dark;

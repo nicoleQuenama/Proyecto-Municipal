@@ -21,7 +21,12 @@ import { TargetBar } from "./target-bar";
 // Monaco se sirve desde este mismo proyecto (app/api/vendor/monaco), sin depender de un CDN.
 loader.config({ paths: { vs: "/api/vendor/monaco" } });
 
-const SAVE_DELAY_MS = 500;
+const SAVE_DELAY_MS = 180;
+
+export interface LineRange {
+  startLine: number;
+  endLine: number;
+}
 
 /** Los archivos cuyo contenido son declaraciones sueltas: se muestran dentro de un bloque `& { }` (ver css-wrapper.ts). */
 const WRAPPED_KINDS: ReadonlySet<FileKindName> = new Set(["custom-css", "component-css"]);
@@ -87,7 +92,17 @@ function ScopeSelect({ file }: { file: Extract<FileRef, { kind: "function" }> })
 }
 
 /** El editor de un archivo: Monaco a tamaño completo, con guardado automático y sugerencias del proyecto. */
-export default function FileEditor({ file }: { file: FileRef }) {
+export default function FileEditor({
+  file,
+  onCursorLine,
+  highlightRange,
+}: {
+  file: FileRef;
+  /** La línea donde está el cursor o el puntero, para resaltar lo mismo en la vista previa. */
+  onCursorLine?: (line: number | null) => void;
+  /** Las líneas del elemento elegido en la vista previa. */
+  highlightRange?: LineRange | null;
+}) {
   const site = useSite();
   const dispatch = useSiteDispatch();
   const kind = kindOf(file);
@@ -100,6 +115,12 @@ export default function FileEditor({ file }: { file: FileRef }) {
   /** Paquetes que el código importa pero el proyecto aún no tiene. */
   const [missing, setMissing] = useState<string[]>([]);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  // El aviso de la línea que se señala cambia sin volver a montar Monaco: se lee siempre el último.
+  const cursorListener = useRef(onCursorLine);
+  useEffect(() => {
+    cursorListener.current = onCursorLine;
+  }, [onCursorLine]);
+  const picked = useRef<{ collection: MonacoEditor.IEditorDecorationsCollection; line: number } | null>(null);
   // Lo último que vio este editor, para guardar desde Ctrl+S y desde el guardado automático sin repetir efectos.
   const latest = useRef({ draft, saved, site, file });
   useEffect(() => {
@@ -158,6 +179,18 @@ export default function FileEditor({ file }: { file: FileRef }) {
     syncProject();
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, flush);
 
+    // La línea bajo el cursor o el puntero se avisa una sola vez por línea, para resaltarla en la vista previa.
+    let lastLine: number | null = null;
+    const reportLine = (line: number | null) => {
+      if (line === lastLine) return;
+      lastLine = line;
+      cursorListener.current?.(line);
+    };
+    editor.onDidChangeCursorPosition(({ position }) => reportLine(position.lineNumber));
+    editor.onMouseMove((event) => reportLine(event.target.position?.lineNumber ?? null));
+    editor.onMouseLeave(() => reportLine(null));
+    editor.onDidDispose(() => reportLine(null));
+
     // Si el código importa un paquete que el proyecto no tiene, se ofrece añadirlo en lugar de dejar solo el error.
     const model = editor.getModel();
     if (model) {
@@ -184,6 +217,26 @@ export default function FileEditor({ file }: { file: FileRef }) {
       setSelection({ text, range, top: at.top + at.height + 6, left: at.left });
     });
   };
+
+  // El elemento elegido en la vista previa se marca en el código y se trae a la pantalla.
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    picked.current?.collection.clear();
+    picked.current = null;
+    if (!highlightRange) return;
+
+    const start = Math.max(1, Math.min(highlightRange.startLine, highlightRange.endLine));
+    const end = Math.max(start, highlightRange.startLine, highlightRange.endLine);
+    const collection = editor.createDecorationsCollection([
+      {
+        range: { startLineNumber: start, startColumn: 1, endLineNumber: end, endColumn: 1000 },
+        options: { isWholeLine: true, className: "editor-picked-line" },
+      },
+    ]);
+    picked.current = { collection, line: start };
+    editor.revealLineInCenter(start);
+  }, [highlightRange]);
 
   const create = (scope: FunctionScope, name: string): string | null => {
     if (!FUNCTION_NAME.test(name)) return "Usa letras, números, _ o $, sin empezar por un número.";

@@ -10,16 +10,19 @@ const next = createRequire(import.meta.url).resolve("next/dist/bin/next");
 
 const children = [
   spawn(process.execPath, [next, mode], { stdio: "inherit" }),
-  spawn(process.execPath, ["--env-file-if-exists=.env.local", "realtime/server.mts"], { stdio: "inherit" }),
+  // Añadimos --experimental-strip-types aquí 👇
+  spawn(process.execPath, ["--experimental-strip-types", "--env-file-if-exists=.env.local", "realtime/server.mts"], { stdio: "inherit" }),
 ];
 
 const stop = (code = 0) => {
   for (const child of children) child.kill();
   process.exit(code);
 };
+
 // Con RUN_MAINTENANCE=1 también corre, una vez al día, la limpieza de archivos sin uso y de datos vencidos.
 if (mode === "start" && process.env.RUN_MAINTENANCE === "1") {
-  children.push(spawn(process.execPath, ["--env-file-if-exists=.env.local", "scripts/maintenance.mts", "--loop"], { stdio: "inherit" }));
+  // Añadimos --experimental-strip-types aquí también 👇
+  children.push(spawn(process.execPath, ["--experimental-strip-types", "--env-file-if-exists=.env.local", "scripts/maintenance.mts", "--loop"], { stdio: "inherit" }));
 }
 
 for (const child of children) child.on("exit", (code) => stop(code ?? 0));
