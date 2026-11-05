@@ -20,15 +20,11 @@ import { TemplatesTab } from "./templates-tab";
 import { MediaTab } from "./media-tab";
 import { StructureList, type StructureItem } from "./structure-list";
 import { TAB_ICONS } from "./tab-icons";
+import { clampWidth, DEFAULT_WIDTH, MAX_WIDTH, MIN_WIDTH, usePanelCollapsed, usePanelTab, usePanelWidth } from "./use-panel-storage";
 
 /** Ancho de la barra de iconos; el del contenido se puede cambiar arrastrando. */
 const RAIL_WIDTH = 56;
-const MIN_WIDTH = 248;
-const MAX_WIDTH = 520;
-const DEFAULT_WIDTH = 304;
 const KEYBOARD_STEP = 16;
-
-const clampWidth = (width: number) => Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width));
 
 /** Qué se dibuja en cada sección del panel. Una sección nueva es una entrada nueva. */
 const TAB_CONTENT: Record<PanelTab, ReactNode> = {
@@ -44,9 +40,9 @@ const TAB_CONTENT: Record<PanelTab, ReactNode> = {
 };
 
 export function SidePanel() {
-  const [tab, setTab] = useState<PanelTab>("components");
-  const [collapsed, setCollapsed] = useState(false);
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [tab, setTab] = usePanelTab();
+  const [collapsed, setCollapsed] = usePanelCollapsed();
+  const [width, setWidth] = usePanelWidth();
   const [resizing, setResizing] = useState(false);
   const [structureOpen, setStructureOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
