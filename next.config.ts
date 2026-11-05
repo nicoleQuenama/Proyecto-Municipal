@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
     cpus: 1,
   },
   cacheComponents: true,
-  // esbuild es un binario nativo y postgres abre conexiones: se usan desde el servidor, no se empaquetan.
-  serverExternalPackages: ["esbuild", "postgres"],
+  // esbuild es un binario nativo, postgres abre conexiones y los clientes FTP/SFTP usan sockets y módulos nativos opcionales: se usan desde el servidor, no se empaquetan.
+  serverExternalPackages: ["esbuild", "postgres", "ssh2", "ssh2-sftp-client", "basic-ftp"],
   partialPrefetching: true,
   turbopack: {
     rules: {

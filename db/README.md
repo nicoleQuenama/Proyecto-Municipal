@@ -8,7 +8,7 @@ Antes vivía en `.cms-data`, `.cache` y el `localStorage` del navegador; ya solo
 > librerías y comentarios, con el código guardado como árboles (fase 2)**. Lo demás (versiones y pull requests, publicar/desplegar, medios en ImageKit,
 > preferencias, caché de APIs, tiempo real) sigue en `.cms-data`, `.cache` y `localStorage` hasta su fase: ver «Conectar la app» al final.
 >
-> Primeros pasos: `pnpm db:up` → copiar `.env.example` a `.env.local` → `pnpm db:seed` (crea la organización y tres cuentas de prueba) → `pnpm dev`. Se entra con el **correo**.
+> Primeros pasos (completos en el README de la raíz): copiar `.env.example` a `.env.local` → `pnpm db:up` → `pnpm db:setup` (migraciones, usuario de la app, organización y tres cuentas de prueba) → `pnpm dev`. Se entra con el **correo**.
 > Pruebas: `scripts/e2e-auth.sh` (usuarios) y `node --env-file=.env.local scripts/e2e-site.mts` (sitio), con `pnpm dev` y la base de datos arriba.
 
 ```
