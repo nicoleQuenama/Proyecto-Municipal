@@ -88,9 +88,16 @@ export function AppearanceTab() {
 
       {!canManageGlobals && (
         <p className="rounded-lg bg-hover px-3 py-2 text-[11px] text-ink-dim">
-          La paleta, los colores globales y los paddings del sitio los define el superadministrador. Aquí puedes usar
-          sus colores predefinidos.
+          La paleta, las tipografías y los estilos globales son el manual de marca: los define el superadministrador y no
+          se pueden cambiar ni borrar. Puedes usarlos y ampliarlos con tus propias variables y reglas.{site.brandRequired ? " Ahora el uso de la marca es obligatorio: usa sus variables en colores y tipografías." : ""}
         </p>
+      )}
+
+      {canManageGlobals && (
+        <label className="flex items-start gap-2 rounded-lg border border-line px-3 py-2 text-[11px] text-ink-dim">
+          <input type="checkbox" checked={!!site.brandRequired} onChange={(e) => dispatch({ type: "brand/require", value: e.target.checked })} className="mt-0.5" />
+          <span><b className="text-ink">Uso obligatorio de la marca.</b> El resto del equipo solo podrá poner colores y tipografías tomándolos de variables (la paleta de la marca o las suyas). Si no, es una guía opcional.</span>
+        </label>
       )}
 
       <VariablesSection
@@ -98,7 +105,7 @@ export function AppearanceTab() {
         ctx={ctx}
         variables={site.variables}
         dispatch={dispatch}
-        canEdit={canManageGlobals}
+        canEdit={canManageGlobals || scope.kind !== "global"}
       />
 
       {groups.map(({ group, targets: groupTargets }) => (
@@ -122,7 +129,7 @@ export function AppearanceTab() {
                 styles={site}
                 onSet={(prop, value) => dispatch({ type: "rule/set", scope, target, prop, value })}
                 onClear={() => dispatch({ type: "rule/clear", scope, target })}
-                restrictColorsToPalette={!canManageGlobals}
+                restrictColorsToPalette={!canManageGlobals && !!site.brandRequired}
               />
             ))}
           </ul>

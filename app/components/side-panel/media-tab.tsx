@@ -13,72 +13,6 @@ import {
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import type { ProjectMediaAsset } from "../site/types";
 
-const MUNICIPAL_STOCK_MEDIA: ProjectMediaAsset[] = [
-  {
-    id: "stock-alcaldia",
-    name: "Atención Ciudadana y Alcaldía",
-    src: "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80",
-    kind: "image",
-    tag: "Institucional",
-    tags: ["alcaldia", "atencion", "ciudadania", "gobierno"],
-    createdAt: 1700000000000,
-  },
-  {
-    id: "stock-peaton",
-    name: "Actividad Día del Peatón",
-    src: "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=800&q=80",
-    kind: "image",
-    tag: "Día del Peatón",
-    tags: ["peaton", "dia del peaton", "bicicleta", "deporte", "movilidad", "calle"],
-    createdAt: 1700000001500,
-  },
-  {
-    id: "stock-parque",
-    name: "Parque y Áreas Verdes Comunales",
-    src: "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=800&q=80",
-    kind: "image",
-    tag: "Comunidad",
-    tags: ["parque", "areas verdes", "medio ambiente", "arboles"],
-    createdAt: 1700000001000,
-  },
-  {
-    id: "stock-tramites",
-    name: "Ventanilla y Orientación Vecinal",
-    src: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80",
-    kind: "image",
-    tag: "Trámites",
-    tags: ["tramites", "ventanilla", "servicios", "vecinos"],
-    createdAt: 1700000002000,
-  },
-  {
-    id: "stock-seguridad",
-    name: "Seguridad y Patrullaje Comunitario",
-    src: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=800&q=80",
-    kind: "image",
-    tag: "Seguridad",
-    tags: ["seguridad", "patrullaje", "policia", "prevencion"],
-    createdAt: 1700000003000,
-  },
-  {
-    id: "stock-obras",
-    name: "Obras Públicas y Pavimentación",
-    src: "https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=800&q=80",
-    kind: "image",
-    tag: "Obras",
-    tags: ["obras", "infraestructura", "pavimento", "calles"],
-    createdAt: 1700000003500,
-  },
-  {
-    id: "stock-video-comuna",
-    name: "Clip Promocional Comuna Digital",
-    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    kind: "video",
-    tag: "Institucional",
-    tags: ["video", "clip", "promocion", "digital"],
-    createdAt: 1700000004000,
-  },
-];
-
 const COMMON_TAG_SUGGESTIONS = [
   "Día del Peatón",
   "Institucional",
@@ -90,7 +24,7 @@ const COMMON_TAG_SUGGESTIONS = [
   "Cultura y Deportes",
 ];
 
-type MediaFilter = "all" | "image" | "video" | "stock";
+type MediaFilter = "all" | "image" | "video";
 
 export function MediaTab() {
   const [filter, setFilter] = useState<MediaFilter>("all");
@@ -133,13 +67,8 @@ export function MediaTab() {
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  // Combinar archivos subidos del proyecto con recursos de la biblioteca comunal
-  const uploadedAssets = site.projectMedia ?? [];
-  const allAssets = useMemo(() => {
-    return filter === "stock"
-      ? MUNICIPAL_STOCK_MEDIA
-      : [...uploadedAssets, ...(filter === "all" ? MUNICIPAL_STOCK_MEDIA : [])];
-  }, [uploadedAssets, filter]);
+  // Solo lo que el proyecto tiene en ImageKit (o agregó por enlace): no hay archivos de ejemplo.
+  const allAssets = useMemo(() => site.projectMedia ?? [], [site.projectMedia]);
 
   // Lista única de etiquetas disponibles en los medios actuales para el selector de filtros
   const availableTags = useMemo(() => {
@@ -603,15 +532,6 @@ export function MediaTab() {
         >
           Videos
         </button>
-        <button
-          type="button"
-          onClick={() => setFilter("stock")}
-          className={`flex-1 rounded-md py-1 text-[11px] font-medium transition-all ${
-            filter === "stock" ? "bg-accent text-white shadow-xs" : "text-ink-dim hover:text-ink"
-          }`}
-        >
-          Comunal
-        </button>
       </div>
 
       {/* Pills de etiquetas disponibles para reciclaje rápido */}
@@ -687,7 +607,6 @@ export function MediaTab() {
         ) : (
           <div className="grid grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto pr-0.5">
             {filtered.map((item) => {
-              const isStock = item.id.startsWith("stock-");
               return (
                 <div
                   key={item.id}
@@ -755,7 +674,7 @@ export function MediaTab() {
                           </button>
                         )}
 
-                        {!isStock && isSuperAdmin && (
+                        {isSuperAdmin && (
                           <button
                             type="button"
                             onClick={(e) => {
