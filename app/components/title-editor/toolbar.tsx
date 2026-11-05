@@ -1,4 +1,7 @@
 import { useState, type ReactNode } from "react";
+import { useAuth } from "../auth/auth-context";
+import { getBrandColors, getBrandFonts, isRestrictedByBrand } from "../auth/brand-manual";
+import { useSite } from "../site/site-context";
 import {
   ALIGN_OPTIONS,
   BLOCK_OPTIONS,
@@ -35,6 +38,13 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
   const isTitle = mode === "title";
   const [linkOpen, setLinkOpen] = useState(false);
   const { size, list } = state;
+  const { currentUser } = useAuth();
+  const site = useSite();
+
+  const restricted = isRestrictedByBrand(currentUser);
+  const brandColors = getBrandColors(site.variables);
+  const fontChoices = restricted ? getBrandFonts(site.variables) : FONT_OPTIONS;
+  const isKnownFont = fontChoices.some((o) => o.value === state.font);
 
   return (
     <div
@@ -68,7 +78,10 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
         value={state.font}
         onChange={(e) => onChange({ font: e.target.value })}
       >
-        {FONT_OPTIONS.map((o) => (
+        {!isKnownFont && state.font && (
+          <option value={state.font}>Actual · {state.font}</option>
+        )}
+        {fontChoices.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
@@ -108,7 +121,13 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
       <ToolbarButton label="Subrayado" active={state.underline} className="underline" onClick={() => onChange({ underline: !state.underline })}>U</ToolbarButton>
       <ToolbarButton label="Tachado" active={state.strike} className="line-through" onClick={() => onChange({ strike: !state.strike })}>S</ToolbarButton>
 
-      <ColorButton label="Color de texto" value={state.color} onChange={(color) => onChange({ color })}>
+      <ColorButton
+        label="Color de texto"
+        value={state.color}
+        onChange={(color) => onChange({ color })}
+        restrictToPalette={restricted}
+        palette={brandColors}
+      >
         <b>A</b>
       </ColorButton>
       {isTitle && (
@@ -117,6 +136,8 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
           value={state.highlight ?? "#ffff00"}
           active={state.highlight !== null}
           onChange={(highlight) => onChange({ highlight })}
+          restrictToPalette={restricted}
+          palette={brandColors}
         >
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 2l2 2-8 8H4v-2l8-8zM2 14h12" />
@@ -174,29 +195,29 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
       )}
 
       {isTitle && (
-      <div className="ml-auto flex shrink-0 items-center gap-3 pl-3">
-        <label className="flex cursor-pointer items-center gap-2 text-ink-dim hover:text-ink">
-          <input
-            type="checkbox"
-            checked={state.applyToSite}
-            onChange={(e) => onChange({ applyToSite: e.target.checked })}
-            className="h-3.5 w-3.5 accent-accent"
-          />
-          Seguir estilos del sitio
-        </label>
-        <button
-          type="button"
-          aria-pressed={state.editing}
-          onClick={() => onChange({ editing: !state.editing })}
-          className={`h-7 rounded-md px-3 font-medium transition-colors ${
-            state.editing
-              ? "bg-accent text-white hover:bg-accent/90"
-              : "border border-line text-ink hover:bg-hover"
-          }`}
-        >
-          {state.editing ? "Editando titular" : "Editar titular"}
-        </button>
-      </div>
+        <div className="ml-auto flex shrink-0 items-center gap-3 pl-3">
+          <label className="flex cursor-pointer items-center gap-2 text-ink-dim hover:text-ink">
+            <input
+              type="checkbox"
+              checked={state.applyToSite}
+              onChange={(e) => onChange({ applyToSite: e.target.checked })}
+              className="h-3.5 w-3.5 accent-accent"
+            />
+            Seguir estilos del sitio
+          </label>
+          <button
+            type="button"
+            aria-pressed={state.editing}
+            onClick={() => onChange({ editing: !state.editing })}
+            className={`h-7 rounded-md px-3 font-medium transition-colors ${
+              state.editing
+                ? "bg-accent text-white hover:bg-accent/90"
+                : "border border-line text-ink hover:bg-hover"
+            }`}
+          >
+            {state.editing ? "Editando titular" : "Editar titular"}
+          </button>
+        </div>
       )}
     </div>
   );
