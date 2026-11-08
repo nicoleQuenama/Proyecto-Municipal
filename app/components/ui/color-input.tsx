@@ -41,11 +41,11 @@ export function ColorInput({ label, value, onChange, gradient = false }: ColorIn
     <span className="flex flex-col gap-1.5">
       {gradient && (
         <span className="flex gap-1 rounded-lg bg-canvas p-0.5" role="tablist" aria-label={`Tipo de ${label}`}>
-          <button type="button" role="tab" aria-selected={!isGradientMode} className={tab(!isGradientMode)}
+          <button type="button" role="tab" aria-selected={!isGradientMode} className={`${tab(!isGradientMode)} cursor-pointer`}
             onClick={() => isGradientMode && onChange(parseGradient(value)?.stops[0].color ?? "#cccccc")}>
             Color sólido
           </button>
-          <button type="button" role="tab" aria-selected={isGradientMode} className={tab(isGradientMode)}
+          <button type="button" role="tab" aria-selected={isGradientMode} className={`${tab(isGradientMode)} cursor-pointer`}
             onClick={() => !isGradientMode && onChange(gradientFrom(value))}>
             Degradado
           </button>

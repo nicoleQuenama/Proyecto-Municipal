@@ -65,7 +65,7 @@ export function MenuEditor({ pageId, block, view, device }: EditorProps) {
         </div>
       </div>
       {(config.panelBackground || config.panelColor) && (
-        <button type="button" onClick={() => patch({ panelBackground: undefined, panelColor: undefined })} className="self-start text-ink-dim underline hover:text-ink">
+        <button type="button" onClick={() => patch({ panelBackground: undefined, panelColor: undefined })} className="self-start text-ink-dim underline hover:text-ink cursor-pointer">
           Usar los colores de la sección
         </button>
       )}
@@ -74,7 +74,7 @@ export function MenuEditor({ pageId, block, view, device }: EditorProps) {
         type="button"
         aria-pressed={open}
         onClick={() => setOpen(!open)}
-        className={`h-7 rounded-full px-3 font-medium ${open ? "bg-accent text-white" : "border border-line text-ink hover:bg-hover"}`}
+        className={`h-7 rounded-full px-3 font-medium ${open ? "bg-accent text-white" : "border border-line text-ink hover:bg-hover"} cursor-pointer`}
       >
         {open ? "Cerrar el menú de prueba" : "Ver menú abierto"}
       </button>

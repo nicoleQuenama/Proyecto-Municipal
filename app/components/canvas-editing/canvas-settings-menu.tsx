@@ -32,7 +32,7 @@ export function CanvasSettingsMenu() {
         aria-expanded={open}
         title="Cuadrícula, guías y alcance de los cambios"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-8 items-center gap-1 rounded-lg px-2 text-ink-dim transition-colors hover:bg-hover hover:text-ink"
+        className="flex h-8 items-center gap-1 rounded-lg px-2 text-ink-dim transition-colors hover:bg-hover hover:text-ink cursor-pointer"
       >
         <SlidersIcon />
         {settings.scope === "component" && <span className="text-[11px] font-medium text-accent">Todos</span>}
@@ -54,7 +54,7 @@ export function CanvasSettingsMenu() {
               role="switch"
               aria-checked={settings[key]}
               onClick={() => setSettings((current) => ({ ...current, [key]: !current[key] }))}
-              className={row}
+              className={`${row} cursor-pointer`}
             >
               <input type="checkbox" readOnly tabIndex={-1} checked={settings[key]} className="mt-0.5 accent-accent" />
               <span className="flex-1">
@@ -77,7 +77,7 @@ export function CanvasSettingsMenu() {
                 role="radio"
                 aria-checked={settings.scope === value}
                 onClick={() => setSettings((current) => ({ ...current, scope: value }))}
-                className={row}
+                className={`${row} cursor-pointer`}
               >
                 <input type="radio" readOnly tabIndex={-1} checked={settings.scope === value} className="mt-0.5 accent-accent" />
                 <span className="flex-1">

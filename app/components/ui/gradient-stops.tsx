@@ -51,13 +51,13 @@ export function GradientStops({ gradient, onChange }: GradientStopsProps) {
             aria-label={`Quitar el color ${index + 1}`}
             disabled={stops.length <= MIN_STOPS}
             onClick={() => setStops(stops.filter((_, i) => i !== index))}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400 disabled:opacity-30"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400 disabled:opacity-30 cursor-pointer"
           >
             ×
           </button>
         </div>
       ))}
-      <button type="button" onClick={add} className="h-8 self-start rounded-md px-2 text-xs text-accent hover:bg-hover">
+      <button type="button" onClick={add} className="h-8 self-start rounded-md px-2 text-xs text-accent hover:bg-hover cursor-pointer">
         + Añadir color
       </button>
     </div>

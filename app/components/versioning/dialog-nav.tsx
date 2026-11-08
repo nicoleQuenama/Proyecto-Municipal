@@ -30,7 +30,7 @@ export function DialogNav({ tab, onSelect, counts, advanced, onAdvanced, alsoSho
               onClick={() => onSelect(item.id)}
               className={`flex h-9 items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] transition-colors ${
                 tab === item.id ? "bg-hover text-ink" : "text-ink-dim hover:bg-hover/60 hover:text-ink"
-              }`}
+              } cursor-pointer`}
             >
               {item.icon}
               <span className="min-w-0 flex-1 truncate">{item.label}</span>

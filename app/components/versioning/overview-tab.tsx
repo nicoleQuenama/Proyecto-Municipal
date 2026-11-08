@@ -63,7 +63,7 @@ export function OverviewTab({ onGoTo }: { onGoTo: (tab: "changes" | "history") =
         {changes.length > 0 ? (
           <>
             <SaveVersionForm />
-            <button type="button" onClick={() => onGoTo("changes")} className="self-start text-xs text-accent hover:underline">
+            <button type="button" onClick={() => onGoTo("changes")} className="self-start text-xs text-accent hover:underline cursor-pointer">
               Revisar o elegir qué cambios entran →
             </button>
           </>
@@ -77,7 +77,7 @@ export function OverviewTab({ onGoTo }: { onGoTo: (tab: "changes" | "history") =
       </Block>
 
       {state.commits.length > 0 && (
-        <button type="button" onClick={() => onGoTo("history")} className="self-start text-xs text-accent hover:underline">
+        <button type="button" onClick={() => onGoTo("history")} className="self-start text-xs text-accent hover:underline cursor-pointer">
           Ver el historial de {plural(state.commits.length, "versión", "versiones")} →
         </button>
       )}

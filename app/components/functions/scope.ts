@@ -39,19 +39,35 @@ export const preludeOf = (functions: SharedFunction[]): string => functions.map(
 
 export const FUNCTION_NAME = /^[A-Za-z_$][\w$]*$/;
 
-/** El nombre declarado en un código `function nombre(…)`, si lo hay. */
+/** Comentarios y `export` que pueden ir delante de una declaración. */
+const LEADING = String.raw`^(?:\s*(?:\/\/[^\n]*\n|\/\*[\s\S]*?\*\/))*\s*(?:export\s+(?:default\s+)?)?`;
+const NAME = String.raw`([A-Za-z_$][\w$]*)`;
+const FUNCTION_DECLARATION = new RegExp(LEADING + String.raw`(?:async\s+)?function\s*\*?\s*` + NAME);
+/** `const nombre = (a, b) => …`, `const nombre = async x => …` o `const nombre = function …`. */
+const VARIABLE_FUNCTION = new RegExp(
+  LEADING + String.raw`(?:const|let|var)\s+` + NAME + String.raw`\s*(?::[^=]+)?=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*(?::[^=]+)?=>|[A-Za-z_$][\w$]*\s*=>)`,
+);
+
+/** El nombre declarado en un código `function nombre(…)` o `const nombre = (…) => …`, si lo hay. */
 export function declaredName(code: string): string | null {
-  return /^\s*(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)/.exec(code)?.[1] ?? null;
+  return (FUNCTION_DECLARATION.exec(code) ?? VARIABLE_FUNCTION.exec(code))?.[1] ?? null;
 }
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 
 /**
  * Convierte código seleccionado en una función con nombre. Si la selección ya es una declaración
- * completa se respeta y no deja nada en su lugar (la función ya se puede llamar); si no, se envuelve y
- * en su lugar queda la llamada. `call` es lo que se escribe donde estaba lo seleccionado.
+ * completa se respeta (con el nombre que se pida) y no deja nada en su lugar, porque la función ya se puede llamar;
+ * si no, se envuelve y en su lugar queda la llamada. `call` es lo que se escribe donde estaba lo seleccionado.
  */
 export function extractFunction(selection: string, name: string): { code: string; call: string } {
-  const code = selection.trim();
-  if (declaredName(code) === name) return { code, call: "" };
+  const code = selection.trim().replace(/^export\s+(?:default\s+)?(?=(?:async\s+)?function\b|(?:const|let|var)\s)/, "");
+  const declared = declaredName(code);
+  if (declared !== null) {
+    // Ya es una función: se queda como está, solo con el nombre elegido si es otro.
+    const renamed = declared === name ? code : code.replace(new RegExp(String.raw`(?<![\w$])` + escapeRegExp(declared) + String.raw`(?![\w$])`), name);
+    return { code: renamed, call: "" };
+  }
 
   const body = code
     .split("\n")

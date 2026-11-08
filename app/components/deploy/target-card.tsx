@@ -23,7 +23,7 @@ export function TargetCard({ kind, info, saved, outcome, onSave, onRemove, onRun
 
   return (
     <section className="rounded-lg border border-line">
-      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium">
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium cursor-pointer">
         <span>{info.label}</span>
         <span className="text-ink-dim">{saved ? "Configurado" : "Sin configurar"}</span>
       </button>
@@ -43,18 +43,18 @@ export function TargetCard({ kind, info, saved, outcome, onSave, onRemove, onRun
             </label>
           ))}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => void onSave(values)} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover">
+            <button type="button" onClick={() => void onSave(values)} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer">
               Guardar
             </button>
             {saved && (
               <>
-                <button type="button" disabled={mine && outcome.kind === "working"} onClick={() => void onRun("test")} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover disabled:opacity-50">
+                <button type="button" disabled={mine && outcome.kind === "working"} onClick={() => void onRun("test")} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover disabled:opacity-50 cursor-pointer">
                   {mine && outcome.kind === "working" && outcome.what === "test" ? "Probando…" : "Probar conexión"}
                 </button>
-                <button type="button" disabled={mine && outcome.kind === "working"} onClick={() => void onRun("deploy")} className="h-8 rounded-md bg-accent px-3 text-xs text-white disabled:opacity-50">
+                <button type="button" disabled={mine && outcome.kind === "working"} onClick={() => void onRun("deploy")} className="h-8 rounded-md bg-accent px-3 text-xs text-white disabled:opacity-50 cursor-pointer">
                   {mine && outcome.kind === "working" && outcome.what === "deploy" ? "Desplegando…" : "Desplegar ahora"}
                 </button>
-                <button type="button" onClick={() => void onRemove()} className="h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover">
+                <button type="button" onClick={() => void onRemove()} className="h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover cursor-pointer">
                   Quitar
                 </button>
               </>

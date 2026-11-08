@@ -451,7 +451,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               onClick={() => dispatch({ type: "block/slot", pageId, blockId: block.id, slot: "header" })}
               className={`h-7 rounded flex items-center justify-center gap-1 font-medium transition-colors ${
                 currentSlot === "header" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink hover:bg-hover"
-              }`}
+              } cursor-pointer`}
               title="Se ubica siempre arriba de la página ocupando el ancho completo"
             >
               Encabezado
@@ -462,7 +462,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               onClick={() => dispatch({ type: "block/slot", pageId, blockId: block.id, slot: "body" })}
               className={`h-7 rounded flex items-center justify-center gap-1 font-medium transition-colors ${
                 currentSlot === "body" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink hover:bg-hover"
-              }`}
+              } cursor-pointer`}
               title="Contenido en el cuerpo de la página"
             >
               Cuerpo
@@ -473,7 +473,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               onClick={() => dispatch({ type: "block/slot", pageId, blockId: block.id, slot: "footer" })}
               className={`h-7 rounded flex items-center justify-center gap-1 font-medium transition-colors ${
                 currentSlot === "footer" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink hover:bg-hover"
-              }`}
+              } cursor-pointer`}
               title="Se ubica siempre al final de la página ocupando el ancho completo"
             >
               Pie de página
@@ -490,7 +490,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                   onClick={() => dispatch({ type: "block/scope", pageId, blockId: block.id, scope: "global" })}
                   className={`h-7 rounded font-medium transition-colors ${
                     currentScope === "global" ? "bg-accent/20 text-accent font-semibold" : "text-ink-dim hover:text-ink"
-                  }`}
+                  } cursor-pointer`}
                   title="Aparece automáticamente en todas las páginas del sitio"
                 >
                   En todo el sitio
@@ -501,7 +501,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                   onClick={() => dispatch({ type: "block/scope", pageId, blockId: block.id, scope: "page" })}
                   className={`h-7 rounded font-medium transition-colors ${
                     currentScope === "page" ? "bg-accent/20 text-accent font-semibold" : "text-ink-dim hover:text-ink"
-                  }`}
+                  } cursor-pointer`}
                   title="Solo visible en esta página"
                 >
                   Solo esta página
@@ -524,7 +524,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                     : block.placementMode !== "overlay"
                       ? "bg-accent text-white shadow-xs font-semibold"
                       : "text-ink-dim hover:text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
                 title={block.locked ? "Sección bloqueada" : "Se ajusta automáticamente según el contenido de la página sin sobreponerse"}
               >
                 Ajustar a contenido
@@ -540,7 +540,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                     : block.placementMode === "overlay"
                       ? "bg-accent text-white shadow-xs font-semibold"
                       : "text-ink-dim hover:text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
                 title={block.locked ? "Sección bloqueada" : "Permite mover libremente y sobreponer sobre otros elementos"}
               >
                 Sobreponer (libre)
@@ -567,7 +567,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                   block.locked
                     ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
                     : "text-ink-dim hover:text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
                 title={block.locked ? "Desbloquear sección" : "Bloquear sección"}
               >
                 {block.locked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
@@ -582,7 +582,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                   block.locked
                     ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
                     : "text-ink hover:bg-hover active:scale-95"
-                }`}
+                } cursor-pointer`}
                 title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más arriba"}
               >
                 <span className="font-bold">↑</span> Subir sección
@@ -595,7 +595,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                   block.locked
                     ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
                     : "text-ink hover:bg-hover active:scale-95"
-                }`}
+                } cursor-pointer`}
                 title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más abajo"}
               >
                 <span className="font-bold">↓</span> Bajar sección
@@ -643,7 +643,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               ))}
             </ul>
           )}
-          <button type="button" onClick={add} className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover">
+          <button type="button" onClick={add} className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover cursor-pointer">
             + Añadir interacción
           </button>
         </Collapsible>
@@ -660,7 +660,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 type="button"
                 aria-pressed={level === value}
                 onClick={() => setLevel(value)}
-                className={`h-7 rounded ${level === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"}`}
+                className={`h-7 rounded ${level === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"} cursor-pointer`}
               >
                 {label}
               </button>
@@ -735,7 +735,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           <button
             type="button"
             onClick={openCss}
-            className="flex h-9 items-center justify-center gap-2 rounded-md border border-line text-xs hover:bg-hover"
+            className="flex h-9 items-center justify-center gap-2 rounded-md border border-line text-xs hover:bg-hover cursor-pointer"
           >
             <CodeIcon />
             Abrir el CSS en el editor
@@ -813,7 +813,7 @@ export function Inspector() {
         paletteOpen
           ? "bg-accent/20 text-accent font-semibold"
           : "text-ink-dim hover:bg-hover hover:text-ink"
-      }`}
+      } cursor-pointer`}
     >
       <PaletteIcon />
     </button>

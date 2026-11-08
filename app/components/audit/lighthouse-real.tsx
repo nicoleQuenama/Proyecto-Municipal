@@ -43,7 +43,7 @@ export function LighthouseReal() {
         <button
           type="button"
           onClick={() => void copy()}
-          className="h-8 w-fit rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90"
+          className="h-8 w-fit rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 cursor-pointer"
         >
           {copied ? "Copiada" : "Copiar la lista"}
         </button>

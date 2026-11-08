@@ -36,7 +36,7 @@ export function GradientPanel({ gradient, selected, anchor, onAngle, onColor, on
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium">Degradado</span>
-        <button type="button" onClick={onClose} className={`${button} bg-accent text-white hover:bg-accent/90`}>
+        <button type="button" onClick={onClose} className={`${button} bg-accent text-white hover:bg-accent/90 cursor-pointer`}>
           Listo
         </button>
       </div>
@@ -65,10 +65,10 @@ export function GradientPanel({ gradient, selected, anchor, onAngle, onColor, on
         <div className="w-24">
           <HexField value={stop.color} onChange={onColor} />
         </div>
-        <button type="button" onClick={onAdd} className={`${button} border border-line`}>
+        <button type="button" onClick={onAdd} className={`${button} border border-line cursor-pointer`}>
           + Punto
         </button>
-        <button type="button" disabled={gradient.stops.length <= MIN_STOPS} onClick={onRemove} className={`${button} text-red-400 disabled:opacity-40`}>
+        <button type="button" disabled={gradient.stops.length <= MIN_STOPS} onClick={onRemove} className={`${button} text-red-400 disabled:opacity-40 cursor-pointer`}>
           Quitar
         </button>
       </div>

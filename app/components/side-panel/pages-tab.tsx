@@ -108,14 +108,14 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
           <button
             type="button"
             onClick={() => dispatch({ type: "page/delete", id: page.id })}
-            className="h-7 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15"
+            className="h-7 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15 cursor-pointer"
           >
             Eliminar
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="h-7 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink"
+            className="h-7 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
           >
             Cancelar
           </button>
@@ -134,7 +134,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
           onClick={() => dispatch({ type: "page/select", id: page.id })}
           className={`flex h-11 min-w-0 flex-1 flex-col justify-center rounded-md px-3 text-left transition-colors ${
             isCurrent ? "bg-accent/20 ring-1 ring-accent/40" : "hover:bg-hover"
-          }`}
+          } cursor-pointer`}
         >
           <div className="flex items-center gap-1.5 w-full">
             <span className={`truncate text-[13px] ${isCurrent ? "text-accent font-semibold" : "text-ink font-medium"}`}>
@@ -169,7 +169,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
             onClick={() => setMenuOpen(!menuOpen)}
             className={`flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-opacity ${
               menuOpen ? "opacity-100 bg-hover text-ink" : "opacity-0 group-hover:opacity-100 focus:opacity-100"
-            }`}
+            } cursor-pointer`}
           >
             <span className="text-base leading-none font-bold tracking-tighter">•••</span>
           </button>
@@ -184,7 +184,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                   setDraft(page.name);
                   setRenaming(true);
                 }}
-                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover hover:text-accent transition-colors"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover hover:text-accent transition-colors cursor-pointer"
               >
                 <span className="text-xs">✎</span>
                 <span>Renombrar página</span>
@@ -198,7 +198,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                 }}
                 className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
                   layoutOpen || page.hideHeader || page.hideFooter ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
               >
                 <span className="text-xs">☷</span>
                 <span>Estructura (Header / Footer)</span>
@@ -212,7 +212,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                 }}
                 className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
                   styling || page.backdrop ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
               >
                 <span className="text-xs">▨</span>
                 <span>Fondo de página</span>
@@ -226,7 +226,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                 }}
                 className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
                   seoOpen || (page.seo?.title && page.seo?.description) ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
               >
                 <span className="text-[10px] font-bold">SEO</span>
                 <span>Buscadores y redes</span>
@@ -241,7 +241,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                   }}
                   className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
                     routing || page.route ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                 >
                   <span className="font-mono text-[10px]">:id</span>
                   <span>Ruta dinámica</span>
@@ -283,7 +283,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                     setMenuOpen(false);
                     openFile({ kind: "page-js", pageId: page.id });
                   }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover transition-colors"
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover transition-colors cursor-pointer"
                 >
                   <CodeIcon />
                   <span>Programar en código</span>
@@ -299,7 +299,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                       setMenuOpen(false);
                       setConfirming(true);
                     }}
-                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-red-500 hover:bg-red-500/10 font-medium transition-colors"
+                    className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-red-500 hover:bg-red-500/10 font-medium transition-colors cursor-pointer"
                   >
                     <span className="text-xs">×</span>
                     <span>Eliminar página</span>

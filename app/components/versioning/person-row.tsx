@@ -34,7 +34,7 @@ export function PersonRow({ user, open, saving, onToggle, onSave, onRemove }: Pe
           type="button"
           aria-expanded={open}
           onClick={onToggle}
-          className="h-8 shrink-0 rounded-md border border-line px-3 text-xs text-ink hover:bg-hover"
+          className="h-8 shrink-0 rounded-md border border-line px-3 text-xs text-ink hover:bg-hover cursor-pointer"
         >
           {open ? "Cerrar" : expired ? "Renovar acceso" : "Cambiar acceso"}
         </button>
@@ -43,7 +43,7 @@ export function PersonRow({ user, open, saving, onToggle, onSave, onRemove }: Pe
           title={`Quitar a ${user.name} del proyecto ahora mismo`}
           aria-label={`Quitar a ${user.name}`}
           onClick={onRemove}
-          className="h-8 shrink-0 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400"
+          className="h-8 shrink-0 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400 cursor-pointer"
         >
           Quitar
         </button>

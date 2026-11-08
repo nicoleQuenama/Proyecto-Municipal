@@ -28,7 +28,7 @@ export function AssigneePicker({ members, value, onToggle, label }: AssigneePick
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-8 min-w-8 items-center justify-center rounded-md px-1.5 text-xs hover:bg-hover"
+        className="flex h-8 min-w-8 items-center justify-center rounded-md px-1.5 text-xs hover:bg-hover cursor-pointer"
       >
         {value.length > 0 ? (
           <AvatarStack names={value} />

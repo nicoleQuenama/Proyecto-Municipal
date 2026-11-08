@@ -23,7 +23,7 @@ export function ToggleButton({ label, active, disabled, onClick, children, style
       aria-pressed={active}
       disabled={disabled}
       onClick={onClick}
-      className={`${buttonBase} ${active ? "bg-accent/25 text-accent" : "text-ink hover:bg-hover"}`}
+      className={`${buttonBase} ${active ? "bg-accent/25 text-accent" : "text-ink hover:bg-hover"} cursor-pointer`}
       style={style}
     >
       {children}
@@ -49,7 +49,7 @@ export function ActionButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`${buttonBase} ${danger ? "text-red-400 hover:bg-red-500/15" : "text-ink hover:bg-hover"}`}
+      className={`${buttonBase} ${danger ? "text-red-400 hover:bg-red-500/15" : "text-ink hover:bg-hover"} cursor-pointer`}
     >
       {children}
     </button>

@@ -66,14 +66,14 @@ export function TargetBar({ file, language, target }: TargetBarProps) {
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line bg-panel px-3 py-1.5 text-xs">
-      <span className="font-medium text-ink">Aplica a: {target.label}</span>
+      <span className="font-medium text-ink" title={hint || undefined}>Aplica a: {target.label}</span>
 
       {target.selector && (
         <button
           type="button"
           onClick={copy}
           title="Copiar el selector"
-          className={`${chip} max-w-72 truncate bg-canvas font-mono text-ink-dim hover:text-ink`}
+          className={`${chip} max-w-72 truncate bg-canvas font-mono text-ink-dim hover:text-ink cursor-pointer`}
         >
           {copied ? "¡Copiado!" : target.selector}
         </button>
@@ -89,7 +89,7 @@ export function TargetBar({ file, language, target }: TargetBarProps) {
               onClick={() => openFile(sibling.ref)}
               className={`${chip} ${
                 fileId(sibling.ref) === fileId(file) ? "bg-accent/25 text-accent" : "bg-hover text-ink-dim hover:text-ink"
-              }`}
+              } cursor-pointer`}
             >
               {sibling.label}
             </button>
@@ -126,12 +126,11 @@ export function TargetBar({ file, language, target }: TargetBarProps) {
       )}
 
       {target.scope && (
-        <button type="button" onClick={addCode} className={`${chip} bg-hover text-ink-dim hover:text-ink`}>
+        <button type="button" onClick={addCode} className={`${chip} bg-hover text-ink-dim hover:text-ink cursor-pointer`}>
           + Código TS
         </button>
       )}
 
-      {hint && <span className="basis-full text-[11px] text-ink-dim">{hint}</span>}
     </div>
   );
 }

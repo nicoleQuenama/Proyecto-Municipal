@@ -41,10 +41,10 @@ export function TimelineRow({
         className={`sticky left-0 z-10 flex shrink-0 items-center justify-between gap-1 border-r border-line px-2 ${selectedTrack ? "bg-[#1d2a3a]" : "bg-panel"}`}
         style={{ width: TRACK_HEADER_PX }}
       >
-        <button type="button" onClick={onSelectTrack} className="min-w-0 truncate text-left text-[11px] hover:text-accent" title={label}>
+        <button type="button" onClick={onSelectTrack} className="min-w-0 truncate text-left text-[11px] hover:text-accent cursor-pointer" title={label}>
           {label}
         </button>
-        <button type="button" aria-label={`Quitar ${label} de la animación`} onClick={onRemove} className="text-ink-dim hover:text-red-400">
+        <button type="button" aria-label={`Quitar ${label} de la animación`} onClick={onRemove} className="text-ink-dim hover:text-red-400 cursor-pointer">
           ×
         </button>
       </div>

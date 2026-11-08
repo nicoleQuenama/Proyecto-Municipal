@@ -39,7 +39,7 @@ export function UserRow({ user, isCurrent, resetting, removing, onReset, onRemov
             type="button"
             disabled={resetting}
             onClick={onReset}
-            className="rounded-md px-1.5 py-1 text-[10px] text-ink-dim transition-colors hover:bg-hover disabled:opacity-50"
+            className="rounded-md px-1.5 py-1 text-[10px] text-ink-dim transition-colors hover:bg-hover disabled:opacity-50 cursor-pointer"
           >
             {resetting ? "..." : "Restablecer"}
           </button>
@@ -47,7 +47,7 @@ export function UserRow({ user, isCurrent, resetting, removing, onReset, onRemov
             type="button"
             disabled={removing}
             onClick={onRemove}
-            className="rounded-md px-1.5 py-1 text-[10px] text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+            className="rounded-md px-1.5 py-1 text-[10px] text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50 cursor-pointer"
           >
             {removing ? "..." : "Eliminar"}
           </button>

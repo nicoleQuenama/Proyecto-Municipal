@@ -102,7 +102,7 @@ export function SearchDialog() {
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-xs text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+              className="flex h-6 w-6 items-center justify-center rounded-full text-xs text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
               title="Borrar texto"
             >
               ✕
@@ -129,7 +129,7 @@ export function SearchDialog() {
                     active
                       ? "bg-accent text-white shadow-xs font-semibold"
                       : "bg-canvas border border-line text-ink-dim hover:text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                 >
                   {cat === "all" ? "Todos" : cat}
                 </button>
@@ -152,7 +152,7 @@ export function SearchDialog() {
                       key={item}
                       type="button"
                       onClick={() => setQuery(item)}
-                      className="rounded-lg border border-line bg-canvas px-3 py-1.5 text-xs text-ink font-medium hover:border-accent hover:text-accent hover:bg-accent/5 transition-all active:scale-95 text-left"
+                      className="rounded-lg border border-line bg-canvas px-3 py-1.5 text-xs text-ink font-medium hover:border-accent hover:text-accent hover:bg-accent/5 transition-all active:scale-95 text-left cursor-pointer"
                     >
                       {item}
                     </button>
@@ -217,7 +217,7 @@ export function SearchDialog() {
                     </div>
                     <button
                       type="button"
-                      className="shrink-0 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent group-hover:bg-accent group-hover:text-white transition-colors"
+                      className="shrink-0 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent group-hover:bg-accent group-hover:text-white transition-colors cursor-pointer"
                     >
                       Ver trámite →
                     </button>

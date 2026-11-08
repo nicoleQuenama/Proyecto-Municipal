@@ -11,10 +11,10 @@ export function HistoryButtons() {
 
   return (
     <div role="group" aria-label="Historial" className="flex items-center gap-0.5 self-center px-2">
-      <button type="button" aria-label="Deshacer" title={`Deshacer (Ctrl+Z) · ${undoCount} ${undoCount === 1 ? "paso" : "pasos"}`} disabled={undoCount === 0} onClick={undo} className={button}>
+      <button type="button" aria-label="Deshacer" title={`Deshacer (Ctrl+Z) · ${undoCount} ${undoCount === 1 ? "paso" : "pasos"}`} disabled={undoCount === 0} onClick={undo} className={`${button} cursor-pointer`}>
         ↶
       </button>
-      <button type="button" aria-label="Rehacer" title={`Rehacer (Ctrl+Mayús+Z) · ${redoCount} ${redoCount === 1 ? "paso" : "pasos"}`} disabled={redoCount === 0} onClick={redo} className={button}>
+      <button type="button" aria-label="Rehacer" title={`Rehacer (Ctrl+Mayús+Z) · ${redoCount} ${redoCount === 1 ? "paso" : "pasos"}`} disabled={redoCount === 0} onClick={redo} className={`${button} cursor-pointer`}>
         ↷
       </button>
     </div>

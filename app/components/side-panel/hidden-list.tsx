@@ -18,7 +18,7 @@ export function HiddenList({ page }: { page: Page }) {
         <button
           type="button"
           onClick={() => dispatch({ type: "hidden/purge", pageId: page.id })}
-          className="rounded px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-red-400 normal-case hover:bg-red-500/15"
+          className="rounded px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-red-400 normal-case hover:bg-red-500/15 cursor-pointer"
         >
           Eliminar todos
         </button>
@@ -32,7 +32,7 @@ export function HiddenList({ page }: { page: Page }) {
               aria-label={`Eliminar definitivamente ${item.label}`}
               title="Eliminar definitivamente"
               onClick={() => dispatch(item.remove)}
-              className="h-6 w-6 shrink-0 rounded-md hover:bg-hover hover:text-red-400"
+              className="h-6 w-6 shrink-0 rounded-md hover:bg-hover hover:text-red-400 cursor-pointer"
             >
               ×
             </button>

@@ -79,7 +79,7 @@ function VersionsPanel() {
           type="button"
           aria-label="Cerrar"
           onClick={closeDialog}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           ×
         </button>

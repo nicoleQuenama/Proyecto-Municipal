@@ -42,7 +42,7 @@ export function ProfileDialog({ user, onClose }: { user: User; onClose: () => vo
           <button
             type="button"
             onClick={() => setShowChange(true)}
-            className="h-9 rounded-lg border border-line px-4 text-xs font-medium text-ink transition-colors hover:bg-hover"
+            className="h-9 rounded-lg border border-line px-4 text-xs font-medium text-ink transition-colors hover:bg-hover cursor-pointer"
           >
             Cambiar contraseña
           </button>
@@ -53,7 +53,7 @@ export function ProfileDialog({ user, onClose }: { user: User; onClose: () => vo
         <button
           type="button"
           onClick={onClose}
-          className="h-9 rounded-lg border border-line px-4 text-xs font-medium text-ink transition-colors hover:bg-hover"
+          className="h-9 rounded-lg border border-line px-4 text-xs font-medium text-ink transition-colors hover:bg-hover cursor-pointer"
         >
           Cerrar
         </button>

@@ -12,7 +12,7 @@ function ShareDialog({ onClose }: { onClose: () => void }) {
           <h2 className="text-base font-semibold">Compartir el proyecto</h2>
           <p className="mt-0.5 text-xs text-ink-dim">Decide quién puede trabajar aquí y qué parte del proyecto puede tocar.</p>
         </div>
-        <button type="button" aria-label="Cerrar" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" aria-label="Cerrar" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           ×
         </button>
       </header>
@@ -33,7 +33,7 @@ export function ShareButton({ className }: { className: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" title="Dar acceso a otras personas al proyecto" onClick={() => setOpen(true)} className={className}>
+      <button type="button" title="Dar acceso a otras personas al proyecto" onClick={() => setOpen(true)} className={`${className} cursor-pointer`}>
         Compartir
       </button>
       {open && <ShareDialog onClose={() => setOpen(false)} />}

@@ -53,7 +53,7 @@ export function TitleToolbar() {
         <button
           type="button"
           onClick={() => dispatch({ type: "title/removed", pageId: page.id, removed: false })}
-          className="h-7 rounded-md border border-line px-3 text-ink hover:bg-hover"
+          className="h-7 rounded-md border border-line px-3 text-ink hover:bg-hover cursor-pointer"
         >
           Añadir titular
         </button>
@@ -143,7 +143,7 @@ export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
           aria-label="Eliminar el titular"
           title="Eliminar el titular"
           onClick={() => dispatch({ type: "title/removed", pageId: page.id, removed: true })}
-          className="absolute top-1 right-1 z-20 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex"
+          className="absolute top-1 right-1 z-20 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex cursor-pointer"
         >
           ×
         </button>

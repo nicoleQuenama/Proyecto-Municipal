@@ -108,7 +108,7 @@ export function IssuesTab() {
                   onClick={() => setCustomTone(tone.value)}
                   className={`h-5 w-5 rounded-full ${tone.swatch} ${
                     customTone === tone.value ? "ring-2 ring-white ring-offset-2 ring-offset-panel" : "opacity-70 hover:opacity-100"
-                  }`}
+                  } cursor-pointer`}
                 />
               ))}
             </div>
@@ -162,7 +162,7 @@ export function IssuesTab() {
             <button
               type="button"
               onClick={() => void toggleIssue(issue.number)}
-              className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover"
+              className="h-7 rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer"
             >
               {issue.open ? "Cerrar" : "Reabrir"}
             </button>

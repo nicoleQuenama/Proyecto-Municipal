@@ -34,10 +34,10 @@ export function PosterField({ poster, onChange }: PosterFieldProps) {
       <div className="flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {poster && <img src={poster} alt="Portada" className="h-8 w-12 rounded object-cover" />}
-        <button type="button" className={button} onClick={() => input.current?.click()}>
+        <button type="button" className={`${button} cursor-pointer`} onClick={() => input.current?.click()}>
           {poster ? "Cambiar" : "Subir portada"}
         </button>
-        {poster && <button type="button" className={button} onClick={() => onChange(undefined)}>Quitar</button>}
+        {poster && <button type="button" className={`${button} cursor-pointer`} onClick={() => onChange(undefined)}>Quitar</button>}
       </div>
       <input ref={input} type="file" accept="image/*" hidden onChange={(e) => { void choose(e.target.files?.[0]); e.target.value = ""; }} />
       {error && <span role="alert" className="text-[11px] text-red-400">{error}</span>}

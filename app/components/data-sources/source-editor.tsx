@@ -43,10 +43,10 @@ export function SourceEditor({ source, onChange, onRemove }: SourceEditorProps) 
       </label>
       <CacheSelect value={source.cache} onChange={(cache) => set({ cache })} />
       <div className="flex gap-2">
-        <button type="button" onClick={reload} disabled={!source.url.trim()} className="h-8 flex-1 rounded-md bg-accent text-xs font-medium text-white hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={reload} disabled={!source.url.trim()} className="h-8 flex-1 rounded-md bg-accent text-xs font-medium text-white hover:opacity-90 disabled:opacity-50 cursor-pointer">
           {state.status === "loading" ? "Pidiendo…" : "Probar"}
         </button>
-        <button type="button" onClick={onRemove} className="h-8 rounded-md bg-hover px-3 text-xs hover:text-red-400">
+        <button type="button" onClick={onRemove} className="h-8 rounded-md bg-hover px-3 text-xs hover:text-red-400 cursor-pointer">
           Eliminar
         </button>
       </div>

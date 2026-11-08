@@ -415,7 +415,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                   isBlockLocked
                     ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
                     : "text-ink hover:bg-hover active:scale-95"
-                }`}
+                } cursor-pointer`}
               >
                 ↑
               </button>
@@ -433,7 +433,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                   isBlockLocked
                     ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
                     : "text-ink hover:bg-hover active:scale-95"
-                }`}
+                } cursor-pointer`}
               >
                 ↓
               </button>
@@ -441,6 +441,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               <PlacementGrip
                 label={def.name}
                 onStart={move.startDrag}
+                onSelect={select}
                 disabled={isBlockLocked}
                 className="relative flex"
               />
@@ -467,7 +468,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                   isBlockLocked
                     ? "bg-amber-500/25 text-amber-400 hover:bg-amber-500/35 shadow-xs"
                     : "text-ink-dim hover:text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
               >
                 {isBlockLocked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
               </button>
@@ -482,7 +483,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               title={`${def.name} está bloqueada · Clic para desbloquear`}
               className={`absolute -top-3 left-1/2 -translate-x-1/2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-amber-500/40 bg-canvas/95 text-amber-400 shadow backdrop-blur-xs transition-transform active:scale-95 ${
                 selected ? "flex" : "hidden group-hover:flex"
-              }`}
+              } cursor-pointer`}
             >
               <LockClosedIcon className="h-3.5 w-3.5" />
             </button>
@@ -490,6 +491,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
             <PlacementGrip
               label={def.name}
               onStart={move.startDrag}
+              onSelect={select}
               className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
             />
           )}
@@ -505,7 +507,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               type="button"
               aria-label={`Quitar ${def.name} de la página`}
               onClick={() => dispatch({ type: "block/remove", id: block.id })}
-              className="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex"
+              className="absolute -top-2 -right-2 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex cursor-pointer"
             >
               ×
             </button>

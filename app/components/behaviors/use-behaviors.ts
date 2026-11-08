@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useConsoleSink } from "../code/console-sink";
 import { useOrigin } from "../code/use-origin";
 import { functionsFor } from "../functions/scope";
 import { useNavigation } from "../navigation/navigation-context";
@@ -26,6 +27,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
   const { pages, libraries, functions } = useSite();
   const { followLink } = useNavigation();
   const origin = useOrigin();
+  const sink = useConsoleSink();
   const play = useAnimationPlayer(behaviors, active, ref);
   // Las acciones con retraso pendientes: se cancelan al salir, para no actuar sobre una página que ya no está.
   const timers = useRef<number[]>([]);
@@ -34,7 +36,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
   const run = useCallback(
     (trigger: TriggerKind) => {
       const element = ref.current;
-      const api = createApi({ element, blockId, pages, followLink });
+      const api = createApi({ element, blockId, pages, followLink, sink });
 
       for (const behavior of behaviors) {
         if (behavior.trigger !== trigger) continue;
@@ -54,6 +56,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
               origin,
               api,
               element,
+              sink,
               functions: functionsFor(functions, { blockId, elementId }),
             }),
         };
@@ -62,7 +65,7 @@ export function useBehaviors(blockId: string, behaviors: Behavior[], active: boo
         else fire();
       }
     },
-    [behaviors, blockId, pages, followLink, libraries, functions, origin, play],
+    [behaviors, blockId, pages, followLink, libraries, functions, origin, play, sink],
   );
 
   // Clic y cursor encima: eventos del propio elemento, según la tabla de disparadores.

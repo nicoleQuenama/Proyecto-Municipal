@@ -29,7 +29,7 @@ export function Pager({ model, onPage, accent, radius = 8 }: PagerProps) {
 
   return (
     <nav aria-label="Paginación" data-pager="" className="flex w-full flex-wrap items-center justify-center gap-1.5 py-3">
-      <button type="button" className={button} style={base} disabled={!model.hasPrev} onClick={() => onPage(model.page - 1)}>
+      <button type="button" className={`${button} cursor-pointer`} style={base} disabled={!model.hasPrev} onClick={() => onPage(model.page - 1)}>
         ‹ Anterior
       </button>
       {model.buttons.map((item, index) =>
@@ -39,7 +39,7 @@ export function Pager({ model, onPage, accent, radius = 8 }: PagerProps) {
           <button
             key={item}
             type="button"
-            className={button}
+            className={`${button} cursor-pointer`}
             style={item === model.page ? current : base}
             aria-current={item === model.page ? "page" : undefined}
             aria-label={`Página ${item}`}
@@ -50,7 +50,7 @@ export function Pager({ model, onPage, accent, radius = 8 }: PagerProps) {
         ),
       )}
       {model.buttons.length === 0 && <span className="px-2 text-sm opacity-70">Página {model.page}</span>}
-      <button type="button" className={button} style={base} disabled={!model.hasNext} onClick={() => onPage(model.page + 1)}>
+      <button type="button" className={`${button} cursor-pointer`} style={base} disabled={!model.hasNext} onClick={() => onPage(model.page + 1)}>
         Siguiente ›
       </button>
     </nav>

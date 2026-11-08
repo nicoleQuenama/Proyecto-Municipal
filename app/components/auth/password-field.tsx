@@ -30,7 +30,7 @@ export function PasswordField({ label, icon, value, autoComplete, onChange }: Pa
           onClick={() => setVisible((current) => !current)}
           aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
           title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:outline-none"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:outline-none cursor-pointer"
         >
           {visible ? <EyeOffIcon /> : <EyeIcon />}
         </button>

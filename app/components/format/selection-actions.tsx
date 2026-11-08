@@ -40,7 +40,7 @@ export function SelectionActions({ pageId, blockId, close }: { pageId: string; b
               action.run();
               close();
             }}
-            className="h-8 rounded-md px-2 text-left text-xs text-ink hover:bg-hover"
+            className="h-8 rounded-md px-2 text-left text-xs text-ink hover:bg-hover cursor-pointer"
           >
             {action.label}
           </button>
@@ -55,7 +55,7 @@ export function SelectionActions({ pageId, blockId, close }: { pageId: string; b
               action.run();
               close();
             }}
-            className="h-8 rounded-md px-2 text-left text-xs text-ink hover:bg-hover"
+            className="h-8 rounded-md px-2 text-left text-xs text-ink hover:bg-hover cursor-pointer"
           >
             {action.label}
           </button>

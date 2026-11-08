@@ -36,7 +36,7 @@ export function SectionBackground({ pageId, block }: SectionBackgroundProps) {
 
       <ColorInput label="Color o degradado de fondo" gradient value={box?.background ?? "transparent"} onChange={(background) => set({ background })} />
       {box?.background && (
-        <button type="button" onClick={() => set({ background: undefined })} className="h-7 rounded-md border border-line text-[11px] hover:bg-hover">
+        <button type="button" onClick={() => set({ background: undefined })} className="h-7 rounded-md border border-line text-[11px] hover:bg-hover cursor-pointer">
           Quitar el color de fondo
         </button>
       )}

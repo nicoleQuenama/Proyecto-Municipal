@@ -108,7 +108,7 @@ export function ComponentsTab() {
             onClick={() => setFilter(f.value)}
             className={`h-7 rounded-md px-3 text-xs transition-colors ${
               activeFilter === f.value ? "bg-accent text-white" : "bg-hover text-ink-dim hover:text-ink"
-            }`}
+            } cursor-pointer`}
           >
             {f.label}
           </button>
@@ -119,7 +119,7 @@ export function ComponentsTab() {
         <button
           type="button"
           onClick={() => openBuilder("new")}
-          className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover"
+          className="h-9 rounded-md border border-dashed border-line text-xs hover:bg-hover cursor-pointer"
         >
           + Nuevo componente
         </button>
@@ -134,7 +134,7 @@ export function ComponentsTab() {
             <button
               type="button"
               onClick={() => setFilterBySlot((v) => !v)}
-              className="text-[10px] text-accent underline hover:opacity-80 font-medium"
+              className="text-[10px] text-accent underline hover:opacity-80 font-medium cursor-pointer"
             >
               {filterBySlot ? "Ver todos" : "Solo compatibles"}
             </button>
@@ -171,7 +171,7 @@ export function ComponentsTab() {
             <button
               type="button"
               onClick={() => openBuilder("new")}
-              className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90"
+              className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 cursor-pointer"
             >
               + Nuevo componente
             </button>
@@ -186,7 +186,7 @@ export function ComponentsTab() {
         <button
           type="button"
           onClick={() => dispatch({ type: "components/restore" })}
-          className="self-start text-[11px] text-ink-dim underline-offset-2 hover:text-ink hover:underline"
+          className="self-start text-[11px] text-ink-dim underline-offset-2 hover:text-ink hover:underline cursor-pointer"
         >
           Restaurar los componentes de ejemplo
         </button>

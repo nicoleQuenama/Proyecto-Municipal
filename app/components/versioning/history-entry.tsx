@@ -26,7 +26,7 @@ export function HistoryEntry({ commit, live, showBranch }: HistoryEntryProps) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-hover"
+        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-hover cursor-pointer"
       >
         <Avatar name={commit.author} />
         <span className="min-w-0 flex-1">

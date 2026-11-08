@@ -88,7 +88,7 @@ export function VariableSelect({ kind, label, raw, literal, variables, createVar
             <button
               type="button"
               onClick={create}
-              className="h-8 shrink-0 rounded-md bg-accent px-2 text-xs text-white hover:opacity-90"
+              className="h-8 shrink-0 rounded-md bg-accent px-2 text-xs text-white hover:opacity-90 cursor-pointer"
             >
               Crear
             </button>

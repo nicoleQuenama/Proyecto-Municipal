@@ -43,7 +43,7 @@ export function StyleField({ prop, raw, inherited, variables, resolve, onChange,
             aria-label={`Quitar ${label} (volver a heredar)`}
             title="Quitar: vuelve a heredar"
             onClick={() => onChange(null)}
-            className="flex h-5 w-5 items-center justify-center rounded hover:bg-hover hover:text-ink"
+            className="flex h-5 w-5 items-center justify-center rounded hover:bg-hover hover:text-ink cursor-pointer"
           >
             ×
           </button>

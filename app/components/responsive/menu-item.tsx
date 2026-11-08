@@ -99,7 +99,7 @@ export function MenuItem({ element, blockId, link, behaviors, live, background, 
         disabled={!interactive}
         onClick={activate}
         {...(live ? { onPointerEnter: props.onPointerEnter } : {})}
-        className="flex w-full items-center px-1 py-3 text-left text-base transition-opacity enabled:cursor-pointer enabled:hover:opacity-70 focus-visible:outline-2 focus-visible:outline-accent"
+        className="flex w-full items-center px-1 py-3 text-left text-base transition-opacity disabled:cursor-default enabled:hover:opacity-70 focus-visible:outline-2 focus-visible:outline-accent cursor-pointer"
         style={{ color: panelText(background, element.color, color), fontFamily: element.fontFamily || undefined, fontWeight: element.bold ? 700 : 400 }}
       >
         {CONTENT[element.kind](element)}

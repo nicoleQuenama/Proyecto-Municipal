@@ -58,7 +58,7 @@ export function MenuPanelView({ kind, background, color, opener, onClose, childr
           type="button"
           aria-label="Cerrar el menú"
           onClick={onClose}
-          className="mb-2 ml-auto flex h-10 w-10 items-center justify-center rounded-full hover:bg-black/10"
+          className="mb-2 ml-auto flex h-10 w-10 items-center justify-center rounded-full hover:bg-black/10 cursor-pointer"
         >
           <IconGlyph name="close" size={24} />
         </button>

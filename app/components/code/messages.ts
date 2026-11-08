@@ -17,6 +17,8 @@ export interface ConsoleEntry {
   level: ConsoleLevel;
   text: string;
   at: number;
+  /** De qué código viene («Página», «Interacción», «Vista previa»…). */
+  source?: string;
 }
 
 export interface ElementPick {

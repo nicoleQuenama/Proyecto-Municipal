@@ -34,7 +34,7 @@ export function RemoveButton({ page }: { page: Page }) {
         type="button"
         onClick={() => dispatch(action)}
         title="Atajo: Supr"
-        className="h-9 rounded-md border border-red-500/60 text-xs font-medium text-red-400 hover:bg-red-500/15"
+        className="h-9 rounded-md border border-red-500/60 text-xs font-medium text-red-400 hover:bg-red-500/15 cursor-pointer"
       >
         {label}
       </button>

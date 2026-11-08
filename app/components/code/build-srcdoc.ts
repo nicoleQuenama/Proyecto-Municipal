@@ -88,24 +88,43 @@ const INSPECTOR_BRIDGE = `
     }
     return element;
   };
-  const saved = new Map();
+  // El resaltado son cajas superpuestas (no cambian el estilo del elemento): se dibujan sobre él con su etiqueta.
+  const layer = document.createElement("div");
+  layer.style.cssText = "position:absolute;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none";
+  document.documentElement.appendChild(layer);
   let marked = [];
-  const paint = (element, kind) => {
-    if (!element) return;
-    if (!saved.has(element)) saved.set(element, { outline: element.style.outline, offset: element.style.outlineOffset });
-    if (!kind) {
-      const base = saved.get(element);
-      element.style.outline = base.outline;
-      element.style.outlineOffset = base.offset;
-      return;
+  let markedKind = "hover";
+  const labelOf = (element) => {
+    const cls = typeof element.className === "string" ? element.className.trim().split(/\\s+/).filter(Boolean).slice(0, 2).join(".") : "";
+    return element.tagName.toLowerCase() + (element.id ? "#" + element.id : "") + (cls ? "." + cls : "");
+  };
+  const render = () => {
+    layer.textContent = "";
+    for (const element of marked) {
+      const rect = element.getBoundingClientRect();
+      const box = document.createElement("div");
+      const solid = markedKind === "select";
+      box.style.cssText =
+        "position:absolute;box-sizing:border-box;border-radius:2px;" +
+        "left:" + (rect.left + scrollX) + "px;top:" + (rect.top + scrollY) + "px;width:" + rect.width + "px;height:" + rect.height + "px;" +
+        "outline:2px " + (solid ? "solid" : "dashed") + " #6366f1;outline-offset:-1px;background:rgba(99,102,241," + (solid ? "0.22" : "0.16") + ")";
+      const tag = document.createElement("span");
+      tag.textContent = labelOf(element) + " · " + Math.round(rect.width) + "×" + Math.round(rect.height);
+      tag.style.cssText =
+        "position:absolute;left:0;bottom:100%;white-space:nowrap;font:600 10px/1 ui-monospace,monospace;color:#fff;background:#6366f1;padding:2px 5px;border-radius:3px 3px 0 0";
+      if (rect.top + scrollY < 16) tag.style.cssText += ";bottom:auto;top:0";
+      box.appendChild(tag);
+      layer.appendChild(box);
     }
-    element.style.setProperty("outline", kind === "select" ? "2px solid #6366f1" : "2px dashed #6366f1", "important");
-    element.style.setProperty("outline-offset", "2px", "important");
   };
-  const unpaint = () => {
-    for (const element of marked) paint(element, null);
-    marked = [];
+  const show = (elements, kind) => {
+    marked = elements;
+    markedKind = kind;
+    render();
   };
+  const unpaint = () => show([], "hover");
+  new ResizeObserver(render).observe(document.documentElement);
+  addEventListener("scroll", render, true);
   let hovered = null;
   const notify = (action, element) => {
     parent.postMessage({
@@ -130,7 +149,7 @@ const INSPECTOR_BRIDGE = `
   document.addEventListener("click", (event) => {
     const element = event.target instanceof Element && event.target !== document.body ? event.target : null;
     if (!element) return;
-    paint(element, "select");
+    show([element], "select");
     notify("select", element);
   }, true);
   addEventListener("message", (event) => {
@@ -143,13 +162,14 @@ const INSPECTOR_BRIDGE = `
     if (data.selector) {
       let matches = [];
       try { matches = Array.from(document.querySelectorAll(data.selector)); } catch {}
-      for (const element of matches) paint(element, kind);
-      marked = matches;
+      show(matches, kind);
       return;
     }
     if (data.path) {
       const element = find(data.path);
-      if (element) { paint(element, kind); marked = [element]; }
+      if (element) {
+        show([element], kind);
+      }
     }
   });
 })();

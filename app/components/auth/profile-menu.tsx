@@ -41,7 +41,7 @@ export function ProfileMenu() {
         aria-expanded={open}
         title={`${currentUser.name} · ${ROLE_LABELS[currentUser.role]}`}
         onClick={() => setOpen((value) => !value)}
-        className="group flex items-center gap-1 rounded-full p-0.5 pr-1 transition-colors hover:bg-hover"
+        className="group flex items-center gap-1 rounded-full p-0.5 pr-1 transition-colors hover:bg-hover cursor-pointer"
       >
         <Avatar user={currentUser} />
         <span className="text-ink-dim transition-colors group-hover:text-ink">
@@ -71,7 +71,7 @@ export function ProfileMenu() {
                 setOpen(false);
                 setProfileOpen(true);
               }}
-              className="flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-xs text-ink transition-colors hover:bg-hover"
+              className="flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-xs text-ink transition-colors hover:bg-hover cursor-pointer"
             >
               <UserIcon />
               Ver perfil
@@ -81,7 +81,7 @@ export function ProfileMenu() {
               role="menuitem"
               disabled={pending}
               onClick={handleLogout}
-              className="flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-xs text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+              className="flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-xs text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50 cursor-pointer"
             >
               <LogoutIcon />
               {pending ? "Cerrando sesión…" : "Cerrar sesión"}

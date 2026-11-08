@@ -19,7 +19,7 @@ export function SkillTab() {
             role="radio"
             aria-checked={tool === id}
             onClick={() => setTool(id)}
-            className={`h-8 rounded-md border px-3 text-xs ${tool === id ? "border-accent bg-accent/10 text-accent" : "border-line hover:bg-hover"}`}
+            className={`h-8 rounded-md border px-3 text-xs ${tool === id ? "border-accent bg-accent/10 text-accent" : "border-line hover:bg-hover"} cursor-pointer`}
           >
             {TOOLS[id].label}
           </button>

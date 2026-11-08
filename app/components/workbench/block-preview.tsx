@@ -2,12 +2,13 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { CodeFrame } from "../code/code-frame";
-import type { ConsoleEntry, ElementHighlight, ElementPick } from "../code/messages";
+import type { ElementHighlight, ElementPick } from "../code/messages";
 import { useSharedAssets } from "../code/use-shared-assets";
 import { useSite } from "../site/site-context";
 import type { CodeSource } from "../site/types";
-import { ConsolePanel } from "./console-panel";
 import type { FileRef } from "./file-ref";
+import { usePreviewZoom } from "./use-preview-zoom";
+import { ZoomBar } from "./zoom-bar";
 import { buildSourceMap, nodeAtLine, selectorAtLine } from "./source-map";
 
 type BlockFile = Extract<FileRef, { blockId: string }>;
@@ -26,7 +27,7 @@ const FIELD: Partial<Record<BlockFile["kind"], keyof Pick<CodeSource, "html" | "
 };
 
 /**
- * La vista previa de un bloque de código, con su consola debajo. Al pasar por una línea del editor se resalta
+ * La vista previa de un bloque de código (su consola está en el panel de abajo del editor). Al pasar por una línea del editor se resalta
  * el elemento que dibuja, y al pulsar un elemento de la vista se muestran sus líneas de HTML.
  */
 export function BlockPreview({
@@ -42,8 +43,10 @@ export function BlockPreview({
   const shared = useSharedAssets(file.blockId);
   const block = pages.find((page) => page.id === file.pageId)?.blocks.find((item) => item.id === file.blockId);
 
-  const [entries, setEntries] = useState<ConsoleEntry[]>([]);
   const [peek, setPeek] = useState<{ tag: string; html: string } | null>(null);
+
+  // Un bloque se ve a tamaño real (100%) hasta que se acerque o se aleje.
+  const zoom = usePreviewZoom(1);
 
   const sourceMap = useMemo(() => buildSourceMap(block?.code?.html ?? ""), [block?.code?.html]);
   const field = FIELD[file.kind];
@@ -60,10 +63,6 @@ export function BlockPreview({
     }
     return null;
   }, [hoverLine, file.kind, sourceMap, block]);
-
-  const handleConsole = useCallback((entry: ConsoleEntry) => {
-    setEntries((current) => [...current.slice(-199), entry]);
-  }, []);
 
   const handleElement = useCallback(
     (event: ElementPick) => {
@@ -87,19 +86,21 @@ export function BlockPreview({
 
   return (
     <aside aria-label="Vista previa" className="flex w-[40%] min-w-72 flex-col border-l border-line bg-white">
-      <p className="border-b border-neutral-200 px-3 py-1.5 text-[11px] text-neutral-500">
-        Vista previa en vivo · pasa por una línea para resaltarla, pulsa un elemento para ver su código
-      </p>
+      <div className="flex items-center gap-2 border-b border-neutral-200 px-3 py-1 text-[11px] text-neutral-500">
+        <span className="truncate">Vista previa en vivo</span>
+        <ZoomBar zoom={zoom} />
+      </div>
       <div className="min-h-0 flex-1 overflow-auto">
+        <div style={{ zoom: zoom.zoom }}>
         <CodeFrame
           code={code}
           libraries={libraries}
           shared={shared}
           title="Vista previa del código"
-          onConsole={handleConsole}
           onElement={handleElement}
           highlight={highlight}
         />
+        </div>
       </div>
 
       {peek && (
@@ -112,7 +113,7 @@ export function BlockPreview({
                 setPeek(null);
                 onPick(null);
               }}
-              className="ml-auto rounded px-1.5 text-xs text-ink-dim hover:bg-hover hover:text-ink"
+              className="ml-auto rounded px-1.5 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
             >
               ×
             </button>
@@ -120,8 +121,6 @@ export function BlockPreview({
           <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-ink-dim">{peek.html}</pre>
         </div>
       )}
-
-      <ConsolePanel entries={entries} onClear={() => setEntries([])} />
     </aside>
   );
 }

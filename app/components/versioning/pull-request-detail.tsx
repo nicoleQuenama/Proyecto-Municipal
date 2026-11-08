@@ -48,7 +48,7 @@ export function PullRequestDetail({ pr }: { pr: PullRequest }) {
           <button
             type="button"
             onClick={() => void deleteBranch(pr.from)}
-            className="h-7 shrink-0 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15"
+            className="h-7 shrink-0 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15 cursor-pointer"
           >
             Eliminar rama
           </button>

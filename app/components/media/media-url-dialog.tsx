@@ -81,14 +81,14 @@ function UrlForm({ kind }: { kind: UrlDialog }) {
         <button
           type="button"
           onClick={closeDialog}
-          className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink"
+          className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={!value.trim()}
-          className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40"
+          className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40 cursor-pointer"
         >
           Insertar
         </button>

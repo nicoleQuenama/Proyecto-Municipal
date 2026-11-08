@@ -364,7 +364,7 @@ export function MediaTab() {
           type="button"
           disabled={!canEdit}
           onClick={handleOpenUploadModal}
-          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent text-xs font-semibold text-white shadow-xs transition-all hover:bg-accent/90 active:scale-95 disabled:opacity-50"
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent text-xs font-semibold text-white shadow-xs transition-all hover:bg-accent/90 active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M8 3v10M3 8h10" />
@@ -376,7 +376,7 @@ export function MediaTab() {
           type="button"
           disabled={!canEdit}
           onClick={() => setUrlModalOpen(true)}
-          className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-canvas/60 text-xs font-medium text-ink transition-colors hover:bg-hover active:scale-95 disabled:opacity-50"
+          className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-canvas/60 text-xs font-medium text-ink transition-colors hover:bg-hover active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-dim">
             <path d="M6.5 9.5a3 3 0 004.2 0l2.1-2.1a3 3 0 00-4.2-4.2L7.5 4.3" />
@@ -412,7 +412,7 @@ export function MediaTab() {
             <button
               type="button"
               onClick={() => setUrlModalOpen(false)}
-              className="text-ink-dim hover:text-ink text-sm font-bold"
+              className="text-ink-dim hover:text-ink text-sm font-bold cursor-pointer"
             >
               ✕
             </button>
@@ -423,7 +423,7 @@ export function MediaTab() {
               onClick={() => setUrlKind("image")}
               className={`flex-1 rounded py-1 text-[11px] font-medium ${
                 urlKind === "image" ? "bg-accent text-white" : "text-ink-dim hover:text-ink"
-              }`}
+              } cursor-pointer`}
             >
               Imagen
             </button>
@@ -432,7 +432,7 @@ export function MediaTab() {
               onClick={() => setUrlKind("video")}
               className={`flex-1 rounded py-1 text-[11px] font-medium ${
                 urlKind === "video" ? "bg-accent text-white" : "text-ink-dim hover:text-ink"
-              }`}
+              } cursor-pointer`}
             >
               Video
             </button>
@@ -462,7 +462,7 @@ export function MediaTab() {
             <button
               type="button"
               onClick={() => setUrlModalOpen(false)}
-              className="rounded px-2.5 py-1 text-xs text-ink-dim hover:text-ink"
+              className="rounded px-2.5 py-1 text-xs text-ink-dim hover:text-ink cursor-pointer"
             >
               Cancelar
             </button>
@@ -470,7 +470,7 @@ export function MediaTab() {
               type="button"
               onClick={handleAddByUrl}
               disabled={!urlInput.trim()}
-              className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+              className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50 cursor-pointer"
             >
               Guardar en Media
             </button>
@@ -496,7 +496,7 @@ export function MediaTab() {
           <button
             type="button"
             onClick={() => setQuery("")}
-            className="text-xs text-ink-dim hover:text-ink font-bold"
+            className="text-xs text-ink-dim hover:text-ink font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -510,7 +510,7 @@ export function MediaTab() {
           onClick={() => setFilter("all")}
           className={`flex-1 rounded-md py-1 text-[11px] font-medium transition-all ${
             filter === "all" ? "bg-accent text-white shadow-xs" : "text-ink-dim hover:text-ink"
-          }`}
+          } cursor-pointer`}
         >
           Todos
         </button>
@@ -519,7 +519,7 @@ export function MediaTab() {
           onClick={() => setFilter("image")}
           className={`flex-1 rounded-md py-1 text-[11px] font-medium transition-all ${
             filter === "image" ? "bg-accent text-white shadow-xs" : "text-ink-dim hover:text-ink"
-          }`}
+          } cursor-pointer`}
         >
           Imágenes
         </button>
@@ -528,7 +528,7 @@ export function MediaTab() {
           onClick={() => setFilter("video")}
           className={`flex-1 rounded-md py-1 text-[11px] font-medium transition-all ${
             filter === "video" ? "bg-accent text-white shadow-xs" : "text-ink-dim hover:text-ink"
-          }`}
+          } cursor-pointer`}
         >
           Videos
         </button>
@@ -542,7 +542,7 @@ export function MediaTab() {
             <button
               type="button"
               onClick={() => setSelectedTag(null)}
-              className="text-accent hover:underline font-medium lowercase"
+              className="text-accent hover:underline font-medium lowercase cursor-pointer"
             >
               ver todas
             </button>
@@ -556,7 +556,7 @@ export function MediaTab() {
               selectedTag === null
                 ? "bg-accent text-white shadow-xs"
                 : "border border-line bg-canvas text-ink hover:bg-hover"
-            }`}
+            } cursor-pointer`}
           >
             Todas
           </button>
@@ -571,7 +571,7 @@ export function MediaTab() {
                   active
                     ? "bg-accent text-white shadow-xs"
                     : "border border-line bg-canvas text-ink hover:bg-hover hover:border-accent/40"
-                }`}
+                } cursor-pointer`}
               >
                 #{tag}
               </button>
@@ -655,7 +655,7 @@ export function MediaTab() {
                             handleApplyToSelection(item);
                           }}
                           title={site.selectedElementId ? "Aplicar a elemento seleccionado" : "Insertar en lienzo"}
-                          className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90"
+                          className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
                         >
                           {site.selectedElementId ? "Reemplazar" : "Insertar"}
                         </button>
@@ -668,7 +668,7 @@ export function MediaTab() {
                               handleSetAsPageBackground(item);
                             }}
                             title="Usar como fondo de página"
-                            className="rounded bg-white/20 p-1 text-[10px] text-white hover:bg-white/40"
+                            className="rounded bg-white/20 p-1 text-[10px] text-white hover:bg-white/40 cursor-pointer"
                           >
                             Fondo
                           </button>
@@ -682,7 +682,7 @@ export function MediaTab() {
                               handleRequestDelete(item);
                             }}
                             title="Eliminar de forma segura de la biblioteca"
-                            className="rounded bg-red-500/80 p-1 text-[10px] text-white hover:bg-red-500"
+                            className="rounded bg-red-500/80 p-1 text-[10px] text-white hover:bg-red-500 cursor-pointer"
                           >
                             ✕
                           </button>
@@ -724,7 +724,7 @@ export function MediaTab() {
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink text-sm font-bold"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink text-sm font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -758,7 +758,7 @@ export function MediaTab() {
                         uploadTag.toLowerCase() === st.toLowerCase()
                           ? "bg-accent text-white"
                           : "bg-canvas border border-line text-ink-dim hover:text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       {st}
                     </button>
@@ -806,7 +806,7 @@ export function MediaTab() {
                             handleApplyToSelection(match);
                             setUploadModalOpen(false);
                           }}
-                          className="w-full bg-accent py-1 text-[10px] font-semibold text-white hover:bg-accent/90"
+                          className="w-full bg-accent py-1 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
                         >
                           Usar esta foto
                         </button>
@@ -834,7 +834,7 @@ export function MediaTab() {
                   <button
                     type="button"
                     onClick={() => modalFileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center rounded-xl border border-dashed border-line bg-canvas/40 py-6 text-center hover:border-accent hover:bg-accent/5 transition-all"
+                    className="flex flex-col items-center justify-center rounded-xl border border-dashed border-line bg-canvas/40 py-6 text-center hover:border-accent hover:bg-accent/5 transition-all cursor-pointer"
                   >
                     <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-accent mb-1.5">
                       <path d="M8 3v10M3 8h10" />
@@ -864,7 +864,7 @@ export function MediaTab() {
                         setPendingFile(null);
                         setPendingPreviewUrl(null);
                       }}
-                      className="rounded p-1 text-ink-dim hover:text-red-500 font-bold"
+                      className="rounded p-1 text-ink-dim hover:text-red-500 font-bold cursor-pointer"
                       title="Quitar archivo"
                     >
                       ✕
@@ -893,7 +893,7 @@ export function MediaTab() {
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(false)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-hover hover:text-ink"
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
               >
                 Cancelar
               </button>
@@ -901,7 +901,7 @@ export function MediaTab() {
                 type="button"
                 disabled={!pendingFile || !pendingPreviewUrl}
                 onClick={handleCommitUploadModal}
-                className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50 cursor-pointer"
               >
                 Subir y registrar con etiqueta
               </button>
@@ -930,7 +930,7 @@ export function MediaTab() {
                   setDeleteTarget(null);
                   setDeleteUsages([]);
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink text-sm font-bold"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink text-sm font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -995,7 +995,7 @@ export function MediaTab() {
                                 selected
                                   ? "border-accent ring-2 ring-accent bg-accent/10"
                                   : "border-line bg-canvas hover:border-ink/30"
-                              }`}
+                              } cursor-pointer`}
                             >
                               <div className="aspect-4/3 w-full bg-slate-900">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1021,7 +1021,7 @@ export function MediaTab() {
                   setDeleteTarget(null);
                   setDeleteUsages([]);
                 }}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-hover hover:text-ink"
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
               >
                 Cancelar y conservar
               </button>
@@ -1030,7 +1030,7 @@ export function MediaTab() {
                 <button
                   type="button"
                   onClick={handleConfirmDirectDelete}
-                  className="rounded-lg bg-red-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-red-700"
+                  className="rounded-lg bg-red-600 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-red-700 cursor-pointer"
                 >
                   Eliminar archivo
                 </button>
@@ -1039,7 +1039,7 @@ export function MediaTab() {
                   type="button"
                   disabled={!replacementAssetId}
                   onClick={handleConfirmReplacementAndDelete}
-                  className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50"
+                  className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50 cursor-pointer"
                 >
                   Reemplazar en páginas y eliminar
                 </button>

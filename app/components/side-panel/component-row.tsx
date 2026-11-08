@@ -45,14 +45,14 @@ export function ComponentRow({
           <button
             type="button"
             onClick={onDelete}
-            className="h-7 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15"
+            className="h-7 rounded-md border border-red-500/60 px-3 text-xs text-red-400 hover:bg-red-500/15 cursor-pointer"
           >
             Eliminar
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="h-7 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink"
+            className="h-7 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
           >
             Cancelar
           </button>
@@ -78,9 +78,9 @@ export function ComponentRow({
         <p className="truncate text-xs text-ink-dim">{def.description}</p>
       </div>
 
-      <button type="button" aria-label={`Editar ${def.name}`} title="Editar en el constructor" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex`}>✎</button>
-      <button type="button" aria-label={`Duplicar ${def.name}`} title="Duplicar componente" onClick={onDuplicate} className={`${rowButton} hidden group-hover:flex focus:flex`}>⧉</button>
-      <button type="button" aria-label={`Eliminar ${def.name}`} title="Eliminar" onClick={() => setConfirming(true)} className={`${rowButton} hidden hover:text-red-400 group-hover:flex focus:flex`}>×</button>
+      <button type="button" aria-label={`Editar ${def.name}`} title="Editar en el constructor" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>✎</button>
+      <button type="button" aria-label={`Duplicar ${def.name}`} title="Duplicar componente" onClick={onDuplicate} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>⧉</button>
+      <button type="button" aria-label={`Eliminar ${def.name}`} title="Eliminar" onClick={() => setConfirming(true)} className={`${rowButton} hidden hover:text-red-400 group-hover:flex focus:flex cursor-pointer`}>×</button>
 
       <button
         type="button"
@@ -92,7 +92,7 @@ export function ComponentRow({
           disabled
             ? "cursor-not-allowed opacity-30 text-ink-dim"
             : "text-ink-dim hover:bg-accent hover:text-white"
-        }`}
+        } cursor-pointer`}
       >
         +
       </button>

@@ -22,8 +22,8 @@ export function StudioHeader({ animations, animation, onSelect, onRename, onDele
         ))}
       </select>
       <input aria-label="Nombre de la animación" value={animation.name} onChange={(e) => onRename(e.target.value)} className={`${field} w-56`} />
-      <button type="button" onClick={onDelete} className="ml-auto h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover">Eliminar animación</button>
-      <button type="button" onClick={onClose} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white">Listo</button>
+      <button type="button" onClick={onDelete} className="ml-auto h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover cursor-pointer">Eliminar animación</button>
+      <button type="button" onClick={onClose} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white cursor-pointer">Listo</button>
     </header>
   );
 }

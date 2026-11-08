@@ -51,7 +51,7 @@ function SendForReview() {
           ))}
         </ul>
       )}
-      <button type="button" disabled={blockers.length > 0 || busy} onClick={send} className="h-9 self-start rounded-md bg-accent px-4 text-xs font-medium text-white disabled:opacity-40">
+      <button type="button" disabled={blockers.length > 0 || busy} onClick={send} className="h-9 self-start rounded-md bg-accent px-4 text-xs font-medium text-white disabled:opacity-40 cursor-pointer">
         {busy ? "Enviando…" : "Publicar (enviar a revisión)"}
       </button>
       {sent && (
@@ -105,10 +105,10 @@ export function PublishPanel() {
       {confirming ? (
         <div role="alertdialog" aria-label="Confirmar publicación" className="flex flex-wrap items-center gap-2">
           <p className="w-full text-xs">Esto cambia lo que ven los visitantes. ¿Publicar ahora?</p>
-          <button type="button" onClick={confirm} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white">
+          <button type="button" onClick={confirm} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white cursor-pointer">
             Sí, publicar
           </button>
-          <button type="button" onClick={() => setConfirming(false)} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink">
+          <button type="button" onClick={() => setConfirming(false)} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
             Cancelar
           </button>
         </div>
@@ -117,7 +117,7 @@ export function PublishPanel() {
           type="button"
           disabled={blockers.length > 0 || busy}
           onClick={() => setConfirming(true)}
-          className="h-9 self-start rounded-md bg-accent px-4 text-xs font-medium text-white disabled:opacity-40"
+          className="h-9 self-start rounded-md bg-accent px-4 text-xs font-medium text-white disabled:opacity-40 cursor-pointer"
         >
           {busy ? "Publicando…" : "Publicar"}
         </button>

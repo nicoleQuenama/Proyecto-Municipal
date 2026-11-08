@@ -73,7 +73,7 @@ function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
       className={`pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-2 text-sm shadow-2xl ${TONES[item.tone]}`}
     >
       <span>{item.message}</span>
-      <button type="button" aria-label="Cerrar aviso" onClick={() => onDismiss(item.id)} className="text-ink-dim hover:text-ink">
+      <button type="button" aria-label="Cerrar aviso" onClick={() => onDismiss(item.id)} className="text-ink-dim hover:text-ink cursor-pointer">
         ×
       </button>
     </div>

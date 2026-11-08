@@ -44,7 +44,7 @@ export function LoginFields({
             onClick={onTogglePassword}
             aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:outline-none"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:outline-none cursor-pointer"
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
           </button>

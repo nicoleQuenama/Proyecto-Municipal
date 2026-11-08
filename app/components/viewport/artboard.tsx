@@ -283,7 +283,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
               <button
                 type="button"
                 onClick={select}
-                className={`min-w-0 truncate rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""}`}
+                className={`min-w-0 truncate rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""} cursor-pointer`}
               >
                 {page.name} · {routeOf(page)}
               </button>
@@ -299,7 +299,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
                   select();
                   setFocusMode(true);
                 }}
-                className="flex shrink-0 items-center gap-1 rounded bg-panel border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors"
+                className="flex shrink-0 items-center gap-1 rounded bg-panel border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors cursor-pointer"
               >
                 Enfocar
               </button>
@@ -313,7 +313,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
                 <button
                   type="button"
                   onClick={() => setFocusMode(false)}
-                  className="flex items-center gap-1.5 rounded-md bg-panel border border-line px-2.5 py-1 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors"
+                  className="flex items-center gap-1.5 rounded-md bg-panel border border-line px-2.5 py-1 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors cursor-pointer"
                   title="Volver a la vista con todas las páginas en mosaico"
                 >
                   Ver todas las páginas

@@ -67,7 +67,7 @@ export function CommentLayer({ page }: { page: Page }) {
             type="button"
             aria-label={`Comentario de ${note.author}`}
             onClick={() => setOpen(open === note.id ? null : note.id)}
-            className={`flex h-7 w-7 -translate-x-1/2 -translate-y-full items-center justify-center rounded-full rounded-bl-none border-2 border-white text-[11px] font-semibold text-white shadow-lg ${note.resolved ? "bg-slate-500" : note.audience === "private" ? "bg-amber-500" : "bg-accent"}`}
+            className={`flex h-7 w-7 -translate-x-1/2 -translate-y-full items-center justify-center rounded-full rounded-bl-none border-2 border-white text-[11px] font-semibold text-white shadow-lg ${note.resolved ? "bg-slate-500" : note.audience === "private" ? "bg-amber-500" : "bg-accent"} cursor-pointer`}
           >
             {index + 1}
           </button>
@@ -82,12 +82,12 @@ export function CommentLayer({ page }: { page: Page }) {
                 <button
                   type="button"
                   onClick={() => dispatch({ type: "comment/resolve", id: note.id, resolved: !note.resolved })}
-                  className="h-7 rounded-md border border-line px-2 hover:bg-hover"
+                  className="h-7 rounded-md border border-line px-2 hover:bg-hover cursor-pointer"
                 >
                   {note.resolved ? "Reabrir" : "Resolver"}
                 </button>
                 {canRemoveComment(note, viewer) && (
-                  <button type="button" onClick={() => dispatch({ type: "comment/remove", id: note.id })} className="h-7 rounded-md px-2 text-red-400 hover:bg-hover">
+                  <button type="button" onClick={() => dispatch({ type: "comment/remove", id: note.id })} className="h-7 rounded-md px-2 text-red-400 hover:bg-hover cursor-pointer">
                     Borrar
                   </button>
                 )}
@@ -117,10 +117,10 @@ export function CommentLayer({ page }: { page: Page }) {
             <option value="private">Solo para mí</option>
           </select>
           <div className="flex gap-2">
-            <button type="button" onClick={save} disabled={!text.trim()} className="h-8 rounded-md bg-accent px-3 text-white disabled:opacity-40">
+            <button type="button" onClick={save} disabled={!text.trim()} className="h-8 rounded-md bg-accent px-3 text-white disabled:opacity-40 cursor-pointer">
               Comentar
             </button>
-            <button type="button" onClick={() => setDraft(null)} className="h-8 rounded-md border border-line px-3 hover:bg-hover">
+            <button type="button" onClick={() => setDraft(null)} className="h-8 rounded-md border border-line px-3 hover:bg-hover cursor-pointer">
               Cancelar
             </button>
           </div>

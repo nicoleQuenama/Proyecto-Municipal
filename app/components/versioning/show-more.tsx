@@ -8,7 +8,7 @@ export function ShowMore({ remaining, onClick }: { remaining: number; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="h-8 w-full rounded-md text-xs text-ink-dim hover:bg-hover hover:text-ink"
+      className="h-8 w-full rounded-md text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
     >
       Mostrar {remaining} más
     </button>

@@ -13,7 +13,7 @@ export function PresetGrid({ value, onPick }: { value: PresetId; onPick: (id: Pr
           onClick={() => onPick(id)}
           className={`flex h-16 flex-col items-center justify-center gap-1 rounded-lg border px-1 text-center transition-colors ${
             id === value ? "border-accent bg-accent/15 text-accent" : "border-line text-ink hover:bg-hover"
-          }`}
+          } cursor-pointer`}
         >
           <span aria-hidden className="text-lg leading-none">{PRESETS[id].icon}</span>
           <span className="text-[10px] leading-tight">{PRESETS[id].label}</span>

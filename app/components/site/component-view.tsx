@@ -442,7 +442,7 @@ function PositionedElement({
                     e.stopPropagation();
                     interaction.onReorderFlow?.(element.id, -1);
                   }}
-                  className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+                  className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95 cursor-pointer"
                 >
                   {(interaction.classes[SECTION_KEY] || "").includes("flex-col") || Boolean(element.parentId) ? "↑" : "←"}
                 </button>
@@ -454,7 +454,7 @@ function PositionedElement({
                     e.stopPropagation();
                     interaction.onReorderFlow?.(element.id, 1);
                   }}
-                  className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95"
+                  className="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-ink hover:bg-hover active:scale-95 cursor-pointer"
                 >
                   {(interaction.classes[SECTION_KEY] || "").includes("flex-col") || Boolean(element.parentId) ? "↓" : "→"}
                 </button>
@@ -470,7 +470,7 @@ function PositionedElement({
                   e.stopPropagation();
                   interaction.onDuplicateCard?.(element.id);
                 }}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:bg-accent/15 active:scale-95"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:bg-accent/15 active:scale-95 cursor-pointer"
               >
                 <span>⎘</span> Duplicar
               </button>
@@ -484,7 +484,7 @@ function PositionedElement({
                   e.stopPropagation();
                   interaction.onAddCard?.();
                 }}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/15 active:scale-95"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/15 active:scale-95 cursor-pointer"
               >
                 <span>+</span> {interaction.addCardLabel ?? "Tarjeta"}
               </button>
@@ -498,7 +498,7 @@ function PositionedElement({
                   e.stopPropagation();
                   interaction.onDeleteCard?.(element.id);
                 }}
-                className="flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold text-red-500 hover:bg-red-500/15 active:scale-95"
+                className="flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold text-red-500 hover:bg-red-500/15 active:scale-95 cursor-pointer"
               >
                 ✕
               </button>

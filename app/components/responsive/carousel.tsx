@@ -46,10 +46,10 @@ export function Carousel({ fold, available, gap = DEFAULT_GAP, children }: Carou
       </div>
       {fold.arrows && children.length > 1 && (
         <>
-          <button type="button" aria-label="Anterior" disabled={active === 0} onClick={() => goTo(active - 1)} className={`${arrow} left-1 disabled:opacity-30`}>
+          <button type="button" aria-label="Anterior" disabled={active === 0} onClick={() => goTo(active - 1)} className={`${arrow} left-1 disabled:opacity-30 cursor-pointer`}>
             <IconGlyph name="chevron-left" size={20} />
           </button>
-          <button type="button" aria-label="Siguiente" disabled={active >= children.length - 1} onClick={() => goTo(active + 1)} className={`${arrow} right-1 disabled:opacity-30`}>
+          <button type="button" aria-label="Siguiente" disabled={active >= children.length - 1} onClick={() => goTo(active + 1)} className={`${arrow} right-1 disabled:opacity-30 cursor-pointer`}>
             <IconGlyph name="chevron-right" size={20} />
           </button>
         </>
@@ -63,7 +63,7 @@ export function Carousel({ fold, available, gap = DEFAULT_GAP, children }: Carou
               aria-label={`Tarjeta ${index + 1}`}
               aria-current={index === active}
               onClick={() => goTo(index)}
-              className={`h-2 rounded-full transition-all ${index === active ? "w-5 bg-neutral-800" : "w-2 bg-neutral-400"}`}
+              className={`h-2 rounded-full transition-all ${index === active ? "w-5 bg-neutral-800" : "w-2 bg-neutral-400"} cursor-pointer`}
             />
           ))}
         </div>

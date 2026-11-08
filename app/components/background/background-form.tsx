@@ -35,7 +35,7 @@ export function BackgroundForm({ value, onChange }: BackgroundFormProps) {
           <button
             type="button"
             onClick={() => onChange(undefined)}
-            className="h-8 rounded-md border border-line text-xs text-red-400 hover:bg-red-500/15"
+            className="h-8 rounded-md border border-line text-xs text-red-400 hover:bg-red-500/15 cursor-pointer"
           >
             Quitar el fondo de imagen o video
           </button>

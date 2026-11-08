@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CodeSource, Library } from "../site/types";
+import { useConsoleSink } from "./console-sink";
 import { buildSrcDoc, type SharedAssets } from "./build-srcdoc";
 import {
   CLEAR_MESSAGE,
@@ -48,15 +49,16 @@ export function CodeFrame({
   highlight,
 }: CodeFrameProps) {
   const origin = useOrigin();
+  const sink = useConsoleSink();
   const ref = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(minHeight);
   const srcDoc = useMemo(() => buildSrcDoc(code, libraries, origin, shared), [code, libraries, origin, shared]);
 
   // Los avisos llegan del iframe y se reparten a quien los pida, sin volver a suscribirse en cada edición.
-  const listeners = useRef({ onConsole, onElement });
+  const listeners = useRef({ onConsole, onElement, sink });
   useEffect(() => {
-    listeners.current = { onConsole, onElement };
-  }, [onConsole, onElement]);
+    listeners.current = { onConsole, onElement, sink };
+  }, [onConsole, onElement, sink]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -71,11 +73,14 @@ export function CodeFrame({
       }
       if (data.type === LOG_MESSAGE) {
         if (typeof data.text === "string") {
-          listeners.current.onConsole?.({
+          const entry: ConsoleEntry = {
             level: data.level ?? "log",
             text: data.text,
             at: typeof data.at === "number" ? data.at : Date.now(),
-          });
+            source: title,
+          };
+          listeners.current.onConsole?.(entry);
+          listeners.current.sink?.(entry);
         }
         return;
       }
@@ -85,7 +90,7 @@ export function CodeFrame({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [minHeight]);
+  }, [minHeight, title]);
 
   /** Manda al iframe el resaltado que toca. */
   const sendHighlight = useCallback(() => {

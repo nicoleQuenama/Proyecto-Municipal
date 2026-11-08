@@ -79,12 +79,12 @@ export function PosterMenu({ item, pageId, point, onClose }: PosterMenuProps) {
         <img src={item.poster} alt="Portada actual" className="aspect-video w-full rounded-md bg-canvas object-cover" />
       )}
 
-      <button type="button" onClick={pickFile} className={buttonClass}>
+      <button type="button" onClick={pickFile} className={`${buttonClass} cursor-pointer`}>
         Subir una imagen…
       </button>
 
       {thumbnail && (
-        <button type="button" onClick={() => apply(thumbnail)} className={buttonClass}>
+        <button type="button" onClick={() => apply(thumbnail)} className={`${buttonClass} cursor-pointer`}>
           Usar la miniatura de YouTube
         </button>
       )}
@@ -101,13 +101,13 @@ export function PosterMenu({ item, pageId, point, onClose }: PosterMenuProps) {
           onKeyDown={(e) => e.key === "Enter" && applyUrl()}
           className="h-8 min-w-0 flex-1 rounded-md border border-line bg-canvas px-2 text-xs outline-none focus:border-accent"
         />
-        <button type="button" onClick={applyUrl} className="h-8 shrink-0 rounded-md bg-accent px-3 text-xs text-white hover:opacity-90">
+        <button type="button" onClick={applyUrl} className="h-8 shrink-0 rounded-md bg-accent px-3 text-xs text-white hover:opacity-90 cursor-pointer">
           Usar
         </button>
       </div>
 
       {item.poster && (
-        <button type="button" onClick={() => apply(null)} className="h-8 rounded-md px-2.5 text-left text-xs text-red-400 hover:bg-red-500/15">
+        <button type="button" onClick={() => apply(null)} className="h-8 rounded-md px-2.5 text-left text-xs text-red-400 hover:bg-red-500/15 cursor-pointer">
           Quitar la portada
         </button>
       )}

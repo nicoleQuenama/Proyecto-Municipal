@@ -182,7 +182,7 @@ function MediaCard({
             const box = e.currentTarget.getBoundingClientRect();
             setPosterMenu({ x: box.left, y: box.bottom + 6 });
           }}
-          className="absolute top-2 left-10 hidden h-5 items-center rounded-full bg-black/70 px-2 text-[11px] text-white hover:bg-accent group-hover:flex focus:flex"
+          className="absolute top-2 left-10 hidden h-5 items-center rounded-full bg-black/70 px-2 text-[11px] text-white hover:bg-accent group-hover:flex focus:flex cursor-pointer"
         >
           {item.poster ? "Cambiar portada" : "Poner portada"}
         </button>
@@ -192,7 +192,7 @@ function MediaCard({
           type="button"
           aria-label={`Quitar ${item.name}`}
           onClick={() => remove(item.id)}
-          className="absolute top-2 right-2 hidden h-7 w-7 items-center justify-center rounded-md bg-black/70 text-white group-hover:flex focus:flex"
+          className="absolute top-2 right-2 hidden h-7 w-7 items-center justify-center rounded-md bg-black/70 text-white group-hover:flex focus:flex cursor-pointer"
         >
           ×
         </button>

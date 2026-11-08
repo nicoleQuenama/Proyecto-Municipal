@@ -46,7 +46,7 @@ function LibraryRow({ library, onUse, onRemove, busy }: { library: Library; onUs
         type="button"
         onClick={onUse}
         title="Agrega un bloque de código con un ejemplo de uso"
-        className="h-7 rounded-md bg-hover px-2 text-xs hover:bg-accent hover:text-white"
+        className="h-7 rounded-md bg-hover px-2 text-xs hover:bg-accent hover:text-white cursor-pointer"
       >
         Usar
       </button>
@@ -56,7 +56,7 @@ function LibraryRow({ library, onUse, onRemove, busy }: { library: Library; onUs
         aria-label={`Desinstalar ${library.name}`}
         title="Desinstalar"
         onClick={onRemove}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400 disabled:opacity-40"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400 disabled:opacity-40 cursor-pointer"
       >
         ×
       </button>
@@ -156,7 +156,7 @@ export function LibrariesTab() {
               onClick={() => setSource(key)}
               className={`h-8 rounded-md text-xs transition-colors disabled:opacity-40 ${
                 source === key ? "bg-accent text-white" : "bg-hover text-ink-dim hover:text-ink"
-              }`}
+              } cursor-pointer`}
             >
               {SOURCES[key].label}
             </button>
@@ -169,7 +169,7 @@ export function LibrariesTab() {
         <button
           type="submit"
           disabled={busy || !name.trim()}
-          className="h-9 rounded-md bg-accent text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="h-9 rounded-md bg-accent text-xs font-medium text-white hover:opacity-90 disabled:opacity-50 cursor-pointer"
         >
           {busy ? "Instalando…" : "Instalar"}
         </button>
@@ -199,7 +199,7 @@ export function LibrariesTab() {
                 <button
                   type="button"
                   onClick={() => add({ name: lib.name, version: lib.version, source: "pnpm" })}
-                  className="h-7 rounded-md bg-hover px-2 hover:bg-accent hover:text-white"
+                  className="h-7 rounded-md bg-hover px-2 hover:bg-accent hover:text-white cursor-pointer"
                 >
                   Añadir al sitio
                 </button>

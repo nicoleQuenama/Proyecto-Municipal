@@ -30,7 +30,7 @@ export function AnchorGrid({ value, onChange }: { value: Anchor; onChange: (anch
             aria-label={NAMES[anchor]}
             title={NAMES[anchor]}
             onClick={() => onChange(anchor)}
-            className={`h-5 rounded-sm ${anchor === value ? "bg-accent" : "bg-hover hover:bg-ink-dim/40"}`}
+            className={`h-5 rounded-sm ${anchor === value ? "bg-accent" : "bg-hover hover:bg-ink-dim/40"} cursor-pointer`}
           />
         ))}
       </div>

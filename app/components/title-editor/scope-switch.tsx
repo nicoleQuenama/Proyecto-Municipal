@@ -29,7 +29,7 @@ export function ScopeSwitch() {
           title={hint}
           aria-pressed={settings.scope === value}
           onClick={() => setSettings((current) => ({ ...current, scope: value }))}
-          className={`h-6 rounded px-2 text-[11px] ${settings.scope === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"}`}
+          className={`h-6 rounded px-2 text-[11px] ${settings.scope === value ? "bg-accent/25 text-accent" : "text-ink-dim hover:text-ink"} cursor-pointer`}
         >
           {label}
         </button>

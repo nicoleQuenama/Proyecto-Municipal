@@ -40,7 +40,7 @@ export function LinkPopover() {
           type="button"
           aria-label="Cerrar"
           onClick={closeLinkEditor}
-          className="rounded px-1.5 text-ink-dim hover:bg-hover hover:text-ink"
+          className="rounded px-1.5 text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           ×
         </button>

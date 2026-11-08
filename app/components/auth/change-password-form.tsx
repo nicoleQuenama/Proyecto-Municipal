@@ -62,10 +62,10 @@ export function ChangePasswordForm({ onCancel, onDone }: { onCancel: () => void;
       )}
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="h-10 rounded-xl border border-line px-4 text-xs font-medium text-ink hover:bg-hover">
+        <button type="button" onClick={onCancel} className="h-10 rounded-xl border border-line px-4 text-xs font-medium text-ink hover:bg-hover cursor-pointer">
           Cancelar
         </button>
-        <button type="submit" disabled={saving || !current || !next || !confirm} className={PRIMARY_BUTTON}>
+        <button type="submit" disabled={saving || !current || !next || !confirm} className={`${PRIMARY_BUTTON} cursor-pointer`}>
           {saving ? "Guardando…" : "Guardar contraseña"}
         </button>
       </div>

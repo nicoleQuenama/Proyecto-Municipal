@@ -33,7 +33,7 @@ export function CodeBlockView({ code, libraries, shared, name, editing, onEdit }
               e.stopPropagation();
               onEdit();
             }}
-            className="absolute top-2 right-2 rounded-md bg-black/75 px-2 py-1 text-[11px] text-white hover:bg-accent"
+            className="absolute top-2 right-2 rounded-md bg-black/75 px-2 py-1 text-[11px] text-white hover:bg-accent cursor-pointer"
           >
             Editar código
           </button>

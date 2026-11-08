@@ -14,7 +14,7 @@ export function ExportButton({ pageId, block, def }: { pageId: string; block: Bl
         aria-label="Exportar el diseño para tu IA"
         title="Exportar el diseño como mensaje para Claude Code, Codex, opencode u otro modelo"
         onClick={() => setOpen(true)}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 text-xs font-medium hover:bg-hover"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 text-xs font-medium hover:bg-hover cursor-pointer"
       >
         Exportar
       </button>

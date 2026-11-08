@@ -116,7 +116,7 @@ export function SidePanel() {
           aria-expanded={!collapsed}
           title={collapsed ? "Expandir panel" : "Plegar panel"}
           onClick={() => setCollapsed((value) => !value)}
-          className="mb-1 flex h-8 w-8 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink"
+          className="mb-1 flex h-8 w-8 items-center justify-center rounded-md text-ink-dim transition-colors hover:bg-hover hover:text-ink cursor-pointer"
         >
           <PanelCollapseIcon collapsed={collapsed} />
         </button>
@@ -133,7 +133,7 @@ export function SidePanel() {
               onClick={() => pickTab(t.value)}
               className={`relative flex w-12 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] transition-colors ${
                 active ? "bg-hover text-ink" : "text-ink-dim hover:bg-hover/60 hover:text-ink"
-              }`}
+              } cursor-pointer`}
             >
               {active && <span aria-hidden className="absolute top-2 -left-[7px] h-5 w-0.5 rounded-full bg-accent" />}
               {TAB_ICONS[t.value]}
@@ -160,7 +160,7 @@ export function SidePanel() {
               aria-expanded={structureOpen}
               aria-controls="structure-list"
               onClick={() => setStructureOpen((open) => !open)}
-              className="flex h-10 w-full items-center gap-2 px-4 text-left hover:bg-hover"
+              className="flex h-10 w-full items-center gap-2 px-4 text-left hover:bg-hover cursor-pointer"
             >
               <span aria-hidden className={`text-ink-dim transition-transform ${structureOpen ? "" : "-rotate-90"}`}>
                 ▾

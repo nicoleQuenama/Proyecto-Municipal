@@ -43,7 +43,7 @@ export function AdaptAssistant() {
           type="button"
           onClick={() => setMinimized(false)}
           title={`Ver asistente de sugerencias para ${name}`}
-          className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105"
+          className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105 cursor-pointer"
         >
           <span>Sugerencias {name}</span>
           {suggestions.length > 0 && (
@@ -67,11 +67,11 @@ export function AdaptAssistant() {
         onClick={() => setMinimized(true)}
         title="Ocultar asistente"
         aria-label="Ocultar asistente"
-        className="ml-auto order-last flex h-6 w-6 items-center justify-center rounded text-sm text-ink-dim hover:bg-hover hover:text-ink"
+        className="ml-auto order-last flex h-6 w-6 items-center justify-center rounded text-sm text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
       >
         ×
       </button>
-      <button type="button" onClick={() => adaptAll(false)} className={`${button} bg-accent text-white hover:opacity-90`}>
+      <button type="button" onClick={() => adaptAll(false)} className={`${button} bg-accent text-white hover:opacity-90 cursor-pointer`}>
         Adaptar toda la página a {name}
       </button>
       <span className="text-ink-dim" aria-live="polite">{describeSummary(summary)}</span>
@@ -82,13 +82,13 @@ export function AdaptAssistant() {
         <button
           type="button"
           onClick={() => dispatch({ type: "responsive/suggest", pageId: page.id, device, changes: suggestions })}
-          className={`${button} bg-emerald-600 text-white hover:opacity-90`}
+          className={`${button} bg-emerald-600 text-white hover:opacity-90 cursor-pointer`}
         >
           Aplicar sugerencias
         </button>
       )}
       {summary.manual > 0 && (
-        <button type="button" onClick={() => adaptAll(true)} className={`${button} border border-line text-ink-dim hover:bg-hover hover:text-ink`}>
+        <button type="button" onClick={() => adaptAll(true)} className={`${button} border border-line text-ink-dim hover:bg-hover hover:text-ink cursor-pointer`}>
           Volver también las manuales a automático
         </button>
       )}
@@ -96,7 +96,7 @@ export function AdaptAssistant() {
         type="button"
         aria-expanded={explaining}
         onClick={() => setExplaining(!explaining)}
-        className={`${button} border border-line text-ink-dim hover:bg-hover hover:text-ink`}
+        className={`${button} border border-line text-ink-dim hover:bg-hover hover:text-ink cursor-pointer`}
       >
         {explaining ? "Ocultar ayuda" : "¿Cómo se adapta?"}
       </button>

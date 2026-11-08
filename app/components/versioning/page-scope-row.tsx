@@ -44,7 +44,7 @@ export function PageScopeRow({
           aria-label={`${expanded ? "Ocultar" : "Ver"} secciones de ${page.name}`}
           aria-expanded={expanded}
           onClick={onExpand}
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           {expanded ? "▾" : "▸"}
         </button>

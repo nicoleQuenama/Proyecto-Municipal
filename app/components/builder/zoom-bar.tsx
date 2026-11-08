@@ -18,20 +18,20 @@ const button = "flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 t
 export function ZoomBar({ zoom, fitted, hand, onZoomIn, onZoomOut, onFit, onActualSize, onToggleHand }: ZoomBarProps) {
   return (
     <div role="group" aria-label="Zoom del lienzo" className="flex items-center gap-0.5 rounded-lg border border-line bg-panel p-0.5">
-      <button type="button" aria-label="Alejar" title="Alejar (Ctrl −)" onClick={onZoomOut} className={button}>
+      <button type="button" aria-label="Alejar" title="Alejar (Ctrl −)" onClick={onZoomOut} className={`${button} cursor-pointer`}>
         <MinusIcon />
       </button>
       <span aria-live="polite" className="w-12 text-center text-xs tabular-nums">{zoomLabel(zoom)}</span>
-      <button type="button" aria-label="Acercar" title="Acercar (Ctrl +)" onClick={onZoomIn} className={button}>
+      <button type="button" aria-label="Acercar" title="Acercar (Ctrl +)" onClick={onZoomIn} className={`${button} cursor-pointer`}>
         <PlusIcon />
       </button>
-      <button type="button" aria-pressed={fitted} title="Ajustar a la ventana (Ctrl 0)" onClick={onFit} className={`${button} ${fitted ? "text-accent" : ""}`}>
+      <button type="button" aria-pressed={fitted} title="Ajustar a la ventana (Ctrl 0)" onClick={onFit} className={`${button} ${fitted ? "text-accent" : ""} cursor-pointer`}>
         Ajustar
       </button>
-      <button type="button" title="Tamaño real" onClick={onActualSize} className={button}>
+      <button type="button" title="Tamaño real" onClick={onActualSize} className={`${button} cursor-pointer`}>
         100 %
       </button>
-      <button type="button" aria-pressed={hand} title="Mano: arrastra para desplazarte (o mantén Espacio)" onClick={onToggleHand} className={`${button} ${hand ? "bg-hover text-accent" : ""}`}>
+      <button type="button" aria-pressed={hand} title="Mano: arrastra para desplazarte (o mantén Espacio)" onClick={onToggleHand} className={`${button} ${hand ? "bg-hover text-accent" : ""} cursor-pointer`}>
         <HandIcon />
       </button>
     </div>

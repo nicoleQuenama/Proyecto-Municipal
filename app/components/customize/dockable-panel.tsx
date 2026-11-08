@@ -209,7 +209,7 @@ export function DockablePanel({
           aria-label="Expandir panel de propiedades"
           title="Expandir panel de propiedades (como en Illustrator)"
           onClick={() => setCollapsed(false)}
-          className="mb-2 flex h-8 w-8 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+          className="mb-2 flex h-8 w-8 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
         >
           <span className="text-sm font-bold leading-none">«</span>
         </button>
@@ -220,7 +220,7 @@ export function DockablePanel({
           aria-label="Propiedades"
           title={`Propiedades: ${title}`}
           onClick={() => setCollapsed(false)}
-          className="mb-1 flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent shadow-xs"
+          className="mb-1 flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent shadow-xs cursor-pointer"
         >
           <SlidersIcon />
         </button>
@@ -232,7 +232,7 @@ export function DockablePanel({
             aria-label="Abrir código"
             title="Abrir código en el editor (Ctrl+E)"
             onClick={() => onOpenCode()}
-            className="mb-1 flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+            className="mb-1 flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
           >
             <CodeIcon />
           </button>
@@ -249,7 +249,7 @@ export function DockablePanel({
             setDock("float");
             setCollapsed(false);
           }}
-          className="mb-1 flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+          className="mb-1 flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
         >
           <span className="text-xs font-mono font-bold">❐</span>
         </button>
@@ -260,7 +260,7 @@ export function DockablePanel({
           aria-label="Cerrar propiedades"
           title="Cerrar propiedades"
           onClick={onClose}
-          className="mt-auto flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+          className="mt-auto flex h-8 w-8 items-center justify-center rounded-lg text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
         >
           <span className="text-sm font-bold">×</span>
         </button>
@@ -303,7 +303,7 @@ export function DockablePanel({
           aria-label="Expandir ventana"
           title="Expandir ventana de propiedades"
           onClick={() => setCollapsed(false)}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
         >
           <span className="text-xs font-bold leading-none">□</span>
         </button>
@@ -317,7 +317,7 @@ export function DockablePanel({
             setDock("right");
             setCollapsed(false);
           }}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
         >
           <span className="text-xs font-mono font-bold">⇥</span>
         </button>
@@ -328,7 +328,7 @@ export function DockablePanel({
           aria-label="Cerrar"
           title="Cerrar propiedades"
           onClick={onClose}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
         >
           <span className="text-sm font-bold leading-none">×</span>
         </button>
@@ -387,7 +387,7 @@ export function DockablePanel({
               <button
                 type="button"
                 onClick={onSelectSection}
-                className="shrink-0 text-[10px] font-medium text-accent hover:underline lowercase"
+                className="shrink-0 text-[10px] font-medium text-accent hover:underline lowercase cursor-pointer"
                 title="Volver a seleccionar la sección para editar disposición, columnas o espacio"
               >
                 (ver sección)
@@ -406,7 +406,7 @@ export function DockablePanel({
                 aria-label="Abrir código en el editor"
                 title="Abrir código en el editor (Ctrl+E)"
                 onClick={onOpenCode}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
               >
                 <CodeIcon />
               </button>
@@ -422,7 +422,7 @@ export function DockablePanel({
                   : "Acoplar panel al lateral derecho del lienzo (sin sobreponerse)"
               }
               onClick={() => setDock(isDocked ? "float" : "right")}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
             >
               <span className="text-xs font-mono font-bold leading-none">{isDocked ? "❐" : "⇥"}</span>
             </button>
@@ -437,7 +437,7 @@ export function DockablePanel({
                   : "Minimizar ventana flotante"
               }
               onClick={toggleCollapsed}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
             >
               <span className="text-xs font-bold leading-none">{isDocked ? "»" : "—"}</span>
             </button>
@@ -448,7 +448,7 @@ export function DockablePanel({
               aria-label="Cerrar panel"
               title="Cerrar propiedades"
               onClick={onClose}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer"
             >
               <span className="text-sm font-semibold leading-none">×</span>
             </button>

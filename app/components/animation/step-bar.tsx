@@ -33,7 +33,7 @@ export function StepBar({ step, span, selected, msPerPixel, onSelect, onTiming }
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
       className={`absolute top-1 flex h-5 cursor-grab items-center overflow-hidden rounded px-1.5 text-[10px] text-white select-none active:cursor-grabbing ${meta.bar} ${
         selected ? "ring-2 ring-white" : "opacity-80 hover:opacity-100"
-      }`}
+      } cursor-pointer`}
       style={{ left: `${(step.at / span) * 100}%`, width: `max(6px, ${(step.duration / span) * 100}%)` }}
     >
       <span className="truncate">{meta.label}</span>

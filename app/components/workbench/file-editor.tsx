@@ -109,6 +109,7 @@ export default function FileEditor({
   const path = fileId(file);
 
   const [draft, setDraft] = useState(() => kind.read(site, file));
+  const [initialDraft] = useState(draft);
   const [saved, setSaved] = useState(draft);
   const [selection, setSelection] = useState<SelectionInfo | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -295,7 +296,9 @@ export default function FileEditor({
           theme="vs-dark"
           path={path}
           language={kind.language}
-          value={wrapped ? wrapDeclarations(draft) : draft}
+          // Sin `value`: el editor es dueño de su texto. Con `value`, si React se retrasaba y llegaba otra tecla antes
+          // de repintar, el editor volvía a poner un texto viejo y el cursor saltaba al final.
+          defaultValue={wrapped ? wrapDeclarations(initialDraft) : initialDraft}
           onChange={(value) => setDraft(wrapped ? unwrapDeclarations(value ?? "") : (value ?? ""))}
           beforeMount={configureTypescript}
           onMount={onMount}
@@ -335,7 +338,7 @@ export default function FileEditor({
             key={name}
             type="button"
             onClick={() => addMissing(name)}
-            className="rounded bg-accent/25 px-2 py-0.5 text-accent hover:bg-accent hover:text-white"
+            className="rounded bg-accent/25 px-2 py-0.5 text-accent hover:bg-accent hover:text-white cursor-pointer"
           >
             Falta «{name}»: añadir desde el CDN
           </button>

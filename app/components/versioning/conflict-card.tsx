@@ -47,7 +47,7 @@ export function ConflictCard({
               conflict.resolution === option.value
                 ? "border-accent bg-accent/15"
                 : "border-line hover:bg-hover"
-            }`}
+            } cursor-pointer`}
           >
             <span className="max-w-full truncate text-ink-dim">Mantener «{option.branch}»</span>
             <span className="text-[13px] font-medium">{option.result}</span>

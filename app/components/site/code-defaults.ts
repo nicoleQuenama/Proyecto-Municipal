@@ -9,7 +9,7 @@ export const DEFAULT_CODE: CodeSource = {
   html: `<section class="rounded-2xl bg-slate-900 p-8 text-white">
   <h2 class="text-2xl font-bold">Tu código aquí</h2>
   <p class="mt-2 text-slate-300">Escribe HTML, CSS, Tailwind y TypeScript.</p>
-  <button id="saludar" class="mt-4 rounded-lg bg-sky-500 px-4 py-2 font-semibold hover:bg-sky-400">
+  <button id="saludar" class="mt-4 rounded-lg bg-sky-500 px-4 py-2 font-semibold hover:bg-sky-400 cursor-pointer">
     Pulsa
   </button>
 </section>`,

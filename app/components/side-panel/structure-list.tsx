@@ -27,7 +27,7 @@ export function StructureList({ items, activeId, onSelect, onRemove }: Structure
               onClick={() => onSelect(item.id)}
               className={`flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-2 text-left text-[13px] ${
                 active ? "bg-accent/25" : "hover:bg-hover"
-              }`}
+              } cursor-pointer`}
             >
               <span aria-hidden className={`w-4 text-center ${active ? "text-accent" : "text-ink-dim"}`}>
                 {item.icon}
@@ -46,7 +46,7 @@ export function StructureList({ items, activeId, onSelect, onRemove }: Structure
                 type="button"
                 aria-label={`Quitar ${item.name}`}
                 onClick={() => onRemove(item.id)}
-                className="ml-0.5 hidden h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink group-hover:flex focus:flex"
+                className="ml-0.5 hidden h-6 w-6 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink group-hover:flex focus:flex cursor-pointer"
               >
                 ×
               </button>

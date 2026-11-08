@@ -25,7 +25,7 @@ export function ChangeGroupCard({ group, defaultOpen }: ChangeGroupCardProps) {
           type="button"
           aria-expanded={open}
           onClick={() => setOpen(!open)}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium cursor-pointer"
         >
           <span aria-hidden className={`text-ink-dim transition-transform ${open ? "" : "-rotate-90"}`}>
             <ChevronIcon size={10} />

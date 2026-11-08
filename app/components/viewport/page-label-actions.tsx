@@ -21,12 +21,12 @@ export function PageLabelActions({ page }: { page: Page }) {
           <>
             ¿Eliminar «{page.name}»? Se perderán {plural(page.blocks.length, "bloque", "bloques")} y{" "}
             {plural(page.media.length, "medio", "medios")}.
-            <button type="button" onClick={() => dispatch({ type: "page/delete", id: page.id })} className={`${small} border border-red-500/60 text-red-400`}>
+            <button type="button" onClick={() => dispatch({ type: "page/delete", id: page.id })} className={`${small} border border-red-500/60 text-red-400 cursor-pointer`}>
               Eliminar
             </button>
           </>
         )}
-        <button type="button" onClick={() => setConfirming(false)} className={small}>
+        <button type="button" onClick={() => setConfirming(false)} className={`${small} cursor-pointer`}>
           {page.isHome ? "Entendido" : "Cancelar"}
         </button>
       </span>
@@ -42,7 +42,7 @@ export function PageLabelActions({ page }: { page: Page }) {
         aria-pressed={page.isHome}
         disabled={page.isHome}
         onClick={() => dispatch({ type: "page/home", id: page.id })}
-        className={`${small} ${page.isHome ? "text-accent" : ""}`}
+        className={`${small} ${page.isHome ? "text-accent" : ""} cursor-pointer`}
       >
         ⌂
       </button>
@@ -51,7 +51,7 @@ export function PageLabelActions({ page }: { page: Page }) {
         aria-label={`Eliminar la página ${page.name}`}
         title="Eliminar esta página"
         onClick={() => setConfirming(true)}
-        className={`${small} hover:text-red-400`}
+        className={`${small} hover:text-red-400 cursor-pointer`}
       >
         ×
       </button>

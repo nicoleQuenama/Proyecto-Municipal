@@ -6,6 +6,7 @@ import { hasPermission, useAuth } from "../auth/auth-context";
 import { useSite } from "../site/site-context";
 import { Modal } from "../ui/modal";
 import { BlockPreview, type CodePick } from "./block-preview";
+import { ConsoleHost } from "./console-host";
 import { Explorer } from "./explorer";
 import { SitePreview } from "./site-preview";
 import { fileId, kindOf, type FileKindName, type FileRef } from "./file-ref";
@@ -64,7 +65,7 @@ function Workbench() {
           aria-pressed={!explorerHidden}
           title="Mostrar u ocultar el explorador (Ctrl+B)"
           onClick={toggleExplorer}
-          className="-ml-2 flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="-ml-2 flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           <PanelCollapseIcon collapsed={explorerHidden} />
         </button>
@@ -75,7 +76,7 @@ function Workbench() {
           aria-label="Cerrar el editor"
           title="Cerrar el editor (Esc)"
           onClick={close}
-          className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           ×
         </button>
@@ -95,14 +96,14 @@ function Workbench() {
                     selected ? "bg-canvas text-ink" : "text-ink-dim hover:text-ink"
                   }`}
                 >
-                  <button type="button" role="tab" aria-selected={selected} onClick={() => activate(tab)} className="h-9 pr-1 pl-3">
+                  <button type="button" role="tab" aria-selected={selected} onClick={() => activate(tab)} className="h-9 pr-1 pl-3 cursor-pointer">
                     {kindOf(tab).name(site, tab)}
                   </button>
                   <button
                     type="button"
                     aria-label={`Cerrar ${kindOf(tab).name(site, tab)}`}
                     onClick={() => closeTab(tab)}
-                    className="mr-1 flex h-5 w-5 items-center justify-center rounded text-ink-dim hover:bg-hover hover:text-ink"
+                    className="mr-1 flex h-5 w-5 items-center justify-center rounded text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
                   >
                     ×
                   </button>
@@ -111,22 +112,24 @@ function Workbench() {
             })}
           </div>
 
-          <div className="flex min-h-0 flex-1">
-            {active ? (
-              <ActiveFile key={fileId(active)} file={active} />
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-ink-dim">
-                <p>Abre un archivo del explorador para empezar.</p>
-                <button
-                  type="button"
-                  onClick={() => openFile({ kind: "global-css" })}
-                  className="rounded-md bg-hover px-3 py-1.5 text-xs text-ink hover:bg-accent hover:text-white"
-                >
-                  Abrir estilos-globales.css
-                </button>
-              </div>
-            )}
-          </div>
+          <ConsoleHost>
+            <div className="flex min-h-0 flex-1">
+              {active ? (
+                <ActiveFile key={fileId(active)} file={active} />
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-ink-dim">
+                  <p>Abre un archivo del explorador para empezar.</p>
+                  <button
+                    type="button"
+                    onClick={() => openFile({ kind: "global-css" })}
+                    className="rounded-md bg-hover px-3 py-1.5 text-xs text-ink hover:bg-accent hover:text-white cursor-pointer"
+                  >
+                    Abrir estilos-globales.css
+                  </button>
+                </div>
+              )}
+            </div>
+          </ConsoleHost>
         </div>
       </div>
     </div>

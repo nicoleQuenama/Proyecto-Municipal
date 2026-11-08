@@ -22,7 +22,7 @@ export function PullRequestsTab() {
           onClick={() => setSelection("new")}
           className={`h-8 rounded-md border border-dashed border-line text-xs hover:bg-hover ${
             selection === "new" ? "bg-hover" : ""
-          }`}
+          } cursor-pointer`}
         >
           + Nuevo pull request
         </button>
@@ -40,7 +40,7 @@ export function PullRequestsTab() {
                   onClick={() => setSelection(pr.number)}
                   className={`flex w-full flex-col gap-1 rounded-md px-2 py-2 text-left ${
                     selection === pr.number ? "bg-accent/20" : "hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                 >
                   <span className="line-clamp-2 text-[13px] font-medium">
                     {pr.title} <span className="font-normal text-ink-dim">#{pr.number}</span>

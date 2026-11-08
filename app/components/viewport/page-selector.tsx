@@ -41,7 +41,7 @@ export function PageSelector() {
         aria-expanded={open}
         title="Cambiar de página"
         onClick={() => setOpen((value) => !value)}
-        className={`${pill} bg-canvas ${idle}`}
+        className={`${pill} bg-canvas ${idle} cursor-pointer`}
       >
         <span className="max-w-28 truncate">{current.name}</span>
         <span aria-hidden className="text-ink-dim">▾</span>
@@ -71,7 +71,7 @@ export function PageSelector() {
                   onClick={() => select(page.id)}
                   className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-hover ${
                     page.id === currentPageId ? "text-accent" : "text-ink"
-                  }`}
+                  } cursor-pointer`}
                 >
                   <span className="min-w-0 flex-1 truncate">{page.name}</span>
                   <span className="shrink-0 font-mono text-[10px] text-ink-dim">{routeOf(page)}</span>

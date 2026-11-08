@@ -52,7 +52,7 @@ export function StepInspector({ step, onChange, onRemove }: StepInspectorProps) 
           ))}
         </select>
       </Field>
-      <button type="button" onClick={onRemove} className="self-end h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover">
+      <button type="button" onClick={onRemove} className="self-end h-8 rounded-md px-3 text-xs text-red-400 hover:bg-hover cursor-pointer">
         Quitar paso
       </button>
     </div>

@@ -17,7 +17,7 @@ export function CopyButton({ text, label = "Copiar" }: { text: string; label?: s
   };
 
   return (
-    <button type="button" onClick={copy} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:opacity-90">
+    <button type="button" onClick={copy} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:opacity-90 cursor-pointer">
       {state === "done" ? "¡Copiado!" : state === "failed" ? "No se pudo: selecciona y copia" : label}
     </button>
   );
@@ -32,7 +32,7 @@ export function DownloadButton({ text, filename }: { text: string; filename: str
     URL.revokeObjectURL(url);
   };
   return (
-    <button type="button" onClick={download} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover">
+    <button type="button" onClick={download} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer">
       Descargar
     </button>
   );

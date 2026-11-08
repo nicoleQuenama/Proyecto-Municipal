@@ -5,6 +5,7 @@
  *  - «isolated»: en un iframe sin origen propio, que solo puede pedir lo que ofrece `api`.
  */
 
+import { makeConsole, type ConsoleSink } from "../code/console-sink";
 import { safeTranspile } from "../code/transpile";
 import { libraryUrl } from "../libraries/library-url";
 import { preludeOf } from "../functions/scope";
@@ -20,6 +21,8 @@ export interface CodeEnv {
   origin: string;
   api: PageApi;
   element: HTMLElement | null;
+  /** La consola del editor de código, si está abierto. */
+  sink?: ConsoleSink | null;
 }
 
 /** Una línea (o varias) `import … from "x"` o `import "x"`, con el nombre del módulo en el último texto entre comillas. */
@@ -51,7 +54,7 @@ export function buildModule(source: string, env: Pick<CodeEnv, "libraries" | "fu
   // Las funciones reutilizables se declaran dentro de la función que corre el código, para que vean `api` y `element`.
   // El código se escribe en TypeScript: aquí se quitan los tipos antes de ejecutarlo.
   return safeTranspile(
-    `${resolved.join("\n")}\nexport default async function __portalRun(api: any, element: HTMLElement) {\n${preludeOf(env.functions)}\n${body}\n}\n`,
+    `${resolved.join("\n")}\nexport default async function __portalRun(api: any, element: HTMLElement, console: any) {\n${preludeOf(env.functions)}\n${body}\n}\n`,
   );
 }
 
@@ -59,7 +62,7 @@ async function runInPage(source: string, env: CodeEnv) {
   const url = URL.createObjectURL(new Blob([buildModule(source, env)], { type: "text/javascript" }));
   try {
     const loaded = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url);
-    await loaded.default(env.api, env.element);
+    await loaded.default(env.api, env.element, makeConsole(env.sink ?? null, "Código"));
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -76,12 +79,12 @@ const EXECUTORS: Record<CodeMode, (source: string, env: CodeEnv) => Promise<void
   isolated: runIsolated,
 };
 
-/** Ejecuta el código; si falla, lo cuenta por `api.log` en lugar de romper la página. */
+/** Ejecuta el código; si falla, lo cuenta en la consola en lugar de romper la página. */
 export async function executeCode(source: string, mode: CodeMode, env: CodeEnv) {
   try {
     await EXECUTORS[mode](source, env);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    env.api.log(`Error en el código: ${message}`);
+    makeConsole(env.sink ?? null, "Código").error(`Error en el código: ${message}`);
   }
 }
