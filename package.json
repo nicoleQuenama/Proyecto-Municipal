@@ -14,7 +14,7 @@
     "db:setup": "node --env-file-if-exists=.env.local scripts/db-setup.mts",
     "maintenance": "node --env-file-if-exists=.env.local scripts/maintenance.mts",
     "org:create": "node --env-file-if-exists=.env.local scripts/org-create.mts",
-    "db:seed":"node --env-file-if-exists=.env.local scripts/db-seed.mts"
+    "db:seed": "node --env-file-if-exists=.env.local scripts/db-seed.mts"
   },
   "dependencies": {
     "@babel/generator": "^7.29.8",
@@ -26,6 +26,7 @@
     "chart.js": "^4.6.1",
     "esbuild": "^0.28.2",
     "fflate": "^0.8.3",
+    "ffmpeg-static": "^5.3.0",
     "gsap": "^3.15.1",
     "monaco-editor": "^0.57.0",
     "next": "16.4.2",
@@ -36,6 +37,7 @@
     "react-dom": "19.3.0",
     "redis": "^6.3.1",
     "resend": "^6.37.0",
+    "sharp": "^0.35.5",
     "ssh2-sftp-client": "^12.1.1",
     "sucrase": "^3.35.1",
     "swipe": "^1.7.7",

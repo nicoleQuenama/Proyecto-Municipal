@@ -1,6 +1,7 @@
 # Scripts de instalación de dependencias: ninguno se ejecuta. esbuild y unrs-resolver traen su binario ya compilado;
 # ssh2 y cpu-features son aceleraciones nativas opcionales (sin ellas ssh2 usa su versión en JavaScript, que funciona igual).
 allowBuilds:
+  ffmpeg-static: true
   cpu-features: false
   esbuild: false
   ssh2: false

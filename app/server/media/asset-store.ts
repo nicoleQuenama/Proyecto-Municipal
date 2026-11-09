@@ -5,6 +5,8 @@ import type { Actor } from "../auth-accounts";
 import type { Scope } from "../site/site-sql";
 import { VersionError } from "../versions/branch-rows";
 import { imagekitConfigured, publicUrl, uploadToImageKit } from "./imagekit";
+import { compressMedia } from "./compress/compress-media";
+import type { CompressionReport } from "./compress/types";
 import { maxBytesOf, sniffMediaType, type MediaType } from "./sniff";
 
 /** Lo que recibe el editor de un archivo subido. */
@@ -16,7 +18,10 @@ export interface UploadedMedia {
   kind: "image" | "video";
   width: number | null;
   height: number | null;
+  /** Peso del archivo YA comprimido (es el que se guarda y el que cuenta para la cuota). */
   byteSize: number;
+  /** Cómo fue la compresión de esta subida (no se guarda: solo se informa). */
+  compression?: CompressionReport;
 }
 
 interface AssetRow {
@@ -69,24 +74,28 @@ export async function saveMedia(actor: Actor, name: string, data: Buffer): Promi
   if (!type) throw new VersionError("Ese archivo no es una imagen o un video compatible (PNG, JPG, WebP, AVIF, GIF, MP4 o WebM).", 415);
   if (data.length > maxBytesOf(type)) throw new VersionError(`El archivo pesa más de ${maxBytesOf(type) / 1024 / 1024} MB.`, 413);
 
-  const sha = createHash("sha256").update(data).digest();
+  // Se comprime ANTES de reservar: el tamaño y el contenido (sha256) de la ficha no cambian después y la cuota se cobra con el peso final.
+  const { data: prepared, report } = await compressMedia(data, type);
+  console.info(`[media] ${type}: ${report.originalBytes} → ${report.finalBytes} bytes (${report.savedPercent} %, ${report.step ?? report.reason}, ${report.ms} ms)`);
+
+  const sha = createHash("sha256").update(prepared).digest();
   const fileName = `${sha.toString("hex").slice(0, 12)}-${safeFileName(name, type)}`;
 
   const reserved = await inProject(actor, (tx, scope) => {
     const folder = `/org/${scope.org}/${scope.project}`;
-    return reserve(tx, scope, actor.user.id, { name, type, sha, size: data.length, path: `${folder}/${fileName}` });
+    return reserve(tx, scope, actor.user.id, { name, type, sha, size: prepared.length, path: `${folder}/${fileName}` });
   });
-  if ("existing" in reserved) return reserved.existing;
+  if ("existing" in reserved) return { ...reserved.existing, compression: report };
 
   try {
-    const stored = await uploadToImageKit(data, type, reserved.folder, fileName);
+    const stored = await uploadToImageKit(prepared, type, reserved.folder, fileName);
     return await inProject(actor, async (tx, scope) => {
       const [row] = (await tx.unsafe(
         `update app.assets set status = 'ready', imagekit_file_id = $4, ready_at = now(), width = $5, height = $6
          where organization_id = $1 and project_id = $2 and id = $3 returning ${COLUMNS}`,
         [scope.org, scope.project, reserved.id, stored.fileId, stored.width ?? null, stored.height ?? null],
       )) as unknown as AssetRow[];
-      return toUploaded(row);
+      return { ...toUploaded(row), compression: report };
     });
   } catch (error) {
     await inProject(actor, (tx, scope) => tx.unsafe(`delete from app.assets where organization_id = $1 and project_id = $2 and id = $3`, [scope.org, scope.project, reserved.id])).catch(() => undefined);
