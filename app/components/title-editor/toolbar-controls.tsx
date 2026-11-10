@@ -26,7 +26,7 @@ export function ToolbarButton({
       aria-label={label}
       title={label}
       aria-pressed={active}
-      className={`${BASE} ${active ? ACTIVE : ""} ${className}`}
+      className={`${BASE} ${active ? ACTIVE : ""} ${className} cursor-pointer`}
       {...props}
     />
   );

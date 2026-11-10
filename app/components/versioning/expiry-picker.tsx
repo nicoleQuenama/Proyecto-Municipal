@@ -30,11 +30,11 @@ export function ExpiryPicker({ value, onChange, limit }: ExpiryPickerProps) {
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Duración del acceso">
         {DURATIONS.map(({ id, label, days }) => (
-          <button key={id} type="button" disabled={tooFar(expiryIn(days))} onClick={() => pick(id, days)} className={`${chip(choice === id)} disabled:opacity-40`}>
+          <button key={id} type="button" disabled={tooFar(expiryIn(days))} onClick={() => pick(id, days)} className={`${chip(choice === id)} disabled:opacity-40 cursor-pointer`}>
             {label}
           </button>
         ))}
-        <button type="button" onClick={() => setChoice("custom")} className={chip(custom)}>
+        <button type="button" onClick={() => setChoice("custom")} className={`${chip(custom)} cursor-pointer`}>
           Personalizado
         </button>
         <button
@@ -45,7 +45,7 @@ export function ExpiryPicker({ value, onChange, limit }: ExpiryPickerProps) {
             setChoice("none");
             onChange(null);
           }}
-          className={`${chip(choice === "none")} disabled:opacity-40`}
+          className={`${chip(choice === "none")} disabled:opacity-40 cursor-pointer`}
         >
           Sin límite
         </button>

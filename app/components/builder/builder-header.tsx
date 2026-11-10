@@ -59,10 +59,10 @@ export function BuilderHeader({ state, dispatch, newId, pageIds, isEditing, onEd
       </select>
 
       <span className="ml-auto flex gap-2">
-        <button type="button" onClick={onClose} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" onClick={onClose} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           Cancelar
         </button>
-        <button type="button" onClick={onSave} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90">
+        <button type="button" onClick={onSave} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 cursor-pointer">
           {isEditing ? "Guardar cambios" : "Guardar componente"}
         </button>
       </span>

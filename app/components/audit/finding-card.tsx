@@ -51,13 +51,13 @@ export function FindingCard({ finding, onFix, onGo }: FindingCardProps) {
             key={fix.label}
             type="button"
             onClick={() => choose(fix)}
-            className="h-7 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90"
+            className="h-7 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 cursor-pointer"
           >
             {fix.label}
           </button>
         ))}
         {(finding.target || finding.fixes.length === 0) && (
-          <button type="button" onClick={() => onGo(finding)} className={button}>
+          <button type="button" onClick={() => onGo(finding)} className={`${button} cursor-pointer`}>
             Ir al elemento
           </button>
         )}
@@ -81,7 +81,7 @@ export function FindingCard({ finding, onFix, onGo }: FindingCardProps) {
                 onChange={(e) => setDraft(e.target.value)}
                 className="h-8 min-w-0 flex-1 rounded-md border border-line bg-panel px-2 text-xs text-ink outline-none focus:border-accent"
               />
-              <button type="submit" className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90">
+              <button type="submit" className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 cursor-pointer">
                 Aplicar
               </button>
             </span>

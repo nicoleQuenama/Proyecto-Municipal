@@ -40,7 +40,7 @@ export function ModalView({ label, options, onClose, children }: ModalViewProps)
             type="button"
             aria-label="Cerrar la ventana"
             onClick={onClose}
-            className="sticky top-3 z-20 float-right mr-3 mb-[-2.5rem] flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-lg text-white hover:bg-black"
+            className="sticky top-3 z-20 float-right mr-3 mb-[-2.5rem] flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-lg text-white hover:bg-black cursor-pointer"
           >
             ×
           </button>

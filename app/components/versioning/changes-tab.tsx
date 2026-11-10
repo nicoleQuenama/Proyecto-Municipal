@@ -39,11 +39,11 @@ export function ChangesTab() {
 
       {present.length > 1 && (
         <div role="group" aria-label="Filtrar por clase" className="flex flex-wrap gap-1.5">
-          <button type="button" aria-pressed={kind === "all"} onClick={() => setKind("all")} className={chip(kind === "all")}>
+          <button type="button" aria-pressed={kind === "all"} onClick={() => setKind("all")} className={`${chip(kind === "all")} cursor-pointer`}>
             Todos · {changes.length}
           </button>
           {present.map((k) => (
-            <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)} className={chip(kind === k.id)}>
+            <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)} className={`${chip(kind === k.id)} cursor-pointer`}>
               {k.label} · {changes.filter((c) => kindOfKey(c.key) === k.id).length}
             </button>
           ))}

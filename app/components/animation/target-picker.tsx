@@ -19,7 +19,7 @@ export function TargetPicker({ elements, keys, onChange }: TargetPickerProps) {
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-[11px] text-ink-dim">
         ¿Qué se anima?
-        <button type="button" onClick={() => onChange(elements.map((e) => e.id))} className="text-accent hover:underline">
+        <button type="button" onClick={() => onChange(elements.map((e) => e.id))} className="text-accent hover:underline cursor-pointer">
           Todas las piezas
         </button>
       </div>
@@ -32,7 +32,7 @@ export function TargetPicker({ elements, keys, onChange }: TargetPickerProps) {
               onClick={() => toggle(option.key)}
               className={`rounded-full border px-2.5 py-1 text-[11px] ${
                 keys.includes(option.key) ? "border-accent bg-accent/15 text-accent" : "border-line text-ink hover:bg-hover"
-              }`}
+              } cursor-pointer`}
             >
               {option.label}
             </button>

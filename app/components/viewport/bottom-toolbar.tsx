@@ -40,7 +40,7 @@ export function BottomToolbar() {
         aria-label="Buscar comandos"
         title={withShortcut("Buscar comandos", "app.palette")}
         onClick={() => openDialog("palette")}
-        className={`${iconButton} bg-canvas ${idle}`}
+        className={`${iconButton} bg-canvas ${idle} cursor-pointer`}
       >
         <SearchIcon />
       </button>
@@ -55,7 +55,7 @@ export function BottomToolbar() {
           title={withShortcut(basic.label, toolCommandId(basic.value))}
           aria-pressed={tool === basic.value}
           onClick={() => setTool(basic.value)}
-          className={`${iconButton} ${tool === basic.value ? active : idle}`}
+          className={`${iconButton} ${tool === basic.value ? active : idle} cursor-pointer`}
         >
           {basic.icon}
         </button>

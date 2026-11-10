@@ -26,7 +26,7 @@ export function ZoomControls() {
         title={withShortcut("Alejar", "zoom.out")}
         onClick={() => stepZoom(-1)}
         disabled={zoom <= ZOOM_STEPS[0]}
-        className={`${iconButton} ${idle} disabled:opacity-40`}
+        className={`${iconButton} ${idle} disabled:opacity-40 cursor-pointer`}
       >
         <MinusIcon />
       </button>
@@ -48,7 +48,7 @@ export function ZoomControls() {
         title={withShortcut("Acercar", "zoom.in")}
         onClick={() => stepZoom(1)}
         disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
-        className={`${iconButton} ${idle} disabled:opacity-40`}
+        className={`${iconButton} ${idle} disabled:opacity-40 cursor-pointer`}
       >
         <PlusIcon />
       </button>

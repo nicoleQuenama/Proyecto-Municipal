@@ -68,7 +68,7 @@ export function MyWorkPanel() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="absolute top-3 left-3 z-20 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white shadow-lg"
+        className="absolute top-3 left-3 z-20 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white shadow-lg cursor-pointer"
       >
         Mi trabajo{works.length > 0 ? ` · ${works.length}` : ""}
       </button>
@@ -82,7 +82,7 @@ export function MyWorkPanel() {
           <h2 className="text-[13px] font-semibold">Tu espacio de trabajo</h2>
           <p className="text-ink-dim">Hola, {currentUser.name.split(" ")[0]}. Esto es lo que puedes cambiar:</p>
         </div>
-        <button type="button" aria-label="Ocultar" onClick={() => setOpen(false)} className="h-6 w-6 shrink-0 rounded-md text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" aria-label="Ocultar" onClick={() => setOpen(false)} className="h-6 w-6 shrink-0 rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           ×
         </button>
       </header>
@@ -94,7 +94,7 @@ export function MyWorkPanel() {
         <ul className="flex flex-col gap-2">
           {works.map((work) => (
             <li key={work.pageId} className="flex flex-col gap-1">
-              <button type="button" onClick={() => { go(work); setOpen(false); }} className="flex items-center gap-2 rounded-md bg-accent/10 px-2 py-1.5 text-left font-medium hover:bg-accent/20">
+              <button type="button" onClick={() => { go(work); setOpen(false); }} className="flex items-center gap-2 rounded-md bg-accent/10 px-2 py-1.5 text-left font-medium hover:bg-accent/20 cursor-pointer">
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
                   <path d="M11 2l3 3-8 8H3v-3l8-8z" />
                 </svg>
@@ -103,7 +103,7 @@ export function MyWorkPanel() {
               </button>
               {!work.whole &&
                 work.blocks.map((block) => (
-                  <button key={block.id} type="button" onClick={() => { go(work, block.id); setOpen(false); }} className="ml-5 truncate rounded-md px-2 py-1 text-left hover:bg-hover">
+                  <button key={block.id} type="button" onClick={() => { go(work, block.id); setOpen(false); }} className="ml-5 truncate rounded-md px-2 py-1 text-left hover:bg-hover cursor-pointer">
                     {block.label}
                   </button>
                 ))}

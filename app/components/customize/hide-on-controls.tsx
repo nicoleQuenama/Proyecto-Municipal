@@ -52,7 +52,7 @@ export function HideOnControls({ pageId, block, def, elementId }: HideOnControls
               key={device}
               type="button"
               onClick={() => set(device, false, element.id)}
-              className="rounded-md border border-line px-2 py-1 hover:bg-hover hover:text-ink"
+              className="rounded-md border border-line px-2 py-1 hover:bg-hover hover:text-ink cursor-pointer"
             >
               Mostrar en {DEVICE_NAME[device].plain}
             </button>

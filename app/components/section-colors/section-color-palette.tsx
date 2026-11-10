@@ -55,7 +55,7 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
         <button
           type="button"
           onClick={() => setSettings((prev) => ({ ...prev, scope: prev.scope === "component" ? "block" : "component" }))}
-          className="text-[10px] text-accent hover:underline font-medium"
+          className="text-[10px] text-accent hover:underline font-medium cursor-pointer"
           title="Alternar si el cambio de color afecta a todo el componente o solo a esta sección"
         >
           {settings.scope === "component" ? "En todo el sitio" : "Solo en esta sección"}

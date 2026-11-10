@@ -16,7 +16,7 @@ const SNIPPETS: Record<string, Snippet> = {
   }),
   "canvas-confetti": () => ({
     tailwind: true,
-    html: `<div class="p-8 text-center">\n  <button id="fiesta" class="rounded-lg bg-pink-500 px-4 py-2 font-semibold text-white">¡Celebrar!</button>\n</div>`,
+    html: `<div class="p-8 text-center">\n  <button id="fiesta" class="rounded-lg bg-pink-500 px-4 py-2 font-semibold text-white cursor-pointer">¡Celebrar!</button>\n</div>`,
     js: `import confetti from "canvas-confetti";\n\ndocument.getElementById("fiesta")!.addEventListener("click", () => confetti({ particleCount: 120, spread: 70 }));\n`,
   }),
   animejs: () => ({

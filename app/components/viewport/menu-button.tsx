@@ -51,7 +51,7 @@ export function MenuButton<T extends string>({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={className}
+        className={`${className} cursor-pointer`}
       >
         {children}
       </button>
@@ -76,7 +76,7 @@ export function MenuButton<T extends string>({
                 }}
                 className={`flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs hover:bg-hover ${
                   item.value === selected ? "text-accent" : "text-ink"
-                }`}
+                } cursor-pointer`}
               >
                 {item.icon && <span className="flex w-4 justify-center">{item.icon}</span>}
                 <span className="flex-1 text-left">{item.label}</span>

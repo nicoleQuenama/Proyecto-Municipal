@@ -44,7 +44,7 @@ export function ForgotPasswordDialog({ onClose }: ForgotPasswordDialogProps) {
           type="button"
           aria-label="Cerrar"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           ×
         </button>
@@ -58,7 +58,7 @@ export function ForgotPasswordDialog({ onClose }: ForgotPasswordDialogProps) {
             la carpeta de spam. Vence en 30 minutos.
           </p>
           <div className="flex justify-end">
-            <button type="button" onClick={onClose} className={PRIMARY_BUTTON}>
+            <button type="button" onClick={onClose} className={`${PRIMARY_BUTTON} cursor-pointer`}>
               Entendido
             </button>
           </div>
@@ -85,10 +85,10 @@ export function ForgotPasswordDialog({ onClose }: ForgotPasswordDialogProps) {
             </p>
           )}
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className={GHOST_BUTTON}>
+            <button type="button" onClick={onClose} className={`${GHOST_BUTTON} cursor-pointer`}>
               Cancelar
             </button>
-            <button type="submit" disabled={pending || !username.trim() || !email.trim()} className={PRIMARY_BUTTON}>
+            <button type="submit" disabled={pending || !username.trim() || !email.trim()} className={`${PRIMARY_BUTTON} cursor-pointer`}>
               {pending ? "Enviando…" : "Enviar enlace"}
             </button>
           </div>

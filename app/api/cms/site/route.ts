@@ -4,6 +4,8 @@ import { inProject } from "../../../server/site-access";
 import { saveBranchPatch } from "../../../server/versions/branch-edits";
 import { findBranch, VersionError } from "../../../server/versions/branch-rows";
 import { headSite, loadBranchSite } from "../../../server/versions/branch-state";
+import { filterSiteForUnits } from "../../../server/units/filter-site";
+import { unitsOf } from "../../../server/units/units-access";
 import { versionRoute } from "../../../server/versions/version-route";
 
 const MAX_BYTES = 20_000_000;
@@ -17,7 +19,10 @@ export const GET = (request: Request) =>
   versionRoute(request, (actor) =>
     inProject(actor, async (tx, scope) => {
       const branch = await findBranch(tx, scope, branchOf(request));
-      return { site: await loadBranchSite(tx, scope, branch), head: await headSite(tx, scope, branch) };
+      // Quien está sujeto a unidades solo recibe lo suyo y lo global; lo que se guarda, fusiona o publica sigue usando el sitio entero.
+      const access = await unitsOf(tx);
+      const [site, head] = [await loadBranchSite(tx, scope, branch), await headSite(tx, scope, branch)];
+      return { site: site && filterSiteForUnits(site, access), head: head && filterSiteForUnits(head, access) };
     }),
   );
 

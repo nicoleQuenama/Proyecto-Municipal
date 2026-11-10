@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useConsoleSink } from "../code/console-sink";
 import { useOrigin } from "../code/use-origin";
 import { functionsFor } from "../functions/scope";
 import { useNavigation } from "../navigation/navigation-context";
@@ -15,14 +16,15 @@ export function usePageCode(page: Page, active: boolean) {
   const { pages, libraries, functions } = useSite();
   const { followLink } = useNavigation();
   const origin = useOrigin();
+  const sink = useConsoleSink();
   const source = page.js ?? "";
 
   useEffect(() => {
     if (!active || !origin || !source.trim()) return;
 
     const element = ref.current;
-    const api = createApi({ element, blockId: "", pages, followLink });
-    void executeCode(source, "page", { libraries, origin, api, element, functions: functionsFor(functions, {}) });
+    const api = createApi({ element, blockId: "", pages, followLink, sink, source: "Página" });
+    void executeCode(source, "page", { libraries, origin, api, element, sink, functions: functionsFor(functions, {}) });
     // Solo al aparecer la página o al cambiar su código; las demás dependencias no deben repetirlo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, origin, source, page.id]);

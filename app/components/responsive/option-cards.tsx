@@ -32,7 +32,7 @@ export function OptionCards<T extends string>({ label, value, options, onPick }:
           onClick={() => onPick(option.value)}
           className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-1.5 text-[10px] leading-tight transition-colors ${
             option.value === value ? "border-accent bg-accent/15 text-ink" : "border-line text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-35 disabled:hover:bg-transparent"
-          }`}
+          } cursor-pointer`}
         >
           {option.art}
           <span className="text-center">{option.label}</span>

@@ -27,7 +27,7 @@ export function PublishButton() {
           type="button"
           title="Revisar rendimiento, accesibilidad y SEO antes de publicar"
           onClick={() => openDialog("audit")}
-          className="flex h-7 items-center gap-1.5 rounded-md border border-line px-3 text-xs hover:bg-hover"
+          className="flex h-7 items-center gap-1.5 rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer"
         >
           Auditoría
         </button>
@@ -37,7 +37,7 @@ export function PublishButton() {
           type="button"
           title="Pull requests de tu grupo esperando tu revisión"
           onClick={() => openDialog("versions")}
-          className="flex h-7 items-center gap-1.5 rounded-md border border-amber-400/60 bg-amber-400/10 px-3 text-xs font-medium text-amber-300 hover:bg-amber-400/20"
+          className="flex h-7 items-center gap-1.5 rounded-md border border-amber-400/60 bg-amber-400/10 px-3 text-xs font-medium text-amber-300 hover:bg-amber-400/20 cursor-pointer"
         >
           {pending} por revisar
         </button>
@@ -46,7 +46,7 @@ export function PublishButton() {
         type="button"
         title="Añadir cambios, hacer una versión y publicar"
         onClick={() => openDialog("versions")}
-        className="flex h-7 items-center gap-1.5 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90"
+        className="flex h-7 items-center gap-1.5 rounded-md bg-accent px-3 text-xs font-medium text-white hover:bg-accent/90 cursor-pointer"
       >
         <UploadIcon />
         Publicar

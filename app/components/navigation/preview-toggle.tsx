@@ -20,7 +20,7 @@ export function PreviewToggle() {
           previewing
             ? "border-accent bg-accent/25 text-accent"
             : "border-line text-ink hover:bg-hover"
-        }`}
+        } cursor-pointer`}
       >
         <span aria-hidden>{previewing ? "■" : "▶"}</span>
         {previewing ? "Salir" : "Probar"}

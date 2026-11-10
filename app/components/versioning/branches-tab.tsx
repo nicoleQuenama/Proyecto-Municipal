@@ -49,7 +49,7 @@ function VersionChip({
       onClick={onClick}
       className={`h-7 max-w-52 truncate rounded-md px-2.5 text-xs transition-colors ${
         active ? "bg-accent text-white" : "bg-hover text-ink-dim hover:text-ink"
-      }`}
+      } cursor-pointer`}
     >
       {children}
     </button>
@@ -130,7 +130,7 @@ function BranchRow({ branch, commits, isCurrent, isMerged, onSwitch, onDelete }:
           aria-controls={detailsId}
           title="Ver versiones y cambios"
           onClick={() => setExpanded((open) => !open)}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
         >
           <span className={`text-ink-dim transition-transform ${expanded ? "" : "-rotate-90"}`}>
             <ChevronIcon />
@@ -157,14 +157,14 @@ function BranchRow({ branch, commits, isCurrent, isMerged, onSwitch, onDelete }:
             <button
               type="button"
               onClick={onDelete}
-              className={`${rowButton} border-red-500/60 bg-red-500/15 text-red-400 hover:bg-red-500/25`}
+              className={`${rowButton} border-red-500/60 bg-red-500/15 text-red-400 hover:bg-red-500/25 cursor-pointer`}
             >
               Eliminar rama
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className={`${rowButton} border-line hover:bg-hover`}
+              className={`${rowButton} border-line hover:bg-hover cursor-pointer`}
             >
               Cancelar
             </button>
@@ -176,7 +176,7 @@ function BranchRow({ branch, commits, isCurrent, isMerged, onSwitch, onDelete }:
             {isCurrent ? (
               <Badge tone="accent">Actual</Badge>
             ) : (
-              <button type="button" onClick={onSwitch} className={`${rowButton} border-line hover:bg-hover`}>
+              <button type="button" onClick={onSwitch} className={`${rowButton} border-line hover:bg-hover cursor-pointer`}>
                 Cambiar
               </button>
             )}
@@ -189,7 +189,7 @@ function BranchRow({ branch, commits, isCurrent, isMerged, onSwitch, onDelete }:
                   isMerged
                     ? "border-red-500/60 text-red-400 hover:bg-red-500/15"
                     : "border-transparent text-ink-dim hover:bg-hover hover:text-red-400"
-                }`}
+                } cursor-pointer`}
               >
                 Eliminar
               </button>

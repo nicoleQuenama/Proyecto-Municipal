@@ -52,7 +52,7 @@ function VariableRow({ variable, dispatch, readOnly }: { variable: Variable; dis
           aria-label={`Eliminar --${variable.name}`}
           title="Eliminar variable"
           onClick={() => dispatch({ type: "variable/delete", id: variable.id })}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400 cursor-pointer"
         >
           ×
         </button>
@@ -132,7 +132,7 @@ function NewVariableForm({
         <button
           type="submit"
           disabled={!name.trim()}
-          className="h-8 shrink-0 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40"
+          className="h-8 shrink-0 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40 cursor-pointer"
         >
           Agregar
         </button>
@@ -154,8 +154,8 @@ export function VariablesSection({ scope, ctx, variables, dispatch, canEdit = tr
     <Collapsible title={`Paleta y variables (${own.length})`} defaultOpen={!canEdit}>
       {!canEdit && (
         <p className="rounded-md bg-hover px-3 py-2 text-[11px] text-ink-dim">
-          Los colores predefinidos los administra el superadministrador. Puedes usarlos en tus secciones, pero no
-          crear ni cambiar la paleta global.
+          Estas son tus variables. La paleta de la marca (global) la administra el superadministrador: puedes usarla, pero
+          no cambiarla ni borrarla.
         </p>
       )}
 

@@ -16,12 +16,12 @@ export function SizeSuggestions({ state, dispatch }: { state: BuilderState; disp
       <span className="text-[11px] text-ink-dim">Tamaños sugeridos</span>
       <div className="flex flex-wrap gap-1">
         {SIZE_PRESETS.map((preset) => (
-          <button key={preset.label} type="button" title={`${preset.width} × ${preset.height}`} onClick={() => set(preset.width, preset.height)} className={chip}>
+          <button key={preset.label} type="button" title={`${preset.width} × ${preset.height}`} onClick={() => set(preset.width, preset.height)} className={`${chip} cursor-pointer`}>
             {preset.label}
           </button>
         ))}
         {fit && (
-          <button type="button" onClick={() => set(fit.width, fit.height)} className={`${chip} border-accent text-accent`}>
+          <button type="button" onClick={() => set(fit.width, fit.height)} className={`${chip} border-accent text-accent cursor-pointer`}>
             Ajustar al contenido
           </button>
         )}

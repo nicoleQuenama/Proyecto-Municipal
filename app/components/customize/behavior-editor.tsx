@@ -74,7 +74,7 @@ export function BehaviorEditor({ behavior, blockId, pages, elements, onChange, o
           aria-label="Quitar interacción"
           title="Quitar interacción"
           onClick={onRemove}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-red-400 cursor-pointer"
         >
           ×
         </button>
@@ -121,7 +121,7 @@ export function BehaviorEditor({ behavior, blockId, pages, elements, onChange, o
         type="button"
         onClick={() => previewBehavior(blockId, behavior)}
         title="Ejecuta esta acción ahora, sin salir del editor"
-        className="h-8 rounded-md border border-line text-xs text-ink hover:bg-hover"
+        className="h-8 rounded-md border border-line text-xs text-ink hover:bg-hover cursor-pointer"
       >
         ▶ Ver el efecto
       </button>

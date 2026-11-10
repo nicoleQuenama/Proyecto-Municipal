@@ -26,7 +26,7 @@ export function Collapsible({ title, badge, defaultOpen = true, children }: Coll
           aria-expanded={open}
           aria-controls={contentId}
           onClick={() => setOpen((current) => !current)}
-          className="flex w-full items-center gap-2 rounded-md py-1 text-left uppercase hover:text-ink"
+          className="flex w-full items-center gap-2 rounded-md py-1 text-left uppercase hover:text-ink cursor-pointer"
         >
           <span aria-hidden className={`transition-transform ${open ? "" : "-rotate-90"}`}>▾</span>
           <span className="min-w-0 flex-1 truncate">{title}</span>

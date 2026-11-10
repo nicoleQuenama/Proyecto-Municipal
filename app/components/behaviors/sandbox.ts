@@ -15,6 +15,8 @@ export interface SandboxApi {
   toggle: (target?: string) => void;
   openUrl: (url: string) => void;
   log: (...values: unknown[]) => void;
+  /** Uso interno: lo que el código escribe con `console.warn`, `console.error`… (el nivel va primero). */
+  print: (level: string, ...values: unknown[]) => void;
 }
 
 export type SandboxMethod = keyof SandboxApi;
@@ -23,15 +25,22 @@ export type SandboxMethod = keyof SandboxApi;
 const FRAME_SCRIPT = `
   const call = (method, ...args) => parent.postMessage({ type: "${CALL_MESSAGE}", method, args }, "*");
   const api = Object.fromEntries(
-    ["navigate", "animate", "show", "hide", "toggle", "openUrl", "log"].map((method) => [method, (...args) => call(method, ...args)])
+    ["navigate", "animate", "show", "hide", "toggle", "openUrl", "log", "print"].map((method) => [method, (...args) => call(method, ...args)])
+  );
+  const show = (value) => {
+    if (typeof value === "string") return value;
+    try { return JSON.stringify(value) ?? String(value); } catch { return String(value); }
+  };
+  const consoleShim = Object.fromEntries(
+    ["log", "info", "warn", "error", "debug"].map((level) => [level, (...args) => call("print", level, args.map(show).join(" "))])
   );
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   addEventListener("message", async (event) => {
     if (event.source !== parent || event.data?.type !== "${RUN_MESSAGE}") return;
     try {
-      await new AsyncFunction("api", event.data.source)(api);
+      await new AsyncFunction("api", "console", event.data.source)(api, consoleShim);
     } catch (error) {
-      call("log", "Error en la interacción: " + error.message);
+      call("print", "error", "Error en la interacción: " + error.message);
     }
   });
 `;

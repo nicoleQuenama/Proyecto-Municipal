@@ -35,7 +35,7 @@ export function DataTab() {
       <button
         type="button"
         onClick={() => dispatch({ type: "source/save", source: newSource(sources.length) })}
-        className="h-9 rounded-md bg-hover text-xs font-medium hover:bg-accent hover:text-white"
+        className="h-9 rounded-md bg-hover text-xs font-medium hover:bg-accent hover:text-white cursor-pointer"
       >
         + Nueva API
       </button>

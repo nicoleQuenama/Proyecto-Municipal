@@ -70,18 +70,18 @@ export function LayerRow(props: LayerRowProps) {
           title="Doble clic para cambiar el nombre"
           onClick={props.onSelect}
           onDoubleClick={() => setRenaming(true)}
-          className={`h-7 min-w-0 flex-1 truncate text-left text-xs ${element.hidden ? "text-ink-dim line-through" : ""}`}
+          className={`h-7 min-w-0 flex-1 truncate text-left text-xs ${element.hidden ? "text-ink-dim line-through" : ""} cursor-pointer`}
         >
           {name}
         </button>
       )}
 
-      <button type="button" aria-label={`Subir ${name}`} title="Subir (hacia delante)" disabled={!props.canForward} onClick={() => props.onStep("forward")} className={iconButton}>↑</button>
-      <button type="button" aria-label={`Bajar ${name}`} title="Bajar (hacia atrás)" disabled={!props.canBackward} onClick={() => props.onStep("backward")} className={iconButton}>↓</button>
-      <button type="button" aria-label={`${element.hidden ? "Mostrar" : "Ocultar"} ${name}`} aria-pressed={element.hidden === true} title={element.hidden ? "Mostrar" : "Ocultar"} onClick={props.onToggleHidden} className={iconButton}>
+      <button type="button" aria-label={`Subir ${name}`} title="Subir (hacia delante)" disabled={!props.canForward} onClick={() => props.onStep("forward")} className={`${iconButton} cursor-pointer`}>↑</button>
+      <button type="button" aria-label={`Bajar ${name}`} title="Bajar (hacia atrás)" disabled={!props.canBackward} onClick={() => props.onStep("backward")} className={`${iconButton} cursor-pointer`}>↓</button>
+      <button type="button" aria-label={`${element.hidden ? "Mostrar" : "Ocultar"} ${name}`} aria-pressed={element.hidden === true} title={element.hidden ? "Mostrar" : "Ocultar"} onClick={props.onToggleHidden} className={`${iconButton} cursor-pointer`}>
         {element.hidden ? "◌" : "◉"}
       </button>
-      <button type="button" aria-label={`${element.locked ? "Desbloquear" : "Bloquear"} ${name}`} aria-pressed={element.locked === true} title={element.locked ? "Desbloquear" : "Bloquear (no se mueve ni se selecciona en el lienzo)"} onClick={props.onToggleLocked} className={`${iconButton} ${element.locked ? "text-accent" : ""}`}>
+      <button type="button" aria-label={`${element.locked ? "Desbloquear" : "Bloquear"} ${name}`} aria-pressed={element.locked === true} title={element.locked ? "Desbloquear" : "Bloquear (no se mueve ni se selecciona en el lienzo)"} onClick={props.onToggleLocked} className={`${iconButton} ${element.locked ? "text-accent" : ""} cursor-pointer`}>
         {element.locked ? "⚿" : "○"}
       </button>
     </li>

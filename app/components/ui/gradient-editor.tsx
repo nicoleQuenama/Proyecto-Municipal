@@ -66,7 +66,7 @@ export function GradientEditor({ value, onChange }: GradientEditorProps) {
               title={name}
               aria-label={`Degradado ${name}`}
               onClick={() => set(preset)}
-              className="h-7 rounded-md border border-line hover:border-accent"
+              className="h-7 rounded-md border border-line hover:border-accent cursor-pointer"
               style={{ background: buildGradient(preset) }}
             />
           ))}

@@ -32,7 +32,7 @@ interface HtmlOutlineProps {
  * Pulsar una etiqueta escribe en el editor, donde está el cursor; al pasar el ratón se ve qué se escribirá.
  */
 export function HtmlOutline({ lines, language, nested, onInsert }: HtmlOutlineProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
 
   if (!open) {
@@ -40,7 +40,7 @@ export function HtmlOutline({ lines, language, nested, onInsert }: HtmlOutlinePr
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-8 shrink-0 border-l border-neutral-300 bg-neutral-100 text-xs font-medium text-neutral-600 [writing-mode:vertical-rl] hover:bg-neutral-200"
+        className="w-8 shrink-0 border-l border-neutral-300 bg-neutral-100 text-xs font-medium text-neutral-600 [writing-mode:vertical-rl] hover:bg-neutral-200 cursor-pointer"
       >
         Ver las etiquetas HTML
       </button>
@@ -62,7 +62,7 @@ export function HtmlOutline({ lines, language, nested, onInsert }: HtmlOutlinePr
           type="button"
           aria-label="Ocultar las etiquetas"
           onClick={() => setOpen(false)}
-          className="h-6 w-6 shrink-0 rounded text-neutral-500 hover:bg-neutral-200"
+          className="h-6 w-6 shrink-0 rounded text-neutral-500 hover:bg-neutral-200 cursor-pointer"
         >
           ×
         </button>
@@ -86,7 +86,7 @@ export function HtmlOutline({ lines, language, nested, onInsert }: HtmlOutlinePr
                   line.current
                     ? "border-sky-300 bg-sky-100"
                     : "border-transparent hover:border-sky-300 hover:bg-sky-50"
-                }`}
+                } cursor-pointer`}
               >
                 <span className="min-w-0 flex-1 break-all">
                   <CodeLine code={line.code} />

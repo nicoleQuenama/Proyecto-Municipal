@@ -57,7 +57,7 @@ export function AccessEditor({ user, saving, onSave, onCancel }: AccessEditorPro
               onClick={() => chooseMode(id)}
               className={`flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors ${
                 mode === id ? "border-accent bg-accent/10" : "border-line bg-canvas hover:border-ink-dim"
-              }`}
+              } cursor-pointer`}
             >
               <span className="font-medium">{title}</span>
               <span className="text-[11px] text-ink-dim">{description}</span>
@@ -113,10 +113,10 @@ export function AccessEditor({ user, saving, onSave, onCancel }: AccessEditorPro
       </p>
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="h-8 rounded-md px-3 text-ink-dim hover:bg-canvas hover:text-ink">
+        <button type="button" onClick={onCancel} className="h-8 rounded-md px-3 text-ink-dim hover:bg-canvas hover:text-ink cursor-pointer">
           Cancelar
         </button>
-        <button type="button" disabled={saving} onClick={() => onSave(access)} className="h-8 rounded-md bg-accent px-4 font-medium text-white disabled:opacity-40">
+        <button type="button" disabled={saving} onClick={() => onSave(access)} className="h-8 rounded-md bg-accent px-4 font-medium text-white disabled:opacity-40 cursor-pointer">
           {saving ? "Guardando…" : "Guardar acceso"}
         </button>
       </div>

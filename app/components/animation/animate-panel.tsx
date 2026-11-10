@@ -91,9 +91,9 @@ export function AnimatePanel({ onClose }: { onClose: () => void }) {
         onTrigger={(trigger) => change({ trigger }, false)}
       />
       <div className="sticky -bottom-3 -mx-3 -mb-3 flex justify-end gap-1 border-t border-line bg-panel p-2">
-        <button type="button" onClick={() => test(draft)} className={buttonClass}>▶ Probar</button>
-        <button type="button" onClick={onClose} className={`${buttonClass} text-ink-dim`}>Cancelar</button>
-        <button type="button" onClick={apply} className={`${buttonClass} bg-accent text-white hover:bg-accent/80`}>Aplicar</button>
+        <button type="button" onClick={() => test(draft)} className={`${buttonClass} cursor-pointer`}>▶ Probar</button>
+        <button type="button" onClick={onClose} className={`${buttonClass} text-ink-dim cursor-pointer`}>Cancelar</button>
+        <button type="button" onClick={apply} className={`${buttonClass} bg-accent text-white hover:bg-accent/80 cursor-pointer`}>Aplicar</button>
       </div>
     </section>
   );

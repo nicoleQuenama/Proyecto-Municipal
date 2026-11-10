@@ -36,7 +36,7 @@ export function LinkHandle({ element, link, label }: LinkHandleProps) {
         link
           ? "border-sky-500 bg-sky-500 text-white"
           : "hidden border-sky-500 bg-white text-sky-600 group-hover/element:flex focus:flex"
-      }`}
+      } cursor-pointer`}
       style={size}
     >
       {link ? linkArrow(link) : <LinkIcon />}

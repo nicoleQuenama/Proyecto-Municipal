@@ -54,13 +54,13 @@ export function BackgroundSource({ onPick }: { onPick: (media: PickedMedia) => v
     <div className="flex flex-col gap-2">
       <span className="text-[11px] text-ink-dim">Imagen o video de fondo</span>
       <div className="grid grid-cols-3 gap-1">
-        <button type="button" className={button} onClick={() => fileInput.current?.click()}>Subir imagen</button>
+        <button type="button" className={`${button} cursor-pointer`} onClick={() => fileInput.current?.click()}>Subir imagen</button>
         {(Object.keys(URL_SOURCES) as UrlSource[]).map((key) => (
           <button
             key={key}
             type="button"
             aria-pressed={source === key}
-            className={`${button} ${source === key ? "border-accent" : ""}`}
+            className={`${button} ${source === key ? "border-accent" : ""} cursor-pointer`}
             onClick={() => {
               setSource(source === key ? null : key);
               setError(null);
@@ -85,7 +85,7 @@ export function BackgroundSource({ onPick }: { onPick: (media: PickedMedia) => v
             onKeyDown={(e) => e.key === "Enter" && applyUrl(source)}
             className="h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent"
           />
-          <button type="button" className={button} onClick={() => applyUrl(source)}>Aplicar</button>
+          <button type="button" className={`${button} cursor-pointer`} onClick={() => applyUrl(source)}>Aplicar</button>
         </label>
       )}
       {error && <span role="alert" className="text-[11px] text-red-400">{error}</span>}

@@ -61,7 +61,7 @@ export function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setForgotOpen(true)}
-                  className="text-xs font-medium text-ink-dim transition-colors hover:text-accent"
+                  className="text-xs font-medium text-ink-dim transition-colors hover:text-accent cursor-pointer"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -76,7 +76,7 @@ export function LoginForm() {
               <button
                 type="submit"
                 disabled={pending}
-                className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-accent to-[#6f7bff] text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-[filter,transform] hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-accent to-[#6f7bff] text-sm font-semibold text-white shadow-lg shadow-accent/25 transition-[filter,transform] hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {pending && (
                   <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

@@ -25,7 +25,16 @@ export function Modal({ label, size = "md", onClose, children }: ModalProps) {
 
   useEffect(() => {
     const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (dialog && !dialog.open) {
+      // El navegador devuelve el foco a quien abrió el diálogo al cerrarlo, y lo hace desplazando la pantalla hasta
+      // él: un botón sobre el lienzo arrastraba todo el editor hacia un lado. Se devuelve el foco a mano y sin desplazar.
+      opener?.blur();
+      dialog.showModal();
+    }
+    return () => {
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
   }, []);
 
   return (

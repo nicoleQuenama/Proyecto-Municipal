@@ -131,7 +131,7 @@ export const FIELD_RENDERERS: { [T in Field["type"]]: Renderer<T> } = {
         <button
           type="button"
           onClick={openCode}
-          className="flex h-9 items-center justify-center gap-2 rounded-md border border-line text-xs hover:bg-hover"
+          className="flex h-9 items-center justify-center gap-2 rounded-md border border-line text-xs hover:bg-hover cursor-pointer"
         >
           <CodeIcon />
           Editar {field.label} en el editor · {lines} {lines === 1 ? "línea" : "líneas"}

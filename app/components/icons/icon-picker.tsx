@@ -42,7 +42,7 @@ export function IconPicker({ value, onPick, only, label = "Ícono" }: IconPicker
             onClick={() => onPick(name)}
             className={`flex h-8 items-center justify-center rounded ${
               name === value ? "bg-accent text-white" : "text-ink-dim hover:bg-hover hover:text-ink"
-            }`}
+            } cursor-pointer`}
           >
             <IconGlyph name={name} size={18} />
           </button>

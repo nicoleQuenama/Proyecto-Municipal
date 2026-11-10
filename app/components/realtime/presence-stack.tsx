@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useSiteSyncState } from "../persistence/site-sync-context";
 import { useSite } from "../site/site-context";
 import { useBranch } from "../versioning/branch-context";
 import { useRealtime } from "./realtime-context";
@@ -18,7 +19,15 @@ function describe(peer: Peer, pageName: string | undefined, branch: string | nul
 export function PresenceStack() {
   const { peers, connected } = useRealtime();
   const { pages } = useSite();
-  const branch = useBranch()?.branch ?? null;
+  const branches = useBranch();
+  const sync = useSiteSyncState();
+  const branch = branches?.branch ?? null;
+  /** Cada cuenta trabaja en su rama: para verse editar en vivo hay que estar en la misma. Al tocar a alguien se va a la suya. */
+  const follow = async (peer: Peer) => {
+    if (!branches || peer.branch === branch) return;
+    await sync.flush();
+    branches.setBranch(peer.branch);
+  };
 
   // La misma persona con dos pestañas abiertas cuenta una vez.
   const people = useMemo(() => [...new Map(peers.map((peer) => [peer.uid, peer])).values()], [peers]);
@@ -33,14 +42,16 @@ export function PresenceStack() {
       </span>
       <div className="flex -space-x-2">
         {shown.map((peer) => (
-          <span
+          <button
+            type="button"
             key={peer.uid}
-            title={describe(peer, pages.find((page) => page.id === peer.page)?.name, branch)}
+            onClick={() => void follow(peer)}
+            title={`${describe(peer, pages.find((page) => page.id === peer.page)?.name, branch)}${peer.branch !== branch ? " · clic para ir a su rama" : ""}`}
             style={{ backgroundColor: peer.color }}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-panel"
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-panel ${peer.branch !== branch ? "cursor-pointer opacity-70 hover:opacity-100" : "cursor-default"}`}
           >
             {peer.name.charAt(0).toUpperCase()}
-          </span>
+          </button>
         ))}
         {people.length > MAX_VISIBLE && (
           <span title={people.slice(MAX_VISIBLE).map((peer) => peer.name).join(", ")} className="flex h-7 w-7 items-center justify-center rounded-full bg-hover text-[11px] font-medium ring-2 ring-panel">

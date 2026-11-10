@@ -61,7 +61,7 @@ export function InviteAccountForm({ onCreated }: { onCreated: (user: User) => vo
             </option>
           ))}
         </select>
-        <button type="submit" disabled={!ready || saving} className="h-9 rounded-md bg-accent px-4 text-xs font-medium text-white disabled:opacity-40">
+        <button type="submit" disabled={!ready || saving} className="h-9 rounded-md bg-accent px-4 text-xs font-medium text-white disabled:opacity-40 cursor-pointer">
           {saving ? "Creando…" : "Crear cuenta"}
         </button>
       </div>

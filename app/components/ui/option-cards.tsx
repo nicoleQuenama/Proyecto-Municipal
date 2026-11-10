@@ -31,7 +31,7 @@ export function OptionCards<T extends string>({ label, value, options, onChange 
             onClick={() => onChange(option.value)}
             className={`flex flex-col items-center gap-1 rounded-md border px-1 py-1.5 text-[10px] leading-tight ${
               option.value === value ? "border-accent bg-accent/15 text-ink" : "border-line text-ink-dim hover:bg-hover"
-            }`}
+            } cursor-pointer`}
           >
             {option.preview}
             <span className="text-center">{option.label}</span>

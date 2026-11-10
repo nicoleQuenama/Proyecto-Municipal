@@ -18,11 +18,11 @@ export function GroupControls({ componentId, element }: { componentId: string; e
   return (
     <div className="flex flex-col gap-1">
       {isCard ? (
-        <button type="button" onClick={() => dispatch({ type: "elements/ungroup", componentId, elementId: element.id })} className={button}>
+        <button type="button" onClick={() => dispatch({ type: "elements/ungroup", componentId, elementId: element.id })} className={`${button} cursor-pointer`}>
           Deshacer la tarjeta (Ctrl+Mayús+G)
         </button>
       ) : (
-        <button type="button" onClick={() => dispatch({ type: "elements/group", componentId, elementIds: ids })} className={button}>
+        <button type="button" onClick={() => dispatch({ type: "elements/group", componentId, elementIds: ids })} className={`${button} cursor-pointer`}>
           Agrupar {ids.length} elementos en una tarjeta (Ctrl+G)
         </button>
       )}

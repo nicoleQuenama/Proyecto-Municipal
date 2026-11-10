@@ -60,7 +60,7 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
         ) : (
           <span>{kind === "video" && element.src ? "Video enlazado (sin portada)" : copy.empty}</span>
         )}
-        <button type="button" className={`${actionButton} w-full`} onClick={() => fileInput.current?.click()}>
+        <button type="button" className={`${actionButton} w-full cursor-pointer`} onClick={() => fileInput.current?.click()}>
           {copy.upload}
         </button>
         <span>o arrastra un archivo hasta aquí</span>
@@ -88,7 +88,7 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
           onKeyDown={(e) => e.key === "Enter" && applyUrl()}
           className={inputClass}
         />
-        <button type="button" className={actionButton} onClick={applyUrl}>
+        <button type="button" className={`${actionButton} cursor-pointer`} onClick={applyUrl}>
           Usar
         </button>
       </div>

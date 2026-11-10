@@ -1,3 +1,4 @@
+import type { UnitAction } from "../units/unit-actions";
 import type { SitePatch } from "../../server/site/site-patch";
 import type { RecordingBaseline } from "../animation/animation-rules";
 import type { AnimationStep, RecordedAnimation } from "../animation/types";
@@ -296,6 +297,8 @@ export interface Page {
   slug: string;
   /** La página de inicio no se puede eliminar. */
   isHome: boolean;
+  /** La unidad (departamento) dueña de la página; sin ella la página es global (de todos). */
+  unitId?: string | null;
   /** Función especial de la página (carga, 404): se muestra sola cuando hace falta y no es una página normal del sitio. */
   role?: PageRole;
   title: TitleState;
@@ -357,6 +360,8 @@ export interface SiteState extends StyleState {
   /** Secciones seleccionadas a la vez (arrastrando sobre ellas); la activa es `selectedId`. */
   selectedBlockIds?: string[];
   libraries: Library[];
+  /** La unidad en la que trabaja esta persona ahora: ahí nacen las páginas y los archivos nuevos. Es de la pantalla; no se guarda. */
+  activeUnitId?: string | null;
   /** CSS de todo el sitio (afecta a las páginas, no al editor). */
   globalCss: string;
   functions: SharedFunction[];
@@ -364,6 +369,8 @@ export interface SiteState extends StyleState {
   sources: DataSource[];
   /** Archivos multimedia del proyecto (imágenes y videos) al estilo Canva. */
   projectMedia?: ProjectMediaAsset[];
+  /** Manual de marca obligatorio: quien no es superadministrador debe usar las variables de la marca, no valores sueltos. */
+  brandRequired?: boolean;
 }
 
 export interface ProjectMediaAsset {
@@ -378,9 +385,12 @@ export interface ProjectMediaAsset {
   local?: boolean;
   tag?: string;
   tags?: string[];
+  /** La unidad dueña del archivo; sin ella es global. */
+  unitId?: string | null;
 }
 
 export type SiteAction =
+  | UnitAction
   | { type: "project/load"; state: SiteState }
   /** Lo que otra persona acaba de cambiar en la misma rama (llega en vivo): se aplica sobre el estado actual, sin tocar lo que cada quien tiene seleccionado. */
   | { type: "remote/patch"; patch: SitePatch }
@@ -452,6 +462,7 @@ export type SiteAction =
   | { type: "block/reset"; pageId: string; blockId: string }
   | { type: "link/set"; componentId: string; elementId: string; link: LinkTarget | null }
   | { type: "nav/transition"; transition: Transition }
+  | { type: "brand/require"; value: boolean }
   | { type: "variable/save"; variable: Variable }
   | { type: "variable/delete"; id: string }
   | { type: "rule/set"; scope: StyleScope; target: StyleTarget; prop: StyleProp; value: string | null }

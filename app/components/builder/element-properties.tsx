@@ -76,12 +76,12 @@ export function ElementProperties({ element, state, dispatch, newId }: ElementPr
       )}
 
       <div className="grid grid-cols-2 gap-2 border-t border-line pt-3">
-        <button type="button" className={actionButton} onClick={() => dispatch({ type: "reorder", id: element.id, to: "front" })}>Al frente</button>
-        <button type="button" className={actionButton} onClick={() => dispatch({ type: "reorder", id: element.id, to: "back" })}>Al fondo</button>
-        <button type="button" className={actionButton} onClick={() => dispatch({ type: "duplicate", id: element.id, newId: newId() })}>Duplicar</button>
+        <button type="button" className={`${actionButton} cursor-pointer`} onClick={() => dispatch({ type: "reorder", id: element.id, to: "front" })}>Al frente</button>
+        <button type="button" className={`${actionButton} cursor-pointer`} onClick={() => dispatch({ type: "reorder", id: element.id, to: "back" })}>Al fondo</button>
+        <button type="button" className={`${actionButton} cursor-pointer`} onClick={() => dispatch({ type: "duplicate", id: element.id, newId: newId() })}>Duplicar</button>
         <button
           type="button"
-          className={`${actionButton} text-red-400 hover:bg-red-500/15`}
+          className={`${actionButton} text-red-400 hover:bg-red-500/15 cursor-pointer`}
           onClick={() => dispatch({ type: "remove", id: element.id })}
         >
           Eliminar

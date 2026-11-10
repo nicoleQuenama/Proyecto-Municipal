@@ -4,6 +4,9 @@ import { importMapOf } from "../libraries/library-url";
 import { rootVariablesCss, themeCss } from "../styles/css-variables";
 import type { Variable } from "../styles/types";
 import type { CodeSource, Library, SharedFunction } from "../site/types";
+import { CLEAR_MESSAGE, ELEMENT_MESSAGE, HIGHLIGHT_MESSAGE, LOG_MESSAGE, SIZE_MESSAGE } from "./messages";
+
+export { SIZE_MESSAGE };
 
 /** Lo del proyecto que el código de un bloque también puede usar. */
 export interface SharedAssets {
@@ -15,13 +18,161 @@ export interface SharedAssets {
 }
 
 /** Avisa a la página de cuánto mide el contenido para que el iframe se ajuste. */
-export const SIZE_MESSAGE = "portal:size";
-
 const SIZE_REPORTER = `
   const report = () => parent.postMessage({ type: "${SIZE_MESSAGE}", height: document.documentElement.scrollHeight }, "*");
   new ResizeObserver(report).observe(document.documentElement);
   addEventListener("load", report);
   report();
+`;
+
+/** Todo lo que el codigo escribe en la consola (y sus errores) vuelve al editor. */
+const CONSOLE_BRIDGE = `
+(() => {
+  const send = (level, args) => {
+    try {
+      const parts = Array.from(args, (value) => {
+        if (typeof value === "string") return value;
+        if (value instanceof Error) return value.stack || value.message;
+        if (typeof value === "function") return "[Function " + (value.name || "anonima") + "]";
+        if (value === null) return "null";
+        if (value === undefined) return "undefined";
+        if (typeof value === "object") {
+          if (value instanceof Element) return "<" + value.tagName.toLowerCase() + ">";
+          try { return JSON.stringify(value); } catch { return String(value); }
+        }
+        return String(value);
+      });
+      parent.postMessage({ type: "${LOG_MESSAGE}", level, text: parts.join(" "), at: Date.now() }, "*");
+    } catch {}
+  };
+  for (const level of ["log", "info", "warn", "error", "debug"]) {
+    const original = console[level].bind(console);
+    console[level] = (...args) => { send(level, args); original(...args); };
+  }
+  addEventListener("error", (event) => {
+    const message = event.message || (event.error && event.error.message) || "Error";
+    const where = event.filename ? " (" + event.filename + ":" + event.lineno + ":" + event.colno + ")" : "";
+    send("error", [message + where]);
+  });
+  addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason;
+    send("error", ["Promesa rechazada: " + (reason && reason.stack ? reason.stack : String(reason))]);
+  });
+})();
+`;
+
+/**
+ * Deja senalar elementos en la vista previa y resaltarlos desde el editor. Cada elemento se identifica por su
+ * posicion (`0,2,1`), que el editor traduce a las lineas del HTML que lo dibujan.
+ */
+const INSPECTOR_BRIDGE = `
+(() => {
+  const pathOf = (element) => {
+    const parts = [];
+    let node = element;
+    while (node && node !== document.body) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      parts.unshift(Array.prototype.indexOf.call(parent.children, node));
+      node = parent;
+    }
+    return parts.join(",");
+  };
+  const find = (path) => {
+    let element = document.body;
+    if (!path) return null;
+    for (const part of path.split(",")) {
+      if (!part) continue;
+      element = element.children[Number(part)];
+      if (!element) return null;
+    }
+    return element;
+  };
+  // El resaltado son cajas superpuestas (no cambian el estilo del elemento): se dibujan sobre él con su etiqueta.
+  const layer = document.createElement("div");
+  layer.style.cssText = "position:absolute;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none";
+  document.documentElement.appendChild(layer);
+  let marked = [];
+  let markedKind = "hover";
+  const labelOf = (element) => {
+    const cls = typeof element.className === "string" ? element.className.trim().split(/\\s+/).filter(Boolean).slice(0, 2).join(".") : "";
+    return element.tagName.toLowerCase() + (element.id ? "#" + element.id : "") + (cls ? "." + cls : "");
+  };
+  const render = () => {
+    layer.textContent = "";
+    for (const element of marked) {
+      const rect = element.getBoundingClientRect();
+      const box = document.createElement("div");
+      const solid = markedKind === "select";
+      box.style.cssText =
+        "position:absolute;box-sizing:border-box;border-radius:2px;" +
+        "left:" + (rect.left + scrollX) + "px;top:" + (rect.top + scrollY) + "px;width:" + rect.width + "px;height:" + rect.height + "px;" +
+        "outline:2px " + (solid ? "solid" : "dashed") + " #6366f1;outline-offset:-1px;background:rgba(99,102,241," + (solid ? "0.22" : "0.16") + ")";
+      const tag = document.createElement("span");
+      tag.textContent = labelOf(element) + " · " + Math.round(rect.width) + "×" + Math.round(rect.height);
+      tag.style.cssText =
+        "position:absolute;left:0;bottom:100%;white-space:nowrap;font:600 10px/1 ui-monospace,monospace;color:#fff;background:#6366f1;padding:2px 5px;border-radius:3px 3px 0 0";
+      if (rect.top + scrollY < 16) tag.style.cssText += ";bottom:auto;top:0";
+      box.appendChild(tag);
+      layer.appendChild(box);
+    }
+  };
+  const show = (elements, kind) => {
+    marked = elements;
+    markedKind = kind;
+    render();
+  };
+  const unpaint = () => show([], "hover");
+  new ResizeObserver(render).observe(document.documentElement);
+  addEventListener("scroll", render, true);
+  let hovered = null;
+  const notify = (action, element) => {
+    parent.postMessage({
+      type: "${ELEMENT_MESSAGE}",
+      action,
+      path: element ? pathOf(element) : "",
+      tag: element ? element.tagName.toLowerCase() : undefined,
+      html: element ? element.outerHTML.slice(0, 4000) : undefined,
+    }, "*");
+  };
+  document.addEventListener("pointermove", (event) => {
+    const element = event.target instanceof Element && event.target !== document.body ? event.target : null;
+    if (element === hovered) return;
+    hovered = element;
+    if (element) notify("hover", element);
+    else notify("leave", null);
+  }, true);
+  document.addEventListener("pointerleave", () => {
+    hovered = null;
+    notify("leave", null);
+  }, true);
+  document.addEventListener("click", (event) => {
+    const element = event.target instanceof Element && event.target !== document.body ? event.target : null;
+    if (!element) return;
+    show([element], "select");
+    notify("select", element);
+  }, true);
+  addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || typeof data !== "object") return;
+    if (data.type === "${CLEAR_MESSAGE}") { unpaint(); return; }
+    if (data.type !== "${HIGHLIGHT_MESSAGE}") return;
+    unpaint();
+    const kind = data.kind === "select" ? "select" : "hover";
+    if (data.selector) {
+      let matches = [];
+      try { matches = Array.from(document.querySelectorAll(data.selector)); } catch {}
+      show(matches, kind);
+      return;
+    }
+    if (data.path) {
+      const element = find(data.path);
+      if (element) {
+        show([element], kind);
+      }
+    }
+  });
+})();
 `;
 
 /** Evita que el contenido del usuario cierre antes de tiempo la etiqueta que lo contiene. */
@@ -39,6 +190,7 @@ export function buildSrcDoc(code: CodeSource, libraries: Library[], origin: stri
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>${inside("script", CONSOLE_BRIDGE)}</script>
 ${code.tailwind ? `<script src="${origin}/api/vendor/tailwind"></script>` : ""}
 ${libraries.length > 0 ? `<script type="importmap">${inside("script", importMap)}</script>` : ""}
 <style${code.tailwind ? ' type="text/tailwindcss"' : ""}>
@@ -50,6 +202,7 @@ ${inside("style", code.css)}
 </head>
 <body>
 ${code.html}
+<script>${inside("script", INSPECTOR_BRIDGE)}</script>
 <script type="module">
 ${inside("script", safeTranspile(`${preludeOf(shared.functions)}\n${code.js}`))}
 </script>

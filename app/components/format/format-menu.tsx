@@ -289,7 +289,7 @@ function MenuBody({
               }}
               className={`h-8 rounded-md px-2 text-left text-xs ${
                 action.danger ? "text-red-400 hover:bg-red-500/15" : "text-ink hover:bg-hover"
-              }`}
+              } cursor-pointer`}
             >
               {action.label}
             </button>

@@ -81,7 +81,7 @@ export function NewPullRequestForm({ onCreated }: { onCreated: (number: number) 
       <button
         type="submit"
         disabled={!title.trim() || names.length < 2}
-        className="h-8 self-start rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40"
+        className="h-8 self-start rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40 cursor-pointer"
       >
         Crear pull request
       </button>

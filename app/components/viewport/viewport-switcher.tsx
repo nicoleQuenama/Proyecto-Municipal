@@ -32,7 +32,7 @@ export function ViewportSwitcher() {
             device === d.value
               ? "bg-accent/25 text-accent"
               : "text-ink-dim hover:bg-hover hover:text-ink"
-          }`}
+          } cursor-pointer`}
         >
           {DEVICE_ICONS[d.value]}
         </button>
@@ -51,7 +51,7 @@ export function ViewportSwitcher() {
           focusMode
             ? "bg-accent text-white shadow-xs"
             : "border border-line bg-canvas text-ink-dim hover:bg-hover hover:text-ink"
-        }`}
+        } cursor-pointer`}
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           {focusMode ? (

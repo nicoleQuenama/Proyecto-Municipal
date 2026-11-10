@@ -32,7 +32,7 @@ const childPosition = col("position", "position", "int");
 export const PAGES: TableDef = {
   table: "pages",
   key: ["id"],
-  columns: [col("id", "id"), col("name", "name"), col("slug", "slug"), col("is_home", "isHome", "boolean"), col("role", "role"), listPosition, col("hidden", "hidden", "boolean"), col("route", "route"), col("title", "title", "jsonb"), col("settings", "settings", "jsonb")],
+  columns: [col("id", "id"), col("name", "name"), col("slug", "slug"), col("is_home", "isHome", "boolean"), col("unit_id", "unitId", "uuid"), col("role", "role"), listPosition, col("hidden", "hidden", "boolean"), col("route", "route"), col("title", "title", "jsonb"), col("settings", "settings", "jsonb")],
 };
 
 export const BLOCKS: TableDef = {

@@ -59,14 +59,14 @@ export function DockSection({ element, parent, dispatch }: DockSectionProps) {
                 aria-checked={current}
                 aria-label={`Vertical ${ALIGN_LABELS[v]}, horizontal ${ALIGN_LABELS[h]}`}
                 onClick={() => dockTo({ h, v })}
-                className={`h-7 rounded border ${current ? "border-accent bg-accent" : "border-line hover:bg-hover"}`}
+                className={`h-7 rounded border ${current ? "border-accent bg-accent" : "border-line hover:bg-hover"} cursor-pointer`}
               />
             );
           }),
         )}
       </div>
 
-      <button type="button" className={actionButton} onClick={() => dispatch({ type: "dock", id: element.id, parentId: null })}>
+      <button type="button" className={`${actionButton} cursor-pointer`} onClick={() => dispatch({ type: "dock", id: element.id, parentId: null })}>
         Soltar del contenedor
       </button>
     </div>

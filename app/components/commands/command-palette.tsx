@@ -121,7 +121,7 @@ function PaletteContent() {
         <button
           type="button"
           onClick={() => openDialog("settings")}
-          className="rounded-md px-2 py-1 hover:bg-hover hover:text-ink"
+          className="rounded-md px-2 py-1 hover:bg-hover hover:text-ink cursor-pointer"
         >
           Configurar atajos
         </button>

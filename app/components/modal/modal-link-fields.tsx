@@ -78,7 +78,7 @@ export function ModalLinkFields({ link, onChange, label }: ModalLinkFieldsProps)
       <button
         type="button"
         onClick={() => followLink(link)}
-        className="h-8 rounded-md border border-sky-500/60 px-2 text-xs text-sky-400 hover:bg-sky-500/10"
+        className="h-8 rounded-md border border-sky-500/60 px-2 text-xs text-sky-400 hover:bg-sky-500/10 cursor-pointer"
       >
         Ver la ventana modal
       </button>

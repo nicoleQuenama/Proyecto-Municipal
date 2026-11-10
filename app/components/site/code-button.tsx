@@ -28,7 +28,7 @@ export function CodeButton({ label, onOpen, className }: CodeButtonProps) {
         e.stopPropagation();
         onOpen();
       }}
-      className={`z-20 flex items-center justify-center rounded-full bg-accent text-white shadow hover:opacity-90 ${className}`}
+      className={`z-20 flex items-center justify-center rounded-full bg-accent text-white shadow hover:opacity-90 ${className} cursor-pointer`}
       style={size}
     >
       <CodeIcon />

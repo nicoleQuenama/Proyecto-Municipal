@@ -31,7 +31,7 @@ export function HiddenPlaceholder({ label, onShow, onDelete, dataBlockId }: Hidd
             e.stopPropagation();
             onDelete();
           }}
-          className="rounded px-1 text-neutral-500 hover:bg-red-500/15 hover:text-red-500"
+          className="rounded px-1 text-neutral-500 hover:bg-red-500/15 hover:text-red-500 cursor-pointer"
         >
           Eliminar
         </button>

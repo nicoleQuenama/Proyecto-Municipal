@@ -15,7 +15,7 @@ const buttonClass =
 
 function Button({ children, ...props }: React.ComponentProps<"button">) {
   return (
-    <button type="button" {...props} className={`${buttonClass} ${props.className ?? ""}`}>
+    <button type="button" {...props} className={`${buttonClass} ${props.className ?? ""} cursor-pointer`}>
       {children}
     </button>
   );
@@ -78,7 +78,7 @@ export function RecorderBar() {
           onClick={() => setMinimized(false)}
           title="Abrir barra de animaciones"
           aria-label="Abrir barra de animaciones"
-          className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105"
+          className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105 cursor-pointer"
         >
           <span className="text-accent font-bold">✦</span>
           <span>Animar</span>
@@ -116,7 +116,7 @@ export function RecorderBar() {
               onClick={() => setMinimized(true)}
               title="Ocultar barra de animaciones"
               aria-label="Minimizar barra de animaciones"
-              className="ml-1 flex h-6 w-6 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink"
+              className="ml-1 flex h-6 w-6 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
             >
               ×
             </button>

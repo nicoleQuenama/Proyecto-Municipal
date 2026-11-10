@@ -21,7 +21,7 @@ export function PageBackground({ page }: { page: Page }) {
           <button
             type="button"
             onClick={() => dispatch({ type: "page/color", pageId: page.id, color: undefined })}
-            className="text-[11px] text-ink-dim underline-offset-2 hover:text-ink hover:underline"
+            className="text-[11px] text-ink-dim underline-offset-2 hover:text-ink hover:underline cursor-pointer"
           >
             Quitar
           </button>

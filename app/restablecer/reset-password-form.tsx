@@ -81,7 +81,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
             </p>
           )}
 
-          <button type="submit" disabled={pending} className={`${PRIMARY_BUTTON} h-11`}>
+          <button type="submit" disabled={pending} className={`${PRIMARY_BUTTON} h-11 cursor-pointer`}>
             {pending ? "Guardando…" : "Guardar contraseña"}
           </button>
         </form>

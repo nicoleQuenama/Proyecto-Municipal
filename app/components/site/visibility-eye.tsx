@@ -33,7 +33,7 @@ export function VisibilityEye({ hidden, label, onToggle, className, style, zoome
       }}
       className={`z-20 items-center justify-center rounded-full border border-sky-500 shadow ${
         hidden ? "bg-sky-500 text-white" : "bg-white text-sky-600"
-      } ${className}`}
+      } ${className} cursor-pointer`}
       style={{ ...size, ...style }}
     >
       {hidden ? <EyeOffIcon /> : <EyeIcon />}

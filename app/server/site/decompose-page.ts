@@ -56,12 +56,12 @@ function decomposeBlock(block: BlockInstance, pageId: string, position: number):
 
 /** Una página con todo lo que cuelga de ella. `position` es su lugar en la lista de páginas. */
 export function decomposePage(page: Page, position: number): PageParts {
-  const { id, name, slug, isHome, role, hidden, route, title, media, blocks, animations, css, js, ...settings } = page;
+  const { id, name, slug, isHome, unitId, role, hidden, route, title, media, blocks, animations, css, js, ...settings } = page;
   const owner: Owner = { kind: "page", id };
   const parts = blocks.map((block, index) => decomposeBlock(block, id, index));
 
   return {
-    page: { id, name, slug, isHome: !!isHome, role: role ?? null, position, hidden: !!hidden, route: route ?? null, title, settings },
+    page: { id, name, slug, isHome: !!isHome, unitId: unitId ?? null, role: role ?? null, position, hidden: !!hidden, route: route ?? null, title, settings },
     blocks: parts.map((part) => part.row),
     media: media.map((item, index): MediaRow => {
       const { id: mediaId, kind, src, embed, alt, hidden: mediaHidden, poster, placement, ...rest } = item;

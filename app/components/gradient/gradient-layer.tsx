@@ -133,7 +133,7 @@ export function GradientLayer({ target, onClose }: { target: GradientTarget; onC
             }}
             className={`pointer-events-auto absolute size-6 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 shadow-lg ${
               index === selected ? "border-white ring-2 ring-accent" : "border-white/80"
-            }`}
+            } cursor-pointer`}
             style={{ left: point.x, top: point.y, background: stop.color }}
           />
         );
@@ -144,7 +144,7 @@ export function GradientLayer({ target, onClose }: { target: GradientTarget; onC
         aria-label={`Girar el degradado (${gradient.angle}°)`}
         title="Arrastra para girar el degradado (Mayús: de 15° en 15°)"
         onPointerDown={(e) => drag((p) => edit((g) => setAngle(g, angleOf(center, p))))(e)}
-        className="pointer-events-auto absolute flex size-5 -translate-x-1/2 -translate-y-1/2 cursor-alias items-center justify-center rounded-full border-2 border-white bg-black/70 text-[10px] text-white shadow-lg"
+        className="pointer-events-auto absolute flex size-5 -translate-x-1/2 -translate-y-1/2 cursor-alias items-center justify-center rounded-full border-2 border-white bg-black/70 text-[10px] text-white shadow-lg cursor-pointer"
         style={{ left: rotate.x, top: rotate.y }}
       >
         ↻

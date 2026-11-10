@@ -30,17 +30,17 @@ export function TransportBar(props: TransportBarProps) {
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1 border-y border-line bg-panel px-3 py-1.5">
-      <button type="button" aria-label="Ir al inicio" title="Ir al inicio" onClick={props.onRestart} className={icon}>⏮</button>
+      <button type="button" aria-label="Ir al inicio" title="Ir al inicio" onClick={props.onRestart} className={`${icon} cursor-pointer`}>⏮</button>
       <button
         type="button"
         aria-label={playing ? "Pausa" : "Reproducir"}
         title="Reproducir / pausa (Espacio)"
         onClick={props.onToggle}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm text-white"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm text-white cursor-pointer"
       >
         {playing ? "⏸" : "▶"}
       </button>
-      <button type="button" aria-label="Repetir" title="Repetir desde el inicio" onClick={props.onReplay} className={icon}>↻</button>
+      <button type="button" aria-label="Repetir" title="Repetir desde el inicio" onClick={props.onReplay} className={`${icon} cursor-pointer`}>↻</button>
       <span className="mx-2 font-mono text-xs tabular-nums">
         {formatTime(time)} <span className="text-ink-dim">/ {formatTime(total)}</span>
       </span>
@@ -60,11 +60,11 @@ export function TransportBar(props: TransportBarProps) {
           <option key={id} value={id}>{PRESETS[id].label}</option>
         ))}
       </select>
-      <button type="button" disabled={!hasClip} onClick={props.onDuplicate} title="Copiar el clip elegido a continuación" className={text}>Duplicar</button>
-      <button type="button" disabled={!hasClip} onClick={props.onRemoveClip} title="Quitar el clip elegido (Supr)" className={`${text} text-red-400`}>Quitar</button>
+      <button type="button" disabled={!hasClip} onClick={props.onDuplicate} title="Copiar el clip elegido a continuación" className={`${text} cursor-pointer`}>Duplicar</button>
+      <button type="button" disabled={!hasClip} onClick={props.onRemoveClip} title="Quitar el clip elegido (Supr)" className={`${text} text-red-400 cursor-pointer`}>Quitar</button>
 
       <label className="ml-auto flex items-center gap-2 text-xs text-ink-dim">
-        <button type="button" aria-label="Alejar" onClick={() => props.onZoom(Math.max(1, zoom - 1))} className={icon}>−</button>
+        <button type="button" aria-label="Alejar" onClick={() => props.onZoom(Math.max(1, zoom - 1))} className={`${icon} cursor-pointer`}>−</button>
         <input
           type="range"
           aria-label="Zoom de la línea de tiempo"
@@ -75,7 +75,7 @@ export function TransportBar(props: TransportBarProps) {
           onChange={(e) => props.onZoom(Number(e.target.value))}
           className="w-28 accent-accent"
         />
-        <button type="button" aria-label="Acercar" onClick={() => props.onZoom(Math.min(8, zoom + 1))} className={icon}>+</button>
+        <button type="button" aria-label="Acercar" onClick={() => props.onZoom(Math.min(8, zoom + 1))} className={`${icon} cursor-pointer`}>+</button>
       </label>
     </div>
   );

@@ -18,7 +18,7 @@ function DeployDialog({ onClose }: { onClose: () => void }) {
           <h2 className="text-base font-semibold">Desplegar el sitio</h2>
           <p className="mt-0.5 text-xs text-ink-dim">Solo lo ven desarrolladores con permiso y superadministradores. Las claves se guardan en el servidor y no vuelven al navegador.</p>
         </div>
-        <button type="button" aria-label="Cerrar" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" aria-label="Cerrar" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           ×
         </button>
       </header>
@@ -101,7 +101,7 @@ export function DeployButton() {
         type="button"
         title="Exportar el proyecto o desplegarlo a un servidor"
         onClick={() => setOpen(true)}
-        className="my-2 flex items-center self-center rounded-md border border-line px-3 text-xs hover:bg-hover"
+        className="my-2 flex items-center self-center rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer"
       >
         Desplegar
       </button>

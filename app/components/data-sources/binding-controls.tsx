@@ -60,7 +60,7 @@ export function BindingControls({ pageId, block, element }: BindingControlsProps
           />
         </label>
       )}
-      <button type="button" onClick={() => bind(null)} className="h-8 self-start rounded-md px-2 text-ink-dim hover:bg-hover hover:text-ink">
+      <button type="button" onClick={() => bind(null)} className="h-8 self-start rounded-md px-2 text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
         Soltar el dato
       </button>
     </section>

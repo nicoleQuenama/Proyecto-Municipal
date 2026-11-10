@@ -97,6 +97,7 @@ export function composePage(row: PageRow, children: PageChildren, texts: CodeTex
     title: row.title,
     media: children.media.map(composeMedia),
     blocks: children.blocks.map((block) => composeBlock(block, texts)),
+    ...optional("unitId", row.unitId, row.unitId !== null),
     ...optional("role", row.role, row.role !== null),
     ...optional("hidden", true, row.hidden),
     ...optional("route", row.route, row.route !== null),

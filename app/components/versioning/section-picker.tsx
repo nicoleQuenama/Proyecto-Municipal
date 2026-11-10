@@ -52,10 +52,10 @@ export function SectionPicker({ scope, onChange }: { scope: Scope; onChange: (sc
           onChange={(e) => setQuery(e.target.value)}
           className="h-8 min-w-0 flex-1 rounded-md border border-line bg-canvas px-2.5 text-xs outline-none focus:border-accent"
         />
-        <button type="button" onClick={() => onChange({ pageIds: pages.filter((p) => ownsWhole(p.id)).map((p) => p.id), blockIds: pages.filter((p) => !ownsWhole(p.id)).flatMap((p) => p.blocks.filter((b) => canEditBlock(currentUser, p.id, b.id)).map((b) => b.id)) })} className="h-8 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" onClick={() => onChange({ pageIds: pages.filter((p) => ownsWhole(p.id)).map((p) => p.id), blockIds: pages.filter((p) => !ownsWhole(p.id)).flatMap((p) => p.blocks.filter((b) => canEditBlock(currentUser, p.id, b.id)).map((b) => b.id)) })} className="h-8 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           Todas
         </button>
-        <button type="button" onClick={() => onChange({ pageIds: [], blockIds: [] })} className="h-8 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" onClick={() => onChange({ pageIds: [], blockIds: [] })} className="h-8 rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           Ninguna
         </button>
       </div>

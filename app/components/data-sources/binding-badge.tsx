@@ -15,7 +15,7 @@ export function BindingBadge({ label, reference, onClear, className = "" }: Bind
       title={`${label}: ${reference.path || "toda la respuesta"}`}
     >
       <span className="truncate">{reference.path || "respuesta"}</span>
-      <button type="button" aria-label="Quitar el dato de la API" onClick={onClear} className="hover:opacity-70">
+      <button type="button" aria-label="Quitar el dato de la API" onClick={onClear} className="hover:opacity-70 cursor-pointer">
         ×
       </button>
     </span>

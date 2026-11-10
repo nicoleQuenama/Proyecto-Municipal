@@ -38,7 +38,11 @@ export async function createBranch(tx: Tx, scope: Scope, userId: string, nameInp
 export async function deleteBranch(tx: Tx, scope: Scope, userId: string, name: string): Promise<void> {
   const branch = await findBranch(tx, scope, name);
   if (branch.isMain) throw new VersionError("La rama principal no se puede eliminar.", 400);
-  if (branch.ownerId !== userId) throw new VersionError("Solo quien creó la rama puede eliminarla.", 403);
+  if (branch.ownerId !== userId) {
+    // Quien puede publicar en main (p. ej. el superadministrador) también limpia las ramas de su equipo.
+    const [row] = await tx.unsafe(`select app.has_permission($1::uuid, 'publishMain') as ok`, [scope.project]);
+    if (row?.ok !== true) throw new VersionError("Solo quien creó la rama, o quien puede publicar en main, puede eliminarla.", 403);
+  }
 
   await tx.unsafe(
     `update app.pull_requests set status = 'closed', closed_at = now()

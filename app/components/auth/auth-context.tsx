@@ -67,6 +67,8 @@ export type Permission =
 export function hasPermission(who: User | string | null | undefined, permission: Permission): boolean {
   const role = typeof who === "string" ? who : who?.role;
   if (typeof who === "object" && who?.access?.denied.includes(permission as Restriction)) return false;
+  // Desplegar: con unidades lo concede la unidad (la base de datos ya lo calculó), no el rol de la cuenta.
+  if (permission === "deploy" && typeof who === "object" && who?.canDeploy !== undefined) return who.canDeploy;
   return roleAllows(role, permission);
 }
 

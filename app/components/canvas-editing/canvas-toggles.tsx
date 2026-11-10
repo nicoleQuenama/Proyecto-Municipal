@@ -18,7 +18,7 @@ export function CanvasToggles() {
           onClick={() => setSettings((current) => ({ ...current, [key]: !current[key] }))}
           className={`h-7 rounded-md border px-2 text-xs ${
             settings[key] ? "border-accent bg-accent/15 text-ink" : "border-line text-ink-dim hover:bg-hover"
-          }`}
+          } cursor-pointer`}
         >
           {label}
         </button>

@@ -45,7 +45,7 @@ export function MakeFunction({ scopes, initialName, position, onCreate }: MakeFu
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left hover:bg-hover"
+          className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left hover:bg-hover cursor-pointer"
         >
           <span aria-hidden className="font-serif text-sm italic text-accent">ƒ</span>
           Convertir en función reutilizable…
@@ -70,7 +70,7 @@ export function MakeFunction({ scopes, initialName, position, onCreate }: MakeFu
               key={scope.kind}
               type="button"
               onClick={() => create(scope)}
-              className="h-8 rounded-md bg-hover px-2 text-left hover:bg-accent hover:text-white"
+              className="h-8 rounded-md bg-hover px-2 text-left hover:bg-accent hover:text-white cursor-pointer"
             >
               {SCOPE_LABELS[scope.kind]}
             </button>

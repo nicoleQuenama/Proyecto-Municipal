@@ -87,7 +87,7 @@ export function UserForm({
       <button
         type="submit"
         disabled={saving}
-        className="mt-1 flex h-9 items-center justify-center gap-2 rounded-lg bg-accent text-xs font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-1 flex h-9 items-center justify-center gap-2 rounded-lg bg-accent text-xs font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
       >
         {saving && (
           <span aria-hidden className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />

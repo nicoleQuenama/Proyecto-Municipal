@@ -3,9 +3,18 @@
 import { elementLabel } from "../navigation/links";
 import { SECTION_KEY, type BlockInstance, type ComponentDef, type FunctionScope, type Page, type SiteState } from "../site/types";
 import { fileId, kindOf, type FileRef } from "./file-ref";
+import { HIDDEN_WHEN_EMPTY, isEmptyFile } from "./removal";
 
 /** Lo que se puede hacer desde una carpeta, además de abrir sus archivos. */
 export type TreeAction = { type: "add-block"; pageId: string } | { type: "add-function" };
+
+/** De quién es un nodo, para ofrecerle renombrar o eliminar. */
+export type NodeOwner =
+  | { type: "function"; functionId: string }
+  | { type: "block"; pageId: string; blockId: string }
+  | { type: "page"; pageId: string }
+  | { type: "project" }
+  | { type: "file"; ref: FileRef };
 
 export interface TreeNode {
   id: string;
@@ -16,11 +25,12 @@ export interface TreeNode {
   action?: TreeAction;
   /** Si es una función, se puede quitar. */
   functionId?: string;
+  owner?: NodeOwner;
 }
 
 const file = (site: SiteState, ref: FileRef, label?: string): TreeNode[] => {
   const name = kindOf(ref).name(site, ref);
-  return name === null ? [] : [{ id: fileId(ref), label: label ?? name, ref }];
+  return name === null ? [] : [{ id: fileId(ref), label: label ?? name, ref, owner: { type: "file", ref } }];
 };
 
 const folder = (id: string, label: string, children: TreeNode[], extra: Partial<TreeNode> = {}): TreeNode => ({
@@ -80,12 +90,13 @@ function projectFolder(site: SiteState): TreeNode {
     label: `${fn.name}.ts · ${scopeLabel(site, fn.scope)}`,
     ref: { kind: "function", functionId: fn.id },
     functionId: fn.id,
+    owner: { type: "function", functionId: fn.id },
   }));
 
   return folder("project", "Proyecto", [
     ...file(site, { kind: "global-css" }),
     folder("functions", "Funciones reutilizables", functions, { action: { type: "add-function" } }),
-  ]);
+  ], { owner: { type: "project" } });
 }
 
 function pageFolder(site: SiteState, page: Page): TreeNode {
@@ -99,7 +110,7 @@ function pageFolder(site: SiteState, page: Page): TreeNode {
           ...file(site, { kind: "block-html", pageId: page.id, blockId: block.id }),
           ...file(site, { kind: "block-css", pageId: page.id, blockId: block.id }),
           ...file(site, { kind: "block-js", pageId: page.id, blockId: block.id }),
-        ]),
+        ], { owner: { type: "block", pageId: page.id, blockId: block.id } }),
       ];
     }
 
@@ -120,15 +131,30 @@ function pageFolder(site: SiteState, page: Page): TreeNode {
       ...file(site, { kind: "page-js", pageId: page.id }),
       ...sections,
     ],
-    { action: { type: "add-block", pageId: page.id } },
+    { action: { type: "add-block", pageId: page.id }, owner: { type: "page", pageId: page.id } },
   );
 }
 
-/** El árbol completo: la selección, el proyecto y cada página. */
-export function buildTree(site: SiteState): TreeNode[] {
-  return [
-    ...selectionFolder(site),
-    projectFolder(site),
-    folder("pages", "Páginas", site.pages.map((page) => pageFolder(site, page))),
-  ];
+/** Quita los archivos eliminados: los que se muestran solo si tienen algo escrito o están abiertos. */
+function prune(nodes: TreeNode[], site: SiteState, open: ReadonlySet<string>): TreeNode[] {
+  return nodes.flatMap((node) => {
+    if (node.ref) {
+      const hidden = HIDDEN_WHEN_EMPTY.has(node.ref.kind) && isEmptyFile(node.ref, site) && !open.has(node.id);
+      return hidden ? [] : [node];
+    }
+    return [{ ...node, children: node.children && prune(node.children, site, open) }];
+  });
+}
+
+/** El árbol completo: la selección, el proyecto y cada página. `open`: los archivos con pestaña abierta. */
+export function buildTree(site: SiteState, open: ReadonlySet<string> = new Set()): TreeNode[] {
+  return prune(
+    [
+      ...selectionFolder(site),
+      projectFolder(site),
+      folder("pages", "Páginas", site.pages.map((page) => pageFolder(site, page))),
+    ],
+    site,
+    open,
+  );
 }

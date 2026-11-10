@@ -50,11 +50,11 @@ export function TeamReview({ pr }: { pr: PullRequest }) {
       </p>
       <div className="flex flex-wrap gap-2">
         {reviewer && (
-          <button type="button" disabled={busy || unresolved.length > 0} onClick={() => act("merge")} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40">
+          <button type="button" disabled={busy || unresolved.length > 0} onClick={() => act("merge")} className="h-8 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40 cursor-pointer">
             Aprobar y fusionar en {pr.into}
           </button>
         )}
-        <button type="button" disabled={busy} onClick={() => act("close")} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40">
+        <button type="button" disabled={busy} onClick={() => act("close")} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink disabled:opacity-40 cursor-pointer">
           {reviewer ? "Rechazar" : "Cancelar solicitud"}
         </button>
       </div>

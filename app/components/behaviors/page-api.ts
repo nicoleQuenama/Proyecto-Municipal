@@ -1,3 +1,5 @@
+import { makeConsole, type ConsoleSink } from "../code/console-sink";
+import type { ConsoleLevel } from "../code/messages";
 import { normalizeExternalUrl } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
 import { PLACE_KEY, SECTION_KEY, type Page } from "../site/types";
@@ -15,6 +17,10 @@ export interface ApiEnv {
   blockId: string;
   pages: Page[];
   followLink: (link: LinkTarget) => void;
+  /** La consola del editor de código, si está abierto: ahí aparece lo que el código escribe con `api.log`. */
+  sink?: ConsoleSink | null;
+  /** De quién es el código, para rotular sus mensajes. */
+  source?: string;
 }
 
 /**
@@ -68,7 +74,8 @@ export function openUrl(url: string) {
  * Lo que el código de una interacción puede pedir a la página (`api.navigate(…)`, `api.animate(…)`…).
  * Es lo mismo en los dos modos de ejecución, salvo el acceso al DOM, que solo existe en la página.
  */
-export function createApi({ element, blockId, pages, followLink }: ApiEnv): PageApi {
+export function createApi({ element, blockId, pages, followLink, sink = null, source = "Interacción" }: ApiEnv): PageApi {
+  const output = makeConsole(sink, source);
   const key = (target?: string) => target ?? SECTION_KEY;
   // Los bloques se buscan por su id; el código de una página (sin bloque) busca dentro de la propia página.
   const section = () => (blockId ? document.querySelector<HTMLElement>(targetSelector(blockId, SECTION_KEY)) : element);
@@ -91,6 +98,7 @@ export function createApi({ element, blockId, pages, followLink }: ApiEnv): Page
     hide: (target) => setVisibility(blockId, key(target), "hide"),
     toggle: (target) => setVisibility(blockId, key(target), "toggle"),
     openUrl: (url) => openUrl(String(url)),
-    log: (...values) => console.log("[interacción]", ...values),
+    log: (...values) => output.log(...values),
+    print: (level, ...values) => output[level in output ? (level as ConsoleLevel) : "log"](...values),
   };
 }

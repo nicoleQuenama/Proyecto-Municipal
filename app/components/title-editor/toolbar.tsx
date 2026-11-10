@@ -213,7 +213,7 @@ export function Toolbar({ state, onChange, onReset, caption, mode = "title", ext
               state.editing
                 ? "bg-accent text-white hover:bg-accent/90"
                 : "border border-line text-ink hover:bg-hover"
-            }`}
+            } cursor-pointer`}
           >
             {state.editing ? "Editando titular" : "Editar titular"}
           </button>

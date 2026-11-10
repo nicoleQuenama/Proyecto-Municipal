@@ -37,7 +37,7 @@ export function ControlContent({ element, live, hasClick }: { element: CanvasEle
       element.text.toLowerCase().includes("buscar");
 
     return (
-      <button
+      <button className="cursor-pointer"
         type="button"
         tabIndex={live ? 0 : -1}
         style={{ ...look(element, false), ...idle, textAlign: "center", cursor: "pointer" }}

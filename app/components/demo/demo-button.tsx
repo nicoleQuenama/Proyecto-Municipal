@@ -73,7 +73,7 @@ export function DemoButton() {
         type="button"
         onClick={progress ? () => (stopped.current = true) : play}
         title="Arma la página de ejemplo paso a paso, con un cursor que muestra cada acción"
-        className="my-2 flex items-center gap-1.5 self-center rounded-md border border-line px-3 text-xs hover:bg-hover"
+        className="my-2 flex items-center gap-1.5 self-center rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer"
       >
         {progress ? `■ Detener · ${progress.done}/${progress.total}` : "▶ Demo"}
       </button>

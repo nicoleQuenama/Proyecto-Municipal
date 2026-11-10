@@ -214,7 +214,7 @@ export function LayoutControls({
                     activeMenuMode === "drop"
                       ? "border-accent bg-accent text-white shadow-xs font-semibold"
                       : "border-line bg-canvas text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                   title="Al tocar el botón de menú, las opciones caen desplegadas bajo la barra"
                 >
                   <span className="text-xs font-bold">≡</span>
@@ -229,7 +229,7 @@ export function LayoutControls({
                     activeMenuMode === "right"
                       ? "border-accent bg-accent text-white shadow-xs font-semibold"
                       : "border-line bg-canvas text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                   title="Panel deslizante lateral desde la derecha (Drawer)"
                 >
                   <span className="text-xs font-bold">→|</span>
@@ -244,7 +244,7 @@ export function LayoutControls({
                     activeMenuMode === "left"
                       ? "border-accent bg-accent text-white shadow-xs font-semibold"
                       : "border-line bg-canvas text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                   title="Panel deslizante lateral desde la izquierda (Drawer)"
                 >
                   <span className="text-xs font-bold">|←</span>
@@ -259,7 +259,7 @@ export function LayoutControls({
                     activeMenuMode === "full"
                       ? "border-accent bg-accent text-white shadow-xs font-semibold"
                       : "border-line bg-canvas text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                   title="Cubre la pantalla completa con un menú moderno e inmersivo"
                 >
                   <span className="text-xs font-bold">[  ]</span>
@@ -275,7 +275,7 @@ export function LayoutControls({
                   activeMenuMode === "none"
                     ? "border-accent bg-accent/20 text-accent font-semibold"
                     : "border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
-                }`}
+                } cursor-pointer`}
                 title="Muestra los enlaces visibles directamente sin plegar en menú"
               >
                 Enlaces directos visibles (Sin botón de menú)
@@ -294,7 +294,7 @@ export function LayoutControls({
                       menuBreakpointChoice === "all"
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                     title="Se pliega en menú hamburguesa o lateral en PC, tablet y móvil"
                   >
                     PC, Tablet y Móvil
@@ -307,7 +307,7 @@ export function LayoutControls({
                       menuBreakpointChoice === "mobile-tablet"
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                     title="Se pliega en menú hamburguesa o lateral en móvil y tablet"
                   >
                     Móvil y Tablet
@@ -320,7 +320,7 @@ export function LayoutControls({
                       menuBreakpointChoice === "mobile-only"
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                     title="En PC y tablet se ve la barra completa, solo se pliega en móvil"
                   >
                     Solo en Móvil
@@ -334,7 +334,7 @@ export function LayoutControls({
                 <button
                   type="button"
                   onClick={onToggleMenuPreview}
-                  className="flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 transition-all"
+                  className="flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 transition-all cursor-pointer"
                 >
                   {isMenuOpenPreview ? "Cerrar previsualización de menú" : "Probar menú desplegado en el lienzo"}
                 </button>
@@ -344,7 +344,7 @@ export function LayoutControls({
                   <button
                     type="button"
                     onClick={onAddHeaderLink}
-                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95"
+                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
                   >
                     <span>+</span> Añadir enlace
                   </button>
@@ -353,7 +353,7 @@ export function LayoutControls({
                   <button
                     type="button"
                     onClick={onToggleSearchInHeader}
-                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95"
+                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
                   >
                     {hasSearchInHeader ? "Probar buscador" : "+ Añadir buscador"}
                   </button>
@@ -416,7 +416,7 @@ export function LayoutControls({
                       (totalFooterCols === c.cols || (c.cols === 3 && !totalFooterCols))
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {c.label}
                   </button>
@@ -429,7 +429,7 @@ export function LayoutControls({
                 <button
                   type="button"
                   onClick={() => onOrganizeFooter(3)}
-                  className="flex items-center justify-center gap-1 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95"
+                  className="flex items-center justify-center gap-1 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 cursor-pointer"
                 >
                   Reorganizar y ordenar automáticamente
                 </button>
@@ -438,7 +438,7 @@ export function LayoutControls({
                 <button
                   type="button"
                   onClick={onResetMunicipalFooter}
-                  className="flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-3 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95"
+                  className="flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-3 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
                 >
                   Restablecer a plantilla municipal completa
                 </button>
@@ -464,7 +464,7 @@ export function LayoutControls({
                     active
                       ? "border-accent bg-accent/20 text-accent shadow-xs"
                       : "border-line text-ink hover:bg-hover hover:border-ink/20"
-                  }`}
+                  } cursor-pointer`}
                 >
                   {QUICK_PRESETS[key].label}
                 </button>
@@ -503,7 +503,7 @@ export function LayoutControls({
                 <button
                   type="button"
                   onClick={isButtons && onAddButton ? onAddButton : onAddCard}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-transform hover:bg-accent/90 active:scale-95"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-transform hover:bg-accent/90 active:scale-95 cursor-pointer"
                 >
                   <span>+</span> {isButtons ? "Agregar botón" : "Agregar tarjeta"}
                 </button>
@@ -513,7 +513,7 @@ export function LayoutControls({
                   type="button"
                   onClick={onFillThreeCards}
                   title="Crea o restablece 3 tarjetas de ejemplo en este contenedor"
-                  className="flex items-center gap-1 rounded-md border border-accent/40 bg-canvas px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 active:scale-95"
+                  className="flex items-center gap-1 rounded-md border border-accent/40 bg-canvas px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
                 >
                   3 Tarjetas
                 </button>
@@ -539,7 +539,7 @@ export function LayoutControls({
                         <button
                           type="button"
                           onClick={() => onSelectCard?.(card.id)}
-                          className="min-w-0 flex-1 truncate text-left"
+                          className="min-w-0 flex-1 truncate text-left cursor-pointer"
                           title="Hacer clic para seleccionar en el lienzo"
                         >
                           {idx + 1}. {card.title}
@@ -550,7 +550,7 @@ export function LayoutControls({
                               type="button"
                               title="Duplicar en el contenedor"
                               onClick={() => onDuplicateCard(card.id)}
-                              className="flex h-5 w-5 items-center justify-center rounded text-accent hover:bg-accent/20"
+                              className="flex h-5 w-5 items-center justify-center rounded text-accent hover:bg-accent/20 cursor-pointer"
                             >
                               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <rect x="5" y="5" width="9" height="9" rx="1.5" />
@@ -563,7 +563,7 @@ export function LayoutControls({
                               type="button"
                               title="Eliminar del contenedor"
                               onClick={() => onDeleteCard(card.id)}
-                              className="flex h-5 w-5 items-center justify-center rounded text-red-500 hover:bg-red-500/20"
+                              className="flex h-5 w-5 items-center justify-center rounded text-red-500 hover:bg-red-500/20 cursor-pointer"
                             >
                               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M3 3l10 10M13 3L3 13" />
@@ -597,7 +597,7 @@ export function LayoutControls({
                       active
                         ? "border-accent bg-accent text-white shadow-xs"
                         : "border-line text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {p.label}
                   </button>
@@ -624,7 +624,7 @@ export function LayoutControls({
                       active
                         ? "border-accent bg-accent text-white shadow-xs"
                         : "border-line text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {p.label}
                   </button>
@@ -656,7 +656,7 @@ export function LayoutControls({
                     }}
                     className={`flex items-center justify-center gap-1 h-7 rounded font-medium transition-colors ${
                       isCurrent ? "bg-accent text-white shadow-xs" : "text-ink-dim hover:text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {bp === "desktop" && <DesktopIcon />}
                     {bp === "tablet" && <TabletIcon />}
@@ -685,7 +685,7 @@ export function LayoutControls({
                       viewport?.setDevice("desktop");
                     }}
                     title="Previsualizar en escritorio (PC)"
-                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent"
+                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent cursor-pointer"
                   >
                     <DesktopIcon />
                     <span>PC</span>
@@ -703,7 +703,7 @@ export function LayoutControls({
                             selected
                               ? "bg-accent text-white shadow-xs"
                               : "border border-line bg-canvas text-ink hover:bg-hover"
-                          }`}
+                          } cursor-pointer`}
                         >
                           {num}
                         </button>
@@ -725,7 +725,7 @@ export function LayoutControls({
                       viewport?.setDevice("tablet");
                     }}
                     title="Previsualizar en tablet"
-                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent"
+                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent cursor-pointer"
                   >
                     <TabletIcon />
                     <span>Tablet</span>
@@ -743,7 +743,7 @@ export function LayoutControls({
                             selected
                               ? "bg-accent text-white shadow-xs"
                               : "border border-line bg-canvas text-ink hover:bg-hover"
-                          }`}
+                          } cursor-pointer`}
                         >
                           {num}
                         </button>
@@ -765,7 +765,7 @@ export function LayoutControls({
                       viewport?.setDevice("mobile");
                     }}
                     title="Previsualizar en celular (móvil)"
-                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent"
+                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent cursor-pointer"
                   >
                     <MobileIcon />
                     <span>Móvil</span>
@@ -783,7 +783,7 @@ export function LayoutControls({
                             selected
                               ? "bg-accent text-white shadow-xs"
                               : "border border-line bg-canvas text-ink hover:bg-hover"
-                          }`}
+                          } cursor-pointer`}
                         >
                           {num}
                         </button>
@@ -808,7 +808,7 @@ export function LayoutControls({
                         overrides.mobile.direction === "col"
                           ? "border-accent bg-accent/20 text-accent font-semibold"
                           : "border-line text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       Apilar vertical
                     </button>
@@ -820,7 +820,7 @@ export function LayoutControls({
                         overrides.mobile.direction === "row"
                           ? "border-accent bg-accent/20 text-accent font-semibold"
                           : "border-line text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       Mantener fila
                     </button>
@@ -845,7 +845,7 @@ export function LayoutControls({
                         overrides.tablet.direction === "col"
                           ? "border-accent bg-accent/20 text-accent font-semibold"
                           : "border-line text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       Apilar vertical
                     </button>
@@ -857,7 +857,7 @@ export function LayoutControls({
                         overrides.tablet.direction === "row"
                           ? "border-accent bg-accent/20 text-accent font-semibold"
                           : "border-line text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       Mantener fila
                     </button>
@@ -883,7 +883,7 @@ export function LayoutControls({
                         currentOverride.direction === "row"
                           ? "border-accent bg-accent/20 text-accent font-semibold"
                           : "border-line text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       En fila
                     </button>
@@ -895,7 +895,7 @@ export function LayoutControls({
                         currentOverride.direction === "col"
                           ? "border-accent bg-accent/20 text-accent font-semibold"
                           : "border-line text-ink hover:bg-hover"
-                      }`}
+                      } cursor-pointer`}
                     >
                       Apilado
                     </button>
@@ -921,7 +921,7 @@ export function LayoutControls({
                           currentOverride.align === al.val
                             ? "border-accent bg-accent text-white"
                             : "border-line text-ink hover:bg-hover"
-                        }`}
+                        } cursor-pointer`}
                       >
                         {al.label}
                       </button>
@@ -948,7 +948,7 @@ export function LayoutControls({
                           currentOverride.justify === ju.val
                             ? "border-accent bg-accent text-white"
                             : "border-line text-ink hover:bg-hover"
-                        }`}
+                        } cursor-pointer`}
                       >
                         {ju.label}
                       </button>
@@ -970,7 +970,7 @@ export function LayoutControls({
                           onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { gap: g }))}
                           className={`h-5 rounded border px-2 text-[10px] font-medium transition-colors ${
                             active ? "border-accent bg-accent text-white" : "border-line text-ink hover:bg-hover"
-                          }`}
+                          } cursor-pointer`}
                         >
                           {g}px
                         </button>
@@ -998,7 +998,7 @@ export function LayoutControls({
                           currentOverride.textSize === t.val
                             ? "border-accent bg-accent text-white"
                             : "border-line text-ink hover:bg-hover"
-                        }`}
+                        } cursor-pointer`}
                       >
                         {t.label}
                       </button>
@@ -1030,7 +1030,7 @@ export function LayoutControls({
                     wrapperConfig.widthMode === "fit"
                       ? "border-accent bg-accent/20 text-accent font-semibold"
                       : "border-line text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                 >
                   Ajustar contenido (w-fit)
                 </button>
@@ -1042,7 +1042,7 @@ export function LayoutControls({
                     wrapperConfig.widthMode === "full"
                       ? "border-accent bg-accent/20 text-accent font-semibold"
                       : "border-line text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                 >
                   Ancho completo (w-full)
                 </button>
@@ -1068,7 +1068,7 @@ export function LayoutControls({
                       wrapperConfig.align === al.val
                         ? "border-accent bg-accent text-white"
                         : "border-line text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {al.label}
                   </button>
@@ -1096,7 +1096,7 @@ export function LayoutControls({
                       wrapperConfig.margin === m.val
                         ? "border-accent bg-accent text-white"
                         : "border-line text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {m.label}
                   </button>
@@ -1126,7 +1126,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={onSelectSection}
-                className="text-[10px] text-accent hover:underline font-medium"
+                className="text-[10px] text-accent hover:underline font-medium cursor-pointer"
               >
                 Ver toda la cabecera ↗
               </button>
@@ -1155,7 +1155,7 @@ export function LayoutControls({
                       currentAlign === al.val
                         ? "border-accent bg-accent text-white font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {al.label}
                   </button>
@@ -1183,7 +1183,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={onAddHeaderLink}
-                className="flex items-center justify-center gap-1 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent/90 active:scale-95"
+                className="flex items-center justify-center gap-1 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent/90 active:scale-95 cursor-pointer"
               >
                 + Añadir otro enlace
               </button>
@@ -1201,7 +1201,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={onSelectSection}
-                className="text-[10px] text-accent hover:underline font-medium"
+                className="text-[10px] text-accent hover:underline font-medium cursor-pointer"
               >
                 Ver todo el footer ↗
               </button>
@@ -1228,7 +1228,7 @@ export function LayoutControls({
                       currentColIndex === idx
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     Columna {idx + 1}
                   </button>
@@ -1256,7 +1256,7 @@ export function LayoutControls({
                       currentAlign === al.val
                         ? "border-accent bg-accent text-white font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {al.label}
                   </button>
@@ -1271,7 +1271,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={() => onAddFooterLink(currentColIndex !== undefined && currentColIndex >= 0 ? currentColIndex : 0)}
-                className="flex items-center justify-center gap-1 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent/90 active:scale-95"
+                className="flex items-center justify-center gap-1 rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent/90 active:scale-95 cursor-pointer"
               >
                 + Añadir enlace en esta columna
               </button>
@@ -1280,7 +1280,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={() => onOrganizeFooter(3)}
-                className="flex items-center justify-center gap-1 rounded border border-accent/30 bg-canvas px-2.5 py-1 text-[10px] font-medium text-accent hover:bg-accent/10 active:scale-95"
+                className="flex items-center justify-center gap-1 rounded border border-accent/30 bg-canvas px-2.5 py-1 text-[10px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
               >
                 Reorganizar todo el footer en 3 columnas
               </button>
@@ -1321,7 +1321,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={onSelectSection}
-                className="text-[10px] text-accent hover:underline font-medium"
+                className="text-[10px] text-accent hover:underline font-medium cursor-pointer"
               >
                 Ver contenedor ↗
               </button>
@@ -1340,7 +1340,7 @@ export function LayoutControls({
                     active
                       ? "border-accent bg-accent text-white shadow-xs"
                       : "border-line text-ink hover:bg-hover"
-                  }`}
+                  } cursor-pointer`}
                 >
                   {p.label}
                 </button>
@@ -1358,7 +1358,7 @@ export function LayoutControls({
             <button
               type="button"
               onClick={() => onMoveElementOrder(-1)}
-              className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors"
+              className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors cursor-pointer"
               title="Mover elemento hacia arriba o hacia la izquierda"
             >
               <span className="font-bold">↑</span> Subir elemento
@@ -1366,7 +1366,7 @@ export function LayoutControls({
             <button
               type="button"
               onClick={() => onMoveElementOrder(1)}
-              className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors"
+              className="flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium text-ink hover:bg-hover active:scale-95 transition-colors cursor-pointer"
               title="Mover elemento hacia abajo o hacia la derecha"
             >
               <span className="font-bold">↓</span> Bajar elemento
@@ -1387,7 +1387,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={() => onDuplicateCard(selectedCardId)}
-                className="flex items-center gap-1 rounded border border-line bg-canvas px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-hover active:scale-95"
+                className="flex items-center gap-1 rounded border border-line bg-canvas px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-hover active:scale-95 cursor-pointer"
               >
                 Duplicar
               </button>
@@ -1396,7 +1396,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={onAddCard}
-                className="flex items-center gap-1 rounded border border-line bg-canvas px-2.5 py-1 text-[11px] font-medium text-emerald-600 hover:bg-hover active:scale-95"
+                className="flex items-center gap-1 rounded border border-line bg-canvas px-2.5 py-1 text-[11px] font-medium text-emerald-600 hover:bg-hover active:scale-95 cursor-pointer"
               >
                 + Nueva
               </button>
@@ -1405,7 +1405,7 @@ export function LayoutControls({
               <button
                 type="button"
                 onClick={() => onDeleteCard(selectedCardId)}
-                className="flex items-center gap-1 rounded border border-red-200 bg-red-50/50 dark:bg-red-950/20 px-2 py-1 text-[11px] font-medium text-red-500 hover:bg-red-100/50 active:scale-95"
+                className="flex items-center gap-1 rounded border border-red-200 bg-red-50/50 dark:bg-red-950/20 px-2 py-1 text-[11px] font-medium text-red-500 hover:bg-red-100/50 active:scale-95 cursor-pointer"
               >
                 Eliminar
               </button>

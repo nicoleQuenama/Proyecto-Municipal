@@ -58,7 +58,7 @@ function SettingsContent() {
         <button
           type="button"
           onClick={resetAll}
-          className="rounded-md px-2 py-1 text-xs text-ink-dim hover:bg-hover hover:text-ink"
+          className="rounded-md px-2 py-1 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           Restablecer todo
         </button>
@@ -80,7 +80,7 @@ function SettingsContent() {
                     aria-label={`Restablecer atajo de ${command.label}`}
                     title="Restablecer"
                     onClick={() => resetShortcut(command.id)}
-                    className="text-xs text-ink-dim hover:text-ink"
+                    className="text-xs text-ink-dim hover:text-ink cursor-pointer"
                   >
                     ⟲
                   </button>
@@ -97,7 +97,7 @@ function SettingsContent() {
                   onBlur={() => capturing && stopCapturing()}
                   className={`flex h-7 min-w-24 items-center justify-center rounded-md px-2 text-xs ${
                     capturing ? "bg-accent/25 text-accent" : "bg-canvas"
-                  }`}
+                  } cursor-pointer`}
                 >
                   {capturing ? (
                     "Presiona las teclas…"

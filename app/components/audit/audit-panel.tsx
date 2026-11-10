@@ -51,10 +51,10 @@ export function AuditPanel() {
         </label>
         <span className="flex-1" />
         <span className="text-[11px] text-ink-dim">Revisado a las {new Date(checkedAt).toLocaleTimeString()}</span>
-        <button type="button" onClick={recheck} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover">
+        <button type="button" onClick={recheck} className="h-8 rounded-md border border-line px-3 text-xs hover:bg-hover cursor-pointer">
           Volver a revisar
         </button>
-        <button type="button" onClick={closeDialog} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" onClick={closeDialog} className="h-8 rounded-md px-3 text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           Cerrar
         </button>
       </header>
@@ -68,7 +68,7 @@ export function AuditPanel() {
             aria-selected={tab === category}
             data-tab={category}
             onClick={() => setTab(category)}
-            className={`flex w-36 flex-col items-center gap-1 rounded-lg border px-2 py-2 ${tab === category ? "border-accent bg-accent/10" : "border-transparent hover:bg-hover"}`}
+            className={`flex w-36 flex-col items-center gap-1 rounded-lg border px-2 py-2 ${tab === category ? "border-accent bg-accent/10" : "border-transparent hover:bg-hover"} cursor-pointer`}
           >
             <ScoreRing score={report.scores[category]} />
             <span className="text-xs font-medium">{CATEGORY_LABELS[category]}</span>
@@ -79,7 +79,7 @@ export function AuditPanel() {
           type="button"
           aria-selected={tab === "real"}
           onClick={() => setTab("real")}
-          className={`flex w-36 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-medium ${tab === "real" ? "border-accent bg-accent/10" : "border-transparent hover:bg-hover"}`}
+          className={`flex w-36 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs font-medium ${tab === "real" ? "border-accent bg-accent/10" : "border-transparent hover:bg-hover"} cursor-pointer`}
         >
           Lighthouse real
         </button>

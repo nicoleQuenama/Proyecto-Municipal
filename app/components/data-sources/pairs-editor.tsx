@@ -20,12 +20,12 @@ export function PairsEditor({ label, keyPlaceholder, pairs, onChange }: PairsEdi
         <div key={index} className="flex gap-1">
           <input aria-label={keyPlaceholder} placeholder={keyPlaceholder} value={pair.key} onChange={(e) => edit(index, { key: e.target.value })} className={fieldClass} />
           <input aria-label="Valor" placeholder="valor" value={pair.value} onChange={(e) => edit(index, { value: e.target.value })} className={fieldClass} />
-          <button type="button" aria-label="Quitar" onClick={() => onChange(pairs.filter((_, i) => i !== index))} className="px-1 text-ink-dim hover:text-ink">
+          <button type="button" aria-label="Quitar" onClick={() => onChange(pairs.filter((_, i) => i !== index))} className="px-1 text-ink-dim hover:text-ink cursor-pointer">
             ×
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...pairs, { key: "", value: "" }])} className="self-start text-xs text-accent hover:underline">
+      <button type="button" onClick={() => onChange([...pairs, { key: "", value: "" }])} className="self-start text-xs text-accent hover:underline cursor-pointer">
         + Añadir
       </button>
     </fieldset>

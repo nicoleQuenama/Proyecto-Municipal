@@ -24,7 +24,7 @@ export function ElementToolbar({ onAdd }: { onAdd: (kind: ElementKind) => void }
           aria-label={`Agregar ${tool.label.toLowerCase()}`}
           title={`Agregar ${tool.label.toLowerCase()}`}
           onClick={() => onAdd(tool.kind)}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           {tool.icon}
         </button>

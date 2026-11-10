@@ -38,7 +38,7 @@ export function ExportDialog({ pageId, block, def, onClose }: ExportDialogProps)
             El CMS no usa ninguna IA: arma este texto con reglas fijas. Pégalo en el modelo que uses y él lo adapta a tu proyecto.
           </p>
         </div>
-        <button type="button" aria-label="Cerrar" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink">
+        <button type="button" aria-label="Cerrar" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer">
           ×
         </button>
       </header>
@@ -51,7 +51,7 @@ export function ExportDialog({ pageId, block, def, onClose }: ExportDialogProps)
             role="tab"
             aria-selected={tab === id}
             onClick={() => setTab(id)}
-            className={`-mb-px h-10 border-b-2 px-3 text-xs ${tab === id ? "border-accent font-medium text-accent" : "border-transparent text-ink-dim hover:text-ink"}`}
+            className={`-mb-px h-10 border-b-2 px-3 text-xs ${tab === id ? "border-accent font-medium text-accent" : "border-transparent text-ink-dim hover:text-ink"} cursor-pointer`}
           >
             {label}
           </button>

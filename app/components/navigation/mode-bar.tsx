@@ -26,7 +26,7 @@ export function ModeBar() {
         <button
           type="button"
           onClick={() => setMode("edit")}
-          className="rounded-full bg-hover px-3 py-1 hover:bg-accent hover:text-white"
+          className="rounded-full bg-hover px-3 py-1 hover:bg-accent hover:text-white cursor-pointer"
         >
           Salir (Esc)
         </button>

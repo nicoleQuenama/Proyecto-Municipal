@@ -52,7 +52,7 @@ export function InlineForm({
         <button
           type="submit"
           disabled={!value.trim()}
-          className="h-9 shrink-0 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40"
+          className="h-9 shrink-0 rounded-md bg-accent px-3 text-xs font-medium text-white disabled:opacity-40 cursor-pointer"
         >
           {submitLabel}
         </button>

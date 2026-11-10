@@ -40,7 +40,7 @@ export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onC
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-hover"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-hover cursor-pointer"
       >
         <span aria-hidden className={`text-ink-dim transition-transform ${open ? "" : "-rotate-90"}`}>▾</span>
         <span className="min-w-0 flex-1">
@@ -69,7 +69,7 @@ export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onC
             <button
               type="button"
               onClick={onClear}
-              className="h-7 self-start rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400"
+              className="h-7 self-start rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400 cursor-pointer"
             >
               Quitar todas las reglas de aquí
             </button>

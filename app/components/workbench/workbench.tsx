@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
-import { CodeFrame } from "../code/code-frame";
-import { useSharedAssets } from "../code/use-shared-assets";
 import { useSite } from "../site/site-context";
 import { Modal } from "../ui/modal";
+import { BlockPreview, type CodePick } from "./block-preview";
+import { ConsoleHost } from "./console-host";
 import { Explorer } from "./explorer";
 import { SitePreview } from "./site-preview";
 import { fileId, kindOf, type FileKindName, type FileRef } from "./file-ref";
@@ -22,19 +23,27 @@ const FileEditor = dynamic(() => import("./file-editor"), {
 /** Los archivos que se ven en vivo junto al editor: los de un bloque de código. */
 const PREVIEWED: ReadonlySet<FileKindName> = new Set(["block-html", "block-css", "block-js"]);
 
-function BlockPreview({ file }: { file: Extract<FileRef, { blockId: string }> }) {
-  const { libraries, pages } = useSite();
-  const shared = useSharedAssets(file.blockId);
-  const block = pages.find((p) => p.id === file.pageId)?.blocks.find((b) => b.id === file.blockId);
-  if (!block?.code) return null;
+/** El archivo abierto y su vista previa. La clave de este componente es el archivo: cada uno empieza limpio. */
+function ActiveFile({ file }: { file: FileRef }) {
+  const [cursorLine, setCursorLine] = useState<number | null>(null);
+  const [pick, setPick] = useState<CodePick | null>(null);
 
   return (
-    <aside aria-label="Vista previa" className="flex w-[40%] min-w-72 flex-col border-l border-line bg-white">
-      <p className="border-b border-neutral-200 px-3 py-1.5 text-[11px] text-neutral-500">Vista previa en vivo</p>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <CodeFrame code={block.code} libraries={libraries} shared={shared} title="Vista previa del código" />
-      </div>
-    </aside>
+    <>
+      {/* key: cada archivo tiene su propio editor, con su historial de deshacer. */}
+      <FileEditor key={fileId(file)} file={file} onCursorLine={setCursorLine} highlightRange={pick} />
+      {/* Un bloque de código se ve aislado; todo lo demás (CSS, TypeScript…) se ve en la página real. */}
+      {PREVIEWED.has(file.kind) ? (
+        <BlockPreview
+          key={`preview:${fileId(file)}`}
+          file={file as Extract<FileRef, { blockId: string }>}
+          hoverLine={cursorLine}
+          onPick={setPick}
+        />
+      ) : (
+        <SitePreview pageId={"pageId" in file ? file.pageId : null} />
+      )}
+    </>
   );
 }
 
@@ -56,7 +65,7 @@ function Workbench() {
           aria-pressed={!explorerHidden}
           title="Mostrar u ocultar el explorador (Ctrl+B)"
           onClick={toggleExplorer}
-          className="-ml-2 flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="-ml-2 flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           <PanelCollapseIcon collapsed={explorerHidden} />
         </button>
@@ -67,7 +76,7 @@ function Workbench() {
           aria-label="Cerrar el editor"
           title="Cerrar el editor (Esc)"
           onClick={close}
-          className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink"
+          className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
         >
           ×
         </button>
@@ -87,14 +96,14 @@ function Workbench() {
                     selected ? "bg-canvas text-ink" : "text-ink-dim hover:text-ink"
                   }`}
                 >
-                  <button type="button" role="tab" aria-selected={selected} onClick={() => activate(tab)} className="h-9 pr-1 pl-3">
+                  <button type="button" role="tab" aria-selected={selected} onClick={() => activate(tab)} className="h-9 pr-1 pl-3 cursor-pointer">
                     {kindOf(tab).name(site, tab)}
                   </button>
                   <button
                     type="button"
                     aria-label={`Cerrar ${kindOf(tab).name(site, tab)}`}
                     onClick={() => closeTab(tab)}
-                    className="mr-1 flex h-5 w-5 items-center justify-center rounded text-ink-dim hover:bg-hover hover:text-ink"
+                    className="mr-1 flex h-5 w-5 items-center justify-center rounded text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
                   >
                     ×
                   </button>
@@ -103,31 +112,24 @@ function Workbench() {
             })}
           </div>
 
-          <div className="flex min-h-0 flex-1">
-            {active ? (
-              <>
-                {/* key: cada archivo tiene su propio editor, con su historial de deshacer. */}
-                <FileEditor key={fileId(active)} file={active} />
-                {/* Un bloque de código se ve aislado; todo lo demás (CSS, TypeScript…) se ve en la página real. */}
-                {PREVIEWED.has(active.kind) ? (
-                  <BlockPreview file={active as Extract<FileRef, { blockId: string }>} />
-                ) : (
-                  <SitePreview pageId={"pageId" in active ? active.pageId : null} />
-                )}
-              </>
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-ink-dim">
-                <p>Abre un archivo del explorador para empezar.</p>
-                <button
-                  type="button"
-                  onClick={() => openFile({ kind: "global-css" })}
-                  className="rounded-md bg-hover px-3 py-1.5 text-xs text-ink hover:bg-accent hover:text-white"
-                >
-                  Abrir estilos-globales.css
-                </button>
-              </div>
-            )}
-          </div>
+          <ConsoleHost>
+            <div className="flex min-h-0 flex-1">
+              {active ? (
+                <ActiveFile key={fileId(active)} file={active} />
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-ink-dim">
+                  <p>Abre un archivo del explorador para empezar.</p>
+                  <button
+                    type="button"
+                    onClick={() => openFile({ kind: "global-css" })}
+                    className="rounded-md bg-hover px-3 py-1.5 text-xs text-ink hover:bg-accent hover:text-white cursor-pointer"
+                  >
+                    Abrir estilos-globales.css
+                  </button>
+                </div>
+              )}
+            </div>
+          </ConsoleHost>
         </div>
       </div>
     </div>

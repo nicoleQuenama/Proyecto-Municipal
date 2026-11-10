@@ -284,7 +284,7 @@ export function TemplatesTab() {
           onClick={() => setTabType("sections")}
           className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-all ${
             tabType === "sections" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink"
-          }`}
+          } cursor-pointer`}
         >
           Secciones ({SECTION_TEMPLATES.length})
         </button>
@@ -293,7 +293,7 @@ export function TemplatesTab() {
           onClick={() => setTabType("pages")}
           className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-all ${
             tabType === "pages" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink"
-          }`}
+          } cursor-pointer`}
         >
           Páginas ({PAGE_TEMPLATES.length})
         </button>
@@ -351,7 +351,7 @@ export function TemplatesTab() {
                         isAdded
                           ? "bg-emerald-600 text-white"
                           : "bg-accent text-white hover:bg-accent/90 active:scale-95 disabled:opacity-50"
-                      }`}
+                      } cursor-pointer`}
                     >
                       {isAdded ? "Agregado" : "+ Agregar a la página"}
                     </button>
@@ -409,7 +409,7 @@ export function TemplatesTab() {
                         appliedPageId === tmpl.id
                           ? "bg-emerald-600 text-white"
                           : "bg-accent text-white hover:bg-accent/90 active:scale-95 disabled:opacity-50"
-                      }`}
+                      } cursor-pointer`}
                     >
                       {appliedPageId === tmpl.id ? "Plantilla aplicada" : `Aplicar a ${page.name}`}
                     </button>
@@ -417,7 +417,7 @@ export function TemplatesTab() {
                       type="button"
                       disabled={!canEditContent}
                       onClick={() => handleCreatePage(tmpl)}
-                      className="inline-flex items-center gap-1 rounded-md border border-line bg-panel px-2.5 py-1.5 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover active:scale-95 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-md border border-line bg-panel px-2.5 py-1.5 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
                       {isCreated ? "Página creada" : "+ Nueva página"}
                     </button>
