@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { UnitTag } from "../units/unit-tag";
 import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { idle, pill } from "./toolbar-parts";
@@ -73,7 +74,13 @@ export function PageSelector() {
                     page.id === currentPageId ? "text-accent" : "text-ink"
                   } cursor-pointer`}
                 >
-                  <span className="min-w-0 flex-1 truncate">{page.name}</span>
+                  <span className={`min-w-0 flex-1 truncate ${page.hidden && !page.isHome ? "text-ink-dim" : ""}`}>{page.name}</span>
+                  {page.hidden && !page.isHome && (
+                    <span className="shrink-0 rounded bg-amber-500/15 px-1 py-0.2 text-[9px] font-semibold text-amber-600 uppercase">
+                      Oculta
+                    </span>
+                  )}
+                  <UnitTag page={page} />
                   <span className="shrink-0 font-mono text-[10px] text-ink-dim">{routeOf(page)}</span>
                 </button>
               </li>

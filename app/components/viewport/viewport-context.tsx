@@ -45,6 +45,9 @@ interface ViewportContextValue {
   focusMode: boolean;
   setFocusMode: (val: boolean | ((prev: boolean) => boolean)) => void;
   toggleFocusMode: () => void;
+  /** Filtro de páginas del lienzo: «» todas, «global» las de todos, o el id de una unidad. */
+  unitFilter: string;
+  setUnitFilter: (unitId: string) => void;
 }
 
 const ViewportContext = createContext<ViewportContextValue | null>(null);
@@ -61,6 +64,7 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
   const [zoom, setZoomState] = useState(100);
   const [fitted, setFitted] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
+  const [unitFilter, setUnitFilter] = useState("");
 
   const toggleFocusMode = useCallback(() => setFocusMode((prev) => !prev), []);
 
@@ -98,6 +102,8 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
         focusMode,
         setFocusMode,
         toggleFocusMode,
+        unitFilter,
+        setUnitFilter,
       }}
     >
       {children}
