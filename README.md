@@ -66,19 +66,38 @@ Lo creas copiando `.env.example`. Para desarrollo local casi todo ya viene bien;
 
 ### Elegir la base de datos: Docker o tu propio Postgres (pgAdmin)
 
-El archivo `.env.local` apunta a **una sola** base a la vez, con dos URLs que se cambian juntas. `.env.example` trae las dos
-opciones: la de Docker activa y la de tu Postgres comentada.
+El archivo `.env.local` apunta a **una sola** base a la vez, con dos URLs que se cambian juntas. `.env.example` trae las
+opciones: la de Docker activa y las demás comentadas.
 
-| | Opción 1 — Docker (por defecto) | Opción 2 — tu Postgres (el de pgAdmin) |
-|---|---|---|
-| Para quién | empezar rápido, sin instalar Postgres | ya tienes Postgres y pgAdmin |
-| `DATABASE_ADMIN_URL` | `postgres://postgres:portal_dev@127.0.0.1:<POSTGRES_PORT>/portal` | `postgres://postgres:TU_CLAVE@127.0.0.1:5432/portal` |
-| `DATABASE_URL` | `postgres://portal_api:portal_api_dev@127.0.0.1:<POSTGRES_PORT>/portal` | `postgres://portal_api:UNA_CLAVE@127.0.0.1:5432/portal` |
-| `POSTGRES_PORT` | sí: el puerto que Docker abre (5432, o p. ej. 55433 en Windows). Debe coincidir con las URLs | no hace falta |
-| Crear la base | `pnpm db:up` la crea sola | tú la creas vacía (paso de abajo) |
-| Tablas y datos | `pnpm db:setup` | `pnpm db:setup` |
+| | Opción 1 — Docker (por defecto) | Opción 2 — tu Postgres (el de pgAdmin) | Opción 3 — Supabase (compartida) |
+|---|---|---|---|
+| Para quién | empezar rápido, sin instalar Postgres | ya tienes Postgres y pgAdmin | todo el equipo sobre la MISMA base |
+| `DATABASE_ADMIN_URL` | `postgres://postgres:portal_dev@127.0.0.1:<POSTGRES_PORT>/portal` | `postgres://postgres:TU_CLAVE@127.0.0.1:5432/portal` | `postgres://postgres.<ref>:TU_CLAVE@aws-…pooler.supabase.com:5432/postgres` |
+| `DATABASE_URL` | `postgres://portal_api:portal_api_dev@127.0.0.1:<POSTGRES_PORT>/portal` | `postgres://portal_api:UNA_CLAVE@127.0.0.1:5432/portal` | `postgres://portal_api.<ref>:UNA_CLAVE@aws-…pooler.supabase.com:6543/postgres` |
+| `POSTGRES_PORT` | sí: el puerto que Docker abre (5432, o p. ej. 55433 en Windows). Debe coincidir con las URLs | no hace falta | no hace falta |
+| Crear la base | `pnpm db:up` la crea sola | tú la creas vacía (paso de abajo) | la crea Supabase al hacer el proyecto |
+| Tablas y datos | `pnpm db:setup` | `pnpm db:setup` | `pnpm db:setup` (una sola persona) |
 
-Las dos son bases **independientes**: no se sincronizan. Cambiar de una a otra es cambiar las URLs de `.env.local`.
+Las bases son **independientes**: no se sincronizan. Cambiar de una a otra es cambiar las URLs de `.env.local`.
+
+#### Opción 3: Supabase (que todo el equipo comparta la misma base)
+
+1. Crea el proyecto en [supabase.com](https://supabase.com) (plan gratis vale: la base solo guarda textos y el diseño, las
+   imágenes van a ImageKit). En **Project Settings › Database › Reset database password** define la contraseña de la base.
+2. En **Project Settings › Database › Connection pooling** copia las dos URLs: la de **sesión** (puerto 5432) es
+   `DATABASE_ADMIN_URL` y la de **transacciones** (puerto 6543) es `DATABASE_URL`. En esta última cambia `postgres.<ref>` por
+   `portal_api.<ref>`: `db:setup` creará ese rol con la contraseña que pongas ahí.
+3. `pnpm db:setup` — aplica las migraciones en Supabase, crea `portal_api` y carga la organización con las cuentas de prueba.
+   Lo corre **una sola persona**; el resto del equipo no lo necesita.
+4. Al resto del equipo le pasas el bloque de `.env.local` con la **misma** `DATABASE_URL`, la misma `DATA_KEY` y las mismas
+   claves de ImageKit (por un canal privado, nunca por el repo). Con eso todos crean páginas y componentes y todos ven lo
+   mismo tras recargar. El tiempo real en vivo no cruza entre máquinas: los cambios de otros aparecen al recargar.
+5. Los cambios de esquema futuros (`db/migrations`) los aplica igual quien tenga `DATABASE_ADMIN_URL`: `pnpm db:setup` solo
+   aplica lo que falte.
+
+> En Supabase el rol `postgres` no es superusuario, así que las migraciones evitan lo que exige serlo (`BYPASSRLS`) y
+> `is_system_session()` reconoce al dueño de las tablas aunque PG16+ lo haga miembro automático de los roles que crea.
+> La conexión de la app va por el pooler de transacciones: `prepare: false` y `set_config(..., true)` ya lo soportan.
 
 #### Opción 2: crear la base en tu Postgres con pgAdmin
 

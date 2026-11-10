@@ -89,12 +89,17 @@ CREATE TABLE app.organization_role_permissions (
 -- (migraciones, funciones SECURITY DEFINER, cascadas) y portal_platform. Se decide por pertenencia DIRECTA a
 -- portal_app / portal_readonly (las cuentas de login de la API deben crearse con IN ROLE portal_app): consultar
 -- pg_roles en cada fila costaba ~1 ms y esto se llama varias veces por fila; aquí es una búsqueda por índice.
+-- PG16+ da al creador de roles la membresía automática de lo que crea: en servicios donde el dueño NO es superusuario
+-- (p. ej. el postgres de Supabase, vía pooler), el dueño de las tablas queda «miembro de la API» sin serla (y esa
+-- membresía no se puede revocar). Quien posee las tablas del esquema es, por definición, el sistema.
 CREATE FUNCTION app.is_system_session() RETURNS boolean
 LANGUAGE sql STABLE AS
 $$ SELECT NOT (
      current_user IN ('portal_app', 'portal_readonly')
      OR EXISTS (SELECT 1 FROM pg_auth_members m
-                WHERE m.roleid IN ('portal_app'::regrole, 'portal_readonly'::regrole) AND m.member = to_regrole(current_user)::oid)) $$;
+                WHERE m.roleid IN ('portal_app'::regrole, 'portal_readonly'::regrole) AND m.member = to_regrole(current_user)::oid))
+   OR EXISTS (SELECT 1 FROM pg_catalog.pg_class c
+               WHERE c.oid = 'app.organizations'::regclass AND c.relowner = to_regrole(current_user)::oid) $$;
 
 -- ¿Puede la persona de esta transacción hacer `p_permission` en el proyecto? (cálculo completo, sin caché)
 CREATE FUNCTION app.has_permission_uncached(p_project uuid, p_permission text) RETURNS boolean

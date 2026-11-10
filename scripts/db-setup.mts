@@ -43,7 +43,8 @@ if (done.size === 0 && exists) {
 
 // El usuario de la app: rol sin privilegios propios (sujeto a RLS), con el nombre y la contraseña de DATABASE_URL.
 const { username, password } = new URL(appUrl);
-const user = decodeURIComponent(username);
+// Con un pooler (p. ej. Supabase) el usuario lleva el sufijo del proyecto (portal_api.<ref>): el rol real es la parte anterior al punto.
+const user = decodeURIComponent(username).split(".")[0];
 if (!/^[a-z_][a-z0-9_]*$/.test(user)) throw new Error("El usuario de DATABASE_URL solo puede llevar minúsculas, números y guion bajo.");
 const [role] = await sql`select 1 from pg_roles where rolname = ${user}`;
 if (!role) await sql.unsafe(`create role ${user} login password '${decodeURIComponent(password).replace(/'/g, "''")}' in role portal_app connection limit 50`);

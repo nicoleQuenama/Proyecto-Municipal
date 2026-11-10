@@ -65,7 +65,13 @@ BEGIN
     CREATE ROLE portal_readonly NOLOGIN;
   END IF;
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'portal_platform') THEN
-    CREATE ROLE portal_platform NOLOGIN BYPASSRLS;
+    -- BYPASSRLS solo lo puede conceder un superusuario (p. ej. Supabase no lo es): sin él,
+    -- la plataforma queda sujeta a RLS; para el uso del portal no hace falta saltarla.
+    IF current_setting('is_superuser') = 'on' THEN
+      CREATE ROLE portal_platform NOLOGIN BYPASSRLS;
+    ELSE
+      CREATE ROLE portal_platform NOLOGIN;
+    END IF;
   END IF;
 END
 $$;
