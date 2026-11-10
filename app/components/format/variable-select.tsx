@@ -23,10 +23,21 @@ interface VariableSelectProps {
   createVariable: CreateVariable;
   /** Recibe `var(--nombre)` o, al soltar la variable, el valor suelto. */
   onChange: (raw: string) => void;
+  /** Solo el superadministrador puede crear nuevas variables; los diseñadores solo consumen las de la marca */
+  canCreate?: boolean;
 }
 
 /** Elegir una variable del proyecto para un valor, soltarla, o crear una nueva con el valor actual. */
-export function VariableSelect({ kind, label, raw, literal, variables, createVariable, onChange }: VariableSelectProps) {
+export function VariableSelect({
+  kind,
+  label,
+  raw,
+  literal,
+  variables,
+  createVariable,
+  onChange,
+  canCreate = true,
+}: VariableSelectProps) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -66,10 +77,10 @@ export function VariableSelect({ kind, label, raw, literal, variables, createVar
             --{variable.name}
           </option>
         ))}
-        <option value={NEW_VARIABLE}>＋ Nueva variable…</option>
+        {canCreate && <option value={NEW_VARIABLE}>＋ Nueva variable…</option>}
       </select>
 
-      {creating && (
+      {creating && canCreate && (
         <div className="flex flex-col gap-1">
           <div className="flex gap-1">
             <input

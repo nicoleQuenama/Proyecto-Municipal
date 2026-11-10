@@ -2,6 +2,7 @@
 
 import { useRef, type ReactNode } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
+import { getBrandColors, getBrandFonts, isRestrictedByBrand } from "../auth/brand-manual";
 import { applyOverrides } from "../site/overrides";
 import { SECTION_KEY } from "../site/types";
 import { useSite, useSiteDispatch } from "../site/site-context";
@@ -27,6 +28,7 @@ import {
 import { makeCreateVariable } from "./format-variables";
 import { SelectionActions } from "./selection-actions";
 import { VariableSelect } from "./variable-select";
+import type { PaletteOption } from "../section-colors/palette-select";
 
 const WIDTH = 288;
 const ESTIMATED_HEIGHT = 470;
@@ -51,12 +53,26 @@ function WithVariable({ control, variable }: { control: ReactNode; variable: Rea
   );
 }
 
-function TextControls({ model }: { model: MenuModel }) {
+function TextControls({
+  model,
+  restricted,
+  brandColors,
+  fontChoices,
+}: {
+  model: MenuModel;
+  restricted: boolean;
+  brandColors: PaletteOption[];
+  fontChoices: { value: string; label: string }[];
+}) {
   const none = model.textElements.length === 0;
   const align = commonValue(model, (e) => e.align);
   const list = commonValue(model, (e) => e.list ?? "none");
-  const known = FONT_OPTIONS.some((font) => font.value === model.fontFamily.value);
-  const shared = { variables: model.variables, createVariable: model.createVariable };
+  const known = fontChoices.some((font) => font.value === model.fontFamily.value);
+  const shared = {
+    variables: model.variables,
+    createVariable: model.createVariable,
+    canCreate: !restricted,
+  };
 
   return (
     <>
@@ -71,7 +87,7 @@ function TextControls({ model }: { model: MenuModel }) {
               className={`${fieldClass} w-full`}
             >
               <option value="">Heredada</option>
-              {FONT_OPTIONS.map((font) => (
+              {fontChoices.map((font) => (
                 <option key={font.value} value={font.value}>{font.label}</option>
               ))}
             </select>
@@ -82,7 +98,7 @@ function TextControls({ model }: { model: MenuModel }) {
               kind="font"
               label="Variable de tipografía"
               raw={model.fontFamily.raw}
-              literal={model.fontFamily.value || FONT_OPTIONS[0].value}
+              literal={model.fontFamily.value || fontChoices[0]?.value || FONT_OPTIONS[0].value}
               onChange={model.fontFamily.set}
             />
           }
@@ -118,7 +134,7 @@ function TextControls({ model }: { model: MenuModel }) {
 
         <div className="flex flex-wrap gap-0.5">
           {TOGGLES.map(({ key, label, glyph, glyphStyle }) => {
-            const active = commonValue(model, (e) => e[key] === true) === true;
+            const active = model.textElements.length > 0 && model.textElements.every((e) => e[key]);
             return (
               <ToggleButton
                 key={key}
@@ -163,7 +179,14 @@ function TextControls({ model }: { model: MenuModel }) {
       <MenuGroup title="Color">
         <WithVariable
           control={
-            <ColorField label={model.color.label} disabled={none} value={model.color.value} onChange={model.color.set} />
+            <ColorField
+              label={model.color.label}
+              disabled={none}
+              value={model.color.value}
+              onChange={model.color.set}
+              restrictToPalette={restricted}
+              palette={brandColors}
+            />
           }
           variable={
             <VariableSelect
@@ -178,7 +201,13 @@ function TextControls({ model }: { model: MenuModel }) {
         />
         <WithVariable
           control={
-            <ColorField label={model.background.label} value={model.background.value} onChange={model.background.set} />
+            <ColorField
+              label={model.background.label}
+              value={model.background.value}
+              onChange={model.background.set}
+              restrictToPalette={restricted}
+              palette={brandColors}
+            />
           }
           variable={
             <VariableSelect
@@ -196,12 +225,29 @@ function TextControls({ model }: { model: MenuModel }) {
   );
 }
 
-function MenuBody({ model, close }: { model: MenuModel; close: () => void }) {
+function MenuBody({
+  model,
+  close,
+  restricted,
+  brandColors,
+  fontChoices,
+}: {
+  model: MenuModel;
+  close: () => void;
+  restricted: boolean;
+  brandColors: PaletteOption[];
+  fontChoices: { value: string; label: string }[];
+}) {
   return (
     <>
       <p className="truncate border-b border-line px-3 py-2 text-xs font-medium">{model.title}</p>
 
-      <TextControls model={model} />
+      <TextControls
+        model={model}
+        restricted={restricted}
+        brandColors={brandColors}
+        fontChoices={fontChoices}
+      />
 
       <MenuGroup title={model.radius.label}>
         <WithVariable
@@ -220,24 +266,15 @@ function MenuBody({ model, close }: { model: MenuModel; close: () => void }) {
             <VariableSelect
               variables={model.variables}
               createVariable={model.createVariable}
+              canCreate={!restricted}
               kind="size"
-              label="Variable de las esquinas"
+              label="Variable del radio de esquinas"
               raw={model.radius.raw}
               literal={`${model.radius.value ?? 0}px`}
               onChange={(raw) => model.radius.set(toSizeValue(raw))}
             />
           }
         />
-      </MenuGroup>
-
-      <MenuGroup title="Mover">
-        <div className="flex gap-0.5">
-          {model.moves.map((move) => (
-            <ActionButton key={move.label} label={move.label} onClick={move.run}>
-              {move.glyph}
-            </ActionButton>
-          ))}
-        </div>
       </MenuGroup>
 
       <MenuGroup>
@@ -279,6 +316,10 @@ export function FormatMenu() {
   const block = page?.blocks.find((b) => b.id === menu?.target.blockId);
   const def = site.components.find((c) => c.id === block?.componentId);
   if (!menu || !page || !block || !def) return null;
+
+  const restricted = isRestrictedByBrand(currentUser);
+  const brandColors = getBrandColors(site.variables);
+  const fontChoices = restricted ? getBrandFonts(site.variables) : FONT_OPTIONS;
 
   const resolve = styles.resolver(def.id);
   const model = buildMenuModel(
@@ -322,7 +363,13 @@ export function FormatMenu() {
       style={{ left, top, width: WIDTH, maxHeight: window.innerHeight - top - MARGIN }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <MenuBody model={visible} close={closeFormatMenu} />
+      <MenuBody
+        model={visible}
+        close={closeFormatMenu}
+        restricted={restricted}
+        brandColors={brandColors}
+        fontChoices={fontChoices}
+      />
       <SelectionActions pageId={page.id} blockId={block.id} close={closeFormatMenu} />
     </TopLayer>
   );
