@@ -1,15 +1,19 @@
 # Base de datos del CMS (PostgreSQL 15+, probada en 18)
 
-Esquema `app`: 14 migraciones SQL puras en `migrations/` (se aplican en orden numérico), 55 tablas. Reemplaza lo que hoy vive en
-Antes vivía en `.cms-data`, `.cache` y el `localStorage` del navegador; ya solo queda `localStorage` (preferencias de cada persona).
+Esquema `app`: 19 migraciones SQL puras en `migrations/` (se aplican en orden numérico), más de 60 tablas. Reemplaza
+totalmente los antiguos archivos en disco (`.cms-data`, `.cache`); todo el estado institucional, sitio, ramas y unidades
+reside en PostgreSQL con seguridad por fila (RLS). En el cliente solo queda `localStorage` para preferencias de UI.
 
-> **Estado de la conexión:** el esquema está terminado y probado. La app ya usa la base de datos para **inicio de sesión, usuarios, accesos (con alcance por
-> páginas y secciones), cambio y restablecimiento de contraseña (fase 1) y el SITIO: páginas, secciones, componentes, animaciones, estilos, funciones, APIs,
-> librerías y comentarios, con el código guardado como árboles (fase 2)**. Lo demás (versiones y pull requests, publicar/desplegar, medios en ImageKit,
-> preferencias, caché de APIs, tiempo real) sigue en `.cms-data`, `.cache` y `localStorage` hasta su fase: ver «Conectar la app» al final.
+> **Estado de la conexión:** el esquema está completamente terminado, conectado y probado. La aplicación utiliza
+> PostgreSQL para **autenticación, sesiones, permisos con alcance por páginas/secciones, gestión de unidades municipales
+> y revisión departamental (0019), contenido del sitio (páginas, bloques, componentes, estilos, librerías y código en árboles AST),
+> control de versiones y pull requests estilo Git, publicaciones inmutables, destinos de despliegue, biblioteca de medios ImageKit
+> y registro de operaciones en tiempo real**.
 >
-> Primeros pasos (completos en el README de la raíz): copiar `.env.example` a `.env.local` → `pnpm db:up` → `pnpm db:setup` (migraciones, usuario de la app, organización y tres cuentas de prueba) → `pnpm dev`. Se entra con el **correo**.
-> Pruebas: `scripts/e2e-auth.sh` (usuarios) y `node --env-file=.env.local scripts/e2e-site.mts` (sitio), con `pnpm dev` y la base de datos arriba.
+> Primeros pasos: copiar `.env.example` a `.env.local` → `pnpm db:up` → `pnpm db:setup` (migraciones, roles de base de datos,
+> organización municipal y cuentas de prueba) → `pnpm dev`. Se inicia sesión con el **correo**.
+> Pruebas de integración: `node --env-file=.env.local scripts/e2e-units.mts` (unidades), `scripts/e2e-auth.sh` (usuarios) y
+> `node --env-file=.env.local scripts/e2e-site.mts` (sitio).
 
 ```
 migrations/
@@ -25,8 +29,13 @@ migrations/
   0010_permissions    matriz de permisos, ajustes por organización, guardas que los hacen cumplir en la base
   0011_media          cuota de almacenamiento, qué publicación usa qué archivo, limpieza de ImageKit
   0012_code_units     el código del usuario como AST (nunca texto)
-  0013_collaboration  invitaciones, enlaces para compartir, registro de operaciones en tiempo real
-  0014_workflow       ramas y pull requests como GitHub, numeración, mantenimiento
+  0013_collaboration          invitaciones, enlaces para compartir, registro de operaciones en tiempo real
+  0014_workflow               ramas y pull requests como GitHub, numeración, mantenimiento
+  0015_branch_edits           ediciones de rama posteriores a la última foto (edit_operations)
+  0016_public_access          sitio público por dominio/slug sin sesión y caché de proxies
+  0017_organization_packages  paquetes pnpm compartidos por organización
+  0018_asset_references       rastreo de referencias a archivos ImageKit y detección de huérfanos
+  0019_units                  unidades municipales (departamentos), membresías, tipos, scoping y flujo de revisión
 tests/
   isolation.sql       aislamiento entre organizaciones e integridad (43 comprobaciones)
   collaboration.sql   permisos, compartir, versiones, flujo GitHub, código AST, medios, tiempo real, auditoría del CMS (130)
@@ -306,3 +315,23 @@ Entrega optimizada: las imágenes PNG/JPG/WebP de ImageKit se muestran con `?tr=
 
 ## Cuota de almacenamiento
 `GET /api/cms/assets` devuelve cuánto ocupa la organización (`organization_usage`, que solo mueven los disparadores) frente a su plan (`organizations.max_storage_bytes`, 5 GB por defecto), cuántos archivos tiene y si ImageKit está configurado. El panel de medios lo muestra con una barra (ámbar desde el 80 %, roja desde el 95 %) que se actualiza sola al subir. Con el plan lleno, subir responde 409 «La organización alcanzó su cuota de almacenamiento» y no deja nada a medias. Ampliar el plan es cambiar `max_storage_bytes` de la organización.
+
+## Unidades Municipales y Control de Acceso (0019)
+
+La migración `0019_units.sql` introduce el concepto de **Unidades (departamentos)** dentro de una organización (ej. *Salud*, *Zoonosis*, *Comunicación*, *Catastro*):
+
+- **Modelo relacional:**
+  - `app.units`: cada unidad pertenece a una organización, tiene un nombre único (`citext`), un tipo (`designer` o `dev`), un responsable opcional (`owner_id`, quien revisa y aprueba) y la bandera `review_required`.
+  - `app.unit_members`: relación muchos a muchos entre usuarios y unidades (`organization_id`, `unit_id`, `user_id`).
+  - `app.unit_kind_permissions`: techo de permisos por tipo de unidad (los tipos acotan qué permisos base pueden ejercer sus miembros).
+  - `app.unit_permission_overrides`: excepciones específicas otorgadas por el superadministrador para una unidad (`permission`, `allowed`).
+- **Scoping y Reglas de Edición:**
+  - Cada página (`app.pages.unit_id`) y cada archivo multimedia (`app.assets.unit_id`) puede asignarse a una unidad o ser **Global** (`unit_id IS NULL`).
+  - Quien pertenece a unidades solo ve y edita el contenido asignado a sus unidades (`app.can_edit_page_unit`).
+  - El contenido global solo puede ser editado por superadministradores o por cuentas con `can_edit_global = true` (`app.users.can_edit_global`).
+  - Las organizaciones sin unidades no sufren restricciones adicionales (compatibilidad regresiva total).
+- **Flujo de Revisión (`review_required`):**
+  - Si una unidad activa `review_required = true`, sus miembros no pueden publicar directamente sobre `main`: sus cambios pasan a una pull request asignada al `owner_id` de la unidad o a un superadministrador.
+  - El dueño de la unidad (`owner_id`) sí puede publicar directamente en `main` aunque la unidad exija revisión.
+- **Prueba E2E:** `node --env-file=.env.local scripts/e2e-units.mts` (crea unidades, valida aislamiento, permisos cruzados, restricción de páginas y limpieza).
+

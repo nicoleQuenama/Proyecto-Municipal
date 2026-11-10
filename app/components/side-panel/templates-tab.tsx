@@ -5,6 +5,7 @@ import { hasPermission, useAuth } from "../auth/auth-context";
 import { EXAMPLE_COMPONENTS } from "../site/component-templates";
 import { isPageNameTaken } from "../site/rules";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
+import { SectionVisualPreview, PageVisualPreview } from "./template-previews";
 
 interface SectionTemplateItem {
   id: string;
@@ -322,17 +323,22 @@ export function TemplatesTab() {
             Bloques listos para insertar en {page.name}
           </p>
 
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-3">
             {filteredSections.map((sec) => {
               const isAdded = addedSectionId === sec.id;
               return (
                 <div
                   key={sec.id}
-                  className="group relative flex flex-col gap-2 rounded-xl border border-line bg-canvas/40 p-3 transition-colors hover:border-accent/40 hover:bg-hover/30"
+                  className="group relative flex flex-col gap-2.5 rounded-xl border border-line bg-canvas/40 p-3 transition-all hover:border-accent/40 hover:bg-hover/20 hover:shadow-xs"
                 >
+                  {/* Vista previa visual interactiva tipo Canva */}
+                  <div className="w-full overflow-hidden rounded-lg bg-panel/60 p-2 border border-line/50 transition-transform duration-200 group-hover:scale-[1.01]">
+                    <SectionVisualPreview templateId={sec.id} />
+                  </div>
+
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-[13px] font-medium text-ink">{sec.name}</h4>
+                      <h4 className="text-[13px] font-semibold text-ink">{sec.name}</h4>
                     </div>
                     <span className="text-[10px] text-ink-dim font-medium">
                       {sec.tag}
@@ -341,8 +347,8 @@ export function TemplatesTab() {
 
                   <p className="text-xs text-ink-dim leading-relaxed">{sec.description}</p>
 
-                  <div className="mt-1 flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-ink-dim">Plantilla de sección</span>
+                  <div className="mt-1 flex items-center justify-between border-t border-line/50 pt-2">
+                    <span className="text-[11px] text-ink-dim font-medium">Plantilla de sección</span>
                     <button
                       type="button"
                       disabled={!canEditContent}
@@ -370,14 +376,19 @@ export function TemplatesTab() {
             Páginas pre-armadas listas para usar
           </p>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3.5">
             {filteredPages.map((tmpl) => {
               const isCreated = createdPageId === tmpl.id;
               return (
                 <div
                   key={tmpl.id}
-                  className="group relative flex flex-col gap-2.5 rounded-xl border border-line bg-canvas/40 p-3.5 transition-colors hover:border-accent/40 hover:bg-hover/30"
+                  className="group relative flex flex-col gap-3 rounded-xl border border-line bg-canvas/40 p-3.5 transition-all hover:border-accent/40 hover:bg-hover/20 hover:shadow-xs"
                 >
+                  {/* Vista previa visual de página completa tipo Canva */}
+                  <div className="w-full overflow-hidden rounded-lg bg-panel/60 p-2 border border-line/50 transition-transform duration-200 group-hover:scale-[1.01]">
+                    <PageVisualPreview templateId={tmpl.id} />
+                  </div>
+
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h4 className="text-[14px] font-semibold text-ink">{tmpl.name}</h4>
@@ -388,7 +399,7 @@ export function TemplatesTab() {
                   <p className="text-xs text-ink-dim leading-relaxed">{tmpl.description}</p>
 
                   {/* Pills de secciones que incluye */}
-                  <div className="flex flex-wrap gap-1 pt-1">
+                  <div className="flex flex-wrap gap-1 pt-0.5">
                     {tmpl.sections.map((s, idx) => (
                       <span
                         key={idx}

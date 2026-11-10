@@ -57,11 +57,23 @@ export function useUnitsAdmin() {
     [load],
   );
 
+  /** Crea la unidad y devuelve su id para que la pantalla pueda seleccionarla al instante. */
+  const create = useCallback(
+    async (draft: UnitDraft): Promise<string | null> => {
+      const { ok, data } = await call("/api/cms/units", "POST", draft);
+      setError(ok ? null : String(data.error ?? "No se pudo crear la unidad."));
+      forgetUnitNames();
+      await load();
+      return ok && typeof data.id === "string" ? data.id : null;
+    },
+    [load],
+  );
+
   return {
     units,
     globalEditorIds,
     error,
-    create: (draft: UnitDraft) => run("/api/cms/units", "POST", draft),
+    create,
     update: (id: string, draft: UnitDraft) => run(`/api/cms/units/${id}`, "PATCH", draft),
     remove: (id: string) => run(`/api/cms/units/${id}`, "DELETE"),
     setMembers: (id: string, userIds: string[]) => run(`/api/cms/units/${id}/members`, "PUT", { userIds }),

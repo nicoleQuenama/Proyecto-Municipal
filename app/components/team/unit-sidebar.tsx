@@ -9,7 +9,7 @@ interface Props {
   totalPeople: number;
   selectedId: string;
   onSelect: (id: string) => void;
-  onCreate: (draft: UnitDraft) => Promise<boolean>;
+  onCreate: (draft: UnitDraft) => Promise<string | null>;
 }
 
 const item = "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-sm cursor-pointer";
@@ -20,7 +20,12 @@ export function UnitSidebar({ units, totalPeople, selectedId, onSelect, onCreate
   const [query, setQuery] = useState("");
   const shown = units.filter((unit) => unit.name.toLowerCase().includes(query.trim().toLowerCase()));
   const create = async () => {
-    if (name.trim() && (await onCreate({ name, kind: "designer", ownerId: null, reviewRequired: false, overrides: [] }))) setName("");
+    if (!name.trim()) return;
+    const id = await onCreate({ name, kind: "designer", ownerId: null, reviewRequired: false, overrides: [] });
+    if (id) {
+      setName("");
+      onSelect(id);
+    }
   };
   const tone = (active: boolean) => (active ? "bg-accent/15 font-medium text-accent" : "text-ink hover:bg-hover");
 

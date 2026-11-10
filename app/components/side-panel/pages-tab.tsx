@@ -11,11 +11,14 @@ import { isPageNameTaken, routeOf, slugify } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { Page } from "../site/types";
 import { plural } from "../versioning/versioning-rules";
-import { CodeIcon } from "../viewport/icons";
+import { CodeIcon, EyeIcon, EyeOffIcon } from "../viewport/icons";
+import { useViewport } from "../viewport/viewport-context";
 import { useWorkbench } from "../workbench/workbench-context";
 import { MovePageItem } from "../units/move-page-item";
 import { isPageReadOnly } from "../units/own-pages";
 import { UnitTag } from "../units/unit-tag";
+import { useUnitNames } from "../units/use-unit-names";
+import { getUnitColor, GLOBAL_UNIT_COLOR } from "../units/unit-colors";
 
 const iconButton =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink";
@@ -142,9 +145,14 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
           } cursor-pointer`}
         >
           <div className="flex items-center gap-1.5 w-full">
-            <span className={`truncate text-[13px] ${isCurrent ? "text-accent font-semibold" : "text-ink font-medium"}`}>
+            <span className={`truncate text-[13px] ${isCurrent ? "text-accent font-semibold" : page.hidden ? "text-ink-dim font-medium" : "text-ink font-medium"}`}>
               {page.name}
             </span>
+            {page.hidden && !page.isHome && (
+              <span className="shrink-0 rounded bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-600 uppercase">
+                Oculta
+              </span>
+            )}
             {page.isHome && (
               <span className="shrink-0 rounded bg-accent/15 px-1.5 py-0.2 text-[9px] font-semibold text-accent uppercase">
                 Inicio
@@ -164,6 +172,23 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
           </div>
           <span className="truncate text-[11px] text-ink-dim">{routeOf(page)}</span>
         </button>
+
+        {/* Botón rápido de ocultar/mostrar (promociones temporales) */}
+        {!page.isHome && !readOnly && (
+          <button
+            type="button"
+            aria-label={page.hidden ? `Mostrar página ${page.name}` : `Ocultar página ${page.name}`}
+            title={page.hidden ? "Mostrar página en el sitio y lienzo" : "Ocultar página (útil para promociones temporales como Navidad)"}
+            onClick={() => dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden: !page.hidden })}
+            className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors cursor-pointer ${
+              page.hidden
+                ? "text-amber-500 bg-amber-500/15 hover:bg-amber-500/25"
+                : "text-ink-dim hover:bg-hover hover:text-ink"
+            }`}
+          >
+            {page.hidden ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        )}
 
         {/* Menú de opciones secundarias (tres puntos / kebab menu) */}
         {!readOnly && (
@@ -300,6 +325,26 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
               )}
 
               {!page.isHome && (
+                <button
+                  type="button"
+                  title={page.hidden ? "Vuelve a mostrarse en la vista previa y en el sitio" : "No se borra: se guarda para reutilizarla más adelante"}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden: !page.hidden });
+                  }}
+                  className="flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover transition-colors cursor-pointer"
+                >
+                  <span className="mt-0.5">{page.hidden ? <EyeIcon /> : <EyeOffIcon />}</span>
+                  <span className="flex flex-col">
+                    <span>{page.hidden ? "Mostrar página" : "Ocultar página"}</span>
+                    <span className="text-[10px] text-ink-dim">
+                      {page.hidden ? "Vuelve a verse en el sitio" : "Se conserva para reutilizarla"}
+                    </span>
+                  </span>
+                </button>
+              )}
+
+              {!page.isHome && (
                 <>
                   <div className="my-1 h-px bg-line" />
                   <button
@@ -360,6 +405,8 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
 export function PagesTab() {
   const { pages, currentPageId } = useSite();
   const dispatch = useSiteDispatch();
+  const { unitFilter, setUnitFilter } = useViewport();
+  const unitNames = useUnitNames();
   const [dynamic, setDynamic] = useState(false);
 
   const createPage = (name: string) => {
@@ -369,6 +416,11 @@ export function PagesTab() {
     // Una página dinámica nace con una ruta de ejemplo que se edita con el botón «:id».
     if (dynamic) dispatch({ type: "page/route", id, route: `/${slugify(name)}/:id` });
   };
+
+  const shownPages =
+    unitFilter === ""
+      ? pages
+      : pages.filter((page) => (unitFilter === "global" ? !page.unitId : page.unitId === unitFilter));
 
   return (
     <div className="flex flex-col gap-4">
@@ -384,11 +436,101 @@ export function PagesTab() {
         </label>
       </InlineForm>
 
-      <ul className="flex flex-col gap-0.5">
-        {pages.map((page) => (
-          <PageRow key={page.id} page={page} pages={pages} isCurrent={page.id === currentPageId} />
-        ))}
-      </ul>
+      {unitNames.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-b border-line pb-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-ink-dim uppercase text-[10px] tracking-wider">Categorizar por unidad</span>
+            {unitFilter && (
+              <button
+                type="button"
+                onClick={() => setUnitFilter("")}
+                className="text-[11px] text-accent hover:underline cursor-pointer"
+              >
+                Ver todas
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <button
+              type="button"
+              onClick={() => setUnitFilter("")}
+              className={`rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                unitFilter === ""
+                  ? "bg-accent text-white font-medium shadow-xs"
+                  : "bg-panel text-ink hover:bg-hover border border-line"
+              }`}
+            >
+              Todas ({pages.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setUnitFilter("global")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                unitFilter === "global"
+                  ? "bg-accent text-white font-medium shadow-xs"
+                  : "bg-panel text-ink hover:bg-hover border border-line"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: GLOBAL_UNIT_COLOR.border }}
+              />
+              <span>Global</span>
+              <span className="text-[10px] opacity-75">({pages.filter((p) => !p.unitId).length})</span>
+            </button>
+            {unitNames.map((unit) => {
+              const count = pages.filter((p) => p.unitId === unit.id).length;
+              const active = unitFilter === unit.id;
+              const unitColor = getUnitColor(unit.id);
+              return (
+                <button
+                  key={unit.id}
+                  type="button"
+                  onClick={() => setUnitFilter(unit.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                    active
+                      ? "bg-accent text-white font-medium shadow-xs"
+                      : "bg-panel text-ink hover:bg-hover border border-line"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: unitColor.border }}
+                  />
+                  <span>{unit.name}</span>
+                  <span className="text-[10px] opacity-75">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {shownPages.length === 0 ? (
+        <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-line p-4 text-center text-xs text-ink-dim">
+          <p>No hay páginas en esta unidad.</p>
+          <button
+            type="button"
+            onClick={() => setUnitFilter("")}
+            className="text-xs text-accent hover:underline cursor-pointer"
+          >
+            Ver todas las páginas
+          </button>
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-0.5">
+          {shownPages.map((page) => (
+            <PageRow key={page.id} page={page} pages={pages} isCurrent={page.id === currentPageId} />
+          ))}
+        </ul>
+      )}
+      {pages.some((page) => page.hidden && !page.isHome) && (
+        <p className="text-[11px] leading-snug text-ink-dim">
+          Las páginas marcadas «Oculta» no se enlazan ni se ven en el sitio. Siguen aquí: ábrelas y usa «Mostrar página» cuando las necesites.
+        </p>
+      )}
     </div>
   );
 }

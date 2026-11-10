@@ -74,12 +74,15 @@ Es decir: **hay tres capas de estilo que se combinan** y el usuario decide en qu
 ### 1.1 Estado del proyecto
 
 - Editor **completo y funcional** para: páginas, componentes, elementos, estilos, variables, medios,
-  enlaces, interacciones, código, librerías y un prototipo visual de control de versiones.
-- El **control de versiones es un prototipo**: los commits y el diff son reales (se calculan del
-  `SiteState` vivo), pero ramas, PRs, conflictos, issues y publicaciones **viven sólo en memoria**
-  y se pierden al recargar. Ver §8.20.
-- **Sin persistencia en servidor**: todo el estado del sitio vive en un `useReducer` en el navegador.
-  No hay base de datos, ni API de persistencia, ni autenticación.
+  enlaces, interacciones, código, librerías, unidades municipales y control de versiones.
+- **Persistencia completa en PostgreSQL (19 migraciones)**: todo el estado institucional, sitio,
+  unidades, ramas, versiones, pull requests y usuarios reside en la base de datos con seguridad RLS.
+  El frontend se sincroniza con el backend mediante `use-site-sync` y Route Handlers en `/api/cms/*`.
+- **Servidor de tiempo real (WebSockets + Redis)**: presencia en vivo, cursores colaborativos sobre el diseño
+  y difusión de operaciones en `realtime/server.mts`.
+- **Sistema de Unidades Municipales**: soporte multi-departamento con alcance de páginas, tipos de unidad
+  y flujos de revisión.
+- Ver detalles del backend y esquema en [`README.md`](README.md) y [`db/README.md`](db/README.md).
 
 ---
 
@@ -106,7 +109,7 @@ Es decir: **hay tres capas de estilo que se combinan** y el usuario decide en qu
 - **Sin librería de modal/popover**. Se usa `<dialog>` nativo y `role="menu"` propio.
 - **Sin librería de graphs/flow**. El mapa de flujo es SVG inline.
 - **Sin librería de estilos en runtime** (styled-components, emotion). Tailwind + CSS plano.
-- **Sin librería de test.** No hay tests en el repositorio.
+- **Vitest**: Suite de pruebas unitarias exhaustiva (113 archivos, 669 tests) ejecutables con `pnpm test`.
 
 ---
 

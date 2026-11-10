@@ -11,10 +11,11 @@ import { DEVICES, useViewport, ZOOM_STEPS } from "./viewport-context";
  * el lienzo se movería bajo el cursor a mitad de una edición. «Ajustar a la ventana» lo vuelve a activar.
  */
 export function useAutoFit() {
-  const { device, fitted, zoom, setZoom, applyFittedZoom } = useViewport();
+  const { device, fitted, zoom, setZoom, applyFittedZoom, unitFilter } = useViewport();
   const { mode } = useNavigation();
   const { pages, selectedId } = useSite();
-  const count = pages.length;
+  const visible = unitFilter === "" ? pages : pages.filter((page) => (unitFilter === "global" ? !page.unitId : page.unitId === unitFilter));
+  const count = Math.max(1, visible.length);
   const active = fitted && mode !== "preview";
   const selecting = selectedId !== TITLE_SELECTION;
 

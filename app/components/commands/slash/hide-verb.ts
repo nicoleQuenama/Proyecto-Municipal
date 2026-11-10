@@ -23,7 +23,13 @@ export function hideStep({ site, dispatch }: SlashContext): Step {
       id: "page",
       label: "Página",
       hint: "No aparece en la vista previa",
-      run: () => list("Elige la página", site.pages.map((page) => toggle({ kind: "page", pageId: page.id }, page.name))),
+      run: () =>
+        list(
+          "Elige la página",
+          site.pages
+            .filter((page) => !page.isHome)
+            .map((page) => toggle({ kind: "page", pageId: page.id }, page.name)),
+        ),
     },
     {
       id: "block",

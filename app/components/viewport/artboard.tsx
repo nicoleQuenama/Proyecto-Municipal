@@ -37,6 +37,8 @@ import { CommentLayer } from "../comments/comment-layer";
 import { FullBleedContext, useWidth } from "./page-width";
 import { useAuth } from "../auth/auth-context";
 import { canEditBlock } from "../auth/access";
+import { useUnitNames } from "../units/use-unit-names";
+import { getUnitColor } from "../units/unit-colors";
 import { useAutoFit } from "./use-auto-fit";
 import { isAdaptive } from "../responsive/devices";
 import { sideMargin } from "../responsive/page-margin";
@@ -192,6 +194,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const dispatch = useSiteDispatch();
   const { mode, hotDrop, transition, transitionKey } = useNavigation();
   const { currentUser } = useAuth();
+  const unitNames = useUnitNames();
+  const unitName = page.unitId ? unitNames.find((u) => u.id === page.unitId)?.name : null;
+  const unitColor = getUnitColor(page.unitId);
   // Con acceso limitado: ¿hay algo en esta página que le toque? Si no, el marco se atenúa.
   const limited = !!currentUser?.access?.scope && mode === "edit";
   const hasMine = page.blocks.some((block) => canEditBlock(currentUser, page.id, block.id));
@@ -246,12 +251,22 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   const setHidden = (hidden: boolean) =>
     dispatch({ type: "hidden/set", target: { kind: "page", pageId: page.id }, hidden });
 
-  // Oculta: el marco se reduce a una tarjeta con el ojo para volver a mostrarla.
-  if (tiled && page.hidden) {
+  // Oculta: el marco se reduce a una tarjeta con el ojo para volver a mostrarla. La página de inicio nunca se oculta.
+  if (tiled && page.hidden && !page.isHome) {
     return (
       <section aria-label={`Página ${page.name} (oculta)`} data-page-id={page.id} className="w-44 shrink-0">
-        <p className="mb-2 px-1 text-sm text-ink-dim">{page.name} · {routeOf(page)}</p>
-        <div className="flex h-24 items-center justify-center gap-2 rounded-md border border-dashed border-ink-dim text-xs text-ink-dim">
+        <p className="mb-2 flex min-w-0 items-center gap-1.5 px-1 text-sm text-ink-dim">
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ backgroundColor: unitColor.border }}
+          />
+          <span className="min-w-0 truncate font-medium text-ink">{page.name} · {routeOf(page)}</span>
+        </p>
+        <div
+          className="flex h-24 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs text-ink-dim transition-colors"
+          style={{ borderColor: unitColor.borderLight, backgroundColor: unitColor.bg }}
+        >
           <VisibilityEye hidden zoomed={false} label={page.name} onToggle={() => setHidden(false)} className="flex" />
           Página oculta
         </div>
@@ -277,38 +292,138 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
       style={production ? (fits ? undefined : { maxWidth: current.width }) : { width: current.width * scale }}
     >
       {!production && (
-        <div className={`mb-2 text-ink-dim ${tiled ? "flex items-center gap-1.5 text-sm" : "text-xs"}`}>
+        <div className={`relative mb-2 ${tiled ? "group flex h-6 w-full items-center justify-between gap-1 text-xs" : "text-xs"}`}>
           {tiled ? (
             <>
-              <button
-                type="button"
-                onClick={select}
-                className={`min-w-0 truncate rounded px-1 hover:text-ink ${active ? "font-semibold text-accent" : ""} cursor-pointer`}
-              >
-                {page.name} · {routeOf(page)}
-              </button>
-              {limited && hasMine && <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white">Puedes editar</span>}
-              {limited && !hasMine && <span className="shrink-0 text-[10px]">sin cambios para ti</span>}
-              <span title="Zoom de la vista: el tamaño real es 100 %" className="shrink-0 text-xs tabular-nums">
-                {zoom}%
-              </span>
-              <button
-                type="button"
-                title="Enfocar esta página para editar cómodamente"
-                onClick={() => {
-                  select();
-                  setFocusMode(true);
-                }}
-                className="flex shrink-0 items-center gap-1 rounded bg-panel border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors cursor-pointer"
-              >
-                Enfocar
-              </button>
-              <VisibilityEye hidden={false} zoomed={false} label={page.name} onToggle={() => setHidden(true)} className="flex shrink-0" />
-              <PageLabelActions page={page} />
+              {/* Lado izquierdo: indicador de unidad y título de página */}
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: unitColor.border }}
+                  title={unitName ? `Unidad: ${unitName}` : "Página Global"}
+                />
+                <button
+                  type="button"
+                  onClick={select}
+                  onDoubleClick={() => {
+                    select();
+                    setFocusMode(true);
+                  }}
+                  title={`${page.name} (${routeOf(page)})${unitName ? ` · ${unitName}` : " · Global"} - Doble clic para enfocar`}
+                  className={`min-w-0 truncate text-left text-xs font-semibold transition-colors cursor-pointer ${
+                    active ? "text-accent font-bold" : "text-ink hover:text-accent"
+                  }`}
+                >
+                  {page.name}
+                  {scale >= 0.45 && (
+                    <span className="ml-1 text-[11px] font-normal text-ink-dim">
+                      · {routeOf(page)}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Lado derecho: botón de visibilidad siempre visible y acciones */}
+              <div className="flex shrink-0 items-center gap-1">
+                {limited && hasMine && (
+                  <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    Puedes editar
+                  </span>
+                )}
+                {limited && !hasMine && <span className="shrink-0 text-[10px] text-ink-dim">solo lectura</span>}
+
+                {/* Botón de visibilidad / ocultar página (siempre visible con 1 clic) */}
+                {!page.isHome ? (
+                  <button
+                    type="button"
+                    aria-label={page.hidden ? `Mostrar ${page.name}` : `Ocultar ${page.name}`}
+                    title={
+                      page.hidden
+                        ? "Mostrar página en el sitio y lienzo"
+                        : "Ocultar página (útil para promociones temporales como Navidad)"
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHidden(!page.hidden);
+                    }}
+                    className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors cursor-pointer ${
+                      page.hidden
+                        ? "bg-amber-500/15 text-amber-500 hover:bg-amber-500/25"
+                        : "text-ink-dim hover:text-ink hover:bg-hover"
+                    }`}
+                  >
+                    {page.hidden ? (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                ) : (
+                  <span
+                    title="La página de inicio no se puede ocultar (es la portada principal del sitio)"
+                    className="flex h-6 w-6 items-center justify-center rounded text-ink-dim/30 cursor-not-allowed"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </span>
+                )}
+
+                {/* Acciones de página (inicio y eliminar con confirmación segura) */}
+                <PageLabelActions page={page} />
+
+                {/* Botón Enfocar */}
+                <button
+                  type="button"
+                  title="Enfocar esta página para editar cómodamente"
+                  onClick={() => {
+                    select();
+                    setFocusMode(true);
+                  }}
+                  className={`items-center gap-1 rounded bg-panel border border-line px-1.5 py-0.5 text-[11px] font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors cursor-pointer ${
+                    scale < 0.22 ? "hidden group-hover:flex" : "flex"
+                  }`}
+                >
+                  Enfocar
+                </button>
+
+                {scale >= 0.35 && (
+                  <span title="Zoom de la vista: el tamaño real es 100 %" className="shrink-0 text-xs text-ink-dim tabular-nums">
+                    {zoom}%
+                  </span>
+                )}
+              </div>
             </>
           ) : (
             <div className="flex items-center justify-between w-full mb-1">
-              <span className="font-semibold text-ink">{page.name} · {routeOf(page)} · {current.label} · {current.width}px</span>
+              <span className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: unitColor.border }}
+                />
+                <span className="font-semibold text-ink">
+                  {page.name} · {routeOf(page)} · {current.label} · {current.width}px
+                </span>
+                <span
+                  className="rounded-md border px-1.5 py-0.5 text-[10px] font-medium"
+                  style={{
+                    borderColor: unitColor.borderLight,
+                    backgroundColor: unitColor.bg,
+                    color: unitColor.text,
+                  }}
+                >
+                  {unitName ?? "Global"}
+                </span>
+              </span>
               {focusMode && (
                 <button
                   type="button"
@@ -339,12 +454,19 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           ref={pageRef}
           data-site-page
           className={`relative isolate flex flex-col bg-white text-neutral-900 ${mode === "edit" ? "" : "overflow-x-clip"} ${
-            production ? "px-10" : "rounded-sm px-10 shadow-2xl"
-          } ${hasTopHeader ? "pt-0" : "pt-12"} ${hasBottomFooter ? "pb-0" : "pb-12"} ${isHot ? "ring-4 ring-green-400" : tiled && active ? "ring-2 ring-accent" : ""}`}
+            production ? "px-10" : "px-10 shadow-2xl"
+          } ${hasTopHeader ? "pt-0" : "pt-12"} ${hasBottomFooter ? "pb-0" : "pb-12"} ${isHot ? "ring-4 ring-green-400" : ""}`}
           style={{
             ...boxStyle(styles.page),
             ...(page.color ? { background: page.color } : {}),
             ...sideStyle,
+            border: !production ? `${Math.max(2, Math.round(2.5 / scale))}px solid ${unitColor.border}` : undefined,
+            borderRadius: !production ? `${Math.max(4, Math.round(8 / scale))}px` : undefined,
+            boxShadow: !production
+              ? tiled && active
+                ? `0 0 0 ${Math.max(2, Math.round(2 / scale))}px var(--color-accent), 0 0 24px ${unitColor.border}50, 0 10px 25px -5px rgba(0,0,0,0.25)`
+                : `0 0 0 1px ${unitColor.borderLight}, 0 6px 18px -3px rgba(0,0,0,0.12)`
+              : undefined,
             paddingTop: hasTopHeader ? 0 : undefined,
             paddingBottom: hasBottomFooter ? 0 : undefined,
             ...({
@@ -410,7 +532,7 @@ export function CanvasPages() {
   const { mode } = useNavigation();
   const { pages, currentPageId } = useSite();
   const { currentUser } = useAuth();
-  const { focusMode } = useViewport();
+  const { focusMode, unitFilter, setUnitFilter } = useViewport();
 
   if (mode === "preview") return <><ProductionView /><ModalLayer /></>;
 
@@ -432,15 +554,33 @@ export function CanvasPages() {
   const mine = currentUser?.access?.scope
     ? pages.filter((page) => page.blocks.some((block) => canEditBlock(currentUser, page.id, block.id)))
     : pages;
-  const shown = mine.length > 0 ? mine : pages;
+  const accessible = mine.length > 0 ? mine : pages;
+  // Si el filtro deja el lienzo vacío se ofrece volver a «Todas las unidades».
+  const shown =
+    unitFilter === ""
+      ? accessible
+      : accessible.filter((page) => (unitFilter === "global" ? !page.unitId : page.unitId === unitFilter));
 
   return (
     <>
-      <div className="flex w-max items-start gap-8">
-        {shown.map((page) => (
-          <PageArtboard key={page.id} page={page} active={page.id === currentPageId} tiled />
-        ))}
-      </div>
+      {shown.length === 0 ? (
+        <p role="status" className="flex flex-col items-center gap-2 px-8 py-16 text-center text-sm text-ink-dim">
+          No hay páginas en {unitFilter === "global" ? "Global" : "esta unidad"}.
+          <button
+            type="button"
+            onClick={() => setUnitFilter("")}
+            className="rounded-md border border-line px-3 py-1.5 text-xs text-ink hover:bg-hover cursor-pointer"
+          >
+            Ver todas las unidades
+          </button>
+        </p>
+      ) : (
+        <div className="flex w-max items-start gap-8">
+          {shown.map((page) => (
+            <PageArtboard key={page.id} page={page} active={page.id === currentPageId} tiled />
+          ))}
+        </div>
+      )}
       <ModalLayer />
     </>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createUser, fetchUsers, removeUser } from "./auth-api";
 import { hasPermission, useAuth, useAuthDispatch } from "./auth-context";
-import type { UserRole } from "./types";
+import type { User, UserRole } from "./types";
 
 export function useUsers() {
   const { currentUser, users } = useAuth();
@@ -37,11 +37,11 @@ export function useUsers() {
     };
   }, [currentUser, dispatch]);
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent): Promise<User | null> => {
     event.preventDefault();
     if (!name.trim() || !username.trim() || !email.trim() || !password) {
       setError("Completa todos los campos para crear el usuario.");
-      return;
+      return null;
     }
 
     setSaving(true);
@@ -56,8 +56,10 @@ export function useUsers() {
       setPassword("");
       setRole("designer");
       setNotice(`Usuario «${user.username}» creado.`);
+      return user;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo crear el usuario.");
+      return null;
     } finally {
       setSaving(false);
     }
