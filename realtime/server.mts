@@ -8,8 +8,9 @@
  */
 import { createServer } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
-import { memoryBus, redisBus, type Bus, type Envelope, type PeerView } from "./bus.mts";
+import { memoryBus, redisBus, type Bus, type Envelope, type PeerView, type StoredPeer } from "./bus.mts";
 import { readTicket, type Ticket } from "./ticket.mts";
+import { shouldDeliver, type Audience } from "./units.mts";
 
 const PORT = Number(process.env.REALTIME_PORT ?? 3001);
 const MAX_PAYLOAD = 2_000_000;
@@ -19,7 +20,7 @@ const PALETTE = ["#0d99ff", "#14ae5c", "#f5a623", "#f24822", "#9747ff", "#00b8a9
 const bus: Bus = process.env.REDIS_URL ? await redisBus(process.env.REDIS_URL) : memoryBus();
 
 /** Una persona conectada a ESTA instancia. */
-interface Peer extends PeerView {
+interface Peer extends PeerView, Audience {
   canEdit: boolean;
   room: string;
   socket: WebSocket;
@@ -32,24 +33,27 @@ const rooms = new Map<string, Set<Peer>>();
 let counter = 0;
 
 const publicView = ({ id, uid, name, color, branch, page, selection, cursor }: Peer): PeerView => ({ id, uid, name, color, branch, page, selection, cursor });
+/** Lo que se recuerda entre instancias: lo mismo más sus unidades (nunca se envía al navegador). */
+const storedView = (peer: Peer): StoredPeer => ({ ...publicView(peer), units: peer.units, all: peer.all });
+const audienceOf = ({ units, all }: Audience): Audience => ({ units, all });
 
 const send = (peer: Peer, message: unknown) => {
   if (peer.socket.readyState === peer.socket.OPEN) peer.socket.send(JSON.stringify(message));
 };
 
-/** Entrega a quienes están conectados a esta instancia (todos menos `except`, y solo los de esa rama si se indica). */
-function deliver(room: string, message: unknown, except?: Peer, branch?: string) {
-  for (const other of rooms.get(room) ?? []) if (other !== except && (!branch || other.branch === branch)) send(other, message);
+/** Entrega a quienes están conectados a esta instancia: todos menos `except`, los de esa rama si se indica, y solo quienes comparten unidad con `from`. */
+function deliver(room: string, message: unknown, from: Audience, except?: Peer, branch?: string) {
+  for (const other of rooms.get(room) ?? []) if (other !== except && (!branch || other.branch === branch) && shouldDeliver(from, other)) send(other, message);
 }
 
 /** A los demás de la sala, estén en esta instancia o en otra. */
 function broadcast(peer: Peer, message: unknown, branch?: string) {
-  deliver(peer.room, message, peer, branch);
-  bus.publish(peer.room, { message, branch });
+  deliver(peer.room, message, peer, peer, branch);
+  bus.publish(peer.room, { message, branch, audience: audienceOf(peer) });
 }
 
 /** Lo que otra instancia contó llega a las personas de ésta. */
-const fromOtherInstance = (room: string) => (envelope: Envelope) => deliver(room, envelope.message, undefined, envelope.branch);
+const fromOtherInstance = (room: string) => (envelope: Envelope) => deliver(room, envelope.message, envelope.audience, undefined, envelope.branch);
 
 const isText = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max;
 const isCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && Math.abs(value) < 1_000_000;
@@ -65,7 +69,7 @@ function handle(peer: Peer, raw: string) {
     case "join":
       if (isText(message.branch, 100)) {
         peer.branch = message.branch;
-        bus.remember(peer.room, peer.id, publicView(peer));
+        bus.remember(peer.room, peer.id, storedView(peer));
         broadcast(peer, { type: "peer", peer: publicView(peer) });
       }
       return;
@@ -77,7 +81,7 @@ function handle(peer: Peer, raw: string) {
     case "select": {
       peer.selection = Array.isArray(message.ids) ? message.ids.filter((id): id is string => isText(id, 100)).slice(0, 50) : [];
       peer.page = isText(message.page, 100) ? message.page : peer.page;
-      bus.remember(peer.room, peer.id, publicView(peer));
+      bus.remember(peer.room, peer.id, storedView(peer));
       broadcast(peer, { type: "select", id: peer.id, page: peer.page, ids: peer.selection });
       return;
     }
@@ -123,6 +127,8 @@ async function connect(socket: WebSocket, ticket: Ticket) {
     name: ticket.name,
     color: PALETTE.find((color) => !used.has(color)) ?? PALETTE[counter % PALETTE.length],
     canEdit: ticket.canEdit,
+    units: ticket.units,
+    all: ticket.all,
     room,
     branch: "main",
     page: null,
@@ -134,9 +140,13 @@ async function connect(socket: WebSocket, ticket: Ticket) {
     windowCount: 0,
   };
   members.add(peer);
-  bus.remember(room, peer.id, publicView(peer));
+  bus.remember(room, peer.id, storedView(peer));
 
-  send(peer, { type: "hello", me: publicView(peer), peers: [...[...members].filter((member) => member !== peer).map(publicView), ...elsewhere] });
+  // A quien entra solo se le cuenta quién está conectado de las unidades que comparte; lo que se recuerda de los demás lleva sus unidades.
+  const sees = (other: Audience) => shouldDeliver(other, peer);
+  const here = [...members].filter((member) => member !== peer && sees(member)).map(publicView);
+  const remote = elsewhere.filter(sees).map(({ units, all, ...view }) => (void units, void all, view));
+  send(peer, { type: "hello", me: publicView(peer), peers: [...here, ...remote] });
   broadcast(peer, { type: "peer", peer: publicView(peer) });
 
   socket.on("pong", () => void (peer.alive = true));

@@ -24,6 +24,8 @@ import { SiteStyles } from "../site/site-styles";
 import { FormatBar } from "../title-editor/format-bar";
 import { BranchSwitcher } from "../versioning/branch-switcher";
 import { DeployButton } from "../deploy/deploy-button";
+import { UnitSwitcher } from "../units/unit-switcher";
+import { UnitSync } from "../units/unit-sync";
 import { PeerSelections } from "../realtime/peer-selections";
 import { PublishButton } from "../versioning/publish-button";
 import { VersionsDialog } from "../versioning/versions-dialog";
@@ -39,6 +41,8 @@ export function EditorWorkspace() {
         <header className="z-20 w-full shrink-0 border-b border-line bg-panel">
           <div className="flex h-11 items-stretch">
             <BranchSwitcher />
+            <UnitSwitcher />
+            <UnitSync />
             <PublishButton />
             <DeployButton />
             <PreviewToggle />

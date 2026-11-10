@@ -2,6 +2,7 @@ import { loadChain, resolveAccess, withRealAccess, type Actor } from "./auth-acc
 import { pagesOf } from "./auth-members";
 import { db, withOrg } from "./db";
 import { NO_ACCOUNT_HASH, passwordMatches } from "./password-hash";
+import { loadUnitProfile } from "./units/unit-profile";
 
 interface LoginRow {
   user_id: string;
@@ -11,17 +12,20 @@ interface LoginRow {
 
 /** La cuenta con su acceso real hoy, o `null` si ya no puede entrar (borrada, deshabilitada, vencida o sin quien la invitó). */
 async function actorOf(orgId: string, userId: string, sessionVersion?: number): Promise<Actor | null> {
-  const { chain, pages } = await withOrg(orgId, userId, async (tx) => {
+  const { chain, pages, profile } = await withOrg(orgId, userId, async (tx) => {
     const accounts = await loadChain(tx, userId);
     // Cruzar dos alcances necesita saber qué secciones tiene cada página; solo se pide cuando hay dos alcances que cruzar.
     const crossing = accounts.length > 1 && accounts.some((account) => account.user.access?.scope);
-    return { chain: accounts, pages: crossing ? await pagesOf(tx) : [] };
+    return { chain: accounts, pages: crossing ? await pagesOf(tx) : [], profile: await loadUnitProfile(tx) };
   });
   const own = chain[0];
   if (!own || (sessionVersion !== undefined && own.sessionVersion !== sessionVersion)) return null;
 
   const { active, access } = resolveAccess(chain, pages);
-  return active ? { user: withRealAccess(own.user, access), orgId, sessionVersion: own.sessionVersion } : null;
+  if (!active) return null;
+  // Quien está sujeto a unidades lleva además las suyas, si puede editar lo global y si puede desplegar.
+  const user = withRealAccess(own.user, access);
+  return { user: profile ? { ...user, ...profile } : user, orgId, sessionVersion: own.sessionVersion };
 }
 
 /**

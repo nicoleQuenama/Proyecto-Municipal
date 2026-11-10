@@ -2,6 +2,7 @@ import { applyPatchToSite } from "../../server/site/site-apply";
 import { addAnimation, deleteAnimation, finishRecording, renameAnimation, setAnimationSteps } from "../animation/animation-rules";
 import { RESPONSIVE_HANDLERS } from "../responsive/responsive-rules";
 import { LAYER_HANDLERS } from "../layers/layer-rules";
+import { UNIT_HANDLERS } from "../units/unit-actions";
 import { DRAW_HANDLERS } from "../drawing/draw-rules";
 import { TEXT_HANDLERS } from "./text-rules";
 import { PASTE_HANDLERS } from "./paste-rules";
@@ -96,6 +97,7 @@ const HANDLERS: Handlers = {
   ...BACKGROUND_HANDLERS,
   ...RESPONSIVE_HANDLERS,
   ...LAYER_HANDLERS,
+  ...UNIT_HANDLERS,
   "page/create": (state, action) => {
     const name = action.name.trim();
     if (!name || isPageNameTaken(state.pages, name)) return state;
@@ -105,6 +107,8 @@ const HANDLERS: Handlers = {
       name,
       slug: uniqueSlug(slugify(name), state.pages.map((p) => p.slug)),
       isHome: false,
+      // Nace en la unidad en la que trabaja la persona (sin pedirle nada); sin unidad activa, no lleva ninguna.
+      ...(state.activeUnitId ? { unitId: state.activeUnitId } : {}),
       title: { ...INITIAL_TITLE, text: name },
       // Una página nueva nace sin titular; se puede añadir desde la barra de formato.
       titleRemoved: true,
@@ -289,7 +293,7 @@ const HANDLERS: Handlers = {
 
   "project-media/add": (state, action) => ({
     ...state,
-    projectMedia: [action.asset, ...(state.projectMedia ?? [])],
+    projectMedia: [{ unitId: state.activeUnitId ?? undefined, ...action.asset }, ...(state.projectMedia ?? [])],
   }),
 
   "project-media/remove": (state, action) => ({
