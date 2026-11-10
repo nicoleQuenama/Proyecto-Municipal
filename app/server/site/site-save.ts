@@ -1,4 +1,7 @@
+import type { SiteState } from "../../components/site/types.ts";
 import { encryptJson } from "../secret-box.ts";
+import { replaceOwnStyles, replacesOnlyOwnStyles } from "../units/scoped-styles.ts";
+import type { UnitAccess } from "../units/types.ts";
 import { saveCode } from "./code-store.ts";
 import { decomposePage, draft } from "./decompose-page.ts";
 import { decomposeComment, decomposeComponent, decomposeFunction, decomposeLibrary, decomposeRule, decomposeSource, decomposeVariable } from "./decompose-site.ts";
@@ -10,8 +13,14 @@ import { ANIMATIONS, BLOCKS, COMMENTS, COMPONENTS, FUNCTIONS, LIBRARIES, MEDIA, 
 const upserts = <T>(list: ListPatch<T> | undefined): T[] => list?.upsert ?? [];
 const idsOf = (items: readonly { id: string }[]): string[] => items.map((item) => item.id);
 
+/** Con unidades: el sitio entero tal como estaba y a qué tiene acceso quien guarda (sin ello, todo funciona como siempre). */
+export interface ApplyOptions {
+  current?: SiteState | null;
+  access?: UnitAccess;
+}
+
 /** Escribe un parche del editor en la base de datos, dentro de la transacción de quien guarda (con sus permisos). */
-export async function applyPatch(tx: Tx, scope: Scope, userId: string, patch: SitePatch): Promise<SaveResult> {
+export async function applyPatch(tx: Tx, scope: Scope, userId: string, patch: SitePatch, options: ApplyOptions = {}): Promise<SaveResult> {
   const owners: Owner[] = [];
   const code: CodeDraft[] = [];
 
@@ -48,14 +57,18 @@ export async function applyPatch(tx: Tx, scope: Scope, userId: string, patch: Si
   owners.push(...pageIds.map((id) => ({ kind: "page", id }) as Owner), ...idsOf(blocks).map((id) => ({ kind: "block", id }) as Owner));
   code.push(...pages.flatMap((part) => part.code));
 
-  // 4. Estilos: listas pequeñas que se reemplazan enteras.
-  if (patch.variables) {
-    await deleteAll(tx, "style_variables", scope);
-    await upsertRows(tx, VARIABLES, scope, patch.variables.map(decomposeVariable));
-  }
-  if (patch.rules) {
-    await deleteAll(tx, "style_rules", scope);
-    await upsertRows(tx, RULES, scope, patch.rules.map(decomposeRule));
+  // 4. Estilos: listas pequeñas que se reemplazan enteras (quien no puede tocar lo global, solo lo suyo).
+  if (replacesOnlyOwnStyles(options.access, options.current)) {
+    await replaceOwnStyles(tx, scope, options.access, options.current!, patch);
+  } else {
+    if (patch.variables) {
+      await deleteAll(tx, "style_variables", scope);
+      await upsertRows(tx, VARIABLES, scope, patch.variables.map(decomposeVariable));
+    }
+    if (patch.rules) {
+      await deleteAll(tx, "style_rules", scope);
+      await upsertRows(tx, RULES, scope, patch.rules.map(decomposeRule));
+    }
   }
 
   // 5. Lo que cuelga de secciones y páginas.

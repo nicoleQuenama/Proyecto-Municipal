@@ -12,6 +12,10 @@ export interface User {
   access?: Access;
   /** La cuenta que la invitó; sin ella, la creó un superadministrador. */
   invitedBy?: string;
+  /** Solo si la organización usa unidades y esta persona está sujeta a ellas: sus unidades, si puede editar lo global y si puede desplegar. */
+  units?: { id: string; name: string }[];
+  canEditGlobal?: boolean;
+  canDeploy?: boolean;
 }
 
 /** Datos que se envían al crear un usuario. La contraseña nunca se guarda en el cliente. */

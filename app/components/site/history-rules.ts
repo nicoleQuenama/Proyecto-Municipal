@@ -18,7 +18,7 @@ export const HISTORY_LIMIT = 100;
 export const COALESCE_MS = 600;
 
 /** Lo que no es un cambio del sitio: seleccionar o cargar no se deshace. */
-const UNTRACKED = new Set<SiteAction["type"]>(["project/load", "remote/patch", "block/select", "element/select", "page/select", "block/select-many"]);
+const UNTRACKED = new Set<SiteAction["type"]>(["project/load", "remote/patch", "block/select", "element/select", "page/select", "block/select-many", "unit/set-active"]);
 
 export const isTracked = (action: SiteAction): boolean => !UNTRACKED.has(action.type);
 
@@ -30,14 +30,17 @@ export function record(history: History, before: SiteState, action: SiteAction, 
   return { past, future: [], lastAt: now, lastType: action.type };
 }
 
+/** La unidad en que trabaja la persona es de su pantalla: deshacer o rehacer un cambio no la cambia. */
+const keepScreenUnit = (restored: SiteState, current: SiteState): SiteState => ({ ...restored, activeUnitId: current.activeUnitId });
+
 export function undoStep(history: History, current: SiteState): { history: History; state: SiteState } | null {
   const state = history.past.at(-1);
   if (!state) return null;
-  return { state, history: { past: history.past.slice(0, -1), future: [current, ...history.future], lastAt: 0, lastType: null } };
+  return { state: keepScreenUnit(state, current), history: { past: history.past.slice(0, -1), future: [current, ...history.future], lastAt: 0, lastType: null } };
 }
 
 export function redoStep(history: History, current: SiteState): { history: History; state: SiteState } | null {
   const [state, ...future] = history.future;
   if (!state) return null;
-  return { state, history: { past: [...history.past, current], future, lastAt: 0, lastType: null } };
+  return { state: keepScreenUnit(state, current), history: { past: [...history.past, current], future, lastAt: 0, lastType: null } };
 }

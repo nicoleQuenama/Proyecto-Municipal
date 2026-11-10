@@ -14,7 +14,9 @@ export const GET = (request: Request) =>
   versionRoute(request, (actor) =>
     inProject(actor, async (tx, scope) => {
       const [row] = await tx.unsafe(`select app.has_permission($1::uuid, 'editContent') as ok`, [scope.project]);
-      const ticket = signRealtimeTicket({ uid: actor.user.id, name: actor.user.name, org: scope.org, project: scope.project, canEdit: row.ok === true });
+      // `all` solo si la organización usa unidades: sin ellas el superadmin dejaría de ser visible para los demás.
+      const [audience] = await tx.unsafe(`select app.user_unit_ids() as units, (app.is_org_superadmin() and exists (select 1 from app.units where organization_id = app.current_org() and deleted_at is null)) as everyone`);
+      const ticket = signRealtimeTicket({ uid: actor.user.id, name: actor.user.name, org: scope.org, project: scope.project, canEdit: row.ok === true, units: audience.units as string[], all: audience.everyone === true });
       return { url: realtimeUrl(request), ticket };
     }),
   );

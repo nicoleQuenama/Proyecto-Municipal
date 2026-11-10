@@ -1,6 +1,8 @@
 import type { PullRequest } from "../../components/versioning/types";
 import type { Tx } from "../db";
 import type { Scope } from "../site/site-sql";
+import { reviewerFor } from "../units/review-routing";
+import { unitsOf } from "../units/units-access";
 import { VersionError, findBranch } from "./branch-rows";
 import { mergeReview, type OpenReview, type Resolution } from "./review-merge";
 import { readPullRequest } from "./review-read";
@@ -23,7 +25,11 @@ export async function openReview(tx: Tx, scope: Scope, input: NewReview): Promis
   const from = await findBranch(tx, scope, typeof input.from === "string" ? input.from : "");
   if (from.isMain || from.baseName !== input.into) throw new VersionError("Solo se envía una rama a la rama de la que nació.", 400);
 
-  const [row] = await tx.unsafe(`select app.open_pull_request($1::uuid, $2) as id`, [from.id, title]);
+  // Quien está sujeto a unidades no elige a quién se envía: lo decide lo que el cambio toca (el dueño de esa unidad, o un superadmin).
+  const [{ me }] = await tx.unsafe(`select app.current_user_id() as me`);
+  const scoped = (await unitsOf(tx)).scoped;
+  const reviewer = scoped ? await reviewerFor(tx, scope, from, me as string) : null;
+  const [row] = await tx.unsafe(`select app.open_pull_request($1::uuid, $2, $3::uuid, $4::boolean) as id`, [from.id, title, reviewer, scoped]);
   return readPullRequest(tx, scope, row.id as string);
 }
 

@@ -1,6 +1,7 @@
 import type { Actor } from "../../../server/auth-accounts";
 import { sessionActor } from "../../../server/auth-session";
-import { canDeploy } from "../../../server/can-deploy";
+import { canConfigureServers, canDeploy } from "../../../server/can-deploy";
+import type { User } from "../../../components/auth/types";
 import { DEPLOYERS } from "../../../server/deployers";
 import { collectBundle } from "../../../server/export-bundle";
 import { isTargetKind, listTargets, readTargetWithSecrets, removeTarget, saveTarget, TARGET_FIELDS } from "../../../server/deploy-targets";
@@ -12,16 +13,20 @@ import { liveSite } from "../../../server/versions/publication-store";
 import { versionRoute } from "../../../server/versions/version-route";
 import { VersionError } from "../../../server/versions/branch-rows";
 
-/** Entra solo quien puede desplegar; todo lo demás es 401 o 403. */
-async function allowed(request: Request): Promise<Response | null> {
+/** Entra solo quien cumple `check` (desplegar, o configurar servidores); todo lo demás es 401 o 403. */
+async function allowed(request: Request, check: (user: User | null) => boolean, denied: string): Promise<Response | null> {
   if (!sameOriginRequest(request)) return Response.json({ error: "Petición no permitida." }, { status: 403 });
   const actor = await sessionActor();
   if (!actor) return Response.json({ error: "Tu sesión terminó." }, { status: 401 });
-  return canDeploy(actor.user) ? null : Response.json({ error: "No tienes permiso para configurar servidores." }, { status: 403 });
+  return check(actor.user) ? null : Response.json({ error: denied }, { status: 403 });
 }
 
-/** Como `versionRoute`, pero solo para quien puede desplegar. */
-const deployRoute = async (request: Request, work: (actor: Actor) => Promise<unknown>) => (await allowed(request)) ?? versionRoute(request, work);
+/** Como `versionRoute`, pero solo para quien puede desplegar (ver los destinos, probarlos y desplegar). */
+const deployRoute = async (request: Request, work: (actor: Actor) => Promise<unknown>) => (await allowed(request, canDeploy, "No tienes permiso para desplegar.")) ?? versionRoute(request, work);
+
+/** Guardar o quitar un destino: con unidades es de lo global (los servidores y sus claves son de todos). */
+const configureRoute = async (request: Request, work: (actor: Actor) => Promise<unknown>) =>
+  (await allowed(request, canConfigureServers, "No tienes permiso para configurar servidores.")) ?? versionRoute(request, work);
 
 /** Los destinos guardados (sin sus secretos) y qué datos pide cada tipo. */
 /** Los últimos despliegues del proyecto, con quién los hizo y cómo salieron. */
@@ -43,7 +48,7 @@ export const GET = (request: Request) =>
 export async function PUT(request: Request) {
   const { kind, values } = (await request.json().catch(() => ({}))) as { kind?: unknown; values?: Record<string, string> };
   if (!isTargetKind(kind) || !values) return Response.json({ error: "Destino no válido." }, { status: 400 });
-  return deployRoute(request, async (actor) => {
+  return configureRoute(request, async (actor) => {
     await inProject(actor, (tx, scope) => saveTarget(tx, scope, actor.user.id, kind, values));
     return { ok: true };
   });
@@ -52,7 +57,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   const kind = new URL(request.url).searchParams.get("kind");
   if (!isTargetKind(kind)) return Response.json({ error: "Destino no válido." }, { status: 400 });
-  return deployRoute(request, async (actor) => {
+  return configureRoute(request, async (actor) => {
     await inProject(actor, (tx, scope) => removeTarget(tx, scope, kind));
     return { ok: true };
   });

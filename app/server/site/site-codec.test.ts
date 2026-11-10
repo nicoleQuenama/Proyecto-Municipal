@@ -117,6 +117,17 @@ describe("traductor del sitio (estado ⇄ filas y árboles)", () => {
     for (const code of ["alert(1)", "margin: 0", "console.log", "saludar(nombre", "data.articles", "color: red"]) expect(text).not.toContain(code);
   });
 
+  it("la unidad de una página va a su propia columna y vuelve; sin unidad no aparece", () => {
+    const owned = { ...RICH, pages: [{ ...RICH.pages[0], unitId: "u-1" }, RICH.pages[1]] } as unknown as SiteState;
+    const { rows } = decomposeSite(owned);
+    expect(rows.pages[0].unitId).toBe("u-1");
+    expect(rows.pages[1].unitId).toBeNull();
+    expect(JSON.stringify(rows.pages[0].settings)).not.toContain("u-1");
+    const back = roundTrip(owned);
+    expect(back.pages[0].unitId).toBe("u-1");
+    expect(back.pages[1]).not.toHaveProperty("unitId");
+  });
+
   it("conserva lo que el editor añada y no tenga tabla propia", () => {
     expect(roundTrip(RICH)).toHaveProperty("projectMedia");
     const extra = { ...RICH, pages: [{ ...RICH.pages[0], algoNuevo: { a: 1 } }, RICH.pages[1]] } as unknown as SiteState;

@@ -12,6 +12,9 @@ export interface Ticket {
   org: string;
   project: string;
   canEdit: boolean;
+  /** Las unidades de la persona y si es superadministrador de una organización con unidades (ver units.mts). */
+  units: string[];
+  all: boolean;
   exp: number;
 }
 
@@ -25,7 +28,7 @@ export function readTicket(raw: string): Ticket | null {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<Ticket>;
     if (typeof data.uid !== "string" || typeof data.org !== "string" || typeof data.project !== "string" || typeof data.name !== "string") return null;
     if (typeof data.exp !== "number" || data.exp < Date.now()) return null;
-    return { uid: data.uid, name: data.name.slice(0, 80), org: data.org, project: data.project, canEdit: data.canEdit === true, exp: data.exp };
+    return { uid: data.uid, name: data.name.slice(0, 80), org: data.org, project: data.project, canEdit: data.canEdit === true, units: Array.isArray(data.units) ? data.units.filter((unit): unit is string => typeof unit === "string").slice(0, 50) : [], all: data.all === true, exp: data.exp };
   } catch {
     return null;
   }

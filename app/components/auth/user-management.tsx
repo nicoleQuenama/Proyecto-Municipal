@@ -3,6 +3,7 @@
 import { hasPermission } from "./auth-context";
 import { UserForm } from "./user-form";
 import { UserList } from "./user-list";
+import { UnitsAdminPanel } from "../units/units-admin-panel";
 import { useUsers } from "./use-users";
 
 export function UserManagement() {
@@ -43,6 +44,8 @@ export function UserManagement() {
         removingId={users.removingId}
         onRemove={users.remove}
       />
+
+      <UnitsAdminPanel />
     </div>
   );
 }

@@ -24,6 +24,8 @@ export interface PageRow {
   name: string;
   slug: string;
   isHome: boolean;
+  /** La unidad dueña de la página; nulo = global. */
+  unitId: string | null;
   role: string | null;
   position: number;
   hidden: boolean;

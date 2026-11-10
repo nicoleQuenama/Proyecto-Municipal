@@ -2,6 +2,7 @@ import type { Conflict } from "../../components/versioning/types";
 import { diffSite } from "../../components/persistence/site-diff";
 import type { Tx } from "../db";
 import { applyPatch } from "../site/site-save";
+import { unitsOf } from "../units/units-access";
 import { loadSite } from "../site/site-load";
 import { conflictKey, mergeSites, type MergeConflict, type Resolutions } from "../site/site-merge";
 import type { Scope } from "../site/site-sql";
@@ -65,7 +66,7 @@ export async function mergeReview(tx: Tx, scope: Scope, userId: string, review: 
 
   const patch = diffSite(current, merged);
   if (patch) {
-    const { rejectedCode } = await applyPatch(tx, scope, userId, patch);
+    const { rejectedCode } = await applyPatch(tx, scope, userId, patch, { current, access: await unitsOf(tx) });
     if (rejectedCode.length > 0) throw new VersionError("El resultado de la fusión tiene código con errores de sintaxis.", 422, { rejectedCode });
   }
   const snapshotId = await saveSnapshot(tx, scope, (await loadSite(tx, scope))!);

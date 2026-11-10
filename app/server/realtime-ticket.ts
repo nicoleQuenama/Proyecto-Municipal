@@ -15,6 +15,9 @@ export interface TicketInput {
   project: string;
   /** Puede cambiar el diseño (y por tanto enviar lo que edita en vivo); si no, solo mira y se le ve. */
   canEdit: boolean;
+  /** Sus unidades y si es superadministrador de una organización con unidades: el servidor solo entrega entre quienes comparten unidad. */
+  units: string[];
+  all: boolean;
 }
 
 /**

@@ -5,6 +5,7 @@
  */
 import { randomBytes } from "node:crypto";
 import { createClient, type RedisClientType } from "redis";
+import type { Audience } from "./units.mts";
 
 /** Lo que se cuenta de una persona al resto (nunca el socket ni sus permisos). */
 export interface PeerView {
@@ -23,7 +24,12 @@ export interface Envelope {
   origin: string;
   message: unknown;
   branch?: string;
+  /** Las unidades de quien lo emitió: solo lo reciben quienes comparten alguna (ver units.mts). */
+  audience: Audience;
 }
+
+/** Una persona tal como se recuerda entre instancias: lo que se cuenta de ella más sus unidades (que nunca llegan al navegador). */
+export type StoredPeer = PeerView & Audience;
 
 export interface Bus {
   /** Quién soy entre las instancias (los ids de las conexiones lo llevan, para que no se repitan). */
@@ -34,9 +40,9 @@ export interface Bus {
   leave: (room: string) => Promise<void>;
   publish: (room: string, envelope: Omit<Envelope, "origin">) => void;
   /** Anota el estado de una persona para quien llegue después a otra instancia (o lo quita con `null`). */
-  remember: (room: string, peerId: string, peer: PeerView | null) => void;
+  remember: (room: string, peerId: string, peer: StoredPeer | null) => void;
   /** Las personas conectadas a OTRAS instancias, sin las de instancias caídas. */
-  others: (room: string) => Promise<PeerView[]>;
+  others: (room: string) => Promise<StoredPeer[]>;
   close: () => Promise<void>;
 }
 
@@ -88,7 +94,7 @@ export async function redisBus(url: string): Promise<Bus> {
     },
     others: async (room) => {
       const stored = await pub.hGetAll(hash(room)).catch(() => ({}) as Record<string, string>);
-      const entries = Object.values(stored).map((raw) => JSON.parse(raw) as PeerView & { inst: string }).filter((entry) => entry.inst !== instance);
+      const entries = Object.values(stored).map((raw) => JSON.parse(raw) as StoredPeer & { inst: string }).filter((entry) => entry.inst !== instance);
       const instances = [...new Set(entries.map((entry) => entry.inst))];
       const alive = new Set((await Promise.all(instances.map(async (inst) => ((await pub.exists(`rt:inst:${inst}`).catch(() => 0)) ? inst : null)))).filter((inst): inst is string => inst !== null));
       // Lo que dejó una instancia caída se borra: nadie más lo va a limpiar.

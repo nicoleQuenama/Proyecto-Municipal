@@ -13,6 +13,9 @@ import type { Page } from "../site/types";
 import { plural } from "../versioning/versioning-rules";
 import { CodeIcon } from "../viewport/icons";
 import { useWorkbench } from "../workbench/workbench-context";
+import { MovePageItem } from "../units/move-page-item";
+import { isPageReadOnly } from "../units/own-pages";
+import { UnitTag } from "../units/unit-tag";
 
 const iconButton =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-dim hover:bg-hover hover:text-ink";
@@ -28,6 +31,8 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
   const canEditCode = hasPermission(currentUser, "editCode");
+  // Una página global que esta persona no puede editar se ve, pero sin opciones (la base de datos tampoco la dejaría).
+  const readOnly = isPageReadOnly(currentUser, page);
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [routing, setRouting] = useState(false);
@@ -155,11 +160,13 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                 :id
               </span>
             )}
+            <UnitTag page={page} />
           </div>
           <span className="truncate text-[11px] text-ink-dim">{routeOf(page)}</span>
         </button>
 
         {/* Menú de opciones secundarias (tres puntos / kebab menu) */}
+        {!readOnly && (
         <div ref={menuRef} className="relative shrink-0 pr-1">
           <button
             type="button"
@@ -177,6 +184,8 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
           {/* Menú desplegable flotante */}
           {menuOpen && (
             <div className="absolute right-0 top-8 z-40 flex w-52 flex-col rounded-xl border border-line bg-panel p-1 text-xs shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+              <MovePageItem page={page} onDone={() => setMenuOpen(false)} />
+
               <button
                 type="button"
                 onClick={() => {
@@ -309,6 +318,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
             </div>
           )}
         </div>
+        )}
       </div>
       {routing && <PageRouteForm page={page} />}
       {seoOpen && <PageSeoForm page={page} />}

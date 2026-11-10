@@ -3,6 +3,8 @@ import type { Tx } from "../db";
 import { deepEqual } from "../site/deep-equal";
 import type { SitePatch } from "../site/site-patch";
 import type { Scope } from "../site/site-sql";
+import { assertGlobalAllowed, assertUnitPages } from "../units/unit-patch-permissions";
+import type { UnitAccess } from "../units/types";
 import { VersionError } from "./branch-rows";
 
 /**
@@ -37,7 +39,8 @@ async function pageAllowed(tx: Tx, scope: Scope, next: Page, current: Page | und
 }
 
 /** Rechaza (403) un parche que toca algo que esta persona no puede tocar. `current` es la rama antes del parche. */
-export async function assertPatchAllowed(tx: Tx, scope: Scope, patch: SitePatch, current: SiteState): Promise<void> {
+export async function assertPatchAllowed(tx: Tx, scope: Scope, patch: SitePatch, current: SiteState, access: UnitAccess = { scoped: false }): Promise<void> {
+  assertGlobalAllowed(patch, current, access);
   const pending = [
     [patch.variables || patch.rules || patch.navigation || patch.globalCss !== undefined, "editStyles", "cambiar los estilos"],
     [patch.components, "editContent", "editar los componentes"],
@@ -50,6 +53,7 @@ export async function assertPatchAllowed(tx: Tx, scope: Scope, patch: SitePatch,
   for (const [touched, permission, what] of pending) if (touched) await require_(has(tx, scope, permission), what);
 
   if (!patch.pages) return;
+  if (access.scoped) return assertUnitPages(tx, scope, patch, current);
   if (await allowed(tx, scope, `app.can_edit_all_content($1::uuid)`)) return;
   const before = new Map(current.pages.map((page) => [page.id, page]));
   for (const id of patch.pages.remove) await require_(canEdit(tx, scope, id), "quitar esta página");
