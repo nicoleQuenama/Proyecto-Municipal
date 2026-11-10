@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Manual de usuario · Portal</title>
+<style>
+  :root {
+    --navy: #0f2a4a;
+    --navy-2: #163f6b;
+    --teal: #0d9488;
+    --teal-soft: #ccfbf1;
+    --sky: #0284c7;
+    --ink: #1e293b;
+    --muted: #5b6b7f;
+    --line: #dbe4ee;
+    --bg-soft: #f4f7fb;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --rose: #be123c;
+    --rose-soft: #ffe4e6;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+  }
+
+  @page {
+    size: A4;
+    margin: 17mm 15mm 19mm 15mm;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Inter", system-ui, -apple-system, Arial, sans-serif;
+    color: var(--ink);
+    font-size: 10.4pt;
+    line-height: 1.55;
+  }
+
+  /* ============ PORTADA ============ */
+  .cover {
+    height: 255mm;
+    margin: -17mm -15mm -19mm -15mm;
+    padding: 34mm 26mm 24mm 26mm;
+    background:
+      radial-gradient(circle at 82% 12%, rgba(13,148,136,.35), transparent 42%),
+      radial-gradient(circle at 12% 88%, rgba(2,132,199,.28), transparent 46%),
+      linear-gradient(150deg, #0b2036 0%, #0f2a4a 46%, #123a5e 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+  }
+  .cover .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: #a9c4e0;
+  }
+  .cover .brand .dot {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(140deg, var(--teal), var(--sky));
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15pt; font-weight: 800; color: #06263a; letter-spacing: 0;
+  }
+  .cover h1 {
+    font-size: 40pt;
+    line-height: 1.02;
+    margin: 0 0 14px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .cover h1 span { color: #5eead4; }
+  .cover .lead {
+    font-size: 14pt;
+    color: #c9dcee;
+    max-width: 132mm;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .cover .chips { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .cover .chips span {
+    border: 1px solid rgba(255,255,255,.22);
+    background: rgba(255,255,255,.07);
+    padding: 5px 12px; border-radius: 999px;
+    font-size: 9pt; color: #d6e6f5;
+  }
+  .cover .foot {
+    border-top: 1px solid rgba(255,255,255,.16);
+    padding-top: 14px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    font-size: 9.5pt; color: #a8c2da;
+  }
+  .cover .foot strong { color: #fff; display: block; font-size: 10.5pt; }
+
+  /* ============ TIPOGRAFÍA GENERAL ============ */
+  h2.section {
+    font-size: 19pt;
+    color: var(--navy);
+    margin: 0 0 4px;
+    padding: 0;
+    line-height: 1.15;
+    letter-spacing: -0.2px;
+    break-after: avoid;
+  }
+  .section-head {
+    break-before: page;
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--line);
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .section-head .num {
+    flex: 0 0 auto;
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    background: linear-gradient(140deg, var(--navy-2), var(--teal));
+    color: #fff;
+    font-weight: 800;
+    font-size: 15pt;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .section-head p { margin: 4px 0 0; color: var(--muted); font-size: 10pt; }
+
+  h3 {
+    font-size: 12.6pt;
+    color: var(--navy-2);
+    margin: 18px 0 6px;
+    break-after: avoid;
+  }
+  h4 {
+    font-size: 10.8pt;
+    color: var(--ink);
+    margin: 13px 0 4px;
+    break-after: avoid;
+  }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 10px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  li::marker { color: var(--teal); font-weight: 700; }
+  strong { color: #0b2239; }
+  a { color: var(--sky); text-decoration: none; }
+  small { color: var(--muted); }
+
+  /* etiqueta de UI */
+  .ui {
+    display: inline-block;
+    background: #eef3f9;
+    border: 1px solid #d5e0ec;
+    border-radius: 5px;
+    padding: 0 5px;
+    font-weight: 600;
+    font-size: .92em;
+    color: #123a5e;
+    white-space: nowrap;
+    line-height: 1.5;
+  }
+
+  /* cajas */
+  .note, .warn, .tip, .ok {
+    border-radius: 9px;
+    padding: 9px 13px 9px 14px;
+    margin: 10px 0;
+    font-size: 9.8pt;
+    break-inside: avoid;
+    border-left: 4px solid;
+  }
+  .note { background: #eff6ff; border-color: var(--sky); }
+  .warn { background: var(--amber-soft); border-color: var(--amber); }
+  .tip  { background: var(--teal-soft); border-color: var(--teal); }
+  .ok   { background: var(--green-soft); border-color: var(--green); }
+  .note b, .warn b, .tip b, .ok b { display: inline; }
+  .label {
+    display: block;
+    font-size: 8.2pt;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .note .label { color: var(--sky); }
+  .warn .label { color: var(--amber); }
+  .tip .label  { color: var(--teal); }
+  .ok .label   { color: var(--green); }
+
+  /* tablas */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 12px;
+    font-size: 9.6pt;
+    break-inside: avoid;
+  }
+  th {
+    background: var(--navy);
+    color: #fff;
+    text-align: left;
+    padding: 6px 9px;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+  td { padding: 5px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--bg-soft); }
+
+  /* pasos */
+  ol.steps { list-style: none; counter-reset: st; padding-left: 0; margin: 8px 0 12px; }
+  ol.steps > li {
+    counter-increment: st;
+    position: relative;
+    padding-left: 30px;
+    margin: 7px 0;
+  }
+  ol.steps > li::before {
+    content: counter(st);
+    position: absolute; left: 0; top: 0;
+    width: 21px; height: 21px;
+    border-radius: 50%;
+    background: var(--teal-soft);
+    color: #0f766e;
+    font-weight: 800;
+    font-size: 9pt;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* tarjetas */
+  .cards { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+  .card {
+    flex: 1 1 44%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 13px;
+    background: #fff;
+    break-inside: avoid;
+  }
+  .card h4 { margin: 0 0 3px; color: var(--navy-2); }
+  .card p { margin: 2px 0; font-size: 9.6pt; color: var(--muted); }
+
+  /* ============ ÍNDICE ============ */
+  .toc { break-after: page; }
+  .toc h2 { font-size: 24pt; color: var(--navy); margin: 0 0 4px; }
+  .toc > p { color: var(--muted); margin: 0 0 18px; }
+  .toc-grid {
+    columns: 2;
+    column-gap: 22px;
+  }
+  .toc-item {
+    break-inside: avoid;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px dotted #d4dfeb;
+  }
+  .toc-item .n {
+    color: var(--teal);
+    font-weight: 800;
+    min-width: 20px;
+    font-size: 9.5pt;
+  }
+  .toc-item .t { font-weight: 600; color: #16324f; font-size: 9.8pt; }
+  .toc-item .d { display: block; color: var(--muted); font-weight: 400; font-size: 8.4pt; }
+
+  .toc-intro {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 16px 0 20px;
+  }
+  .toc-intro h3 { margin: 0 0 6px; }
+  .toc-intro p { margin: 4px 0; font-size: 9.8pt; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .legend div { display: flex; align-items: center; gap: 6px; font-size: 9pt; color: var(--muted); }
+  .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  .kbd {
+    display: inline-block;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 8.6pt;
+    background: #fff;
+    border: 1px solid #c6d3e2;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 5px;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  .two-col { display: flex; gap: 16px; align-items: flex-start; }
+  .two-col > div { flex: 1; }
+
+  .avoid { break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ================= PORTADA ================= -->
+<section class="cover">
+  <div class="brand">
+    <span class="dot">P</span>
+    <span>Portal · CMS Municipal</span>
+  </div>
+
+  <div>
+    <h1>Manual de<br><span>usuario</span></h1>
+    <p class="lead">Todo lo que puedes hacer con el editor visual, explicado por acciones: qué botón tocar, dónde está y qué límites tienes.</p>
+    <div class="chips">
+      <span>Editor visual</span>
+      <span>Imágenes y videos</span>
+      <span>Fondos</span>
+      <span>Versiones</span>
+      <span>Publicar y desplegar</span>
+      <span>Usuarios y unidades</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>
+      <strong>Portal — Gestión de contenido municipal</strong>
+      Guía práctica en español · Noviembre 2026
+    </div>
+    <div style="text-align:right">
+      Para editores, diseñadores<br>y administradores del sitio
+    </div>
+  </div>
+</section>
+
+<!-- ================= ÍNDICE ================= -->
+<section class="toc">
+  <h2>Contenido</h2>
+  <p>Busca la acción que quieres hacer. Cada sección indica los nombres exactos que verás en pantalla.</p>
+
+  <div class="toc-intro">
+    <h3>Cómo leer este manual</h3>
+    <p>Los nombres resaltados como <span class="ui">Publicar</span> son botones, pestañas o campos tal como aparecen en el editor.</p>
+    <div class="legend">
+      <div><span class="sw" style="background:#0284c7"></span> Nota útil</div>
+      <div><span class="sw" style="background:#b45309"></span> Cuidado / límite</div>
+      <div><span class="sw" style="background:#0d9488"></span> Consejo</div>
+      <div><span class="sw" style="background:#15803d"></span> Recomendación</div>
+    </div>
+  </div>
+
+  <div class="toc-grid">
+    <div class="toc-item"><span class="n">1</span><span><span class="t">Entrar, perfil y contraseña</span><span class="d">Acceso, recuperar clave y cerrar sesión</span></span></div>
+    <div class="toc-item"><span class="n">2</span><span><span class="t">Roles, permisos y personas</span><span class="d">Quién puede hacer qué y cómo invitar</span></span></div>
+    <div class="toc-item"><span class="n">3</span><span><span class="t">La interfaz del editor</span><span class="d">Paneles, cabecera, barra inferior, zoom y dispositivos</span></span></div>
+    <div class="toc-item"><span class="n">4</span><span><span class="t">Páginas</span><span class="d">Crear, renombrar, inicio, rutas, SEO y código</span></span></div>
+    <div class="toc-item"><span class="n">5</span><span><span class="t">Secciones, plantillas y estructura</span><span class="d">Insertar bloques y ordenar la página</span></span></div>
+    <div class="toc-item"><span class="n">6</span><span><span class="t">Componentes reutilizables</span><span class="d">Crear y editar tarjetas, barras y botones</span></span></div>
+    <div class="toc-item"><span class="n">7</span><span><span class="t">Elementos en el lienzo</span><span class="d">Mover, redimensionar, capas y agrupar</span></span></div>
+    <div class="toc-item"><span class="n">8</span><span><span class="t">Texto y formato</span><span class="d">Titulares, fuentes y estilos de texto</span></span></div>
+    <div class="toc-item"><span class="n">9</span><span><span class="t">Estilos y apariencia</span><span class="d">Colores, degradados, variables y CSS</span></span></div>
+    <div class="toc-item"><span class="n">10</span><span><span class="t">Imágenes y videos</span><span class="d">Subir, insertar y reemplazar medios</span></span></div>
+    <div class="toc-item"><span class="n">11</span><span><span class="t">Fondos</span><span class="d">Fondo de página y de sección</span></span></div>
+    <div class="toc-item"><span class="n">12</span><span><span class="t">Cambiar la imagen de una tarjeta</span><span class="d">Una instancia o todo el componente</span></span></div>
+    <div class="toc-item"><span class="n">13</span><span><span class="t">Accesibilidad y rendimiento</span><span class="d">Alt, carga inmediata y borrado seguro</span></span></div>
+    <div class="toc-item"><span class="n">14</span><span><span class="t">Diseño responsive</span><span class="d">Escritorio, tablet, móvil y adaptación</span></span></div>
+    <div class="toc-item"><span class="n">15</span><span><span class="t">Animaciones e interacciones</span><span class="d">Efectos, disparadores y acciones</span></span></div>
+    <div class="toc-item"><span class="n">16</span><span><span class="t">Enlaces, modales y formularios</span><span class="d">Navegación interna, ventanas y envíos</span></span></div>
+    <div class="toc-item"><span class="n">17</span><span><span class="t">Datos, funciones, código y librerías</span><span class="d">APIs, workbench, iconos y paquetes</span></span></div>
+    <div class="toc-item"><span class="n">18</span><span><span class="t">Versiones, borradores y revisiones</span><span class="d">Guardar, comparar y trabajar en equipo</span></span></div>
+    <div class="toc-item"><span class="n">19</span><span><span class="t">Publicar, desplegar y exportar</span><span class="d">Sitio oficial, servidores y paquetes</span></span></div>
+    <div class="toc-item"><span class="n">20</span><span><span class="t">Auditoría antes de publicar</span><span class="d">Rendimiento, accesibilidad y SEO</span></span></div>
+    <div class="toc-item"><span class="n">21</span><span><span class="t">Unidades y equipos</span><span class="d">Departamentos y permisos por área</span></span></div>
+    <div class="toc-item"><span class="n">22</span><span><span class="t">Colaboración en vivo</span><span class="d">Presencia, cursores y selecciones</span></span></div>
+    <div class="toc-item"><span class="n">23</span><span><span class="t">Atajos y comandos</span><span class="d">Paleta de comandos y teclas rápidas</span></span></div>
+    <div class="toc-item"><span class="n">24</span><span><span class="t">Problemas comunes</span><span class="d">Mensajes frecuentes y qué hacer</span></span></div>
+  </div>
+</section>
+
+<!-- ================= 1 ================= -->
+<div class="section-head"><span class="num">1</span><div><h2 class="section">Entrar, perfil y contraseña</h2><p>Acceso al editor y gestión de tu cuenta.</p></div></div>
+
+<h3>Iniciar sesión</h3>
+<ol class="steps">
+  <li>Abre el editor. Si no hay sesión verás la pantalla de acceso.</li>
+  <li>Escribe tu <span class="ui">correo</span> y tu <span class="ui">contraseña</span>.</li>
+  <li>Confirma. Si falta algún dato, el aviso es «Indica tu correo y contraseña.»</li>
+</ol>
+
+<h3>Requisitos de contraseña</h3>
+<p>La contraseña debe tener <strong>8 caracteres o más</strong>, una minúscula, una mayúscula, un número y un símbolo (<span class="ui">! @ # $ …</span>).</p>
+
+<h3>¿Olvidaste tu contraseña?</h3>
+<ol class="steps">
+  <li>En la pantalla de acceso abre el enlace de recuperación.</li>
+  <li>Escribe tu <span class="ui">usuario</span> y tu <span class="ui">correo</span>.</li>
+  <li>Por seguridad el mensaje es siempre el mismo, exista o no la cuenta. Si existe, recibirás un correo con el enlace.</li>
+</ol>
+<div class="note"><span class="label">Enlace de restablecimiento</span>El enlace abre la página <span class="ui">/restablecer?token=…</span>. El token <b>se usa una sola vez y vence a los 30 minutos</b>.</div>
+
+<h3>Tu perfil</h3>
+<ul>
+  <li>Arriba a la derecha está tu menú de perfil. Muestra <strong>nombre, @usuario, correo y rol</strong>.</li>
+  <li>Desde ahí puedes <span class="ui">Cambiar contraseña</span> (actual + nueva + confirmar). Al cambiarla se <strong>cierran tus otras sesiones</strong> y se avisa por correo.</li>
+  <li>También encontrarás <span class="ui">Cerrar sesión</span>. Tu sesión se revisa cada 60 segundos: si te quitan el acceso, saldrás automáticamente.</li>
+</ul>
+<div class="warn"><span class="label">Contraseñas temporales</span>Solo un <b>Superadministrador</b> puede generar una contraseña temporal desde la lista de usuarios. Esa contraseña se envía por correo y <b>nunca se muestra en pantalla</b>.</div>
+
+<!-- ================= 2 ================= -->
+<div class="section-head"><span class="num">2</span><div><h2 class="section">Roles, permisos y personas</h2><p>Quién puede hacer qué dentro del proyecto.</p></div></div>
+
+<h3>Los tres roles</h3>
+<table>
+  <thead><tr><th style="width:26%">Rol visible</th><th>Para qué sirve</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Superadministrador</strong></td><td>Control total: gestiona personas, unidades, servidores y lo global.</td></tr>
+    <tr><td><strong>Desarrollador</strong></td><td>Puede tocar código y publicar o desplegar (salvo que se le vete).</td></tr>
+    <tr><td><strong>Diseñador</strong></td><td>Trabajo de contenido y diseño, sin código por defecto.</td></tr>
+  </tbody>
+</table>
+<div class="warn"><span class="label">Regla de oro</span>Nadie puede invitar a alguien con un rol mayor al suyo.</div>
+
+<h3>Permisos que se pueden conceder o quitar</h3>
+<p>En la ficha de cada persona aparecen como «No puede…»:</p>
+<div class="cards">
+  <div class="card"><h4>Contenido y estilos</h4><p>Editar contenido, cambiar estilos y variables.</p></div>
+  <div class="card"><h4>Código y datos</h4><p>Abrir y editar código, conectar APIs y datos.</p></div>
+  <div class="card"><h4>Librerías</h4><p>Instalar librerías en el proyecto.</p></div>
+  <div class="card"><h4>Publicar y desplegar</h4><p>Publicar directo en <span class="ui">main</span> y desplegar en servidores.</p></div>
+  <div class="card"><h4>Personas</h4><p>Invitar a otras personas y administrar usuarios.</p></div>
+  <div class="card"><h4>Auditoría</h4><p>Ver el panel de auditoría antes de publicar.</p></div>
+</div>
+
+<h3>Pestañas del panel y permiso que piden</h3>
+<table>
+  <thead><tr><th style="width:52%">Pestaña</th><th>Permiso</th></tr></thead>
+  <tbody>
+    <tr><td>Páginas · Plantillas · Agregar · Archivos · Enlaces</td><td>Editar contenido</td></tr>
+    <tr><td>Estilo</td><td>Cambiar estilos</td></tr>
+    <tr><td>Librerías</td><td>Instalar librerías</td></tr>
+    <tr><td>Usuarios</td><td>Administrar usuarios</td></tr>
+    <tr><td>Datos</td><td>Editar datos</td></tr>
+  </tbody>
+</table>
+
+<h3>Alcance del acceso</h3>
+<ul>
+  <li><strong>Todo el proyecto</strong> o <strong>solo una parte</strong> (páginas y secciones concretas).</li>
+  <li>Puede haber <strong>vetos</strong> (acciones que no puede hacer) y una <strong>fecha de vencimiento</strong>.</li>
+  <li>Al vencer, la persona ya no entra: puedes <span class="ui">Renovar acceso</span> o <span class="ui">Quitar</span>.</li>
+</ul>
+
+<h3>Compartir el proyecto e invitar</h3>
+<ol class="steps">
+  <li>Pulsa <span class="ui">Compartir</span> en la barra superior. Se abre <span class="ui">Compartir el proyecto</span>.</li>
+  <li>En «Agregar a una persona a tu grupo» completa <span class="ui">Nombre</span>, <span class="ui">Correo</span>, <span class="ui">Usuario</span>, <span class="ui">Contraseña</span> y <span class="ui">Rol</span>.</li>
+  <li>Pulsa <span class="ui">Crear cuenta</span>. La persona empieza <strong>solo mirando</strong> y con acceso por <strong>1 semana</strong>.</li>
+  <li>En su fila usa <span class="ui">Cambiar acceso</span> (o <span class="ui">Renovar acceso</span> si venció).</li>
+  <li>Elige el modo: <span class="ui">Todo el proyecto</span>, <span class="ui">Solo una parte</span> o <span class="ui">Solo mirar</span>.</li>
+</ol>
+
+<h4>Editor de acceso</h4>
+<table>
+  <thead><tr><th style="width:34%">Pregunta</th><th>Opciones</th></tr></thead>
+  <tbody>
+    <tr><td><strong>¿Cuánto puede editar?</strong></td><td>Todo el proyecto · Solo una parte · Solo mirar</td></tr>
+    <tr><td><strong>¿En qué parte trabaja?</strong></td><td>Buscador «Buscar página o sección…», botones <span class="ui">Todas</span> / <span class="ui">Ninguna</span>, páginas y secciones sueltas</td></tr>
+    <tr><td><strong>¿Qué más puede hacer?</strong></td><td>Instalar librerías · Abrir y editar código · Cambiar estilos y variables · Conectar APIs y datos · Publicar directo en main · Invitar a otras personas</td></tr>
+    <tr><td><strong>¿Hasta cuándo tiene acceso?</strong></td><td>1 semana · 2 semanas · 1 mes · Personalizado (Vence el) · Sin límite</td></tr>
+  </tbody>
+</table>
+<p>Al final pulsa <span class="ui">Guardar acceso</span> o <span class="ui">Cancelar</span>.</p>
+<div class="warn"><span class="label">Límites de los permisos</span>Nadie puede dar más permisos ni más tiempo que los que tiene. «Solo mirar» veta todo. «Solo una parte» veta por defecto instalar librerías, invitar y publicar en <span class="ui">main</span>.</div>
+
+<h3>Gestión de usuarios</h3>
+<p>En la pestaña <span class="ui">Usuarios</span>, con permiso de administración:</p>
+<ul>
+  <li><strong>Crear usuario:</strong> Nombre completo, Nombre de usuario, Correo electrónico, Contraseña y Rol.</li>
+  <li>En la lista puedes <strong>restablecer</strong> (envía una contraseña temporal por correo) y <strong>eliminar</strong>.</li>
+  <li>No puedes actuar sobre tu propia cuenta: aparece marcada como <span class="ui">Tú</span>.</li>
+</ul>
+
+<!-- ================= 3 ================= -->
+<div class="section-head"><span class="num">3</span><div><h2 class="section">La interfaz del editor</h2><p>Dónde está cada cosa en pantalla.</p></div></div>
+
+<div class="two-col">
+  <div>
+    <h3>Zonas principales</h3>
+    <ul>
+      <li><strong>Panel izquierdo:</strong> pestañas de trabajo (Páginas, Plantillas, Agregar, Archivos, Enlaces, Estilo, Librerías, Usuarios, Datos).</li>
+      <li><strong>Centro:</strong> el lienzo de la página.</li>
+      <li><strong>Panel derecho:</strong> el inspector con las propiedades de lo que seleccionas.</li>
+      <li><strong>Barra superior:</strong> publicar, desplegar, probar, auditoría, compartir, rama y perfil.</li>
+      <li><strong>Barra inferior:</strong> herramientas, insertar, páginas, zoom y adaptación.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Barra superior</h3>
+    <ul>
+      <li><span class="ui">Deshacer</span> · <span class="ui">Rehacer</span></li>
+      <li><span class="ui">Cambiar de rama</span> · <span class="ui">Unidad</span></li>
+      <li><span class="ui">Compartir</span> · <span class="ui">Auditoría</span></li>
+      <li><span class="ui">Publicar</span> · <span class="ui">Desplegar</span></li>
+      <li><span class="ui">Probar</span> / <span class="ui">Salir</span></li>
+    </ul>
+  </div>
+</div>
+
+<h3>Herramientas del lienzo</h3>
+<table>
+  <thead><tr><th style="width:30%">Herramienta</th><th>Atajo</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td>Mover</td><td><span class="kbd">V</span></td><td>Seleccionar y mover elementos.</td></tr>
+    <tr><td>Mano</td><td><span class="kbd">H</span></td><td>Desplazarte por el lienzo.</td></tr>
+    <tr><td>Marco</td><td><span class="kbd">F</span></td><td>Dibujar un contenedor.</td></tr>
+    <tr><td>Texto</td><td><span class="kbd">T</span></td><td>Escribir un texto nuevo.</td></tr>
+    <tr><td>Degradado</td><td><span class="kbd">G</span></td><td>Aplicar un degradado al elemento, bloque o página.</td></tr>
+    <tr><td>Comentar</td><td><span class="kbd">C</span></td><td>Dejar una nota anclada a un punto.</td></tr>
+    <tr><td>Figuras</td><td>—</td><td>Rectángulo, Elipse, Línea y Triángulo.</td></tr>
+  </tbody>
+</table>
+<p>El menú <span class="ui">Más</span> reúne <strong>Marco, Texto, Icono, Degradado, Comentar</strong> y <strong>Editor de código</strong>.</p>
+
+<h3>Zoom y dispositivos</h3>
+<ul>
+  <li>El menú de zoom abre <span class="ui">Ajustar a la ventana</span> y niveles de 10 % a 300 %. Los botones <span class="ui">Alejar</span> y <span class="ui">Acercar</span> cambian un paso.</li>
+  <li>Arriba verás <span class="ui">Escritorio</span>, <span class="ui">Tablet</span> y <span class="ui">Móvil</span>. El lienzo indica «Editando: … · … px».</li>
+  <li>El interruptor de enfoque alterna <span class="ui">Mosaico</span> (varias anchuras) y <span class="ui">Enfocar</span> (un solo dispositivo).</li>
+</ul>
+
+<h3>Ajustes del lienzo</h3>
+<ul>
+  <li><span class="ui">Cuadrícula</span>: muestra la rejilla de referencia.</li>
+  <li><span class="ui">Guías</span>: activa el imán al arrastrar y redimensionar.</li>
+  <li>Alcance de los cambios: <span class="ui">Solo este bloque</span> o <span class="ui">Todos los bloques del componente</span>.</li>
+</ul>
+
+<!-- ================= 4 ================= -->
+<div class="section-head"><span class="num">4</span><div><h2 class="section">Páginas</h2><p>Crear y configurar las páginas del sitio.</p></div></div>
+
+<h3>Crear una página</h3>
+<ol class="steps">
+  <li>Abre la pestaña <span class="ui">Páginas</span>.</li>
+  <li>Usa la opción de crear página nueva (o el comando <span class="ui">/crear → Página</span>).</li>
+  <li>Escribe el nombre y confirma. La página nace en la unidad activa.</li>
+</ol>
+
+<h3>Opciones de una página</h3>
+<p>En la fila de la página, abre el menú <span class="ui">•••</span>:</p>
+<ul>
+  <li><span class="ui">Renombrar página</span></li>
+  <li><span class="ui">Fondo de página</span></li>
+  <li><span class="ui">SEO</span> / <span class="ui">Buscadores y redes</span></li>
+  <li><span class="ui">Mover a otra unidad…</span> (si usas unidades)</li>
+  <li><span class="ui">Eliminar</span></li>
+  <li><span class="ui">Inicio</span> para marcar la página principal</li>
+</ul>
+<div class="warn"><span class="label">Página de inicio</span>La página de inicio no se puede eliminar y no puede tener una función de página (Carga, 404 o Esqueleto).</div>
+
+<h3>Funciones de página</h3>
+<table>
+  <thead><tr><th style="width:34%">Función</th><th>Cuándo se muestra</th></tr></thead>
+  <tbody>
+    <tr><td>Carga</td><td>Mientras se cargan los datos.</td></tr>
+    <tr><td>No encontrada (404)</td><td>Cuando la ruta no existe.</td></tr>
+    <tr><td>Esqueleto</td><td>Como estructura provisional mientras llega el contenido.</td></tr>
+  </tbody>
+</table>
+<p>Solo puede haber una página por función.</p>
+
+<h3>Rutas dinámicas</h3>
+<p>En el formulario de ruta escribe el patrón, por ejemplo <span class="ui">/pokemon/:id</span>. La página se genera para cada valor del parámetro.</p>
+
+<h3>SEO por página</h3>
+<p>Abre <span class="ui">SEO</span> en el menú de la página. Campos:</p>
+<table>
+  <thead><tr><th style="width:36%">Campo</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Título en Google</strong></td><td>Contador sobre 60 caracteres.</td></tr>
+    <tr><td><strong>Descripción</strong></td><td>Contador sobre 160 caracteres.</td></tr>
+    <tr><td><strong>Imagen para compartir</strong></td><td>Se usa al enlazar la página en redes.</td></tr>
+    <tr><td><strong>Idioma</strong></td><td>Sin indicar, español, inglés, portugués o francés.</td></tr>
+  </tbody>
+</table>
+<p>El SEO se aplica al sitio publicado, no solo en el editor.</p>
+
+<h3>Páginas ocultas</h3>
+<p>Al final del panel lateral abre <span class="ui">Estructura de [página]</span>. Verás <span class="ui">Ocultos · N</span>, la opción <span class="ui">Eliminar todos</span> y una <strong>×</strong> por elemento para eliminarlo definitivamente.</p>
+
+<!-- ================= 5 ================= -->
+<div class="section-head"><span class="num">5</span><div><h2 class="section">Secciones, plantillas y estructura</h2><p>Armar la página con bloques ya diseñados.</p></div></div>
+
+<h3>Insertar una sección o plantilla</h3>
+<ol class="steps">
+  <li>Abre <span class="ui">Plantillas</span> o <span class="ui">Agregar</span>.</li>
+  <li>Elige una plantilla de la galería y colócala en la página.</li>
+  <li>Ajusta su contenido o reemplázala desde el inspector.</li>
+</ol>
+
+<h3>Plantillas disponibles</h3>
+<div class="cards">
+  <div class="card"><h4>Contenedor Horizontal</h4><p>Tres tarjetas en fila.</p></div>
+  <div class="card"><h4>Catálogo de Tarjetas</h4><p>Cuatro en escritorio, dos en móvil.</p></div>
+  <div class="card"><h4>Cuadrícula Bento</h4><p>Rejilla dinámica de bloques.</p></div>
+  <div class="card"><h4>Banner Principal</h4><p>Hero con título, texto y botón de acción.</p></div>
+</div>
+
+<h3>Estructura de la página</h3>
+<ul>
+  <li>El panel <span class="ui">Estructura de [página]</span> lista las secciones en orden.</li>
+  <li>Puedes <strong>reordenar</strong>, <strong>ocultar</strong> o <strong>eliminar</strong> cada sección.</li>
+  <li>Para mover una sección libremente, en el inspector elige <span class="ui">Sobreponer (libre)</span> y arrástrala.</li>
+  <li>También tienes <span class="ui">Subir sección</span> y <span class="ui">Bajar sección</span>, y un candado para bloquearla.</li>
+</ul>
+
+<h3>Tamaño de una sección</h3>
+<p>En el desplegable <span class="ui">Fondo</span> de la sección:</p>
+<ul>
+  <li><span class="ui">Su contenido</span></li>
+  <li><span class="ui">Todo el ancho</span></li>
+  <li><span class="ui">Pantalla completa</span></li>
+</ul>
+
+<h3>Mover entre páginas</h3>
+<ul>
+  <li>Un medio suelto se puede arrastrar y soltar sobre otra página: se transfiere y el editor cambia a ella.</li>
+  <li>Las secciones se mueven con las opciones de estructura o arrastrando cuando están en modo libre.</li>
+</ul>
+
+<!-- ================= 6 ================= -->
+<div class="section-head"><span class="num">6</span><div><h2 class="section">Componentes reutilizables</h2><p>Crear una vez y repetir en todo el sitio.</p></div></div>
+
+<div class="note"><span class="label">Componente e instancia</span>Un <b>componente</b> es el diseño original. Una <b>instancia</b> es cada copia colocada en una página. Los cambios del componente afectan a todas las instancias; los cambios de una instancia afectan solo a ese bloque.</div>
+
+<h3>Crear un componente</h3>
+<ol class="steps">
+  <li>Abre <span class="ui">Agregar</span> y elige crear un componente nuevo.</li>
+  <li>En el constructor escribe el <span class="ui">Nombre del componente</span> y elige su <span class="ui">Categoría</span> (puedes usar <span class="ui">Nueva categoría…</span>).</li>
+  <li>Elige el tamaño del lienzo o pulsa <span class="ui">Ajustar al contenido</span>.</li>
+  <li>Agrega elementos con la barra izquierda: <strong>Rectángulo, Elipse, Texto, Imagen, Ícono, Video</strong>.</li>
+  <li>Pulsa <span class="ui">Guardar componente</span> si es nuevo, o <span class="ui">Guardar cambios</span> si estabas editando.</li>
+</ol>
+
+<h3>Editar un componente existente</h3>
+<ol class="steps">
+  <li>En <span class="ui">Agregar</span>, pasa el ratón por el componente y pulsa el lápiz <span class="ui">Editar en el constructor</span>.</li>
+  <li>Selecciona el elemento y ajusta sus propiedades en el panel derecho.</li>
+  <li>Guarda los cambios.</li>
+</ol>
+
+<h3>Categorías</h3>
+<p>Las categorías por defecto son <strong>Navegación, Secciones, Cards, Botones y Hero CTA</strong>. Puedes crear categorías propias.</p>
+
+<h3>Acoplar al contenedor</h3>
+<ul>
+  <li>Al soltar un elemento se acopla a una casilla de la cuadrícula 3×3.</li>
+  <li>Mantén <span class="kbd">Alt</span> al soltar para dejarlo libre.</li>
+  <li>Existe la opción de ajustar al contenedor (<em>fitToParent</em>).</li>
+</ul>
+
+<!-- ================= 7 ================= -->
+<div class="section-head"><span class="num">7</span><div><h2 class="section">Elementos en el lienzo</h2><p>Seleccionar, mover, ordenar y agrupar.</p></div></div>
+
+<h3>Seleccionar y mover</h3>
+<ul>
+  <li>Haz clic para seleccionar. Con el asa <span class="ui">Mover</span> arrastra el elemento.</li>
+  <li>Con la cuadrícula activa el movimiento se ajusta a la rejilla. Mantén <span class="kbd">Ctrl</span> para mover libremente.</li>
+  <li>Las flechas del teclado mueven 1 px; con <span class="kbd">Shift</span>, 10 px.</li>
+</ul>
+
+<h3>Redimensionar</h3>
+<p>Los elementos tienen hasta <strong>8 manijas</strong> (esquinas y lados). Mantén <span class="kbd">Shift</span> para conservar proporciones al dibujar. El tamaño mínimo es 8 px.</p>
+
+<h3>Capas y orden</h3>
+<ul>
+  <li>El panel <span class="ui">Capas (arriba, lo que está delante)</span> muestra el orden.</li>
+  <li>Haz doble clic en el nombre para renombrar.</li>
+  <li>Usa el ojo para <strong>ocultar</strong> y el candado para <strong>bloquear</strong>.</li>
+  <li>Sube o baja capas con <span class="kbd">Ctrl+]</span> / <span class="kbd">Ctrl+[</span>. Con <span class="kbd">Shift</span> va al frente o al fondo.</li>
+</ul>
+
+<h3>Agrupar</h3>
+<ul>
+  <li><span class="kbd">Ctrl+G</span> agrupa los elementos seleccionados en una tarjeta.</li>
+  <li><span class="kbd">Ctrl+Mayús+G</span> deshace la tarjeta.</li>
+</ul>
+
+<h3>Duplicar y borrar</h3>
+<ul>
+  <li><span class="kbd">Ctrl+C</span> / <span class="kbd">Ctrl+V</span> copiar y pegar; <span class="kbd">Ctrl+D</span> duplica.</li>
+  <li><span class="kbd">Supr</span> o <span class="kbd">Backspace</span> elimina.</li>
+  <li><span class="kbd">Esc</span> deselecciona (primero el elemento, luego la sección).</li>
+</ul>
+
+<h3>Deshacer y rehacer</h3>
+<p>Los botones <span class="ui">Deshacer (Ctrl+Z)</span> y <span class="ui">Rehacer (Ctrl+Mayús+Z)</span> cubren la sesión actual de edición.</p>
+
+<!-- ================= 8 ================= -->
+<div class="section-head"><span class="num">8</span><div><h2 class="section">Texto y formato</h2><p>Titulares, párrafos y estilos de letra.</p></div></div>
+
+<h3>Editar texto en el lienzo</h3>
+<ul>
+  <li>Haz doble clic en un texto para editarlo en línea.</li>
+  <li><span class="kbd">Enter</span> guarda; <span class="kbd">Mayús+Enter</span> hace un salto de línea; <span class="kbd">Esc</span> cancela.</li>
+</ul>
+
+<h3>Editor de titular</h3>
+<ul>
+  <li><strong>Estilo de bloque:</strong> H1, H2, H3 o Párrafo.</li>
+  <li><strong>Fuentes:</strong> Moderna (Geist), Técnica (Mono), Clásica (Georgia) y Neutra (Arial).</li>
+  <li><strong>Alineación:</strong> izquierda, centro, derecha o justificar.</li>
+  <li><strong>Tamaño:</strong> de 8 a 120.</li>
+</ul>
+
+<h3>Formato por selección</h3>
+<p>Selecciona una parte del texto y usa el menú de formato: <strong>Negrita, Cursiva, Subrayado, Sobrelínea y Tachado</strong>; alineaciones; listas con viñetas y numeradas; y desplazamiento de pasos de 10 px.</p>
+
+<h3>Variables</h3>
+<p>Puedes insertar variables de texto y crear una nueva desde el selector de variables. Se aplican como contenido reutilizable.</p>
+
+<div class="note"><span class="label">Alcance del formato</span>El interruptor <span class="ui">Dónde valen los cambios</span> permite aplicar el formato a <span class="ui">Este bloque</span> o a <span class="ui">Todo el componente</span>.</div>
+
+<!-- ================= 9 ================= -->
+<div class="section-head"><span class="num">9</span><div><h2 class="section">Estilos y apariencia</h2><p>Colores, degradados y reglas visuales del sitio.</p></div></div>
+
+<h3>Pestaña Estilo</h3>
+<p>Reúne la apariencia del sitio: colores, tipografía, bordes, sombras y espaciado. Los cambios se agrupan por <strong>página, bloque y elemento</strong>.</p>
+
+<h3>Ámbito de los estilos</h3>
+<table>
+  <thead><tr><th style="width:40%">Opción</th><th>Efecto</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Todo el sitio (global)</strong></td><td>Afecta a todo el proyecto.</td></tr>
+    <tr><td><strong>Solo esta página</strong></td><td>Solo la página actual.</td></tr>
+    <tr><td><strong>Componente</strong></td><td>Todas las instancias de ese componente.</td></tr>
+  </tbody>
+</table>
+<p>La prioridad es: global → página → componente. Lo más específico gana.</p>
+
+<h3>Variables CSS</h3>
+<p>Las variables de color, tamaño y fuente se usan como <span class="ui">var(--nombre)</span>. Cambiar una variable actualiza todos los lugares que la usan.</p>
+
+<h3>Paleta de colores</h3>
+<ul>
+  <li>El selector <span class="ui">Elegir un color de la paleta</span> limita los colores a la paleta municipal.</li>
+  <li>El campo hexadecimal acepta <span class="ui">#</span> y aplica con <span class="kbd">Enter</span>.</li>
+</ul>
+
+<h3>Degradados</h3>
+<ol class="steps">
+  <li>Elige la herramienta <span class="ui">Degradado</span> o el panel de degradado.</li>
+  <li>Configura los pasos (mínimo 2) y el ángulo.</li>
+  <li>Indica el destino: elemento, bloque o página. Con <span class="kbd">Alt</span> se aplica a toda la sección.</li>
+  <li>Pulsa <span class="ui">Listo</span>.</li>
+</ol>
+<p>Presets incluidos: Atardecer, Océano, Neón, Bosque, Lavanda, Aurora, Medianoche, Frambuesa, Limón, Cielo, Brasas y Foco.</p>
+
+<h3>Mezcla con el fondo</h3>
+<p>En <span class="ui">Capa</span> → <span class="ui">Mezcla con el fondo</span>: Normal, Multiplicar, Pantalla, Superponer, Diferencia, Aclarar u Oscurecer.</p>
+
+<h3>CSS propio</h3>
+<p>Con permiso de estilos o código puedes añadir CSS por página, por componente o global. El ámbito seleccionado decide dónde se aplica.</p>
+
+<!-- ================= 10 ================= -->
+<div class="section-head"><span class="num">10</span><div><h2 class="section">Imágenes y videos</h2><p>La biblioteca <span class="ui">Archivos</span> y cómo usar los medios.</p></div></div>
+
+<h3>Mapa rápido</h3>
+<table>
+  <thead><tr><th style="width:58%">Quiero…</th><th>Ir a…</th></tr></thead>
+  <tbody>
+    <tr><td>Subir un archivo a la biblioteca</td><td><span class="ui">Archivos</span> → <span class="ui">Subir archivos con etiqueta</span></td></tr>
+    <tr><td>Insertar un medio suelto en la página</td><td><span class="ui">Imágenes y videos</span> → <span class="ui">Subir desde el equipo</span> / <span class="ui">Imagen desde URL</span> / <span class="ui">Video desde URL</span></td></tr>
+    <tr><td>Insertar dentro de un componente</td><td><span class="ui">Agregar</span> → lápiz <span class="ui">Editar en el constructor</span> → <span class="ui">Agregar imagen</span> / <span class="ui">Agregar video</span></td></tr>
+    <tr><td>Poner fondo a la página</td><td><span class="ui">Páginas</span> → <span class="ui">•••</span> → <span class="ui">Fondo de página</span></td></tr>
+    <tr><td>Poner fondo a una sección</td><td>Seleccionar sección → panel derecho → <span class="ui">Fondo</span></td></tr>
+    <tr><td>Cambiar la imagen de una tarjeta</td><td>Seleccionar imagen → <span class="ui">Archivos</span> → clic en la miniatura</td></tr>
+  </tbody>
+</table>
+
+<h3>Subir a la biblioteca</h3>
+<ol class="steps">
+  <li>Abre <span class="ui">Archivos</span> («Imágenes y videos del proyecto (tipo Canva)»).</li>
+  <li>Pulsa <span class="ui">Subir archivos con etiqueta</span>.</li>
+  <li>Escribe la <span class="ui">Etiqueta o tema de la imagen</span>. Puedes usar sugerencias como «Día del Peatón», «Institucional», «Comunidad», «Obras», «Seguridad», «Trámites», «Salud» o «Cultura y Deportes».</li>
+  <li>Si ya hay archivos parecidos, aparece «Ya existen N fotos relacionadas» con el botón <span class="ui">Usar esta foto</span> para reciclar y ahorrar espacio.</li>
+  <li>Elige el archivo con <span class="ui">Hacer clic para elegir archivo</span> y escribe un <span class="ui">Nombre o título descriptivo</span>.</li>
+  <li>Pulsa <span class="ui">Subir y registrar con etiqueta</span>.</li>
+</ol>
+<p>También puedes <strong>arrastrar un archivo</strong> a la zona «Arrastra una imagen o video para clasificarlo y subirlo». La etiqueta se precarga con la que tengas seleccionada o, si no hay, con «Comunidad».</p>
+
+<h3>Agregar desde un enlace</h3>
+<ol class="steps">
+  <li>Pulsa <span class="ui">Agregar desde enlace URL</span>.</li>
+  <li>Elige <span class="ui">Imagen</span> o <span class="ui">Video</span>.</li>
+  <li>Pega la URL, escribe la <span class="ui">Etiqueta temática</span> y, si quieres, un <span class="ui">Nombre o descripción</span>.</li>
+  <li>Pulsa <span class="ui">Guardar en Media</span>.</li>
+</ol>
+
+<h3>Formatos y límites</h3>
+<table>
+  <thead><tr><th style="width:30%">Tipo</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr><td>Formatos aceptados</td><td>PNG, JPG, WebP, AVIF, GIF, MP4 y WebM. <strong>No se acepta SVG</strong> por seguridad.</td></tr>
+    <tr><td>Imagen</td><td>Máximo 10 MB.</td></tr>
+    <tr><td>Video en biblioteca</td><td>Máximo 50 MB.</td></tr>
+    <tr><td>Video por URL</td><td>Sin límite del CMS: depende del sitio externo.</td></tr>
+    <tr><td>Enlaces</td><td>Deben empezar por <span class="ui">http://</span> o <span class="ui">https://</span>. YouTube y Vimeo se convierten a su reproductor.</td></tr>
+  </tbody>
+</table>
+<div class="warn"><span class="label">Videos en el lienzo</span>Un video sí se puede subir a la biblioteca, pero en el lienzo y en los fondos <b>solo se agregan por URL</b>. Si arrastras un archivo de video al lienzo verás: «Los videos solo se pueden agregar con un enlace (URL).»</div>
+<div class="note"><span class="label">ImageKit</span>Subir archivos requiere que ImageKit esté configurado. Si no lo está, el medidor muestra: «ImageKit no está configurado en este servidor: todavía no se pueden subir archivos.»</div>
+
+<h3>Compresión y duplicados</h3>
+<ul>
+  <li>Al subir, el CMS <strong>comprime automáticamente</strong> en el mismo formato, sin pérdida visible.</li>
+  <li>Solo guarda la versión comprimida si ahorra al menos un <strong>3 %</strong> y pasa el control de calidad.</li>
+  <li>Si subes un archivo idéntico a uno existente en el mismo proyecto y unidad, se reutiliza el existente.</li>
+</ul>
+
+<h3>Buscar y filtrar</h3>
+<ul>
+  <li>Buscador: «Buscar por etiqueta o palabra (ej. peaton, obras)…». No distingue mayúsculas ni acentos.</li>
+  <li>Filtros: <span class="ui">Todos</span>, <span class="ui">Imágenes</span> y <span class="ui">Videos</span>.</li>
+  <li>Etiquetas: <span class="ui">Categorías y etiquetas:</span>, <span class="ui">Todas</span>, <span class="ui">#etiqueta</span> y <span class="ui">ver todas</span>.</li>
+</ul>
+<div class="warn"><span class="label">Sin edición de nombre</span>No hay pantalla para editar el nombre o la etiqueta de un archivo ya subido. Si necesitas corregirlos, vuelve a subirlo con los datos correctos y elimina el anterior si no está en uso.</div>
+
+<h3>Medidor de almacenamiento</h3>
+<p>Arriba de <span class="ui">Archivos</span> aparece <span class="ui">Almacenamiento</span> con el texto «X de Y · N archivos».</p>
+<ul>
+  <li>Barra normal: color de acento.</li>
+  <li>Desde el <strong>80 %</strong>: ámbar.</li>
+  <li>Desde el <strong>95 %</strong>: roja, con el aviso «Casi no queda espacio: pronto no podrás subir más archivos. Borra los que ya no uses o pide ampliar el plan.»</li>
+</ul>
+
+<h3>Insertar un medio suelto en la página</h3>
+<ol class="steps">
+  <li>En la barra superior abre <span class="ui">Imágenes y videos</span>.</li>
+  <li>Elige <span class="ui">Subir desde el equipo</span> (<span class="kbd">I</span>), <span class="ui">Imagen desde URL</span> (<span class="kbd">Alt+I</span>) o <span class="ui">Video desde URL</span> (<span class="kbd">Alt+V</span>).</li>
+  <li>En los diálogos de URL pega el enlace y pulsa <span class="ui">Insertar</span>.</li>
+</ol>
+<p>También puedes <strong>arrastrar imágenes o enlaces al lienzo</strong>. Si sueltas un archivo de video, se rechaza.</p>
+
+<h3>Insertar dentro de un componente</h3>
+<ol class="steps">
+  <li>Abre <span class="ui">Agregar</span>.</li>
+  <li>Pasa el ratón por el componente y pulsa <span class="ui">Editar en el constructor</span>.</li>
+  <li>Usa <span class="ui">Agregar imagen</span> o <span class="ui">Agregar video</span>.</li>
+  <li>Selecciona el elemento y ajusta en <span class="ui">Imagen</span> o <span class="ui">Video</span>.</li>
+</ol>
+<p>Opciones del elemento:</p>
+<ul>
+  <li><strong>Ajuste:</strong> <span class="ui">Cubrir (recorta lo que sobra)</span> o <span class="ui">Contener (se ve entera)</span>.</li>
+  <li><strong>Texto alternativo (alt)</strong>.</li>
+  <li>Solo en video de archivo: <span class="ui">Portada (URL de imagen)</span>, <span class="ui">Reproducir solo</span>, <span class="ui">Silenciado</span> y <span class="ui">En bucle</span>.</li>
+</ul>
+<div class="note"><span class="label">Autoplay</span>«Reproducir solo» obliga a que el video vaya silenciado: los navegadores no permiten reproducción automática con sonido. Estas casillas no aparecen en videos de YouTube o Vimeo.</div>
+
+<h3>Reemplazar el origen de una imagen o video</h3>
+<h4>Solo esa instancia</h4>
+<ol class="steps">
+  <li>Selecciona el elemento imagen o video en el lienzo.</li>
+  <li>Abre <span class="ui">Archivos</span>. Arriba verás «Elemento listo para reemplazar».</li>
+  <li>Pulsa <span class="ui">Reemplazar</span> en la miniatura, o haz clic en ella.</li>
+</ol>
+<p>El CMS aplica la imagen solo a ese bloque y pone su nombre como <span class="ui">alt</span>.</p>
+<h4>Todas las tarjetas del componente</h4>
+<ol class="steps">
+  <li><span class="ui">Agregar</span> → <span class="ui">Editar en el constructor</span>.</li>
+  <li>Selecciona la imagen o video.</li>
+  <li>Sube o pega el nuevo origen y pulsa <span class="ui">Guardar cambios</span>.</li>
+</ol>
+<p>Las instancias que ya tenían una imagen reemplazada solo para su bloque conservan ese reemplazo.</p>
+<div class="warn"><span class="label">Ojo</span>Un medio suelto no tiene botón de reemplazo: quítalo con la <strong>×</strong> de su esquina o con <span class="ui">/eliminar</span> y vuelve a insertarlo. Arrastrar una miniatura de <span class="ui">Archivos</span> al lienzo <b>agrega un medio nuevo</b>; no reemplaza al seleccionado.</div>
+
+<h3>Portada de un video</h3>
+<ul>
+  <li><strong>Video suelto:</strong> pasa el ratón y pulsa <span class="ui">Poner portada</span> o <span class="ui">Cambiar portada</span>; o haz clic derecho y abre el menú «Portada · nombre del video».</li>
+  <li>Opciones del menú: <span class="ui">Subir una imagen…</span>, <span class="ui">Usar la miniatura de YouTube</span> (solo YouTube), pegar una <span class="ui">URL de la imagen de portada</span> y <span class="ui">Quitar la portada</span>.</li>
+  <li><strong>Video de fondo:</strong> en <span class="ui">Imagen de portada del video</span> usa <span class="ui">Subir portada</span>, <span class="ui">Cambiar</span> o <span class="ui">Quitar</span>.</li>
+</ul>
+<p>La portada se ve mientras carga el video o si la persona tiene activado «menos movimiento». Debe ser una imagen de máximo 10 MB.</p>
+
+<h3>Mover y redimensionar medios sueltos</h3>
+<ul>
+  <li>Pasa el ratón por el medio y usa el asa <span class="ui">Mover</span>.</li>
+  <li>Si lo sueltas sobre <strong>otra página</strong>, se transfiere a esa página.</li>
+  <li>Las <strong>seis manijas</strong> cambian el ancho; el alto sigue al ancho, así que la proporción no se deforma. El ancho mínimo es 80.</li>
+  <li>Con la cuadrícula activa, mantén <span class="kbd">Ctrl</span> para mover libremente.</li>
+  <li>En tablet y móvil el medio va en el flujo y no se arrastra.</li>
+</ul>
+
+<!-- ================= 11 ================= -->
+<div class="section-head"><span class="num">11</span><div><h2 class="section">Fondos</h2><p>Fondo de página y fondo de sección con imagen o video.</p></div></div>
+
+<h3>Fondo de página</h3>
+<ol class="steps">
+  <li>Abre <span class="ui">Páginas</span>.</li>
+  <li>En la fila de la página abre <span class="ui">•••</span> y pulsa <span class="ui">Fondo de página</span>.</li>
+  <li>Se despliega el panel <span class="ui">Fondo de la página</span>.</li>
+</ol>
+
+<h4>Color</h4>
+<ul>
+  <li><strong>Color</strong> + selector de color.</li>
+  <li><span class="ui">Quitar</span> elimina solo el color; no elimina la imagen o el video de fondo.</li>
+</ul>
+
+<h4>Imagen o video de fondo</h4>
+<ul>
+  <li><span class="ui">Subir imagen</span>: sube una imagen del equipo (máximo 10 MB).</li>
+  <li><span class="ui">Imagen por URL</span>: pide la <span class="ui">URL de la imagen</span> y se aplica con <span class="ui">Aplicar</span>.</li>
+  <li><span class="ui">Video por URL</span>: pide la <span class="ui">URL del video (mp4, webm, YouTube o Vimeo)</span> y se aplica con <span class="ui">Aplicar</span>.</li>
+</ul>
+<div class="note"><span class="label">Video de fondo</span>Se reproduce sin sonido y en bucle. Con «menos movimiento» activado en el equipo, solo se ve la portada.</div>
+
+<h4>Ajustes del fondo</h4>
+<table>
+  <thead><tr><th style="width:38%">Ajuste</th><th>Opciones</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Ajuste</strong></td><td><span class="ui">Cubrir</span>, <span class="ui">Contener</span> o <span class="ui">Repetir</span>. En video, «Repetir» no existe y se comporta como «Cubrir».</td></tr>
+    <tr><td><strong>Qué parte se ve</strong></td><td>Cuadrícula de 3×3 para elegir el punto de anclaje.</td></tr>
+    <tr><td><strong>Fijo al desplazar</strong></td><td>Solo para imágenes. En video no se aplica.</td></tr>
+    <tr><td><strong>Velo de color encima</strong></td><td>Color e <strong>Intensidad del velo</strong> de 0 a 100 % (por defecto 40 %). Sirve para que el texto se lea.</td></tr>
+    <tr><td><strong>Desenfoque (px)</strong></td><td>De 0 a 40.</td></tr>
+    <tr><td><strong>Quitar el fondo</strong></td><td><span class="ui">Quitar el fondo de imagen o video</span>: elimina la imagen/video y sus ajustes; el color de página se mantiene.</td></tr>
+  </tbody>
+</table>
+<p>Valores iniciales al elegir un fondo nuevo: <strong>Cubrir</strong>, <strong>centro</strong>, <strong>no fijo</strong>, <strong>sin desenfoque</strong> y <strong>sin velo</strong>.</p>
+<div class="tip"><span class="label">Atajo desde la biblioteca</span>En <span class="ui">Archivos</span>, pasa el ratón por una imagen y pulsa <span class="ui">Fondo</span>. Solo funciona con imágenes y reemplaza el fondo actual.</div>
+
+<h3>Fondo de sección</h3>
+<ol class="steps">
+  <li>Haz clic en una zona vacía de la sección para seleccionarla. El panel derecho debe mostrar su nombre y la etiqueta «Sección».</li>
+  <li>Abre el desplegable <span class="ui">Fondo</span>.</li>
+  <li>Ajusta el tamaño de la sección, el color o degradado y la imagen o video de fondo.</li>
+</ol>
+<p>Los ajustes de imagen o video son los mismos que en el fondo de página: <span class="ui">Ajuste</span>, <span class="ui">Qué parte se ve</span>, <span class="ui">Fijo al desplazar</span>, <span class="ui">Velo de color encima</span> y <span class="ui">Desenfoque (px)</span>.</p>
+<div class="tip"><span class="label">Para un banner</span>Elige <span class="ui">Pantalla completa</span>, una imagen o video y un velo; el título queda centrado encima.</div>
+
+<h3>Fondo de una tarjeta</h3>
+<ul>
+  <li>Si la tarjeta es un rectángulo del componente: <span class="ui">Agregar</span> → <span class="ui">Editar en el constructor</span> → selecciona el rectángulo → <span class="ui">Relleno</span> (color o degradado).</li>
+  <li>Si quieres una imagen dentro de la tarjeta: agrega un elemento <strong>Imagen</strong> en el constructor, colócalo detrás del contenido y usa <span class="ui">Al fondo</span>.</li>
+  <li>Si la tarjeta ocupa toda una sección, usa el <span class="ui">Fondo</span> de la sección.</li>
+</ul>
+
+<!-- ================= 12 ================= -->
+<div class="section-head"><span class="num">12</span><div><h2 class="section">Cambiar la imagen de una tarjeta</h2><p>La confusión más común: instancia frente a componente.</p></div></div>
+
+<div class="two-col">
+  <div>
+    <h3>Solo esa tarjeta, en esa página</h3>
+    <ol class="steps">
+      <li>Haz clic en la imagen de la tarjeta hasta seleccionarla.</li>
+      <li>Abre <span class="ui">Archivos</span>.</li>
+      <li>Pulsa <span class="ui">Reemplazar</span> en la miniatura, o haz clic en ella.</li>
+    </ol>
+    <p>La imagen se aplica solo a ese bloque y su nombre pasa a ser el <span class="ui">alt</span>.</p>
+  </div>
+  <div>
+    <h3>Todas las tarjetas del componente</h3>
+    <ol class="steps">
+      <li><span class="ui">Agregar</span> → <span class="ui">Editar en el constructor</span>.</li>
+      <li>Selecciona la imagen.</li>
+      <li>En <span class="ui">Imagen</span>, sube o pega el nuevo origen.</li>
+      <li>Pulsa <span class="ui">Guardar cambios</span>.</li>
+    </ol>
+    <p>Las tarjetas con reemplazo propio conservan su versión.</p>
+  </div>
+</div>
+<div class="warn"><span class="label">Lo que no cambia la imagen</span>Los botones <span class="ui">Este bloque</span> / <span class="ui">Todo el componente</span> cambian estilos, clases y CSS, <b>no el origen de la imagen</b>. Para cambiar todas las tarjetas hay que editar el componente en el constructor.</div>
+
+<!-- ================= 13 ================= -->
+<div class="section-head"><span class="num">13</span><div><h2 class="section">Accesibilidad y rendimiento</h2><p>Alt, carga inmediata y borrado seguro de medios.</p></div></div>
+
+<h3>Texto alternativo (alt)</h3>
+<ul>
+  <li><strong>Elemento en una sección o tarjeta:</strong> panel derecho → <span class="ui">Texto alternativo (alt)</span>. La ayuda dice: «Lo leen los lectores de pantalla y Google. Déjalo vacío solo si la imagen es decorativa.»</li>
+  <li><strong>Componente:</strong> constructor → selecciona la imagen o video → <span class="ui">Texto alternativo (alt)</span>.</li>
+  <li><strong>Imagen aplicada desde la biblioteca:</strong> el CMS pone automáticamente el nombre del archivo como <span class="ui">alt</span>.</li>
+  <li><strong>Fondos:</strong> son decorativos y quedan ocultos a lectores de pantalla; no llevan alt.</li>
+</ul>
+
+<h3>Rendimiento</h3>
+<p>En el panel derecho de un elemento imagen o video aparece <span class="ui">Rendimiento</span> con la casilla <span class="ui">Cargar de inmediato</span>.</p>
+<ul>
+  <li>Por defecto, las imágenes y videos cargan al acercarse a la pantalla.</li>
+  <li>Marca la casilla solo en lo primero que se ve, por ejemplo la imagen principal.</li>
+  <li>En un video sin reproducción automática solo se descarga la portada y los metadatos hasta que se reproduce.</li>
+  <li>La opción no aparece para medios sueltos ni para fondos.</li>
+</ul>
+
+<h3>Ver usos y borrar de la biblioteca</h3>
+<ol class="steps">
+  <li>En <span class="ui">Archivos</span>, pulsa la <strong>×</strong> de una miniatura (solo superadministrador).</li>
+  <li>Si el archivo <strong>no está en uso</strong>, verás «Esta imagen no está en uso… Es seguro eliminarla».</li>
+  <li>Si <strong>está en uso</strong>, aparece «Atención: Imagen en uso en la web» con la lista «Página X → Bloque Y».</li>
+  <li>Elige una imagen de reemplazo del <strong>mismo tipo</strong> y pulsa <span class="ui">Reemplazar en páginas y eliminar</span>.</li>
+</ol>
+<div class="warn"><span class="label">Limitaciones del borrado seguro</span>No revisa las <b>portadas de video</b>, ni los componentes que no estén colocados en ninguna página. La búsqueda compara la URL exacta: parámetros distintos pueden pasar desapercibidos.</div>
+
+<h3>Ocultar y volver a mostrar</h3>
+<ul>
+  <li><strong>Medio suelto:</strong> usa el ojo <span class="ui">Ocultar [nombre]</span>. Queda «Oculto · [nombre]» con <span class="ui">Mostrar</span>.</li>
+  <li><strong>Cualquier elemento:</strong> usa el comando <span class="ui">/ocultar</span> y elige Página, Sección o bloque, Elemento de un bloque, Titular, o Imagen o video.</li>
+  <li><strong>Solo en tablet o móvil:</strong> selecciona la sección o elemento → <span class="ui">Mostrar según el dispositivo</span> → <span class="ui">Ocultar en tablet</span> y/o <span class="ui">Ocultar en móvil</span>.</li>
+</ul>
+
+<!-- ================= 14 ================= -->
+<div class="section-head"><span class="num">14</span><div><h2 class="section">Diseño responsive</h2><p>Que la página se vea bien en cualquier pantalla.</p></div></div>
+
+<h3>Dispositivos</h3>
+<p>El editor permite trabajar en <span class="ui">Escritorio</span> (1024 px), <span class="ui">Tablet</span> (768 px) y <span class="ui">Móvil</span> (390 px).</p>
+
+<h3>Estrategias de adaptación</h3>
+<table>
+  <thead><tr><th style="width:26%">Estrategia</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Escalar</strong></td><td>Reduce proporcionamente.</td></tr>
+    <tr><td><strong>Apilar</strong></td><td>Coloca los elementos uno debajo de otro.</td></tr>
+    <tr><td><strong>Menú</strong></td><td>Convierte la cabecera en un menú móvil.</td></tr>
+    <tr><td><strong>Lo defino yo</strong></td><td>Ajuste manual.</td></tr>
+  </tbody>
+</table>
+
+<h3>Menú móvil</h3>
+<p>Estilos disponibles: <span class="ui">Desplegable</span>, <span class="ui">Lateral izquierdo</span>, <span class="ui">Lateral derecho</span> y <span class="ui">Pantalla completa</span>.</p>
+
+<h3>Plegado de contenido</h3>
+<p>Para secciones altas o listas largas puedes presentar el contenido como <span class="ui">Normal</span>, <span class="ui">Carrusel</span>, <span class="ui">Ver más</span> o <span class="ui">Acordeón</span>.</p>
+
+<h3>Tamaño adaptable</h3>
+<p>Define un ancho mínimo y máximo para que el elemento se adapte de forma fluida.</p>
+
+<h3>Asistente de adaptación</h3>
+<p>En tablet o móvil aparece el asistente, que puede <span class="ui">adaptar todas las secciones</span>. Resume cuántas secciones adaptó automáticamente y cuántas quedaron definidas a mano. También sugiere convertir una cabecera en menú, una lista larga en carrusel o una sección alta en «Ver más».</p>
+
+<!-- ================= 15 ================= -->
+<div class="section-head"><span class="num">15</span><div><h2 class="section">Animaciones e interacciones</h2><p>Movimiento y reacciones al usuario.</p></div></div>
+
+<h3>Estudio de animación</h3>
+<p>Abre <span class="ui">Animación</span> para trabajar con una animación concreta.</p>
+<ul>
+  <li>En la cabecera: selector de animación, nombre, <span class="ui">Eliminar animación</span> y <span class="ui">Listo</span>.</li>
+  <li>Controles de reproducción: ir al inicio, reproducir o pausar con <span class="kbd">Espacio</span>, repetir y cambiar el zoom.</li>
+  <li>Parámetros: <span class="ui">Duración</span>, <span class="ui">Espera antes de empezar</span>, <span class="ui">Intensidad</span> y <span class="ui">Cascada</span>.</li>
+  <li>Destino: <span class="ui">¿Qué se anima?</span> → <span class="ui">Toda la sección</span> o <span class="ui">Todas las piezas</span>.</li>
+</ul>
+
+<h3>Efectos disponibles</h3>
+<div class="cards">
+  <div class="card"><h4>Básicos</h4><p>Aparecer, Desaparecer, Aparece de golpe, Desaparece de golpe.</p></div>
+  <div class="card"><h4>Desplazamientos</h4><p>Subir, Bajar, Entrar por la derecha, Entrar por la izquierda.</p></div>
+  <div class="card"><h4>Profesionales</h4><p>Flotar, Respirar, Brillo, Latido doble, Entrada con rebote.</p></div>
+  <div class="card"><h4>Grabación</h4><p>Graba efectos rápidos y muestra el indicador «Grabando».</p></div>
+</div>
+
+<h3>Interacciones (comportamientos)</h3>
+<p>Disparadores disponibles:</p>
+<ul>
+  <li><strong>Al hacer clic</strong></li>
+  <li><strong>Al pasar el cursor</strong></li>
+  <li><strong>Al hacer scroll hasta verlo</strong></li>
+  <li><strong>Al salir de pantalla</strong></li>
+  <li><strong>Mientras haces scroll</strong></li>
+  <li><strong>Al cargar la página</strong></li>
+</ul>
+<p>Las acciones pueden mostrar avisos o diálogos, navegar, hacer transiciones, animar, ejecutar código (con permiso) y más. El editor de comportamiento indica qué campos necesita cada acción.</p>
+
+<!-- ================= 16 ================= -->
+<div class="section-head"><span class="num">16</span><div><h2 class="section">Enlaces, modales y formularios</h2><p>Conectar páginas y capturar datos.</p></div></div>
+
+<h3>Crear un enlace</h3>
+<ol class="steps">
+  <li>Selecciona el elemento y arrastra el asa <span class="ui">↗</span> hasta una página, o haz clic para abrir el editor de enlace.</li>
+  <li>Elige el destino:
+    <ul>
+      <li><strong>Página</strong> del sitio (con parámetros y transición).</li>
+      <li><strong>Abrir una ventana modal</strong>.</li>
+      <li><strong>Cerrar la ventana modal</strong>.</li>
+      <li><strong>Enlace externo</strong>.</li>
+    </ul>
+  </li>
+  <li>Los enlaces externos se completan solos con <span class="ui">https://</span> si falta.</li>
+</ol>
+
+<h3>Transiciones entre páginas</h3>
+<p>Opciones: <strong>ninguna, fundido, deslizar y zoom</strong>. Duración de 0,1 a 5 segundos; por defecto fundido de 0,4 s.</p>
+
+<h3>Probar sin publicar</h3>
+<ol class="steps">
+  <li>Pulsa <span class="ui">Probar</span>.</li>
+  <li>Aparece una barra flotante <span class="ui">Vista previa · [página]</span>.</li>
+  <li>Navega y abre ventanas como lo haría un visitante.</li>
+  <li>Sal con <span class="ui">Salir</span> o con la tecla <span class="kbd">Esc</span>.</li>
+</ol>
+
+<h3>Mapa de navegación</h3>
+<p>En la pestaña <span class="ui">Enlaces</span> ves cada componente con su editor y el mapa visual de cómo se conectan las páginas.</p>
+
+<h3>Ventanas modales</h3>
+<p>Se configuran al hacer que un enlace abra una ventana modal. Eliges qué página se muestra y sus opciones:</p>
+<table>
+  <thead><tr><th style="width:34%">Opción</th><th>Valores</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Tamaño</strong></td><td>Pequeña, Mediana, Grande, Completa</td></tr>
+    <tr><td><strong>Posición</strong></td><td>Centro, Derecha, Izquierda, Abajo</td></tr>
+    <tr><td><strong>Cerrar al tocar el fondo</strong></td><td>Sí / No</td></tr>
+    <tr><td><strong>Mostrar la X de cerrar</strong></td><td>Sí / No</td></tr>
+    <tr><td><strong>Animación</strong></td><td>Fundido, Subir, Zoom</td></tr>
+    <tr><td><strong>Color del fondo</strong></td><td>Oscurecido configurable</td></tr>
+  </tbody>
+</table>
+<p>Para cerrar la ventana desde dentro, usa el destino <span class="ui">Cerrar la ventana modal</span> en un enlace. Los enlaces dentro de modales funcionan en vista previa.</p>
+
+<h3>Formularios</h3>
+<ul>
+  <li>Controles disponibles: <strong>botón, enviar, campo de texto, área de texto, desplegable y casilla</strong>.</li>
+  <li>Tipos de campo: texto, email, teléfono, número, contraseña, fecha y búsqueda.</li>
+  <li>Añade un control <span class="ui">Enviar el formulario</span> y configura la <strong>URL de destino</strong> y el <strong>mensaje</strong> de confirmación.</li>
+  <li>Los campos obligatorios se validan solos: no se envía si falta alguno.</li>
+  <li>Si no pones destino, el envío funciona en <strong>modo prueba</strong>.</li>
+</ul>
+
+<!-- ================= 17 ================= -->
+<div class="section-head"><span class="num">17</span><div><h2 class="section">Datos, funciones, código y librerías</h2><p>Contenido dinámico y herramientas técnicas.</p></div></div>
+
+<h3>Fuentes de datos (APIs)</h3>
+<ol class="steps">
+  <li>Abre la pestaña <span class="ui">Datos</span>.</li>
+  <li>Pulsa <span class="ui">+ Nueva API</span>.</li>
+  <li>Completa <span class="ui">Nombre</span>, <span class="ui">Método</span> (GET/POST) y <span class="ui">URL</span>.</li>
+  <li>Añade parámetros de consulta y cabeceras (por ejemplo <span class="ui">Authorization</span>).</li>
+  <li>Opcional: una transformación en TypeScript para adaptar la respuesta y el modo de caché.</li>
+</ol>
+
+<h4>Trucos en la URL</h4>
+<p>Puedes usar <span class="ui">{dayOfYear}</span>, <span class="ui">{today}</span>, <span class="ui">{random:min-max}</span>, <span class="ui">{param:x}</span> y <span class="ui">{page}</span>.</p>
+
+<h4>Caché</h4>
+<p>Estrategias: <span class="ui">swr</span>, <span class="ui">ttl</span>, <span class="ui">session</span> y <span class="ui">persistent</span>.</p>
+
+<h4>Mostrar los datos</h4>
+<ul>
+  <li>Arrastra una clave de la respuesta sobre un elemento para <strong>vincularla</strong> (texto, <span class="ui">src</span>, relleno, etc.).</li>
+  <li>Puedes <strong>repetir una sección</strong> por cada elemento de una lista.</li>
+  <li>Para listas largas activa <strong>paginación</strong>: tamaño, ruta del total y reinicio al cambiar.</li>
+</ul>
+
+<h3>Funciones reutilizables</h3>
+<ol class="steps">
+  <li>Selecciona el fragmento de código que quieres reutilizar.</li>
+  <li>Créalo como función y ponle un <strong>nombre</strong>.</li>
+  <li>Elige el alcance: <span class="ui">Todo el proyecto</span>, <span class="ui">Solo esta sección</span> o <span class="ui">Solo este elemento</span>.</li>
+</ol>
+
+<h3>Workbench (código)</h3>
+<ul>
+  <li><strong>Archivos virtuales por tipo:</strong> CSS global, CSS/JS de página, HTML/CSS/JS de sección, CSS propio, CSS de componente, JS de comportamiento y funciones.</li>
+  <li><strong>Editor</strong> tipo Monaco.</li>
+  <li><strong>Consola:</strong> recoge mensajes y errores; se abre sola cuando hay un error.</li>
+  <li><strong>Explorador:</strong> clic derecho para renombrar o eliminar.</li>
+  <li><strong>Vista previa</strong> de sección o de sitio para comprobar sin salir.</li>
+</ul>
+
+<h3>Librerías</h3>
+<p>En la pestaña <span class="ui">Librerías</span>, con el permiso correspondiente:</p>
+<ul>
+  <li><strong>CDN:</strong> no toca el proyecto y funciona siempre.</li>
+  <li><strong>pnpm:</strong> solo disponible cuando trabajas con <span class="ui">pnpm dev</span>.</li>
+  <li>Al instalar indicas <strong>nombre y versión</strong>; si no pones versión se busca la última.</li>
+  <li>Cada librería trae ejemplos de uso (gsap, chart.js, canvas-confetti, animejs). Pulsa <span class="ui">Usar</span> y se inserta el HTML y el JS de ejemplo.</li>
+</ul>
+
+<h3>Iconos</h3>
+<p>El selector visual muestra una cuadrícula de 6 columnas con <strong>buscador por nombre en español</strong>. Al elegir, el icono se aplica al elemento.</p>
+
+<!-- ================= 18 ================= -->
+<div class="section-head"><span class="num">18</span><div><h2 class="section">Versiones, borradores y revisiones</h2><p>Guardar el trabajo y coordinarlo con el equipo.</p></div></div>
+
+<h3>Abrir el panel de versiones</h3>
+<p>Pulsa <span class="ui">Publicar</span> en la barra superior. Se abre <span class="ui">Versiones y publicación</span>.</p>
+<table>
+  <thead><tr><th style="width:30%">Pestaña</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Resumen</strong></td><td>Guardar y publicar en dos pasos claros.</td></tr>
+    <tr><td><strong>Cambios</strong></td><td>Ver lo que aún no has guardado.</td></tr>
+    <tr><td><strong>Historial</strong></td><td>Historial de versiones.</td></tr>
+    <tr><td><strong>Borradores</strong></td><td>Ramas de trabajo (modo avanzado).</td></tr>
+    <tr><td><strong>Revisiones</strong></td><td>Enviar a revisión y aprobar (modo avanzado).</td></tr>
+    <tr><td><strong>Tareas</strong></td><td>Incidencias y pendientes (modo avanzado).</td></tr>
+  </tbody>
+</table>
+
+<h3>Guardar una versión</h3>
+<ol class="steps">
+  <li>En <span class="ui">Resumen</span>, paso «Guardar los cambios como una versión», escribe el <span class="ui">Mensaje de la versión</span>.</li>
+  <li>Pulsa <span class="ui">Guardar (N cambios)</span>.</li>
+</ol>
+<div class="note"><span class="label">Qué guarda</span>La versión guarda <b>toda la rama</b>, no una selección de cambios. Solo se publican versiones guardadas.</div>
+
+<h3>Ver qué cambió</h3>
+<ul>
+  <li>En <span class="ui">Resumen</span>, pulsa <span class="ui">Revisar o elegir qué cambios entran →</span> para abrir <span class="ui">Cambios</span>.</li>
+  <li>En <span class="ui">Cambios</span> puedes buscar y filtrar por clase. Todos los cambios entran en la próxima versión.</li>
+  <li>En <span class="ui">Historial</span> puedes buscar por mensaje, autor o cambio, filtrar por autor y elegir <span class="ui">Solo «rama»</span> o <span class="ui">Todos los borradores</span>.</li>
+  <li>Al abrir una versión se ven sus cambios. Si esa versión es la publicada, aparece <span class="ui">En vivo</span>.</li>
+</ul>
+<p>En <span class="ui">Borradores</span>, expande un borrador para comparar <span class="ui">Toda la rama</span> contra su base o contra una versión concreta. El diff muestra <span class="ui">Antes</span> y <span class="ui">Después</span> con las zonas cambiadas numeradas.</p>
+
+<h3>Volver atrás («restaurar»)</h3>
+<div class="warn"><span class="label">No existe «Restaurar»</span>En esta versión no hay un botón para volver a una versión guardada. Para deshacer:</div>
+<ul>
+  <li>Usa <span class="ui">Deshacer</span> / <span class="ui">Rehacer</span> (<span class="kbd">Ctrl+Z</span> / <span class="kbd">Ctrl+Mayús+Z</span>), que cubren la sesión actual.</li>
+  <li>Cambia a otro borrador si el estado anterior vive ahí.</li>
+  <li>Rehaz los valores a mano guiándote por el <span class="ui">Antes</span> del diff.</li>
+</ul>
+
+<h3>Borradores (ramas)</h3>
+<p>Aparecen en <span class="ui">Versiones y publicación → Borradores</span> (modo avanzado) y en <span class="ui">Cambiar de rama</span>.</p>
+<ol class="steps">
+  <li>Escribe el <span class="ui">Nombre de la nueva rama</span>.</li>
+  <li>Pulsa <span class="ui">Crear rama</span>.</li>
+</ol>
+<p>El nombre se normaliza a minúsculas y guiones, sin espacios, máximo 100 caracteres. No puede repetirse. El borrador nace de la última versión guardada de la rama actual.</p>
+<ul>
+  <li><strong>Cambiar:</strong> usa <span class="ui">Cambiar</span> en la fila del borrador o el selector <span class="ui">Cambiar de rama</span>. Antes de cambiar, el CMS guarda lo pendiente.</li>
+  <li><strong>Eliminar:</strong> la rama principal no se puede eliminar. Solo la puede eliminar quien la creó o quien puede publicar en <span class="ui">main</span>.</li>
+</ul>
+<div class="warn"><span class="label">Sin permiso de publicar en main</span>La persona trabaja en su rama <b>trabajo-&lt;usuario&gt;</b> y sus cambios llegan como revisión a quien la invitó.</div>
+
+<h3>Revisiones (pull requests)</h3>
+<p>Pestaña <span class="ui">Revisiones</span>, dentro del modo avanzado. Si tienes pendientes, la barra muestra <span class="ui">N por revisar</span>.</p>
+<ol class="steps">
+  <li>Pulsa <span class="ui">+ Nuevo pull request</span>.</li>
+  <li>Escribe el <span class="ui">Título del pull request</span>.</li>
+  <li>Elige <span class="ui">Rama de origen</span> y <span class="ui">Rama de destino</span>.</li>
+  <li>Pulsa <span class="ui">Crear pull request</span>.</li>
+</ol>
+<p>Solo se puede enviar una rama a la rama de la que nació, y no puede haber dos revisiones abiertas entre el mismo par de ramas.</p>
+<ul>
+  <li><span class="ui">Aprobar y fusionar en &lt;rama&gt;</span>: la recibe el dueño del grupo, el dueño de la unidad tocada o un superadministrador.</li>
+  <li><span class="ui">Rechazar</span> o <span class="ui">Cancelar solicitud</span>.</li>
+  <li>Los conflictos se resuelven con <span class="ui">Mantener «rama»</span>. Sin resolver, la fusión queda bloqueada.</li>
+  <li>Estados: <span class="ui">Abierto</span>, <span class="ui">Fusionado</span>, <span class="ui">Cerrado</span>; aviso <span class="ui">Conflictos</span>.</li>
+</ul>
+
+<h3>Tareas (issues)</h3>
+<ol class="steps">
+  <li>Abre <span class="ui">Tareas</span> (modo avanzado).</li>
+  <li>Escribe el <span class="ui">Título del issue</span>, elige etiqueta y <span class="ui">Asignar a</span>.</li>
+  <li>Pulsa <span class="ui">Reportar</span>.</li>
+</ol>
+<p><span class="ui">Personalizado…</span> permite nombre de etiqueta y color. Filtra con <span class="ui">Todos</span>, <span class="ui">Sin asignar</span> o <span class="ui">Asignados a &lt;persona&gt;</span>. Cada tarea se puede <span class="ui">Cerrar</span> o <span class="ui">Reabrir</span>.</p>
+
+<!-- ================= 19 ================= -->
+<div class="section-head"><span class="num">19</span><div><h2 class="section">Publicar, desplegar y exportar</h2><p>Poner el sitio en línea y descargar el proyecto.</p></div></div>
+
+<h3>Publicar</h3>
+<ol class="steps">
+  <li>Pulsa <span class="ui">Publicar</span> en la barra superior.</li>
+  <li>En <span class="ui">Resumen</span>, paso «Publicar en la página oficial», revisa la última versión.</li>
+  <li>Pulsa <span class="ui">Publicar</span>.</li>
+  <li>Confirma con <span class="ui">Sí, publicar</span> o cancela con <span class="ui">Cancelar</span>.</li>
+</ol>
+<p>Se publica la <strong>última versión guardada</strong> de la rama actual, no lo que está a medio editar. El sitio público queda en <span class="ui">/ver</span>.</p>
+<div class="warn"><span class="label">No se puede publicar si…</span>Hay cambios sin guardar, la rama no tiene ninguna versión, o la última versión ya está publicada.</div>
+<p>Sin permiso para publicar en <span class="ui">main</span>, el botón cambia a <span class="ui">Publicar (enviar a revisión)</span>: se envía una revisión a quien te invitó. Si ya enviaste esa rama, aparece «Ya enviaste esta rama: espera a que la revisen.»</p>
+
+<h3>Desplegar</h3>
+<p>El botón <span class="ui">Desplegar</span> solo aparece si tienes permiso para desplegar. Abre <span class="ui">Desplegar el sitio</span>.</p>
+<ul>
+  <li><span class="ui">Sitio publicado</span> → <span class="ui">Abrir el sitio publicado (/ver)</span>.</li>
+  <li><span class="ui">Descargar el proyecto</span> → <span class="ui">ZIP del proyecto</span> o <span class="ui">ZIP con Docker</span>.</li>
+  <li><span class="ui">Servidores</span>: Vercel, FTP, SFTP / SSH y cPanel.</li>
+  <li><span class="ui">Últimos despliegues</span>.</li>
+</ul>
+
+<h4>Configurar un servidor</h4>
+<p>Cada destino muestra <span class="ui">Configurado</span> o <span class="ui">Sin configurar</span>. Al abrirlo: <span class="ui">Guardar</span>, <span class="ui">Probar conexión</span>, <span class="ui">Desplegar ahora</span> y <span class="ui">Quitar</span>.</p>
+<table>
+  <thead><tr><th style="width:22%">Destino</th><th>Campos</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Vercel</strong></td><td>Nombre del proyecto, Equipo (opcional), Token de Vercel</td></tr>
+    <tr><td><strong>FTP</strong></td><td>Servidor, Puerto (21 por defecto), Conexión cifrada FTPS, Usuario, Carpeta del servidor, Contraseña</td></tr>
+    <tr><td><strong>SFTP / SSH</strong></td><td>Servidor, Puerto (22 por defecto), Usuario, Carpeta del servidor, Contraseña</td></tr>
+    <tr><td><strong>cPanel</strong></td><td>Dirección del cPanel, Usuario de cPanel, Carpeta, Token de API</td></tr>
+  </tbody>
+</table>
+<div class="note"><span class="label">Qué se despliega</span>Se despliega lo que está <b>publicado</b>. Si no hay publicación verás: «Publica primero: se despliega lo que está publicado.» Los secretos se guardan en el servidor y nunca vuelven al navegador.</div>
+<p>Estados del historial: <span class="ui">Listo</span>, <span class="ui">Falló</span> y <span class="ui">En curso</span>.</p>
+
+<h3>Exportar el proyecto</h3>
+<p>Dentro de <span class="ui">Desplegar</span> → <span class="ui">Descargar el proyecto</span>:</p>
+<ul>
+  <li><span class="ui">ZIP del proyecto</span>: código (<span class="ui">app/</span>, <span class="ui">public/</span>, configuraciones), sitio publicado y README.</li>
+  <li><span class="ui">ZIP con Docker</span>: lo mismo más <span class="ui">Dockerfile</span>, <span class="ui">docker-compose.yml</span> y <span class="ui">.dockerignore</span>.</li>
+</ul>
+<p>Si nunca se publicó, el paquete incluye el diseño guardado en ese momento. Requiere permiso para desplegar.</p>
+
+<h3>Exportar una sección para una IA</h3>
+<p>Existe un diálogo <span class="ui">Exportar «&lt;sección&gt;»</span> con tres pestañas:</p>
+<ul>
+  <li><span class="ui">Mensaje para tu IA</span>: «¿Ya instalaste la skill?», <span class="ui">Copiar mensaje</span>, contador de caracteres e imágenes descargables.</li>
+  <li><span class="ui">Skill / reglas</span>: elegir herramienta, ver instrucciones, <span class="ui">Copiar</span> y <span class="ui">Descargar</span>.</li>
+  <li><span class="ui">Código de referencia</span>: HTML y CSS de referencia, <span class="ui">Copiar</span>.</li>
+</ul>
+<div class="note"><span class="label">Sin IA integrada</span>El CMS no usa IA: arma el texto con reglas fijas.</div>
+<div class="warn"><span class="label">Botón no montado</span>En esta versión el botón <span class="ui">Exportar</span> de la sección no aparece en el inspector. Para llevarte el proyecto usa <span class="ui">Desplegar</span> → ZIP.</div>
+
+<!-- ================= 20 ================= -->
+<div class="section-head"><span class="num">20</span><div><h2 class="section">Auditoría antes de publicar</h2><p>Una revisión interna de calidad del sitio.</p></div></div>
+
+<ol class="steps">
+  <li>Pulsa <span class="ui">Auditoría</span> en la barra superior (solo con permiso).</li>
+  <li>Se abre <span class="ui">Auditoría antes de publicar</span>.</li>
+  <li>Elige la <span class="ui">Página</span> y revisa las categorías.</li>
+</ol>
+
+<h3>Qué muestra</h3>
+<ul>
+  <li><span class="ui">Revisado a las &lt;hora&gt;</span>, <span class="ui">Volver a revisar</span> y <span class="ui">Cerrar</span>.</li>
+  <li>Pestañas: <span class="ui">Rendimiento</span>, <span class="ui">Accesibilidad</span>, <span class="ui">Buenas prácticas</span>, <span class="ui">SEO</span> y <span class="ui">Lighthouse real</span>.</li>
+</ul>
+<p>Cada categoría tiene una nota de 0 a 100: <strong>verde desde 90</strong>, <strong>naranja de 50 a 89</strong> y <strong>rojo por debajo de 50</strong>.</p>
+
+<h3>Problemas</h3>
+<p>Cada tarjeta muestra severidad (<span class="ui">Error</span>, <span class="ui">Aviso</span> o <span class="ui">Info</span>), puntos que resta (<span class="ui">−N pts</span>), «Por qué importa», «Cómo arreglarlo» y botones de arreglo. <span class="ui">Ir al elemento</span> salta a la sección. Si el arreglo pide un dato, aparece un campo y <span class="ui">Aplicar</span>.</p>
+
+<h3>Lighthouse real</h3>
+<p>La auditoría interna es orientativa y no mide la velocidad real. Para medirla: publica, abre Chrome y usa la pestaña <span class="ui">Lighthouse</span> o PageSpeed Insights. <span class="ui">Copiar la lista</span> copia las comprobaciones que debe cumplir el HTML publicado.</p>
+<div class="note"><span class="label">No bloquea</span>La auditoría es una guía: no impide publicar.</div>
+
+<!-- ================= 21 ================= -->
+<div class="section-head"><span class="num">21</span><div><h2 class="section">Unidades y equipos</h2><p>Departamentos que comparten el sitio sin pisarse.</p></div></div>
+
+<h3>Dónde están</h3>
+<p>Panel izquierdo <span class="ui">Usuarios</span> → <span class="ui">Equipo</span> → <span class="ui">Gestionar usuarios</span> → <span class="ui">Unidades</span>. Solo el superadministrador administra unidades.</p>
+
+<h3>Crear una unidad</h3>
+<ol class="steps">
+  <li>Escribe el <span class="ui">Nombre de la nueva unidad</span>.</li>
+  <li>Pulsa <span class="ui">Crear</span>.</li>
+</ol>
+
+<h3>Configurar una unidad</h3>
+<ul>
+  <li><span class="ui">Nombre de la unidad</span>.</li>
+  <li><span class="ui">Tipo de la unidad</span>: <span class="ui">Diseñadora</span> o <span class="ui">Desarrolladora</span>.</li>
+  <li><span class="ui">Dueño (recibe las revisiones)</span>, con opción <span class="ui">Sin dueño (las revisa el superadmin)</span>.</li>
+  <li><span class="ui">Todo pasa por revisión (solo el dueño publica directo)</span>.</li>
+  <li><span class="ui">Puede desplegar el sitio</span>.</li>
+  <li><span class="ui">Personas</span>: marca quiénes pertenecen.</li>
+  <li><span class="ui">Borrar unidad</span>.</li>
+</ul>
+
+<h3>Qué cambia para la persona</h3>
+<ul>
+  <li>Ve y edita solo las páginas y archivos de sus unidades; lo global se ve en solo lectura.</li>
+  <li>Puede estar en varias unidades. Si es así, aparece el selector <span class="ui">Unidad</span> en la barra superior; con permiso global aparece <span class="ui">Global</span>.</li>
+  <li>Quien entra a una unidad también pasa a ser miembro del proyecto como editor.</li>
+  <li>Puede publicar y desplegar según el techo de su unidad.</li>
+</ul>
+
+<h3>Mover una página</h3>
+<ol class="steps">
+  <li>En el menú de la página elige <span class="ui">Mover a otra unidad…</span>.</li>
+  <li>Elige la <span class="ui">Unidad de destino</span> y pulsa <span class="ui">Mover</span>.</li>
+</ol>
+<p>La opción <span class="ui">Global (de todos)</span> solo está disponible si puedes editar lo global. La página deja de ser tuya: solo la unidad receptora o quien administra puede devolverla.</p>
+<div class="warn"><span class="label">Borrar una unidad</span>Solo se puede borrar una unidad vacía. Si tiene páginas o archivos, primero hay que reasignarlos.</div>
+<p>Al final del panel, marca personas en <span class="ui">Pueden editar lo global</span>. Lo global incluye cabecera, pie, estilos, medios comunes y servidores.</p>
+
+<!-- ================= 22 ================= -->
+<div class="section-head"><span class="num">22</span><div><h2 class="section">Colaboración en vivo</h2><p>Ver a tu equipo trabajando al mismo tiempo.</p></div></div>
+
+<ul>
+  <li>En la barra superior aparece <span class="ui">En vivo</span> con las iniciales de quienes están conectados. Se muestran hasta 4 personas y <span class="ui">+N</span> si hay más.</li>
+  <li>Al pasar el cursor ves dónde está cada persona y si está en otra rama.</li>
+  <li>Al tocar a alguien que está en otra rama, el editor cambia a su rama.</li>
+  <li>En el lienzo ves sus cursores con nombre y color, y las secciones que tienen seleccionadas. Si están moviendo algo, aparece <span class="ui">moviendo</span>.</li>
+</ul>
+<div class="note"><span class="label">Condiciones</span>Solo se ven entre sí quienes están en la <b>misma rama</b>. Si la organización usa unidades, además deben compartir al menos una unidad. El superadministrador ve a todos; las unidades no lo ven a él.</div>
+<p>Lo que se ve en vivo es una previsualización: guardar sigue siendo responsabilidad de cada persona y depende de sus permisos.</p>
+
+<!-- ================= 23 ================= -->
+<div class="section-head"><span class="num">23</span><div><h2 class="section">Atajos y comandos</h2><p>Para trabajar más rápido.</p></div></div>
+
+<h3>Paleta de comandos</h3>
+<ul>
+  <li>Pulsa <span class="kbd">Ctrl</span> + <span class="kbd">K</span> (o <span class="kbd">⌘</span> + <span class="kbd">K</span>) o el botón <span class="ui">Buscar comandos</span>.</li>
+  <li>Navega con las flechas, elige con <span class="kbd">Enter</span> y retrocede con <span class="kbd">Backspace</span>.</li>
+</ul>
+
+<h3>Comandos de barra</h3>
+<p>Escribe <span class="ui">/</span> en el lienzo para abrir acciones rápidas:</p>
+<table>
+  <thead><tr><th style="width:22%">Comando</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><span class="ui">/crear</span></td><td>Página, Componente o Bloque.</td></tr>
+    <tr><td><span class="ui">/editar</span></td><td>Nombre de página, titular, texto de elemento o componente.</td></tr>
+    <tr><td><span class="ui">/eliminar</span></td><td>Elimina con confirmación.</td></tr>
+    <tr><td><span class="ui">/ocultar</span></td><td>Oculta o muestra página, bloque, elemento, titular, imagen o video.</td></tr>
+    <tr><td><span class="ui">/color</span></td><td>Variable de color.</td></tr>
+    <tr><td><span class="ui">/regla</span></td><td>Propiedad CSS por tipo de elemento y ámbito.</td></tr>
+    <tr><td><span class="ui">/navegar</span></td><td>Salta a otra página o sección.</td></tr>
+  </tbody>
+</table>
+
+<h3>Atajos de teclado</h3>
+<table>
+  <thead><tr><th style="width:42%">Atajo</th><th>Acción</th></tr></thead>
+  <tbody>
+    <tr><td><span class="kbd">V</span> · <span class="kbd">H</span></td><td>Mover · Mano</td></tr>
+    <tr><td><span class="kbd">F</span> · <span class="kbd">T</span></td><td>Marco · Texto</td></tr>
+    <tr><td><span class="kbd">G</span> · <span class="kbd">C</span></td><td>Degradado · Comentar</td></tr>
+    <tr><td><span class="kbd">I</span> · <span class="kbd">Alt+I</span> · <span class="kbd">Alt+V</span></td><td>Subir medio · Imagen desde URL · Video desde URL</td></tr>
+    <tr><td><span class="kbd">Ctrl+Z</span> · <span class="kbd">Ctrl+Mayús+Z</span></td><td>Deshacer · Rehacer</td></tr>
+    <tr><td><span class="kbd">Ctrl+C</span> · <span class="kbd">Ctrl+V</span> · <span class="kbd">Ctrl+D</span></td><td>Copiar · Pegar · Duplicar</td></tr>
+    <tr><td><span class="kbd">Ctrl+G</span> · <span class="kbd">Ctrl+Mayús+G</span></td><td>Agrupar en tarjeta · Deshacer tarjeta</td></tr>
+    <tr><td><span class="kbd">Ctrl+]</span> · <span class="kbd">Ctrl+[</span></td><td>Subir capa · Bajar capa</td></tr>
+    <tr><td><span class="kbd">Supr</span> · <span class="kbd">Esc</span></td><td>Eliminar · Deseleccionar</td></tr>
+    <tr><td><span class="kbd">Ctrl</span> + arrastrar</td><td>Mover libremente sin ajustar a la cuadrícula</td></tr>
+  </tbody>
+</table>
+<p>Puedes personalizar los atajos en <span class="ui">Atajos de teclado</span>. Si un atajo ya está en uso, verás: «Ese atajo ya lo usa «X».» <span class="kbd">Esc</span> cancela y <span class="kbd">Delete</span> limpia.</p>
+
+<!-- ================= 24 ================= -->
+<div class="section-head"><span class="num">24</span><div><h2 class="section">Problemas comunes</h2><p>Mensajes frecuentes y cómo resolverlos.</p></div></div>
+
+<table>
+  <thead><tr><th style="width:52%">Ves esto…</th><th>Qué significa y qué hacer</th></tr></thead>
+  <tbody>
+    <tr><td>«ImageKit no está configurado en este servidor…»</td><td>No se pueden subir archivos. Avisa a quien administra el servidor.</td></tr>
+    <tr><td>«Los videos solo se pueden agregar con un enlace (URL).»</td><td>Estás arrastrando un archivo de video al lienzo. Usa <span class="ui">Video desde URL</span>.</td></tr>
+    <tr><td>«No se pudo cargar «nombre». Revisa que el enlace sea público y directo.»</td><td>La URL no es accesible. Comprueba que sea pública y directa.</td></tr>
+    <tr><td>«Solo los administradores pueden eliminar imágenes de la biblioteca global.»</td><td>No tienes permiso de superadministrador para borrar de la biblioteca.</td></tr>
+    <tr><td>«Ya enviaste esta rama: espera a que la revisen.»</td><td>Tu revisión está pendiente. Espera la respuesta.</td></tr>
+    <tr><td>«Publica primero: se despliega lo que está publicado.»</td><td>Debes publicar antes de desplegar.</td></tr>
+    <tr><td>«Tiene N versiones sin fusionar. Se perderán.»</td><td>Estás eliminando un borrador con trabajo. Confirma solo si es correcto.</td></tr>
+    <tr><td>«Este sitio aún no se publicó.»</td><td>La vista pública <span class="ui">/ver</span> no tiene contenido publicado todavía.</td></tr>
+  </tbody>
+</table>
+
+<div class="tip"><span class="label">Regla de oro al editar</span>Antes de cambiar algo masivo, pregúntate: ¿quiero cambiar <b>esta instancia</b> o <b>todas las copias del componente</b>? Es la diferencia entre «Este bloque» y editar en el constructor.</div>
+
+<div class="ok"><span class="label">Fin del manual</span>Este documento resume lo que puedes hacer con Portal. Si algo no aparece en tu pantalla, puede depender de tu rol, de tu unidad o de los permisos que te dieron. Consulta con quien administra el proyecto.</div>
+
+</body>
+</html>
