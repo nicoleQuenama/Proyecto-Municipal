@@ -12,6 +12,8 @@ import {
 } from "../media/media-usage";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import type { ProjectMediaAsset } from "../site/types";
+import { UnitPicker } from "../units/unit-picker";
+import { useUnitNames } from "../units/use-unit-names";
 
 const COMMON_TAG_SUGGESTIONS = [
   "Día del Peatón",
@@ -44,6 +46,9 @@ export function MediaTab() {
   const [uploadTitle, setUploadTitle] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
+  // Para quién es el archivo que se sube o se agrega (`null` = global; `undefined` = sin elegir todavía).
+  const [uploadUnitId, setUploadUnitId] = useState<string | null | undefined>(undefined);
+  const [urlUnitId, setUrlUnitId] = useState<string | null | undefined>(undefined);
 
   // Modal de confirmación o borrado seguro
   const [deleteTarget, setDeleteTarget] = useState<ProjectMediaAsset | null>(null);
@@ -61,6 +66,19 @@ export function MediaTab() {
   const { currentUser } = useAuth();
   const canEdit = hasPermission(currentUser, "editContent");
   const isSuperAdmin = currentUser?.role === "superadmin";
+
+  // A qué unidades puede ir un archivo: las suyas (y lo global, con permiso) o, si administra, cualquiera de la organización.
+  const unitNames = useUnitNames();
+  const myUnits = currentUser?.units;
+  const canChooseGlobal = isSuperAdmin || currentUser?.canEditGlobal === true;
+  const destinationUnits = myUnits ?? unitNames;
+  // Hay que elegir destino cuando hay más de uno posible (varias unidades, o unidad y global): en una unidad sola no hace falta.
+  const needsDestination =
+    myUnits !== undefined ? myUnits.length + (canChooseGlobal ? 1 : 0) > 1 : unitNames.length > 0;
+  // Con qué se abre el selector: la unidad en la que trabaja; quien administra empieza eligiendo a mano.
+  const prefillUnit = (): string | null | undefined => (myUnits !== undefined ? site.activeUnitId ?? null : undefined);
+  const destinationName = (unitId: string | null | undefined): string =>
+    unitId ? (destinationUnits.find((unit) => unit.id === unitId)?.name ?? "tu unidad") : "lo global";
 
   const showFeedback = (text: string) => {
     setFeedback(text);
@@ -118,6 +136,7 @@ export function MediaTab() {
     setUploadTitle("");
     setPendingFile(null);
     setPendingPreviewUrl(null);
+    setUploadUnitId(prefillUnit());
     setUploadModalOpen(true);
   };
 
@@ -147,10 +166,14 @@ export function MediaTab() {
   // Subir el archivo confirmado desde el modal
   const handleCommitUploadModal = async () => {
     if (!pendingFile || !pendingPreviewUrl || !canEdit) return;
+    if (needsDestination && uploadUnitId === undefined) {
+      showFeedback("Elige para quién es este archivo.");
+      return;
+    }
     showFeedback("Subiendo…");
     let uploadedUrl: string;
     try {
-      uploadedUrl = await uploadMedia(pendingFile);
+      uploadedUrl = await uploadMedia(pendingFile, uploadUnitId);
     } catch (failure) {
       showFeedback(failure instanceof Error ? failure.message : "No se pudo subir el archivo.");
       return;
@@ -172,6 +195,8 @@ export function MediaTab() {
       tags: derivedKeywords,
       createdAt: Date.now(),
       local: false,
+      // Sin destino elegido no se pone: la unidad activa decide (igual que el servidor).
+      ...(uploadUnitId !== undefined ? { unitId: uploadUnitId } : {}),
     };
 
     dispatch({ type: "project-media/add", asset: newAsset });
@@ -180,7 +205,11 @@ export function MediaTab() {
     setPendingPreviewUrl(null);
     setUploadTag("");
     setUploadTitle("");
-    showFeedback(`Subido y catalogado en «${cleanTag}»`);
+    showFeedback(
+      needsDestination
+        ? `Subido para ${destinationName(uploadUnitId)} y catalogado en «${cleanTag}»`
+        : `Subido y catalogado en «${cleanTag}»`,
+    );
   };
 
   // Drag and drop rápido sobre la zona principal
@@ -202,6 +231,7 @@ export function MediaTab() {
         setPendingPreviewUrl(dataUrl);
         setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
         setUploadTag(selectedTag || "Comunidad");
+        setUploadUnitId(prefillUnit());
         setUploadModalOpen(true);
       } catch {
         showFeedback(`Error al procesar archivo`);
@@ -212,6 +242,10 @@ export function MediaTab() {
   // Agregar recurso mediante URL
   const handleAddByUrl = () => {
     if (!urlInput.trim() || !canEdit) return;
+    if (needsDestination && urlUnitId === undefined) {
+      showFeedback("Elige para quién es este archivo.");
+      return;
+    }
     const cleanUrl = urlInput.trim();
     const isVideo =
       urlKind === "video" ||
@@ -231,6 +265,7 @@ export function MediaTab() {
       tags: derivedKeywords,
       createdAt: Date.now(),
       local: false,
+      ...(urlUnitId !== undefined ? { unitId: urlUnitId } : {}),
     };
 
     dispatch({ type: "project-media/add", asset: newAsset });
@@ -375,7 +410,10 @@ export function MediaTab() {
         <button
           type="button"
           disabled={!canEdit}
-          onClick={() => setUrlModalOpen(true)}
+          onClick={() => {
+            setUrlUnitId(prefillUnit());
+            setUrlModalOpen(true);
+          }}
           className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-canvas/60 text-xs font-medium text-ink transition-colors hover:bg-hover active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-dim">
@@ -451,6 +489,20 @@ export function MediaTab() {
             onChange={(e) => setUrlTag(e.target.value)}
             className="h-8 rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent"
           />
+          {needsDestination && (
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-ink">
+                ¿Para quién es este archivo? <span className="text-accent">*</span>
+              </span>
+              <UnitPicker
+                units={destinationUnits}
+                value={urlUnitId}
+                onChange={setUrlUnitId}
+                allowGlobal={canChooseGlobal}
+                label="Para quién es este archivo"
+              />
+            </div>
+          )}
           <input
             type="text"
             placeholder="Nombre o descripción (opcional)"
@@ -469,7 +521,7 @@ export function MediaTab() {
             <button
               type="button"
               onClick={handleAddByUrl}
-              disabled={!urlInput.trim()}
+              disabled={!urlInput.trim() || (needsDestination && urlUnitId === undefined)}
               className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50 cursor-pointer"
             >
               Guardar en Media
@@ -816,10 +868,35 @@ export function MediaTab() {
                 </div>
               )}
 
-              {/* Paso 2: Selección del archivo y título */}
+              {/* Paso 2: para quién es el archivo (solo cuando hay algo que elegir) */}
+              {needsDestination ? (
+                <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+                  <label className="font-semibold text-ink">
+                    2. ¿Para quién es este archivo? <span className="text-accent">*</span>
+                  </label>
+                  <UnitPicker
+                    units={destinationUnits}
+                    value={uploadUnitId}
+                    onChange={setUploadUnitId}
+                    allowGlobal={canChooseGlobal}
+                    label="Para quién es este archivo"
+                  />
+                  <p className="text-[10px] leading-snug text-ink-dim">
+                    Cada unidad ve solo sus archivos{canChooseGlobal ? "; lo global lo ve todo el equipo" : ""}.
+                  </p>
+                </div>
+              ) : (
+                myUnits?.length === 1 && (
+                  <p className="border-t border-line pt-3 text-[11px] text-ink-dim">
+                    Se guardará en tu unidad ({myUnits[0].name}).
+                  </p>
+                )
+              )}
+
+              {/* Paso 3: Selección del archivo y título */}
               <div className="flex flex-col gap-2 pt-1 border-t border-line">
                 <span className="font-semibold text-ink">
-                  2. Si es una foto nueva, selecciónala aquí:
+                  {needsDestination ? "3." : "2."} Si es una foto nueva, selecciónala aquí:
                 </span>
 
                 <input
@@ -899,7 +976,7 @@ export function MediaTab() {
               </button>
               <button
                 type="button"
-                disabled={!pendingFile || !pendingPreviewUrl}
+                disabled={!pendingFile || !pendingPreviewUrl || (needsDestination && uploadUnitId === undefined)}
                 onClick={handleCommitUploadModal}
                 className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 disabled:opacity-50 cursor-pointer"
               >

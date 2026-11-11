@@ -15,9 +15,11 @@ import { CodeIcon, EyeIcon, EyeOffIcon } from "../viewport/icons";
 import { useViewport } from "../viewport/viewport-context";
 import { useWorkbench } from "../workbench/workbench-context";
 import { MovePageItem } from "../units/move-page-item";
+import { storeUnit } from "../units/active-unit";
 import { isPageReadOnly } from "../units/own-pages";
 import { UnitTag } from "../units/unit-tag";
 import { useUnitNames } from "../units/use-unit-names";
+import { useActiveUnit } from "../units/use-active-unit";
 import { getUnitColor, GLOBAL_UNIT_COLOR } from "../units/unit-colors";
 
 const iconButton =
@@ -407,6 +409,9 @@ export function PagesTab() {
   const dispatch = useSiteDispatch();
   const { unitFilter, setUnitFilter } = useViewport();
   const unitNames = useUnitNames();
+  const { currentUser } = useAuth();
+  const { scoped, unitId } = useActiveUnit();
+  const canGlobal = currentUser?.canEditGlobal === true;
   const [dynamic, setDynamic] = useState(false);
 
   const createPage = (name: string) => {
@@ -417,10 +422,24 @@ export function PagesTab() {
     if (dynamic) dispatch({ type: "page/route", id, route: `/${slugify(name)}/:id` });
   };
 
-  const shownPages =
-    unitFilter === ""
+  // Quien está sujeto a unidades solo ve las páginas de la suya (las globales y las ajenas no: no tienen nada que ver).
+  // El resto (superadministrador, organizaciones sin unidades) filtra con los chips de siempre.
+  const shownPages = scoped
+    ? pages.filter((page) => page.unitId === unitId)
+    : unitFilter === ""
       ? pages
       : pages.filter((page) => (unitFilter === "global" ? !page.unitId : page.unitId === unitFilter));
+
+  // Para quien está sujeto a unidades, elegir un chip es cambiar de unidad activa (el lienzo y las subidas lo siguen).
+  const switchUnit = (next: string | null) => {
+    storeUnit(next);
+    dispatch({ type: "unit/set-active", unitId: next });
+  };
+  const chipClass = (active: boolean) =>
+    `inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+      active ? "bg-accent text-white font-medium shadow-xs" : "bg-panel text-ink hover:bg-hover border border-line"
+    }`;
+  const showChips = scoped ? ((currentUser?.units?.length ?? 0) > 0 || canGlobal) : unitNames.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -436,11 +455,13 @@ export function PagesTab() {
         </label>
       </InlineForm>
 
-      {unitNames.length > 0 && (
+      {showChips && (
         <div className="flex flex-col gap-1.5 border-b border-line pb-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-ink-dim uppercase text-[10px] tracking-wider">Categorizar por unidad</span>
-            {unitFilter && (
+            <span className="font-semibold text-ink-dim uppercase text-[10px] tracking-wider">
+              {scoped ? "Unidad en la que trabajas" : "Categorizar por unidad"}
+            </span>
+            {!scoped && unitFilter && (
               <button
                 type="button"
                 onClick={() => setUnitFilter("")}
@@ -451,59 +472,83 @@ export function PagesTab() {
             )}
           </div>
           <div className="flex flex-wrap gap-1">
-            <button
-              type="button"
-              onClick={() => setUnitFilter("")}
-              className={`rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                unitFilter === ""
-                  ? "bg-accent text-white font-medium shadow-xs"
-                  : "bg-panel text-ink hover:bg-hover border border-line"
-              }`}
-            >
-              Todas ({pages.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setUnitFilter("global")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                unitFilter === "global"
-                  ? "bg-accent text-white font-medium shadow-xs"
-                  : "bg-panel text-ink hover:bg-hover border border-line"
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{ backgroundColor: GLOBAL_UNIT_COLOR.border }}
-              />
-              <span>Global</span>
-              <span className="text-[10px] opacity-75">({pages.filter((p) => !p.unitId).length})</span>
-            </button>
-            {unitNames.map((unit) => {
-              const count = pages.filter((p) => p.unitId === unit.id).length;
-              const active = unitFilter === unit.id;
-              const unitColor = getUnitColor(unit.id);
-              return (
+            {scoped ? (
+              <>
+                {canGlobal && (
+                  <button type="button" onClick={() => switchUnit(null)} className={chipClass(unitId === null)}>
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: GLOBAL_UNIT_COLOR.border }}
+                    />
+                    <span>Global</span>
+                    <span className="text-[10px] opacity-75">({pages.filter((p) => !p.unitId).length})</span>
+                  </button>
+                )}
+                {currentUser?.units?.map((unit) => (
+                  <button
+                    key={unit.id}
+                    type="button"
+                    onClick={() => switchUnit(unit.id)}
+                    className={chipClass(unitId === unit.id)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: getUnitColor(unit.id).border }}
+                    />
+                    <span>{unit.name}</span>
+                    <span className="text-[10px] opacity-75">({pages.filter((p) => p.unitId === unit.id).length})</span>
+                  </button>
+                ))}
+              </>
+            ) : (
+              <>
                 <button
-                  key={unit.id}
                   type="button"
-                  onClick={() => setUnitFilter(unit.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
-                    active
+                  onClick={() => setUnitFilter("")}
+                  className={`rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${
+                    unitFilter === ""
                       ? "bg-accent text-white font-medium shadow-xs"
                       : "bg-panel text-ink hover:bg-hover border border-line"
                   }`}
                 >
+                  Todas ({pages.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUnitFilter("global")}
+                  className={chipClass(unitFilter === "global")}
+                >
                   <span
                     aria-hidden="true"
                     className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: unitColor.border }}
+                    style={{ backgroundColor: GLOBAL_UNIT_COLOR.border }}
                   />
-                  <span>{unit.name}</span>
-                  <span className="text-[10px] opacity-75">({count})</span>
+                  <span>Global</span>
+                  <span className="text-[10px] opacity-75">({pages.filter((p) => !p.unitId).length})</span>
                 </button>
-              );
-            })}
+                {unitNames.map((unit) => {
+                  const count = pages.filter((p) => p.unitId === unit.id).length;
+                  return (
+                    <button
+                      key={unit.id}
+                      type="button"
+                      onClick={() => setUnitFilter(unit.id)}
+                      className={chipClass(unitFilter === unit.id)}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: getUnitColor(unit.id).border }}
+                      />
+                      <span>{unit.name}</span>
+                      <span className="text-[10px] opacity-75">({count})</span>
+                    </button>
+                  );
+                })}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -511,13 +556,15 @@ export function PagesTab() {
       {shownPages.length === 0 ? (
         <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-line p-4 text-center text-xs text-ink-dim">
           <p>No hay páginas en esta unidad.</p>
-          <button
-            type="button"
-            onClick={() => setUnitFilter("")}
-            className="text-xs text-accent hover:underline cursor-pointer"
-          >
-            Ver todas las páginas
-          </button>
+          {!scoped && (
+            <button
+              type="button"
+              onClick={() => setUnitFilter("")}
+              className="text-xs text-accent hover:underline cursor-pointer"
+            >
+              Ver todas las páginas
+            </button>
+          )}
         </div>
       ) : (
         <ul className="flex flex-col gap-0.5">

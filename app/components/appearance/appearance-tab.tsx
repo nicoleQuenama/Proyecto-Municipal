@@ -54,9 +54,9 @@ export function AppearanceTab() {
   // Si el componente elegido se eliminó, se vuelve al ámbito global.
   const component =
     choice.kind === "component" ? site.components.find((c) => c.id === choice.componentId) : undefined;
-  // Solo el superadministrador puede trabajar en el ámbito global (paleta, colores y paddings del sitio).
+  // Lo global se puede consultar sin permiso (se muestra bloqueado); el componente eliminado vuelve a la página.
   const fallback: ScopeChoice = canManageGlobals ? { kind: "global" } : { kind: "page" };
-  const activeKind = choice.kind === "component" && !component ? fallback.kind : choice.kind === "global" && !canManageGlobals ? "page" : choice.kind;
+  const activeKind = choice.kind === "component" && !component ? fallback.kind : choice.kind;
 
   const scope: StyleScope =
     activeKind === "page"
@@ -89,7 +89,8 @@ export function AppearanceTab() {
       {!canManageGlobals && (
         <p className="rounded-lg bg-hover px-3 py-2 text-[11px] text-ink-dim">
           La paleta, las tipografías y los estilos globales son el manual de marca: los define el superadministrador y no
-          se pueden cambiar ni borrar. Puedes usarlos y ampliarlos con tus propias variables y reglas.{site.brandRequired ? " Ahora el uso de la marca es obligatorio: usa sus variables en colores y tipografías." : ""}
+          se pueden cambiar ni borrar. Puedes consultarlos en el ámbito «Todo el sitio» y usarlos y ampliarlos con tus
+          propias variables y reglas.{site.brandRequired ? " Ahora el uso de la marca es obligatorio: usa sus variables en colores y tipografías." : ""}
         </p>
       )}
 
@@ -129,6 +130,7 @@ export function AppearanceTab() {
                 styles={site}
                 onSet={(prop, value) => dispatch({ type: "rule/set", scope, target, prop, value })}
                 onClear={() => dispatch({ type: "rule/clear", scope, target })}
+                canEdit={canManageGlobals || scope.kind !== "global"}
                 restrictColorsToPalette={!canManageGlobals && !!site.brandRequired}
               />
             ))}

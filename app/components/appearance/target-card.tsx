@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Badge } from "../ui/badge";
-import { TARGET_DEFS } from "../styles/registry";
+import { PROP_DEFS, TARGET_DEFS } from "../styles/registry";
 import { availableVariables, inheritedValue, resolveValue } from "../styles/resolve";
 import type {
   StyleContext,
@@ -24,11 +24,24 @@ interface TargetCardProps {
   styles: StyleState;
   onSet: (prop: StyleProp, value: string | null) => void;
   onClear: () => void;
+  /** Sin permiso (estilos globales de otro) se lista en solo lectura: se ve, no se toca. */
+  canEdit?: boolean;
   restrictColorsToPalette?: boolean;
 }
 
 /** Las reglas de un tipo de elemento en el ámbito elegido. */
-export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onClear, restrictColorsToPalette = false }: TargetCardProps) {
+export function TargetCard({
+  target,
+  label,
+  rule,
+  scope,
+  ctx,
+  styles,
+  onSet,
+  onClear,
+  canEdit = true,
+  restrictColorsToPalette = false,
+}: TargetCardProps) {
   const [open, setOpen] = useState(false);
   const def = TARGET_DEFS[target];
   const count = Object.keys(rule?.props ?? {}).length;
@@ -52,27 +65,54 @@ export function TargetCard({ target, label, rule, scope, ctx, styles, onSet, onC
 
       {open && (
         <div className="flex flex-col gap-3 border-t border-line p-3">
-          {def.props.map((prop) => (
-            <StyleField
-              key={prop}
-              prop={prop}
-              raw={rule?.props[prop]}
-              inherited={inheritedValue(styles, ctx, target, prop, scope)}
-              variables={variables}
-              resolve={(value) => resolveValue(value, styles.variables, ctx)}
-              onChange={(value) => onSet(prop, value)}
-              restrictToPalette={restrictColorsToPalette}
-            />
-          ))}
+          {canEdit ? (
+            <>
+              {def.props.map((prop) => (
+                <StyleField
+                  key={prop}
+                  prop={prop}
+                  raw={rule?.props[prop]}
+                  inherited={inheritedValue(styles, ctx, target, prop, scope)}
+                  variables={variables}
+                  resolve={(value) => resolveValue(value, styles.variables, ctx)}
+                  onChange={(value) => onSet(prop, value)}
+                  restrictToPalette={restrictColorsToPalette}
+                />
+              ))}
 
-          {count > 0 && (
-            <button
-              type="button"
-              onClick={onClear}
-              className="h-7 self-start rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400 cursor-pointer"
-            >
-              Quitar todas las reglas de aquí
-            </button>
+              {count > 0 && (
+                <button
+                  type="button"
+                  onClick={onClear}
+                  className="h-7 self-start rounded-md px-2 text-xs text-ink-dim hover:bg-hover hover:text-red-400 cursor-pointer"
+                >
+                  Quitar todas las reglas de aquí
+                </button>
+              )}
+            </>
+          ) : (
+            count > 0 ? (
+              <ul className="flex flex-col gap-1.5">
+                {def.props
+                  .filter((prop) => rule?.props[prop] !== undefined)
+                  .map((prop) => {
+                    const value = resolveValue(rule?.props[prop] ?? "", styles.variables, ctx);
+                    return (
+                      <li key={prop} className="flex items-center gap-2 text-xs">
+                        <span className="w-40 shrink-0 truncate text-ink-dim">{PROP_DEFS[prop].label}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-ink">
+                          {PROP_DEFS[prop].kind === "color" && (
+                            <span aria-hidden="true" className="size-3 shrink-0 rounded-full border border-line" style={{ background: value }} />
+                          )}
+                          <span className="truncate">{value}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            ) : (
+              <p className="text-xs text-ink-dim">Sin reglas definidas en este ámbito.</p>
+            )
           )}
         </div>
       )}

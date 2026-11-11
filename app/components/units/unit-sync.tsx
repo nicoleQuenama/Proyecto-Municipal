@@ -28,6 +28,15 @@ export function UnitSync() {
 
   useEffect(() => setUploadUnit(site.activeUnitId), [site.activeUnitId]);
 
+  // Fuera de la unidad activa no hay nada que editar: al cambiar de unidad (o al cargar con una página ajena como
+  // actual), la página actual pasa a ser la primera de la suya.
+  useEffect(() => {
+    if (!currentUser?.units) return;
+    const mine = site.pages.filter((page) => page.unitId === site.activeUnitId);
+    if (mine.length === 0 || mine.some((page) => page.id === site.currentPageId)) return;
+    siteDispatch({ type: "page/select", id: mine[0].id });
+  }, [currentUser, site.activeUnitId, site.pages, site.currentPageId, siteDispatch]);
+
   // Quien trabaja con unidades solo edita sus páginas (y las globales, con permiso): se le da ese alcance.
   useEffect(() => {
     if (!currentUser?.units) return;

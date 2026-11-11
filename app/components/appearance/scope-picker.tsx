@@ -25,7 +25,7 @@ interface ScopePickerProps {
   pageName: string;
   components: ComponentDef[];
   onChange: (choice: ScopeChoice) => void;
-  /** Solo el superadministrador puede aplicar reglas a todo el sitio. */
+  /** Cambiar lo global es del superadministrador o de quien tiene el permiso; el resto lo consulta en solo lectura. */
   canManageGlobals: boolean;
 }
 
@@ -38,7 +38,7 @@ export function ScopePicker({ choice, pageName, components, onChange, canManageG
         onChange={(e) => onChange(fromValue(e.target.value))}
         className="h-9 rounded-md border border-line bg-canvas px-2 text-[13px] text-ink outline-none focus:border-accent [&>option]:bg-panel [&>optgroup]:bg-panel"
       >
-        {canManageGlobals && <option value="global">Todo el sitio (global)</option>}
+        <option value="global">Todo el sitio (global){canManageGlobals ? "" : " · solo lectura"}</option>
         <option value="page">Solo esta página: {pageName}</option>
         <optgroup label="Un componente concreto">
           {components.map((component) => (

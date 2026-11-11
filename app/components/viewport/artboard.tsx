@@ -38,6 +38,7 @@ import { FullBleedContext, useWidth } from "./page-width";
 import { useAuth } from "../auth/auth-context";
 import { canEditBlock } from "../auth/access";
 import { useUnitNames } from "../units/use-unit-names";
+import { useActiveUnit } from "../units/use-active-unit";
 import { getUnitColor } from "../units/unit-colors";
 import { useAutoFit } from "./use-auto-fit";
 import { isAdaptive } from "../responsive/devices";
@@ -533,6 +534,7 @@ export function CanvasPages() {
   const { pages, currentPageId } = useSite();
   const { currentUser } = useAuth();
   const { focusMode, unitFilter, setUnitFilter } = useViewport();
+  const { scoped, unitId } = useActiveUnit();
 
   if (mode === "preview") return <><ProductionView /><ModalLayer /></>;
 
@@ -555,9 +557,11 @@ export function CanvasPages() {
     ? pages.filter((page) => page.blocks.some((block) => canEditBlock(currentUser, page.id, block.id)))
     : pages;
   const accessible = mine.length > 0 ? mine : pages;
-  // Si el filtro deja el lienzo vacío se ofrece volver a «Todas las unidades».
-  const shown =
-    unitFilter === ""
+  // Quien está sujeto a unidades solo dibuja las páginas de su unidad activa (lo global y lo ajeno, no: no tiene nada que editar ahí).
+  // El resto filtra con el desplegable de la barra; si deja el lienzo vacío, se ofrece volver a «Todas las unidades».
+  const shown = scoped
+    ? accessible.filter((page) => page.unitId === unitId)
+    : unitFilter === ""
       ? accessible
       : accessible.filter((page) => (unitFilter === "global" ? !page.unitId : page.unitId === unitFilter));
 
@@ -565,14 +569,16 @@ export function CanvasPages() {
     <>
       {shown.length === 0 ? (
         <p role="status" className="flex flex-col items-center gap-2 px-8 py-16 text-center text-sm text-ink-dim">
-          No hay páginas en {unitFilter === "global" ? "Global" : "esta unidad"}.
-          <button
-            type="button"
-            onClick={() => setUnitFilter("")}
-            className="rounded-md border border-line px-3 py-1.5 text-xs text-ink hover:bg-hover cursor-pointer"
-          >
-            Ver todas las unidades
-          </button>
+          {scoped ? "Tu unidad todavía no tiene páginas: créalas en el panel «Páginas»." : `No hay páginas en ${unitFilter === "global" ? "Global" : "esta unidad"}.`}
+          {!scoped && (
+            <button
+              type="button"
+              onClick={() => setUnitFilter("")}
+              className="rounded-md border border-line px-3 py-1.5 text-xs text-ink hover:bg-hover cursor-pointer"
+            >
+              Ver todas las unidades
+            </button>
+          )}
         </p>
       ) : (
         <div className="flex w-max items-start gap-8">

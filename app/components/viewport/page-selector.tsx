@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { routeOf } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { UnitTag } from "../units/unit-tag";
+import { useActiveUnit } from "../units/use-active-unit";
 import { TopLayer } from "../ui/top-layer";
 import { useDismiss } from "../ui/use-dismiss";
 import { idle, pill } from "./toolbar-parts";
@@ -12,6 +13,7 @@ import { idle, pill } from "./toolbar-parts";
 export function PageSelector() {
   const { pages, currentPageId } = useSite();
   const dispatch = useSiteDispatch();
+  const { scoped, unitId } = useActiveUnit();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -19,11 +21,17 @@ export function PageSelector() {
 
   useDismiss(ref, open, () => setOpen(false));
 
-  const current = pages.find((page) => page.id === currentPageId) ?? pages[0];
+  // Quien está sujeto a unidades solo pasa por las páginas de su unidad: las demás no se pueden ni visitar.
+  const visible = scoped ? pages.filter((page) => page.unitId === unitId) : pages;
+  const current =
+    visible.find((page) => page.id === currentPageId) ??
+    visible[0] ??
+    pages.find((page) => page.id === currentPageId) ??
+    pages[0];
   const term = query.trim().toLowerCase();
   const matches = useMemo(
-    () => pages.filter((page) => page.name.toLowerCase().includes(term)),
-    [pages, term],
+    () => visible.filter((page) => page.name.toLowerCase().includes(term)),
+    [visible, term],
   );
 
   const select = (id: string) => {
@@ -87,7 +95,9 @@ export function PageSelector() {
             ))}
           </ul>
           {matches.length === 0 && (
-            <p className="px-2 py-3 text-center text-[11px] text-ink-dim">No hay páginas con ese nombre.</p>
+            <p className="px-2 py-3 text-center text-[11px] text-ink-dim">
+              {scoped ? "Tu unidad todavía no tiene páginas." : "No hay páginas con ese nombre."}
+            </p>
           )}
         </TopLayer>
       )}

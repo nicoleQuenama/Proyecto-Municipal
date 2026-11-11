@@ -154,8 +154,8 @@ export function VariablesSection({ scope, ctx, variables, dispatch, canEdit = tr
     <Collapsible title={`Paleta y variables (${own.length})`} defaultOpen={!canEdit}>
       {!canEdit && (
         <p className="rounded-md bg-hover px-3 py-2 text-[11px] text-ink-dim">
-          Estas son tus variables. La paleta de la marca (global) la administra el superadministrador: puedes usarla, pero
-          no cambiarla ni borrarla.
+          Esta es la paleta global del sitio: se consulta, pero la define quien administra lo global. Úsala en tus
+          páginas con sus variables, sin cambiarla ni borrarla.
         </p>
       )}
 

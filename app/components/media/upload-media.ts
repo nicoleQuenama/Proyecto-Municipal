@@ -15,11 +15,13 @@ export const setUploadUnit = (unitId: string | null | undefined): void => {
 /**
  * Sube una imagen o un video del equipo a ImageKit (por el servidor, que guarda la clave) y devuelve su dirección pública:
  * eso es lo que se guarda en el diseño. Nunca viaja el archivo dentro del sitio (ni como dato incrustado ni como enlace temporal).
+ * `unit` (`null` = global) es el destino elegido a mano; sin él, se usa la unidad en la que la persona trabaja.
  */
-export async function uploadMedia(file: File): Promise<string> {
+export async function uploadMedia(file: File, unit?: string | null): Promise<string> {
   const form = new FormData();
   form.set("file", file);
-  if (uploadUnit !== undefined) form.set("unit", uploadUnit ?? "global");
+  const chosen = unit !== undefined ? unit : uploadUnit;
+  if (chosen !== undefined) form.set("unit", chosen ?? "global");
   const response = await fetch("/api/cms/assets", { method: "POST", headers: { [REQUEST_HEADER]: "1" }, body: form }).catch(() => null);
   if (!response) throw new Error(`No se pudo subir «${file.name}»: sin conexión.`);
   const body = (await response.json().catch(() => ({}))) as { media?: { url: string }; error?: string };
