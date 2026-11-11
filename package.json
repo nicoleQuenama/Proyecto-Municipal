@@ -11,10 +11,13 @@
     "lint": "eslint",
     "test": "vitest run",
     "db:up": "docker compose --env-file .env.local -f db/docker-compose.yml up -d",
-    "db:setup": "node --env-file-if-exists=.env.local scripts/db-setup.mts",
-    "maintenance": "node --env-file-if-exists=.env.local scripts/maintenance.mts",
-    "org:create": "node --env-file-if-exists=.env.local scripts/org-create.mts",
-    "db:seed": "node --env-file-if-exists=.env.local scripts/db-seed.mts"
+    "db:setup": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-setup.mts",
+    "maintenance": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/maintenance.mts",
+    "org:create": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/org-create.mts",
+    "db:seed": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-seed.mts"
+  },
+  "engines": {
+    "node": ">=22.9"
   },
   "dependencies": {
     "@babel/generator": "^7.29.8",
