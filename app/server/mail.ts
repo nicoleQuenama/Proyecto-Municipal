@@ -17,15 +17,43 @@ const smtpPort = (() => {
 // No desactives la verificación del certificado (rejectUnauthorized) en producción.
 const smtpSecure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : smtpPort === 465;
 const smtpUser = process.env.SMTP_USER?.trim();
-const smtpPass = process.env.SMTP_PASS;
+// Gmail muestra la contraseña de aplicación en grupos de 4 y a veces se pega con espacios.
+// Se quitan los espacios para que la autenticación funcione también en ese caso.
+const smtpPass = process.env.SMTP_PASS?.trim().replace(/\s+/g, "");
 const from = process.env.SMTP_FROM?.trim() || "Portal <no-reply@localhost>";
 
-// Un solo transportador por proceso, aunque Next recargue los módulos en desarrollo.
-const shared = globalThis as unknown as { portalMailer?: Transporter | null };
+// Si hay usuario pero no contraseña (o al revés) el servidor SMTP responde
+// "530 Authentication Required" / "535 Authentication failed". Es un error de
+// configuración: mejor detectarlo aquí que esperar la respuesta del servidor.
+const smtpMisconfigured = Boolean(smtpHost) && Boolean(smtpUser) !== Boolean(smtpPass);
 
+// Un solo transportador por proceso, aunque Next recargue los módulos en desarrollo.
+// La clave incluye la configuración para recrearlo si cambian las variables de entorno
+// sin reiniciar el proceso (así no se queda cacheado un transportador sin credenciales).
+const shared = globalThis as unknown as {
+  portalMailer?: Transporter | null;
+  portalMailerKey?: string;
+};
+const mailerKey = JSON.stringify([smtpHost, smtpPort, smtpSecure, smtpUser, smtpPass, from]);
+
+/** `true` cuando hay servidor SMTP y credenciales completas (o un relay sin autenticación). */
+export function isMailConfigured(): boolean {
+  return Boolean(smtpHost) && !smtpMisconfigured;
+}
+
+/** Crea (o reutiliza) el transportador SMTP según la configuración actual. */
 function mailer(): Transporter | null {
-  if (shared.portalMailer !== undefined) return shared.portalMailer;
+  if (shared.portalMailer !== undefined && shared.portalMailerKey === mailerKey) return shared.portalMailer;
+  shared.portalMailerKey = mailerKey;
   if (!smtpHost) {
+    shared.portalMailer = null;
+    return null;
+  }
+  if (smtpMisconfigured) {
+    console.error(
+      "[mail] Configuración SMTP incompleta: SMTP_USER y SMTP_PASS deben definirse juntos. " +
+        (smtpUser ? "Falta SMTP_PASS (en Gmail, una contraseña de aplicación)." : "Falta SMTP_USER."),
+    );
     shared.portalMailer = null;
     return null;
   }
@@ -35,6 +63,9 @@ function mailer(): Transporter | null {
     secure: smtpSecure,
     // Solo se autentica si hay usuario y contraseña; si no, se conecta sin auth.
     auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+    // Verificación TLS explícita: no heredar NODE_TLS_REJECT_UNAUTHORIZED=0 del entorno
+    // (ese flag global se usa en local por el escaneo SSL de Sophos).
+    tls: { rejectUnauthorized: true, servername: smtpHost },
     // Evita que una petición quede colgada si el servidor SMTP no responde.
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
@@ -43,24 +74,53 @@ function mailer(): Transporter | null {
   return shared.portalMailer;
 }
 
-//vemos los errores
-async function send(to: string, subject: string, html: string): Promise<void> {
+/** Comprueba la conexión y las credenciales antes de una operación crítica (p. ej. una contraseña temporal). */
+export async function verifyMail(): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!smtpHost) return { ok: false, error: "Falta SMTP_HOST en la configuración." };
+  if (smtpMisconfigured) {
+    return {
+      ok: false,
+      error: smtpUser
+        ? "Falta SMTP_PASS (en Gmail, una contraseña de aplicación de 16 caracteres)."
+        : "Falta SMTP_USER en la configuración.",
+    };
+  }
+  const transport = mailer();
+  if (!transport) return { ok: false, error: "No se pudo crear el transportador SMTP." };
+  try {
+    await transport.verify();
+    return { ok: true };
+  } catch (error) {
+    // No se registran credenciales ni el contenido del correo.
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[mail] La conexión SMTP falló:", message);
+    return { ok: false, error: message };
+  }
+}
+
+/** Devuelve `true` solo si el correo llegó a entregarse al servidor SMTP. */
+async function send(to: string, subject: string, html: string): Promise<boolean> {
   const transport = mailer();
   if (!transport) {
-    console.warn("[mail] Falta SMTP_HOST: se omite el correo a", to);
-    return;
+    console.warn("[mail] El correo no está configurado: se omite el envío a", to);
+    return false;
   }
   // Defensa contra inyección de cabeceras: ningún dato debe contener saltos de línea.
   if (/[\r\n]/.test(to) || /[\r\n]/.test(subject)) {
     console.error("[mail] Destinatario o asunto no válidos; se omite el envío.");
-    return;
+    return false;
   }
   try {
     const info = await transport.sendMail({ from, to, subject, html });
-    if (info.rejected?.length) console.error("[mail] El servidor SMTP rechazó destinatarios:", info.rejected);
+    if (info.rejected?.length) {
+      console.error("[mail] El servidor SMTP rechazó destinatarios:", info.rejected);
+      return false;
+    }
+    return true;
   } catch (error) {
     // No se registran credenciales ni el contenido del correo.
     console.error("[mail] No se pudo enviar el correo:", error instanceof Error ? error.message : error);
+    return false;
   }
 }
 
@@ -68,9 +128,9 @@ const escape = (value: string) =>
   value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 
 //Enlace de un solo uso para elegir una contraseña nueva.
-export async function sendPasswordResetEmail(to: string, name: string, token: string): Promise<void> {
+export async function sendPasswordResetEmail(to: string, name: string, token: string): Promise<boolean> {
   const link = `${appUrl}/restablecer?token=${encodeURIComponent(token)}`;
-  await send(
+  return send(
     to,
     "Restablece tu contraseña",
     `<p>Hola ${escape(name)},</p>
@@ -82,8 +142,8 @@ export async function sendPasswordResetEmail(to: string, name: string, token: st
 }
 
 //contrasena temporal generada por un superadministrador
-export async function sendTemporaryPasswordEmail(to: string, name: string, password: string): Promise<void> {
-  await send(
+export async function sendTemporaryPasswordEmail(to: string, name: string, password: string): Promise<boolean> {
+  return send(
     to,
     "Tu contraseña temporal del portal",
     `<p>Hola ${escape(name)},</p>
@@ -94,8 +154,8 @@ export async function sendTemporaryPasswordEmail(to: string, name: string, passw
 }
 
 //aviso despues de cambio de contrasena
-export async function sendPasswordChangedEmail(to: string, name: string): Promise<void> {
-  await send(
+export async function sendPasswordChangedEmail(to: string, name: string): Promise<boolean> {
+  return send(
     to,
     "Tu contraseña cambió",
     `<p>Hola ${escape(name)},</p>

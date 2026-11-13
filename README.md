@@ -111,6 +111,30 @@ Copia el archivo base `.env.example` a `.env.local`. Las variables principales s
 | `REDIS_URL` | Opcional | URL de Redis (`redis://...`) requerida únicamente al ejecutar múltiples instancias del servidor de tiempo real. |
 | `RUN_MAINTENANCE=1` | Opcional | Activa la rutina automática de mantenimiento y purga cada 24 horas con `pnpm start`. |
 
+### Correo (restablecer contraseñas)
+
+Sin un SMTP configurado la app funciona, pero no envía enlaces ni contraseñas temporales. Configuración recomendada con Gmail/Google Workspace:
+
+1. Activa la **verificación en dos pasos** en la cuenta de Google.
+2. Crea una **contraseña de aplicación** de 16 caracteres en <https://myaccount.google.com/apppasswords>. No uses la contraseña normal de la cuenta.
+3. Define `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465` y `SMTP_SECURE=true` en `.env.local`.
+4. Guarda la contraseña de aplicación sin mostrarla en pantalla:
+
+   ```bash
+   pnpm mail:setup
+   ```
+
+5. Reinicia el servidor y comprueba la conexión:
+
+   ```bash
+   pnpm mail:test
+   ```
+
+`SMTP_PASS` solo vive en `.env.local` (ignorado por Git) y nunca se envía al navegador. Si sospechas que se filtró, revoca esa contraseña de aplicación en Google y crea otra. `SMTP_FROM` debe ser la misma cuenta o un alias autorizado por el proveedor.
+
+> [!WARNING]
+> `NODE_TLS_REJECT_UNAUTHORIZED=0` desactiva la verificación TLS de **todo** el proceso. Úsalo solo en local y mientras no puedas instalar la CA de Sophos; el correo fuerza su propia verificación TLS. En producción elimínalo o usa `NODE_EXTRA_CA_CERTS`.
+
 ---
 
 ## Selección de Base de Datos

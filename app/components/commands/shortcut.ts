@@ -25,6 +25,10 @@ const KEY_LABELS: Record<string, string> = {
 
 /** Convierte un KeyboardEvent en un atajo normalizado, o null si solo es un modificador. */
 export function eventToCombo(e: KeyboardEvent): string | null {
+  // Algunos navegadores, lectores de pantalla y teclados virtuales emiten keydown sin `key`
+  // (o con la cadena vacía durante la composición). Sin tecla no hay atajo que resolver.
+  if (typeof e.key !== "string" || e.key.length === 0) return null;
+
   const key = e.key.toLowerCase();
   if (IGNORED_KEYS.has(key)) return null;
 

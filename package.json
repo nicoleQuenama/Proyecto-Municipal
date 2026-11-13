@@ -14,7 +14,9 @@
     "db:setup": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-setup.mts",
     "maintenance": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/maintenance.mts",
     "org:create": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/org-create.mts",
-    "db:seed": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-seed.mts"
+    "db:seed": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/db-seed.mts",
+    "mail:test": "node --experimental-strip-types --env-file-if-exists=.env.local scripts/mail-test.mts",
+    "mail:setup": "node --env-file-if-exists=.env.local scripts/set-smtp-pass.mjs"
   },
   "engines": {
     "node": ">=22.9"

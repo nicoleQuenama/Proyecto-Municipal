@@ -1,4 +1,4 @@
-import { sendPasswordResetEmail } from "../../../server/mail";
+import { isMailConfigured, sendPasswordResetEmail } from "../../../server/mail";
 import { findByIdentity, issueResetToken } from "../../../server/password-reset-store";
 import { sameOriginRequest } from "../../../server/proxy-guard";
 import { allowResetAttempt } from "../../../server/reset-rate-limit";
@@ -21,7 +21,14 @@ export async function POST(request: Request) {
 
   try {
     const account = await findByIdentity(username, email);
-    if (account) await sendPasswordResetEmail(account.email, account.name, await issueResetToken(account, ip));
+    // Si la cuenta existe pero el SMTP no está configurado no se crea el token:
+    // el enlace no podría llegar y solo quedarían registros basura. La respuesta
+    // sigue siendo genérica para no revelar qué correos están registrados.
+    if (account && !isMailConfigured()) {
+      console.error("[auth] no se envió el enlace de restablecimiento: el correo SMTP no está configurado");
+    } else if (account) {
+      await sendPasswordResetEmail(account.email, account.name, await issueResetToken(account, ip));
+    }
   } catch (error) {
     console.error("[auth] no se pudo enviar el enlace de restablecimiento", error);
   }
