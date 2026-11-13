@@ -54,7 +54,7 @@ check "otra sesión de ana abierta" 200 "$(code $H -b /tmp/dv.jar $B/api/auth/me
 curl -s $H -b /tmp/ds.jar -X POST $B/api/auth/change-password -c /tmp/ds.jar -d '{"currentPassword":"Nueva2026!ab","newPassword":"Final2026!abc"}' >/dev/null
 check "la sesión anterior dejó de valer" null "$(curl -s $H -b /tmp/dv.jar $B/api/auth/me | sed -n 's/.*"user":\(null\).*/\1/p')"
 
-# Restablecer contraseña con enlace (el correo no se envía sin RESEND_API_KEY: se emite el token directo en la base).
+# Restablecer contraseña con enlace (el correo no se envía sin SMTP_HOST: se emite el token directo en la base).
 $PSQL -c "insert into app.password_reset_tokens (organization_id, user_id, token_hash, expires_at) select organization_id, id, sha256('token-de-prueba'::bytea), now() + interval '30 minutes' from app.users where email='ana@x.com'" >/dev/null
 check "enlace de restablecimiento: contraseña floja" 400 "$(code $H -X POST $B/api/auth/confirm-reset -d '{"token":"token-de-prueba","password":"abc"}')"
 check "enlace de restablecimiento válido" 200 "$(code $H -X POST $B/api/auth/confirm-reset -d '{"token":"token-de-prueba","password":"Restablecida2026!"}')"

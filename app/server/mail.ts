@@ -1,19 +1,67 @@
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 
-const apiKey = process.env.RESEND_API_KEY;
-const from = process.env.RESEND_FROM ?? "Portal <onboarding@resend.dev>";
+// Módulo exclusivo del servidor: nunca importarlo desde un componente "use client".
+// Las credenciales SMTP solo viven en variables de entorno y no se envían al navegador.
+
 const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
-const resend = apiKey ? new Resend(apiKey) : null;
+// ───────────────────────── Configuración SMTP ─────────────────────────
+// Cambia estos valores en .env.local (ver .env.example). Sin SMTP_HOST el correo se omite
+// y la app sigue funcionando (útil en desarrollo local).
+const smtpHost = process.env.SMTP_HOST?.trim();
+const smtpPort = (() => {
+  const value = Number(process.env.SMTP_PORT ?? (process.env.SMTP_SECURE === "true" ? 465 : 587));
+  return Number.isInteger(value) && value > 0 && value <= 65535 ? value : 587;
+})();
+// secure = conexión TLS directa (puerto 465). En 587 se usa STARTTLS.
+// No desactives la verificación del certificado (rejectUnauthorized) en producción.
+const smtpSecure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : smtpPort === 465;
+const smtpUser = process.env.SMTP_USER?.trim();
+const smtpPass = process.env.SMTP_PASS;
+const from = process.env.SMTP_FROM?.trim() || "Portal <no-reply@localhost>";
+
+// Un solo transportador por proceso, aunque Next recargue los módulos en desarrollo.
+const shared = globalThis as unknown as { portalMailer?: Transporter | null };
+
+function mailer(): Transporter | null {
+  if (shared.portalMailer !== undefined) return shared.portalMailer;
+  if (!smtpHost) {
+    shared.portalMailer = null;
+    return null;
+  }
+  shared.portalMailer = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    // Solo se autentica si hay usuario y contraseña; si no, se conecta sin auth.
+    auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
+    // Evita que una petición quede colgada si el servidor SMTP no responde.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+  });
+  return shared.portalMailer;
+}
 
 //vemos los errores
 async function send(to: string, subject: string, html: string): Promise<void> {
-  if (!resend) {
-    console.warn("[mail] Falta RESEND_API_KEY: se omite el correo a", to);
+  const transport = mailer();
+  if (!transport) {
+    console.warn("[mail] Falta SMTP_HOST: se omite el correo a", to);
     return;
   }
-  const { error } = await resend.emails.send({ from, to, subject, html });
-  if (error) console.error("[mail] Resend rechazó el envío:", error.message);
+  // Defensa contra inyección de cabeceras: ningún dato debe contener saltos de línea.
+  if (/[\r\n]/.test(to) || /[\r\n]/.test(subject)) {
+    console.error("[mail] Destinatario o asunto no válidos; se omite el envío.");
+    return;
+  }
+  try {
+    const info = await transport.sendMail({ from, to, subject, html });
+    if (info.rejected?.length) console.error("[mail] El servidor SMTP rechazó destinatarios:", info.rejected);
+  } catch (error) {
+    // No se registran credenciales ni el contenido del correo.
+    console.error("[mail] No se pudo enviar el correo:", error instanceof Error ? error.message : error);
+  }
 }
 
 const escape = (value: string) =>

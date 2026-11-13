@@ -11,7 +11,7 @@ interface ForgotPasswordDialogProps {
   onClose: () => void;
 }
 
-/** Pide usuario + correo y dispara el enlace de restablecimiento con Resend. */
+/** Pide usuario + correo y dispara el enlace de restablecimiento por SMTP (Nodemailer). */
 export function ForgotPasswordDialog({ onClose }: ForgotPasswordDialogProps) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");

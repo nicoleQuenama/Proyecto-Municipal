@@ -48,7 +48,7 @@ Abre en tu navegador <http://localhost:3000> e inicia sesión con cualquiera de 
 | **Diseñador** | `designer@portal.dev` | `Designer2026!` | Edición visual de páginas, lienzos, medios y tipografías (sujeto a las unidades asignadas). |
 
 > [!NOTE]
-> Para probar la **colaboración en vivo y presencia de cursores**, abre una segunda ventana en modo incógnito con una cuenta diferente. Los servicios de **ImageKit**, **Resend** (correo) y **Redis** son opcionales para desarrollo local básico.
+> Para probar la **colaboración en vivo y presencia de cursores**, abre una segunda ventana en modo incógnito con una cuenta diferente. Los servicios de **ImageKit**, **SMTP** (correo con Nodemailer) y **Redis** son opcionales para desarrollo local básico.
 
 ---
 
@@ -107,7 +107,7 @@ Copia el archivo base `.env.example` a `.env.local`. Las variables principales s
 | `DATA_KEY` | Sí en producción | Llave simétrica (AES-256) para cifrar credenciales de servidores de despliegue: `openssl rand -base64 32`. |
 | `REALTIME_PORT` | Opcional | Puerto del servidor WebSocket (por defecto `3001`). En producción tras proxy: `REALTIME_URL=wss://...`. |
 | `IMAGEKIT_*` | Opcional | Credenciales de [ImageKit](https://imagekit.io) (`PUBLIC_KEY`, `PRIVATE_KEY`, `URL_ENDPOINT`) para subida y transformación de medios. |
-| `RESEND_API_KEY` | Opcional | API Key de [Resend](https://resend.com) para correos de recuperación de contraseña. |
+| `SMTP_*` | Opcional | Servidor SMTP (con [Nodemailer](https://nodemailer.com)) para correos de recuperación de contraseña: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` y `SMTP_FROM`. |
 | `REDIS_URL` | Opcional | URL de Redis (`redis://...`) requerida únicamente al ejecutar múltiples instancias del servidor de tiempo real. |
 | `RUN_MAINTENANCE=1` | Opcional | Activa la rutina automática de mantenimiento y purga cada 24 horas con `pnpm start`. |
 
