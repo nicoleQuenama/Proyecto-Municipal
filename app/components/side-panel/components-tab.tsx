@@ -18,7 +18,7 @@ export function ComponentsTab() {
   const site = useSite();
   const { pages, currentPageId, selectedId } = site;
   // Ni las figuras dibujadas ni el bloque de código (lo pone el editor) son componentes hechos: no se listan.
-  const components = site.components.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID);
+  const components = site.components.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID && c.templateFor !== "page");
   const dispatch = useSiteDispatch();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");

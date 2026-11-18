@@ -2,29 +2,52 @@
 
 import { useState } from "react";
 import type { BlockKind } from "../site/code-kind-rules";
-import { KIND_HINTS, KIND_LABELS } from "./block-kind";
 
-type MadeKind = Exclude<BlockKind, "loose">;
-const MADE_KINDS: MadeKind[] = ["component", "template"];
+export type BlockChoice = "component" | "section-template" | "page-template";
+
+/** Qué es cada opción: cómo se llama, cómo se explica, y qué acción de la página la crea. Una opción nueva es una entrada nueva. */
+export const CHOICES: Record<BlockChoice, { label: string; hint: string; kind: Exclude<BlockKind, "loose">; scope: "section" | "page" }> = {
+  component: {
+    label: "Componente",
+    hint: "Una sola definición: si cambia, cambia en todos los lugares donde se use.",
+    kind: "component",
+    scope: "section",
+  },
+  "section-template": {
+    label: "Plantilla de sección",
+    hint: "Un molde de bloque: sale en Plantillas › Secciones y cada copia tiene su propio código.",
+    kind: "template",
+    scope: "section",
+  },
+  "page-template": {
+    label: "Plantilla de página",
+    hint: "Guarda una copia como molde de página: sale en Plantillas › Páginas. El código se queda aquí.",
+    kind: "template",
+    scope: "page",
+  },
+};
 
 interface MakeBlockProps {
   initialName: string;
+  /** La plantilla de página solo tiene sentido con el código de una página. */
+  pageCode: boolean;
   /** Devuelve el motivo si no se pudo crear. */
-  onCreate: (kind: MadeKind, name: string) => string | null;
+  onCreate: (choice: BlockChoice, name: string) => string | null;
 }
 
 /**
- * La opción que se superpone al seleccionar código, junto a «Convertir en función»: lo pasa a un bloque nuevo
- * de la página, como componente (compartido) o como plantilla (molde de copias).
+ * La opción que se superpone al seleccionar código, junto a «Convertir en función»: lo guarda como componente
+ * (compartido) o como plantilla (de sección o de página).
  */
-export function MakeBlock({ initialName, onCreate }: MakeBlockProps) {
+export function MakeBlock({ initialName, pageCode, onCreate }: MakeBlockProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(initialName);
   const [error, setError] = useState<string | null>(null);
+  const choices = (Object.keys(CHOICES) as BlockChoice[]).filter((choice) => pageCode || choice !== "page-template");
 
-  const create = (kind: MadeKind) => {
+  const create = (choice: BlockChoice) => {
     if (!name.trim()) return setError("Ponle un nombre.");
-    const problem = onCreate(kind, name.trim());
+    const problem = onCreate(choice, name.trim());
     if (problem) setError(problem);
   };
 
@@ -53,15 +76,15 @@ export function MakeBlock({ initialName, onCreate }: MakeBlockProps) {
             }}
             className="h-8 rounded-md border border-line bg-canvas px-2 text-xs outline-none focus:border-accent"
           />
-          {MADE_KINDS.map((kind) => (
+          {choices.map((choice) => (
             <button
-              key={kind}
+              key={choice}
               type="button"
-              onClick={() => create(kind)}
+              onClick={() => create(choice)}
               className="rounded-md bg-hover px-2 py-1.5 text-left hover:bg-accent hover:text-white cursor-pointer"
             >
-              <span className="block font-medium">{KIND_LABELS[kind]}</span>
-              <span className="block text-[11px] opacity-80">{KIND_HINTS[kind]}</span>
+              <span className="block font-medium">{CHOICES[choice].label}</span>
+              <span className="block text-[11px] opacity-80">{CHOICES[choice].hint}</span>
             </button>
           ))}
           {error && <p role="alert" className="text-[11px] text-red-400">{error}</p>}

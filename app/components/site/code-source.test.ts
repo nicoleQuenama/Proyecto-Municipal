@@ -127,3 +127,30 @@ describe("page/add-code-block", () => {
     expect(siteReducer(before, { type: "page/add-code-block", pageId: "nada", kind: "component", name: "X", blockId: "n1", code: { js: "x" } })).toBe(before);
   });
 });
+
+describe("plantillas de página", () => {
+  const savePageTemplate = (state: SiteState) =>
+    siteReducer(state, { type: "page/add-code-block", pageId: "p1", kind: "template", scope: "page", name: "Animada", blockId: "x", code: { js: "api.log(1);", css: "p{}" } });
+
+  it("guardar una plantilla de página crea solo la definición, sin bloque", () => {
+    const before = site();
+    const s = savePageTemplate(before);
+    expect(s.components.find((c) => c.name === "Animada")).toMatchObject({ codeKind: "template", templateFor: "page", code: { js: "api.log(1);", css: "p{}" } });
+    expect(s.pages.find((p) => p.id === "p1")!.blocks).toHaveLength(before.pages[0].blocks.length);
+    expect(s.selectedId).toBe(before.selectedId);
+  });
+
+  it("aplicarla pone su TS y CSS en la página y deja los bloques", () => {
+    let s = savePageTemplate(site());
+    const id = s.components.find((c) => c.name === "Animada")!.id;
+    s = siteReducer(s, { type: "page/apply-code-template", pageId: "p2", componentId: id });
+    const page = s.pages.find((p) => p.id === "p2")!;
+    expect(page).toMatchObject({ js: "api.log(1);", css: "p{}" });
+  });
+
+  it("aplicar una definición que no existe o no es de página no cambia nada", () => {
+    const s = site();
+    expect(siteReducer(s, { type: "page/apply-code-template", pageId: "p2", componentId: "nada" })).toBe(s);
+    expect(siteReducer(s, { type: "page/apply-code-template", pageId: "p2", componentId: CODE_COMPONENT_ID })).toBe(s);
+  });
+});

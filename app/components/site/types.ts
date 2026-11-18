@@ -202,6 +202,8 @@ export interface ComponentDef {
   code?: CodeSource;
   /** `component`: una definición compartida, cada cambio vale en todos sus lugares. `template`: un molde del que se copia el código. */
   codeKind?: "component" | "template";
+  /** A qué se aplica una plantilla de código: a una sección (un bloque, por defecto) o a una página (su TypeScript y CSS). */
+  templateFor?: "section" | "page";
 }
 
 /** Un componente colocado en una página. */

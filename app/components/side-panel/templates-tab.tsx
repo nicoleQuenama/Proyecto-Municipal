@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { EXAMPLE_COMPONENTS } from "../site/component-templates";
-import { isPageNameTaken } from "../site/rules";
+import { uniquePageName } from "../site/unique-page-name";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
+import { myTemplates } from "../site/my-templates";
+import { MyTemplates } from "./my-templates";
 import { SectionVisualPreview, PageVisualPreview } from "./template-previews";
 
 interface SectionTemplateItem {
@@ -187,15 +189,6 @@ const PAGE_TEMPLATES: PageTemplateItem[] = [
   },
 ];
 
-function getUniquePageName(pages: { id: string; name: string }[], baseName: string): string {
-  if (!isPageNameTaken(pages as any, baseName)) return baseName;
-  let counter = 2;
-  while (isPageNameTaken(pages as any, `${baseName} ${counter}`)) {
-    counter++;
-  }
-  return `${baseName} ${counter}`;
-}
-
 export function TemplatesTab() {
   const [tabType, setTabType] = useState<"sections" | "pages">("sections");
   const [query, setQuery] = useState("");
@@ -260,7 +253,7 @@ export function TemplatesTab() {
 
   const handleCreatePage = (tmpl: PageTemplateItem) => {
     if (!canEditContent) return;
-    const pageName = getUniquePageName(site.pages, tmpl.name);
+    const pageName = uniquePageName(site.pages, tmpl.name);
     const newPageId = crypto.randomUUID();
     const componentIds = tmpl.sections.map((s) => s.id);
 
@@ -287,7 +280,7 @@ export function TemplatesTab() {
             tabType === "sections" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink"
           } cursor-pointer`}
         >
-          Secciones ({SECTION_TEMPLATES.length})
+          Secciones ({SECTION_TEMPLATES.length + myTemplates(site.components, "section").length})
         </button>
         <button
           type="button"
@@ -296,7 +289,7 @@ export function TemplatesTab() {
             tabType === "pages" ? "bg-accent text-white shadow-sm" : "text-ink-dim hover:text-ink"
           } cursor-pointer`}
         >
-          Páginas ({PAGE_TEMPLATES.length})
+          Páginas ({PAGE_TEMPLATES.length + myTemplates(site.components, "page").length})
         </button>
       </div>
 
@@ -319,6 +312,7 @@ export function TemplatesTab() {
       {/* VISTA DE SECCIONES */}
       {tabType === "sections" && (
         <div className="flex flex-col gap-3">
+          <MyTemplates target="section" />
           <p className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">
             Bloques listos para insertar en {page.name}
           </p>
@@ -372,6 +366,7 @@ export function TemplatesTab() {
       {/* VISTA DE PÁGINAS COMPLETAS */}
       {tabType === "pages" && (
         <div className="flex flex-col gap-3">
+          <MyTemplates target="page" />
           <p className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">
             Páginas pre-armadas listas para usar
           </p>

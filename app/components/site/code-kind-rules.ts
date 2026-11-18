@@ -9,7 +9,18 @@ export type CodeKindAction =
   | { type: "component/code"; componentId: string; patch: Partial<CodeSource> }
   | { type: "block/set-kind"; pageId: string; blockId: string; kind: BlockKind; name?: string }
   /** Un trozo de código seleccionado en el editor pasa a un bloque nuevo (componente o plantilla) de esa página. */
-  | { type: "page/add-code-block"; pageId: string; kind: Exclude<BlockKind, "loose">; name: string; blockId: string; code: Partial<CodeSource> };
+  | {
+      type: "page/add-code-block";
+      pageId: string;
+      kind: Exclude<BlockKind, "loose">;
+      name: string;
+      blockId: string;
+      code: Partial<CodeSource>;
+      /** `page`: solo se guarda la plantilla (no se coloca ningún bloque); se aplica después a una página. */
+      scope?: "section" | "page";
+    }
+  /** Pone el TypeScript y el CSS de una plantilla de página en esa página, en lugar de los que tenía. */
+  | { type: "page/apply-code-template"; pageId: string; componentId: string };
 
 type Handlers = { [K in CodeKindAction["type"]]: (state: SiteState, action: Extract<CodeKindAction, { type: K }>) => SiteState };
 
@@ -64,10 +75,12 @@ export const CODE_KIND_HANDLERS: Handlers = {
     return CONVERT[kind](state, block, pageId, name?.trim() || "Bloque de código");
   },
 
-  "page/add-code-block": (state, { pageId, kind, name, blockId, code }) => {
+  "page/add-code-block": (state, { pageId, kind, name, blockId, code, scope }) => {
     if (!state.pages.some((p) => p.id === pageId)) return state;
 
     const def = codeDefinition(name.trim() || "Bloque de código", kind, { ...EMPTY_CODE, ...code });
+    if (scope === "page") return { ...state, components: [...state.components, { ...def, codeKind: "template", templateFor: "page" }] };
+
     const block: BlockInstance = {
       id: blockId,
       componentId: def.id,
@@ -82,5 +95,12 @@ export const CODE_KIND_HANDLERS: Handlers = {
       selectedId: blockId,
       selectedElementId: null,
     };
+  },
+
+  "page/apply-code-template": (state, { pageId, componentId }) => {
+    const template = state.components.find((c) => c.id === componentId);
+    if (!template?.code || template.templateFor !== "page") return state;
+    const { js, css } = template.code;
+    return { ...state, pages: state.pages.map((p) => (p.id === pageId ? { ...p, js, css } : p)) };
   },
 };

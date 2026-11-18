@@ -17,7 +17,7 @@ import { fileTarget } from "./file-target";
 import { HtmlOutline } from "./html-outline";
 import { fragmentCode } from "./block-fragment";
 import { adoptExternal } from "./external-change";
-import { MakeBlock } from "./make-block";
+import { CHOICES, MakeBlock, type BlockChoice } from "./make-block";
 import { MakeFunction, SCOPE_LABELS } from "./make-function";
 import { TargetBar } from "./target-bar";
 
@@ -275,22 +275,27 @@ export default function FileEditor({
   /** La página a la que pertenece el archivo; sin ella (CSS global, funciones) no hay dónde poner un bloque. */
   const ownerPageId = "pageId" in file ? file.pageId : null;
 
-  /** Pasa lo seleccionado a un bloque nuevo de la página y lo quita del archivo. */
-  const createBlock = (blockKind: "component" | "template", name: string): string | null => {
+  /**
+   * Guarda lo seleccionado como componente o plantilla. Un componente o una plantilla de sección pasan a un bloque
+   * nuevo de la página y se quitan del archivo; una plantilla de página es solo una copia y el código se queda.
+   */
+  const createBlock = (choice: BlockChoice, name: string): string | null => {
     if (!selection || !ownerPageId) return "Vuelve a seleccionar el código.";
 
+    const { kind: blockKind, scope, label } = CHOICES[choice];
     dispatch({
       type: "page/add-code-block",
       pageId: ownerPageId,
       kind: blockKind,
+      scope,
       name,
       blockId: crypto.randomUUID(),
       code: fragmentCode(kind.language, selection.text),
     });
-    editorRef.current?.executeEdits("hacer-bloque", [{ range: selection.range, text: "" }]);
+    if (scope === "section") editorRef.current?.executeEdits("hacer-bloque", [{ range: selection.range, text: "" }]);
 
     setSelection(null);
-    setMessage(`${blockKind === "component" ? "Componente" : "Plantilla"} «${name}» creado en la página.`);
+    setMessage(`${label} «${name}» guardada${scope === "page" ? ": está en Plantillas › Páginas." : " en la página."}`);
     return null;
   };
 
@@ -362,7 +367,7 @@ export default function FileEditor({
             {scopes.length > 0 && (
               <MakeFunction scopes={scopes} initialName={declaredName(selection.text) ?? "miFuncion"} onCreate={create} />
             )}
-            {ownerPageId && <MakeBlock initialName="Bloque nuevo" onCreate={createBlock} />}
+            {ownerPageId && <MakeBlock initialName="Bloque nuevo" pageCode={file.kind === "page-js" || file.kind === "page-css"} onCreate={createBlock} />}
           </div>
         )}
       </div>
