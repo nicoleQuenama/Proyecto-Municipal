@@ -39,3 +39,10 @@ describe("drawShape", () => {
     expect(removed.components.some((c) => c.id === "c1")).toBe(false);
   });
 });
+
+describe("el rectángulo dibujado nace con las esquinas rectas", () => {
+  it("sin radio hasta que la persona lo redondea con las bolitas de las esquinas", () => {
+    const s = drawShape(INITIAL_SITE, input);
+    expect(s.components.find((c) => c.id === "c1")!.elements[0].radius).toBe(0);
+  });
+});

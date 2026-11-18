@@ -25,3 +25,12 @@ describe("el documento de un bloque de código", () => {
     expect(doc).toContain("<body data-site-page>");
   });
 });
+
+describe("la captura de un bloque", () => {
+  it("el documento atiende el pedido de captura y carga la librería desde el mismo origen", () => {
+    const doc = buildSrcDoc(code, [], "http://localhost:3000", shared);
+    expect(doc).toContain("portal:capture");
+    expect(doc).toContain("portal:captured");
+    expect(doc).toContain("http://localhost:3000/api/vendor/html-to-image");
+  });
+});

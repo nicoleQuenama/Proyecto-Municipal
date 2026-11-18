@@ -1,5 +1,5 @@
 import type { EditScope } from "../canvas-editing/settings-context";
-import type { Size } from "../canvas-editing/limits";
+import type { ResizeAnchor, Size } from "../canvas-editing/limits";
 import type { ElementOverride, SiteAction } from "./types";
 
 /** El bloque donde se edita y el componente que usa. */
@@ -25,8 +25,8 @@ const ELEMENT_ACTIONS: Record<EditScope, (target: EditTarget, elementId: string,
   }),
 };
 
-const SECTION_ACTIONS: Record<EditScope, (target: EditTarget, size: Partial<Size>, backdropId?: string) => SiteAction> = {
-  block: ({ pageId, blockId }, size, backdropId) => ({ type: "block/size", pageId, blockId, size, backdropId }),
+const SECTION_ACTIONS: Record<EditScope, (target: EditTarget, size: Partial<Size>, backdropId?: string, anchor?: ResizeAnchor) => SiteAction> = {
+  block: ({ pageId, blockId }, size, backdropId, anchor) => ({ type: "block/size", pageId, blockId, size, backdropId, anchor }),
   component: ({ pageId, blockId, componentId }, size, backdropId) => ({
     type: "component/size",
     componentId,
@@ -40,5 +40,5 @@ const SECTION_ACTIONS: Record<EditScope, (target: EditTarget, size: Partial<Size
 export const elementChange = (scope: EditScope, target: EditTarget, elementId: string, patch: ElementOverride) =>
   ELEMENT_ACTIONS[scope](target, elementId, patch);
 
-export const sectionResize = (scope: EditScope, target: EditTarget, size: Partial<Size>, backdropId?: string) =>
-  SECTION_ACTIONS[scope](target, size, backdropId);
+export const sectionResize = (scope: EditScope, target: EditTarget, size: Partial<Size>, backdropId?: string, anchor?: ResizeAnchor) =>
+  SECTION_ACTIONS[scope](target, size, backdropId, anchor);

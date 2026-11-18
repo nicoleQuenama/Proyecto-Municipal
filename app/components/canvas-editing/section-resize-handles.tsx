@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type PointerEvent } from "react";
-import { MAX_CANVAS_HEIGHT, MAX_CANVAS_WIDTH, type Size } from "./limits";
+import { MAX_CANVAS_HEIGHT, MAX_CANVAS_WIDTH, type ResizeAnchor, type Size } from "./limits";
 import { HANDLES, type HandleId } from "./resize-handles";
 import { GRID_SIZE } from "./snapping";
 
@@ -34,7 +34,7 @@ interface ResizeStart {
 interface SectionResizeHandlesProps {
   size: Size;
   /** Recibe solo el eje que cambia; quien lo guarda lo limita al máximo y a lo que ocupan los elementos. */
-  onResize: (size: Partial<Size>) => void;
+  onResize: (size: Partial<Size>, anchor: ResizeAnchor) => void;
   /** El ancho lo decide la página (flujo, barra de navegación o pie): faltan las manijas laterales y no se toca. */
   widthLocked?: boolean;
 }
@@ -72,7 +72,8 @@ export function SectionResizeHandles({ size, onResize, widthLocked = false }: Se
         : {};
     // Sin ancho propio solo cambia la altura: las manijas laterales ni siquiera se dibujan.
     const next = { ...(widthLocked ? {} : horizontal), ...vertical };
-    if (next.width !== undefined || next.height !== undefined) onResize(next);
+    // Con el lado izquierdo o el de arriba agarrado, quien guarda mueve también la posición: el lado contrario se queda.
+    if (next.width !== undefined || next.height !== undefined) onResize(next, { left: sides.left, top: sides.top });
   };
 
   const end = () => {

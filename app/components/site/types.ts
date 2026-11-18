@@ -27,6 +27,7 @@ import type { CodeKindAction } from "./code-kind-rules";
 import type { IconName } from "../icons/icon-set";
 import type { LinkParams } from "../dynamic/types";
 import type { DynamicAction } from "../dynamic/dynamic-rules";
+import type { ResizeAnchor } from "../canvas-editing/limits";
 import type { Placement } from "../placement/types";
 import type { ResponsiveAction } from "../responsive/responsive-rules";
 import type { Device } from "../responsive/devices";
@@ -204,6 +205,8 @@ export interface ComponentDef {
   codeKind?: "component" | "template";
   /** A qué se aplica una plantilla de código: a una sección (un bloque, por defecto) o a una página (su TypeScript y CSS). */
   templateFor?: "section" | "page";
+  /** La imagen de una plantilla de código (obligatoria): se ve en la lista de Plantillas. Es una dirección de ImageKit. */
+  thumbnail?: string;
 }
 
 /** Un componente colocado en una página. */
@@ -464,7 +467,15 @@ export type SiteAction =
   | { type: "title/place"; pageId: string; placement: Placement }
   | { type: "media/place"; pageId: string; mediaId: string; placement: Placement }
   | { type: "media/transfer"; fromPageId: string; toPageId: string; mediaId: string; placement: Placement }
-  | { type: "block/size"; pageId: string; blockId: string; size: Partial<{ width: number; height: number }>; backdropId?: string }
+  | {
+      type: "block/size";
+      pageId: string;
+      blockId: string;
+      size: Partial<{ width: number; height: number }>;
+      backdropId?: string;
+      /** El lado que se agarró: si es el izquierdo o el de arriba, un bloque colocado se mueve para que el lado contrario se quede donde estaba. */
+      anchor?: ResizeAnchor;
+    }
   | { type: "block/move"; pageId: string; blockId: string; direction: -1 | 1 }
   | { type: "block/lock"; pageId: string; blockId: string; locked?: boolean }
   | { type: "block/reset"; pageId: string; blockId: string }

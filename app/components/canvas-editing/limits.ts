@@ -11,6 +11,12 @@ export interface Size {
   height: number;
 }
 
+/** Qué lados mueve la manija con la que se redimensiona: el izquierdo y el de arriba cambian también la posición. */
+export interface ResizeAnchor {
+  left: boolean;
+  top: boolean;
+}
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 /** Lo más pequeño que puede ser un lienzo sin dejar elementos fuera: lo que ocupan; sin elementos, el mínimo. */

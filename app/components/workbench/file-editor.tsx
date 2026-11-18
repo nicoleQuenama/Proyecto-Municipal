@@ -268,7 +268,7 @@ export default function FileEditor({
    * Guarda lo seleccionado como componente o plantilla. Un componente o una plantilla de sección pasan a un bloque
    * nuevo de la página y se quitan del archivo; una plantilla de página es solo una copia y el código se queda.
    */
-  const createBlock = (choice: BlockChoice, name: string): string | null => {
+  const createBlock = (choice: BlockChoice, name: string, thumbnail?: string): string | null => {
     if (!selection || !ownerPageId) return "Vuelve a seleccionar el código.";
 
     const { kind: blockKind, scope, label } = CHOICES[choice];
@@ -280,6 +280,7 @@ export default function FileEditor({
       name,
       blockId: crypto.randomUUID(),
       code: fragmentCode(kind.language, selection.text),
+      thumbnail,
     });
     if (scope === "section") editorRef.current?.executeEdits("hacer-bloque", [{ range: selection.range, text: "" }]);
 

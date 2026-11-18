@@ -485,7 +485,8 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
               "--page-py": pagePt,
               "--cms-w": `${layoutWidth}px`,
             } as CSSProperties),
-            ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : {}),
+            // El relleno lateral de la hoja: lo que una sección «de borde a borde» sale por cada lado para llegar a sus costados.
+            ...(fullWidth ? ({ "--cms-side": centered, "--cms-offset": `${centeredOnly}px` } as CSSProperties) : ({ "--cms-side": pagePx } as CSSProperties)),
             minHeight: `max(${baseHeight}, ${placedExtent}px)`,
           }}
         >

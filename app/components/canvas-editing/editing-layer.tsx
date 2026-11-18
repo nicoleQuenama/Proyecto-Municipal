@@ -1,6 +1,6 @@
 "use client";
 
-import type { Size } from "./limits";
+import type { ResizeAnchor, Size } from "./limits";
 import { DropPreview, GridOverlay, GuideLines } from "./overlays";
 import { SectionResizeHandles } from "./section-resize-handles";
 import { useCanvasSettings } from "./settings-context";
@@ -11,7 +11,7 @@ interface EditingLayerProps {
   size: Size;
   /** Solo el lienzo en edición muestra su cuadrícula y sus bordes arrastrables. */
   active: boolean;
-  onResize: (size: Partial<Size>) => void;
+  onResize: (size: Partial<Size>, anchor: ResizeAnchor) => void;
   /** El ancho lo decide la página: las manijas laterales no aparecen. */
   widthLocked?: boolean;
 }

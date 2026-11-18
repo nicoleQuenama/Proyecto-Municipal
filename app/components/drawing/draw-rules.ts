@@ -26,6 +26,8 @@ export function drawShape(state: SiteState, input: DrawShapeInput): SiteState {
   const width = Math.max(MIN_SIDE, frame.width);
   const height = Math.max(MIN_SIDE, frame.height);
   const element = newElement(kind, `${componentId}-forma`, {
+    // Nace con las esquinas rectas: se redondean arrastrando las bolitas de las esquinas.
+    radius: 0,
     ...overrides,
     x: 0,
     y: 0,

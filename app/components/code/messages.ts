@@ -10,6 +10,10 @@ export const ELEMENT_MESSAGE = "portal:element";
 export const HIGHLIGHT_MESSAGE = "portal:highlight";
 /** El editor pide al iframe que quite el resaltado. */
 export const CLEAR_MESSAGE = "portal:clear";
+/** El editor pide al iframe una captura de lo que dibuja. */
+export const CAPTURE_MESSAGE = "portal:capture";
+/** El iframe devuelve la captura como una imagen (`data:`), o `null` si no pudo. */
+export const CAPTURED_MESSAGE = "portal:captured";
 
 export type ConsoleLevel = "log" | "info" | "warn" | "error" | "debug";
 

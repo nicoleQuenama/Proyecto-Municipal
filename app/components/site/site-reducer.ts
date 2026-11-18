@@ -378,7 +378,7 @@ const HANDLERS: Handlers = {
 
   "component/size": (state, action) => resizeComponent(state, action, action.size, action.backdropId),
 
-  "block/size": (state, action) => resizeSection(state, action.pageId, action.blockId, action.size, action.backdropId),
+  "block/size": (state, action) => resizeSection(state, action.pageId, action.blockId, action.size, action.backdropId, action.anchor),
 
   "block/move": (state, action) => moveBlock(state, action.pageId, action.blockId, action.direction),
 

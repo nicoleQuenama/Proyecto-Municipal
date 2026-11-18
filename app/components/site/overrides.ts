@@ -5,7 +5,8 @@
  */
 
 import { layoutDocked } from "../canvas-editing/dock-layout";
-import { clampCanvasSize } from "../canvas-editing/limits";
+import { clampCanvasSize, type ResizeAnchor } from "../canvas-editing/limits";
+import { anchoredPlacement } from "../placement/anchored-placement";
 import { pixelsOf } from "../styles/apply";
 import { splitBlocks } from "./rules";
 import type {
@@ -123,6 +124,8 @@ export function resizeSection(
   size: Partial<{ width: number; height: number }>,
   /** El fondo de la sección: crece con ella y no cuenta como contenido que impida achicarla. */
   backdropId?: string,
+  /** El lado agarrado: si es el izquierdo o el de arriba, un bloque colocado se mueve para que el lado contrario se quede. */
+  anchor?: ResizeAnchor,
 ): SiteState {
   const block = state.pages.find((p) => p.id === pageId)?.blocks.find((b) => b.id === blockId);
   const def = state.components.find((c) => c.id === block?.componentId);
@@ -134,7 +137,11 @@ export function resizeSection(
     current.elements.filter((element) => element.id !== backdropId),
   );
   const unchanged = next.width === def.width && next.height === def.height;
-  const resized = updateBlock(state, pageId, blockId, (b) => ({ ...b, size: unchanged ? undefined : next }));
+  const resized = updateBlock(state, pageId, blockId, (b) => ({
+    ...b,
+    size: unchanged ? undefined : next,
+    placement: b.placement && anchor ? anchoredPlacement(b.placement, { width: current.width, height: current.height }, next, anchor) : b.placement,
+  }));
   return backdropId ? styleElements(resized, pageId, blockId, [backdropId], { x: 0, y: 0, ...next }) : resized;
 }
 

@@ -1,7 +1,7 @@
 /** El explorador de archivos del editor: carpetas y archivos derivados de lo que hay en el sitio. */
 
 import { elementLabel } from "../navigation/links";
-import { codeOf } from "../site/code-source";
+import { codeOf, sharedDefOf } from "../site/code-source";
 import { SECTION_KEY, type BlockInstance, type ComponentDef, type FunctionScope, type Page, type SiteState } from "../site/types";
 import { fileId, kindOf, type FileRef } from "./file-ref";
 import { HIDDEN_WHEN_EMPTY, isEmptyFile } from "./removal";
@@ -90,6 +90,26 @@ function selectionFolder(site: SiteState): TreeNode[] {
   return [folder("selection", `Selección · ${element ? elementLabel(element) : def.name}`, children, { action })];
 }
 
+/** Cada componente compartido, una sola vez: su código se abre desde su primer lugar de uso. */
+function componentsFolder(site: SiteState): TreeNode[] {
+  const folders = site.components.flatMap<TreeNode>((def) => {
+    if (def.codeKind !== "component") return [];
+    const uses = site.pages.flatMap((page) => page.blocks.filter((b) => b.componentId === def.id).map((block) => ({ page, block })));
+    if (uses.length === 0) return [];
+
+    const { page, block } = uses[0];
+    const label = `${def.name} · ${uses.length} ${uses.length === 1 ? "lugar" : "lugares"}`;
+    return [
+      folder(`component:${def.id}`, label, [
+        ...file(site, { kind: "block-html", pageId: page.id, blockId: block.id }),
+        ...file(site, { kind: "block-css", pageId: page.id, blockId: block.id }),
+        ...file(site, { kind: "block-js", pageId: page.id, blockId: block.id }),
+      ]),
+    ];
+  });
+  return folders.length > 0 ? [folder("components", "Componentes", folders)] : [];
+}
+
 function projectFolder(site: SiteState): TreeNode {
   const functions = site.functions.map<TreeNode>((fn) => ({
     id: fileId({ kind: "function", functionId: fn.id }),
@@ -101,6 +121,7 @@ function projectFolder(site: SiteState): TreeNode {
 
   return folder("project", "Proyecto", [
     ...file(site, { kind: "global-css" }),
+    ...componentsFolder(site),
     folder("functions", "Funciones reutilizables", functions, { action: { type: "add-function" } }),
   ], { owner: { type: "project" } });
 }
@@ -111,8 +132,10 @@ function pageFolder(site: SiteState, page: Page): TreeNode {
     if (!def) return [];
 
     if (codeOf(block, site.components)) {
+      // Un componente compartido es un solo código en todos sus lugares: no se numera como si cada copia fuera distinta.
+      const label = sharedDefOf(block, site.components) ? `${def.name} · componente` : `${def.name} ${index + 1}`;
       return [
-        folder(`${page.id}:${block.id}`, `${def.name} ${index + 1}`, [
+        folder(`${page.id}:${block.id}`, label, [
           ...file(site, { kind: "block-html", pageId: page.id, blockId: block.id }),
           ...file(site, { kind: "block-css", pageId: page.id, blockId: block.id }),
           ...file(site, { kind: "block-js", pageId: page.id, blockId: block.id }),

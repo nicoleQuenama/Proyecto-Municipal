@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { GRID_SIZE } from "../canvas-editing/snapping";
-import { edgesIn, itemAndPage, scaleOf } from "./page-geometry";
+import { edgesIn, innerSize, itemAndPage, scaleOf } from "./page-geometry";
 import type { Placement } from "./types";
 
 export type WidthSide = "left" | "right";
@@ -47,7 +47,7 @@ export function useWidthResize({ enabled, onPlace }: WidthResizeOptions) {
       const dx = (ev.clientX - startX) / scale;
 
       const left = side === "left" ? Math.max(0, Math.min(start.right - MIN_WIDTH, snap(start.left + dx))) : start.left;
-      const right = side === "right" ? Math.min(page.offsetWidth, Math.max(start.left + MIN_WIDTH, snap(start.right + dx))) : start.right;
+      const right = side === "right" ? Math.min(innerSize(page).width, Math.max(start.left + MIN_WIDTH, snap(start.right + dx))) : start.right;
       place({ x: Math.round(left), y: Math.round(start.top), width: Math.round(right - left) });
     };
     const onEnd = () => {

@@ -2,7 +2,7 @@
 
 import { useRef, type RefObject } from "react";
 import { isBackdrop } from "../canvas-editing/backdrop";
-import type { Size } from "../canvas-editing/limits";
+import type { ResizeAnchor, Size } from "../canvas-editing/limits";
 import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { useCanvasGestures, type CanvasCommands, type CanvasGestures } from "../canvas-editing/use-canvas-gestures";
 import { deviceFrameChange, deviceSizeChange } from "../responsive/device-actions";
@@ -21,7 +21,9 @@ export interface BlockGestures extends CanvasGestures {
   size: Size;
   /** El fondo de la sección (una pieza que la cubre toda), si tiene uno. */
   backdropId: string | undefined;
-  onResizeSection: (size: Partial<Size>) => void;
+  onResizeSection: (size: Partial<Size>, anchor?: ResizeAnchor) => void;
+  /** Redondea las esquinas de un elemento (las cuatro por igual). */
+  setRadius: (elementId: string, radius: number) => void;
 }
 
 interface BlockGesturesOptions {
@@ -53,8 +55,8 @@ export function useBlockGestures({ pageId, blockId, view, selected, selectedElem
   const onDevice = isAdaptive(device) ? { pageId, blockId, device } : null;
   const change = (elementId: string, patch: ElementOverride) =>
     dispatch(onDevice ? deviceFrameChange(onDevice, elementId, patch) : elementChange(settings.scope, target, elementId, patch));
-  const resizeSection = (next: Partial<Size>) =>
-    dispatch(onDevice ? deviceSizeChange(onDevice, next, backdropId) : sectionResize(settings.scope, target, next, backdropId));
+  const resizeSection = (next: Partial<Size>, anchor?: ResizeAnchor) =>
+    dispatch(onDevice ? deviceSizeChange(onDevice, next, backdropId) : sectionResize(settings.scope, target, next, backdropId, anchor));
   useNudgeKeys(selected, elements, change);
   const elementOf = (id: string) => elements.find((element) => element.id === id);
 
@@ -92,5 +94,5 @@ export function useBlockGestures({ pageId, blockId, view, selected, selectedElem
 
   const gestures = useCanvasGestures({ size, elements, settings, commands, canvasRef, backdropGrowsSection: true });
 
-  return { ...gestures, canvasRef, sectionActive: selected, size, backdropId, onResizeSection: resizeSection };
+  return { ...gestures, canvasRef, sectionActive: selected, size, backdropId, onResizeSection: resizeSection, setRadius: (id, radius) => change(id, { radius }) };
 }

@@ -55,6 +55,12 @@ export function MyTemplates({ target }: { target: "section" | "page" }) {
       </p>
       {list.map((def) => (
         <div key={def.id} className="flex flex-col gap-2 rounded-xl border border-line bg-canvas/40 p-3">
+          {def.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={def.thumbnail} alt={`Imagen de ${def.name}`} className="h-32 w-full rounded-lg border border-line/50 bg-white object-contain" />
+          ) : (
+            <div className="flex h-32 w-full items-center justify-center rounded-lg border border-dashed border-line text-[11px] text-ink-dim">Sin imagen</div>
+          )}
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-[13px] font-semibold text-ink">{def.name}</h4>
             <button

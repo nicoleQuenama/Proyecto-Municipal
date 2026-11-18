@@ -5,6 +5,7 @@ import type { BlockKind } from "../site/code-kind-rules";
 import { codeOf } from "../site/code-source";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { KIND_HINTS, KIND_LABELS, kindOf, usesOf } from "./block-kind";
+import { ThumbnailPicker } from "./thumbnail-picker";
 
 interface BlockKindSelectProps {
   pageId: string;
@@ -17,6 +18,7 @@ export function BlockKindSelect({ pageId, blockId }: BlockKindSelectProps) {
   const dispatch = useSiteDispatch();
   const [asking, setAsking] = useState<BlockKind | null>(null);
   const [name, setName] = useState("");
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
 
   const block = pages.flatMap((p) => p.blocks).find((b) => b.id === blockId);
   if (!block || !codeOf(block, components)) return null;
@@ -33,13 +35,15 @@ export function BlockKindSelect({ pageId, blockId }: BlockKindSelectProps) {
   };
 
   const confirm = () => {
-    if (!asking || !name.trim()) return;
-    dispatch({ type: "block/set-kind", pageId, blockId, kind: asking, name });
+    // Una plantilla no se guarda sin su imagen.
+    if (!asking || !name.trim() || (asking === "template" && !thumbnail)) return;
+    dispatch({ type: "block/set-kind", pageId, blockId, kind: asking, name, thumbnail: thumbnail ?? undefined });
     setAsking(null);
+    setThumbnail(null);
   };
 
   return (
-    <span className="flex items-center gap-1.5 text-[11px] text-ink-dim">
+    <span className="flex flex-wrap items-center gap-1.5 text-[11px] text-ink-dim">
       <label className="flex items-center gap-1.5" title={KIND_HINTS[kind]}>
         Tipo de bloque
         <select
@@ -66,9 +70,14 @@ export function BlockKindSelect({ pageId, blockId }: BlockKindSelectProps) {
             placeholder={asking === "component" ? "p. ej. Header" : "p. ej. Tarjetas"}
             className="h-6 w-32 rounded border border-line bg-canvas px-1.5 text-ink outline-none focus:border-accent"
           />
-          <button type="button" onClick={confirm} disabled={!name.trim()} className="h-6 rounded bg-accent/25 px-2 text-accent disabled:opacity-40 cursor-pointer">
+          <button type="button" onClick={confirm} disabled={!name.trim() || (asking === "template" && !thumbnail)} className="h-6 rounded bg-accent/25 px-2 text-accent disabled:opacity-40 cursor-pointer">
             Guardar
           </button>
+          {asking === "template" && (
+            <div className="basis-full max-w-72">
+              <ThumbnailPicker value={thumbnail} onChange={setThumbnail} />
+            </div>
+          )}
         </>
       )}
 

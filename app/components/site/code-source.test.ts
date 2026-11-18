@@ -56,7 +56,7 @@ describe("block/set-kind", () => {
   });
 
   it("a plantilla: el bloque conserva su copia y la definición guarda el molde", () => {
-    const s = siteReducer(site(), { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "template", name: "Cards" });
+    const s = siteReducer(site(), { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "template", thumbnail: "https://ik.test/t.png", name: "Cards" });
     const b = block(s, "b1");
     expect(s.components.find((c) => c.id === b.componentId)).toMatchObject({ codeKind: "template", code: CODE });
     expect(b.code).toEqual(CODE);
@@ -83,7 +83,7 @@ describe("component/code y colocar", () => {
   });
 
   it("colocar una plantilla copia su código; colocar un componente no", () => {
-    let s = siteReducer(site(), { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "template", name: "T" });
+    let s = siteReducer(site(), { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "template", thumbnail: "https://ik.test/t.png", name: "T" });
     const id = block(s, "b1").componentId;
     s = siteReducer(s, { type: "block/add", id: "b2", pageId: "p2", componentId: id });
     expect(block(s, "b2", "p2").code).toEqual(CODE);
@@ -101,7 +101,7 @@ describe("component/code y colocar", () => {
 
 describe("page/add-code-block", () => {
   const add = (state: SiteState, kind: "component" | "template") =>
-    siteReducer(state, { type: "page/add-code-block", pageId: "p2", kind, name: "Menú", blockId: "n1", code: { js: "const a = [{ x: 1 }];" } });
+    siteReducer(state, { type: "page/add-code-block", pageId: "p2", kind, name: "Menú", blockId: "n1", code: { js: "const a = [{ x: 1 }];" }, thumbnail: "https://ik.test/t.png" });
 
   it("componente: crea la definición y un bloque que la sigue", () => {
     const s = add(site(), "component");
@@ -130,7 +130,7 @@ describe("page/add-code-block", () => {
 
 describe("plantillas de página", () => {
   const savePageTemplate = (state: SiteState) =>
-    siteReducer(state, { type: "page/add-code-block", pageId: "p1", kind: "template", scope: "page", name: "Animada", blockId: "x", code: { js: "api.log(1);", css: "p{}" } });
+    siteReducer(state, { type: "page/add-code-block", pageId: "p1", kind: "template", thumbnail: "https://ik.test/t.png", scope: "page", name: "Animada", blockId: "x", code: { js: "api.log(1);", css: "p{}" } });
 
   it("guardar una plantilla de página crea solo la definición, sin bloque", () => {
     const before = site();
@@ -170,5 +170,54 @@ describe("codePatchAction", () => {
   it("un componente compartido guarda en su definición", () => {
     const s = siteReducer(site(), { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "component", name: "H" });
     expect(codePatchAction(block(s, "b1"), s.components, "p1", { tailwind: true })).toMatchObject({ type: "component/code", patch: { tailwind: true } });
+  });
+});
+
+describe("la imagen de una plantilla es obligatoria", () => {
+  it("convertir un bloque en plantilla sin imagen no hace nada; con imagen la guarda", () => {
+    const before = site();
+    expect(siteReducer(before, { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "template", name: "T" })).toBe(before);
+    const s = siteReducer(before, { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "template", name: "T", thumbnail: "https://ik.test/a.png" });
+    expect(s.components.find((c) => c.name === "T")?.thumbnail).toBe("https://ik.test/a.png");
+  });
+
+  it("guardar una plantilla (de sección o de página) desde el editor sin imagen tampoco", () => {
+    const before = site();
+    for (const scope of ["section", "page"] as const) {
+      expect(siteReducer(before, { type: "page/add-code-block", pageId: "p1", kind: "template", scope, name: "T", blockId: "z", code: { js: "x" } })).toBe(before);
+    }
+    const s = siteReducer(before, { type: "page/add-code-block", pageId: "p1", kind: "template", scope: "page", name: "T", blockId: "z", code: { js: "x" }, thumbnail: "https://ik.test/b.png" });
+    expect(s.components.find((c) => c.name === "T")?.thumbnail).toBe("https://ik.test/b.png");
+  });
+
+  it("un componente no la necesita", () => {
+    const s = siteReducer(site(), { type: "page/add-code-block", pageId: "p1", kind: "component", name: "C", blockId: "z", code: { js: "x" } });
+    expect(s.components.some((c) => c.name === "C")).toBe(true);
+  });
+});
+
+describe("los nombres de componente son únicos (la base de datos lo exige)", () => {
+  const names = (s: SiteState) => s.components.filter((c) => c.codeKind).map((c) => c.name);
+
+  it("dos conversiones con el mismo nombre no repiten el nombre", () => {
+    let s = site();
+    s = siteReducer(s, { type: "page/add-code-block", pageId: "p2", kind: "component", name: "Header", blockId: "a", code: { js: "1" } });
+    s = siteReducer(s, { type: "page/add-code-block", pageId: "p2", kind: "component", name: "Header", blockId: "b", code: { js: "2" } });
+    s = siteReducer(s, { type: "page/add-code-block", pageId: "p2", kind: "template", name: "Header", blockId: "c", code: { js: "3" }, thumbnail: "https://ik.test/t.png", scope: "page" });
+    expect(names(s)).toEqual(["Header", "Header 2", "Header 3"]);
+  });
+
+  it("convertir un bloque con un nombre ya usado también lo cambia", () => {
+    let s = site();
+    s = siteReducer(s, { type: "page/add-code-block", pageId: "p2", kind: "component", name: "Menú", blockId: "a", code: { js: "1" } });
+    s = siteReducer(s, { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "component", name: "Menú" });
+    expect(names(s)).toEqual(["Menú", "Menú 2"]);
+  });
+
+  it("no importan las mayúsculas ni los espacios sobrantes", () => {
+    let s = site();
+    s = siteReducer(s, { type: "page/add-code-block", pageId: "p2", kind: "component", name: "Header", blockId: "a", code: { js: "1" } });
+    s = siteReducer(s, { type: "page/add-code-block", pageId: "p2", kind: "component", name: "  header ", blockId: "b", code: { js: "2" } });
+    expect(new Set(names(s).map((n) => n.toLowerCase())).size).toBe(2);
   });
 });

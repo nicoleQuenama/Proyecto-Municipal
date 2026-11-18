@@ -3,7 +3,7 @@
  * dónde se queda al soltarlo. Lee medidas del DOM, pero no cambia nada: el hook es quien aplica el resultado.
  */
 
-import { edgesIn, ITEM_SELECTOR, pageUnder, scaleOf } from "./page-geometry";
+import { cornerOf, edgesIn, innerSize, ITEM_SELECTOR, pageUnder, scaleOf } from "./page-geometry";
 import { ALL_SIDES, type Edges } from "../canvas-editing/edges";
 import { snapEdges, type Guides } from "../canvas-editing/snapping";
 import type { CanvasSettings } from "../canvas-editing/settings-context";
@@ -49,8 +49,7 @@ export function beginPlacementDrag(item: HTMLElement, page: HTMLElement, pointer
 
 /** La esquina del elemento si el puntero está en `e`, en píxeles de `page`. */
 export function cornerAt(e: PointerEvent, drag: PlacementDrag, page: HTMLElement) {
-  const box = page.getBoundingClientRect();
-  return { x: (e.clientX - box.left) / drag.scale - drag.grab.x, y: (e.clientY - box.top) / drag.scale - drag.grab.y };
+  return cornerOf(page, e, drag.grab, drag.scale);
 }
 
 /** Los bordes de la página y de los demás elementos de ella, a los que el arrastre puede pegarse. */
@@ -59,7 +58,7 @@ function snapReferences(drag: PlacementDrag): Edges[] {
     (el) => el !== drag.item && !drag.item.contains(el),
   );
   return [
-    { left: 0, top: 0, right: drag.page.offsetWidth, bottom: drag.page.offsetHeight },
+    { left: 0, top: 0, right: innerSize(drag.page).width, bottom: innerSize(drag.page).height },
     ...others.map((el) => edgesIn(drag.page, el, drag.scale)),
   ];
 }
@@ -115,7 +114,7 @@ export function settleDrag(drag: PlacementDrag, e: PointerEvent, canTransfer: bo
   return {
     kind: "place",
     placement: {
-      x: clamp(drag.last.x, 0, Math.max(0, drag.page.offsetWidth - drag.size.width)),
+      x: clamp(drag.last.x, 0, Math.max(0, innerSize(drag.page).width - drag.size.width)),
       y: Math.max(0, drag.last.y),
       width: drag.last.width,
     },

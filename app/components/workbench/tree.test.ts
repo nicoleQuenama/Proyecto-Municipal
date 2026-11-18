@@ -76,3 +76,38 @@ describe("código de una sección de plantilla", () => {
     expect((section?.children ?? []).map((child) => child.ref?.kind)).toEqual(["block-html", "block-css", "block-js"]);
   });
 });
+
+describe("explorador con un componente compartido", () => {
+  const codeDef = { id: "code-block", name: "Código", description: "", category: "code", width: 800, height: 400, elements: [], links: {}, custom: false };
+
+  /** «Header» como componente, colocado en dos páginas, y una plantilla «Cards» colocada dos veces en la primera. */
+  function shared(): SiteState {
+    let s: SiteState = { ...INITIAL_SITE, pages: [], components: [...INITIAL_SITE.components, codeDef] };
+    s = siteReducer(s, { type: "page/create", id: "p1", name: "Uno" });
+    s = siteReducer(s, { type: "page/create", id: "p2", name: "Dos" });
+    s = siteReducer(s, { type: "block/add", id: "b1", pageId: "p1", componentId: "code-block" });
+    s = siteReducer(s, { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "component", name: "Header" });
+    const id = s.pages.find((p) => p.id === "p1")!.blocks[0].componentId;
+    s = siteReducer(s, { type: "block/add", id: "b2", pageId: "p2", componentId: id });
+    s = siteReducer(s, { type: "block/add", id: "b3", pageId: "p1", componentId: "code-block" });
+    s = siteReducer(s, { type: "block/set-kind", pageId: "p1", blockId: "b3", kind: "template", thumbnail: "https://ik.test/t.png", name: "Cards" });
+    const cards = s.pages.find((p) => p.id === "p1")!.blocks.find((b) => b.id === "b3")!.componentId;
+    return siteReducer(s, { type: "block/add", id: "b4", pageId: "p1", componentId: cards });
+  }
+
+  it("las copias de un componente compartido no se numeran como si fueran variantes", () => {
+    const labels = flatten(buildTree(shared())).map((n) => n.label);
+    expect(labels.filter((l) => l === "Header · componente")).toHaveLength(2);
+    expect(labels.some((l) => /^Header \d/.test(l))).toBe(false);
+  });
+
+  it("una carpeta Componentes lo lista una sola vez, con los lugares donde se usa", () => {
+    const folderNode = flatten(buildTree(shared())).find((n) => n.id === "components");
+    expect(folderNode?.children?.map((c) => c.label)).toEqual(["Header · 2 lugares"]);
+  });
+
+  it("las plantillas siguen numeradas: cada copia es independiente", () => {
+    const labels = flatten(buildTree(shared())).map((n) => n.label);
+    expect(labels.filter((l) => /^Cards \d/.test(l))).toHaveLength(2);
+  });
+});

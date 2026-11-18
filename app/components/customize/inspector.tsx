@@ -1,5 +1,6 @@
 "use client";
 
+import { currentPlacement } from "../placement/current-placement";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
@@ -533,7 +534,12 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 type="button"
                 disabled={block.locked}
                 aria-pressed={block.placementMode === "overlay"}
-                onClick={() => dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "overlay" })}
+                onClick={() => {
+                  dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "overlay" });
+                  // Sin posición propia aún: queda donde se ve ahora, para poder moverlo desde ahí sin que salte.
+                  const at = block.placement ? null : currentPlacement(block.id);
+                  if (at) dispatch({ type: "block/place", pageId, blockId: block.id, placement: at });
+                }}
                 className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
                   block.locked
                     ? "cursor-not-allowed opacity-40 text-ink-dim"

@@ -3,6 +3,7 @@ import { optimizedSrc } from "../media/optimize-src";
 import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
 import { ElementHandles } from "../canvas-editing/element-handles";
+import { RadiusHandles } from "../canvas-editing/radius-handles";
 import type { Behavior } from "../behaviors/types";
 import { BindingBadge } from "../data-sources/binding-badge";
 import { boundBoxStyle } from "../data-sources/bound-fields";
@@ -426,6 +427,9 @@ function PositionedElement({
             onStart={(e, handle) => gestures.startDrag(e, element, handle)}
             only={gestures.backdropId === element.id ? BACKDROP_HANDLES : undefined}
           />
+        )}
+        {selected && gestures && element.kind === "rect" && (
+          <RadiusHandles radius={element.radius} size={{ width: element.width, height: element.height }} onChange={(radius) => gestures.setRadius(element.id, radius)} />
         )}
         {selected && (
           <CodeButton

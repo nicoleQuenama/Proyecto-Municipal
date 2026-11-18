@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BlockKind } from "../site/code-kind-rules";
+import { ThumbnailPicker } from "./thumbnail-picker";
 
 export type BlockChoice = "component" | "section-template" | "page-template";
 
@@ -32,7 +33,7 @@ interface MakeBlockProps {
   /** La plantilla de página solo tiene sentido con el código de una página. */
   pageCode: boolean;
   /** Devuelve el motivo si no se pudo crear. */
-  onCreate: (choice: BlockChoice, name: string) => string | null;
+  onCreate: (choice: BlockChoice, name: string, thumbnail?: string) => string | null;
 }
 
 /**
@@ -45,11 +46,17 @@ export function MakeBlock({ initialName, pageCode, onCreate }: MakeBlockProps) {
   const [error, setError] = useState<string | null>(null);
   const choices = (Object.keys(CHOICES) as BlockChoice[]).filter((choice) => pageCode || choice !== "page-template");
 
-  const create = (choice: BlockChoice) => {
+  /** Las plantillas piden primero su imagen; el componente se crea al momento. */
+  const [pending, setPending] = useState<BlockChoice | null>(null);
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+
+  const create = (choice: BlockChoice, image?: string) => {
     if (!name.trim()) return setError("Ponle un nombre.");
-    const problem = onCreate(choice, name.trim());
+    const problem = onCreate(choice, name.trim(), image);
     if (problem) setError(problem);
   };
+
+  const choose = (choice: BlockChoice) => (CHOICES[choice].kind === "template" ? (name.trim() ? setPending(choice) : setError("Ponle un nombre.")) : create(choice));
 
   return (
     <div className="rounded-lg border border-line bg-panel p-1.5 text-xs text-ink shadow-2xl">
@@ -76,11 +83,28 @@ export function MakeBlock({ initialName, pageCode, onCreate }: MakeBlockProps) {
             }}
             className="h-8 rounded-md border border-line bg-canvas px-2 text-xs outline-none focus:border-accent"
           />
-          {choices.map((choice) => (
+          {pending && (
+            <>
+              <p className="text-[11px] font-medium">{CHOICES[pending].label} «{name.trim()}»</p>
+              <ThumbnailPicker value={thumbnail} onChange={setThumbnail} />
+              <div className="flex gap-1.5">
+                <button type="button" onClick={() => setPending(null)} className="h-8 rounded-md bg-hover px-3 cursor-pointer">Atrás</button>
+                <button
+                  type="button"
+                  disabled={!thumbnail}
+                  onClick={() => create(pending, thumbnail ?? undefined)}
+                  className="h-8 flex-1 rounded-md bg-accent px-3 font-medium text-white disabled:opacity-40 cursor-pointer"
+                >
+                  Crear plantilla
+                </button>
+              </div>
+            </>
+          )}
+          {!pending && choices.map((choice) => (
             <button
               key={choice}
               type="button"
-              onClick={() => create(choice)}
+              onClick={() => choose(choice)}
               className="rounded-md bg-hover px-2 py-1.5 text-left hover:bg-accent hover:text-white cursor-pointer"
             >
               <span className="block font-medium">{CHOICES[choice].label}</span>

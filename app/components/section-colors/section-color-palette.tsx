@@ -4,12 +4,14 @@ import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { useAuth } from "../auth/auth-context";
 import { canManageGlobalDesign } from "../auth/global-design";
 import { colorInputValue } from "../format/format-options";
+import { codeOf, codePatchAction } from "../site/code-source";
 import { applyOverrides } from "../site/overrides";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { BlockInstance, ComponentDef } from "../site/types";
 import { boxStyle } from "../styles/apply";
 import { useStyles } from "../styles/use-styles";
 import { collectColors, type ColorGroup } from "./collect-colors";
+import { findCodeColors, recolorCode } from "./code-colors";
 import { HexField } from "./hex-field";
 import { PaletteSelect, type PaletteOption } from "./palette-select";
 
@@ -24,7 +26,7 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
   const dispatch = useSiteDispatch();
   const styles = useStyles();
   const { settings, setSettings } = useCanvasSettings();
-  const { variables } = useSite();
+  const { variables, components } = useSite();
   const { currentUser } = useAuth();
   const canManageGlobals = canManageGlobalDesign(currentUser);
   const palette: PaletteOption[] = variables
@@ -37,20 +39,37 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
   const boxBackground = (block.box?.background && resolve(block.box.background)) || boxStyle(styles.block(def)).background;
   const groups = collectColors(view, typeof boxBackground === "string" ? boxBackground : undefined);
 
-  if (groups.length === 0) {
-    return <p className="text-xs text-ink-dim">Esta sección no tiene colores directos detectados.</p>;
-  }
-
   const recolor = (group: ColorGroup, color: string) => {
     const change = { pageId, blockId: block.id, color, fill: group.elements.fill, text: group.elements.color, box: group.box };
     dispatch(settings.scope === "component" ? { type: "component/recolor", componentId: def.id, ...change } : { type: "block/recolor", ...change });
   };
 
+  const code = codeOf(block, components);
+  const codeGroups = code ? findCodeColors(code) : [];
+
+  // Los colores de los elementos del lienzo y los escritos en el código (CSS, HTML, TypeScript, Tailwind) se muestran juntos.
+  const swatches: { key: string; value: string; recolor: (color: string) => void }[] = [
+    ...groups.map((group, index) => ({ key: `element-${index}`, value: group.value, recolor: (color: string) => recolor(group, color) })),
+    ...codeGroups.map((group) => ({
+      key: `code-${group.value}`,
+      value: group.value,
+      // El código cambia en el propio bloque, o en la definición si es un componente compartido.
+      recolor: (color: string) => {
+        const next = recolorCode(code!, group.value, color);
+        dispatch(codePatchAction(block, components, pageId, { html: next.html, css: next.css, js: next.js }));
+      },
+    })),
+  ];
+
+  if (swatches.length === 0) {
+    return <p className="text-xs text-ink-dim">Esta sección no tiene colores directos detectados.</p>;
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-1 text-[11px]">
         <span className="font-semibold text-ink">
-          Colores ({groups.length})
+          Colores ({swatches.length})
         </span>
         <button
           type="button"
@@ -62,8 +81,8 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
         </button>
       </div>
       <ul className={`grid ${compact ? "grid-cols-4 gap-1.5" : "grid-cols-3 sm:grid-cols-4 gap-2"} rounded-lg border border-line bg-canvas/40 p-2`}>
-        {groups.map((group, index) => (
-          <li key={index} className="flex flex-col items-center gap-1 rounded-md border border-line/60 bg-panel p-1.5 shadow-xs">
+        {swatches.map((group) => (
+          <li key={group.key} className="flex flex-col items-center gap-1 rounded-md border border-line/60 bg-panel p-1.5 shadow-xs">
             {canManageGlobals ? (
               <>
                 <label
@@ -75,11 +94,11 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
                     type="color"
                     aria-label={`Color ${group.value}`}
                     value={colorInputValue(group.value)}
-                    onChange={(e) => recolor(group, e.target.value)}
+                    onChange={(e) => group.recolor(e.target.value)}
                     className="absolute inset-0 size-full cursor-pointer opacity-0"
                   />
                 </label>
-                <HexField value={group.value} onChange={(color) => recolor(group, color)} />
+                <HexField value={group.value} onChange={(color) => group.recolor(color)} />
               </>
             ) : (
               <>
@@ -88,7 +107,7 @@ export function SectionColorPalette({ pageId, block, def, compact = false }: Sec
                   className="size-7 rounded-full border border-line shadow-sm"
                   style={{ background: group.value }}
                 />
-                <PaletteSelect options={palette} value={group.value} onChange={(color) => recolor(group, color)} />
+                <PaletteSelect options={palette} value={group.value} onChange={(color) => group.recolor(color)} />
               </>
             )}
           </li>

@@ -43,6 +43,8 @@ export async function PUT(request: Request) {
       try {
         return await saveBranchPatch(tx, scope, actor.user.id, branch, patch);
       } catch (error) {
+        // Dos componentes con el mismo nombre no es un cambio de otra persona: se dice tal cual, para poder arreglarlo.
+        if (isPgError(error, "23505", "components_organization_id_project_id_name_key")) throw new VersionError("Hay dos componentes con el mismo nombre: renombra uno para que se pueda guardar.", 409);
         if (isPgError(error, "23503") || isPgError(error, "23505")) throw new VersionError("El sitio cambió en otra pestaña o por otra persona: recarga la página para ver lo último.", 409);
         throw error;
       }

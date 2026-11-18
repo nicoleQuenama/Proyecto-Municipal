@@ -1,13 +1,14 @@
 import { CODE_COMPONENT_ID, EMPTY_CODE } from "./code-defaults";
 import { updateBlock } from "./overrides";
 import { getBlockSlot } from "./rules";
+import { uniqueComponentName } from "./unique-component-name";
 import type { BlockInstance, CodeSource, ComponentDef, SiteState } from "./types";
 
 export type BlockKind = "loose" | "component" | "template";
 
 export type CodeKindAction =
   | { type: "component/code"; componentId: string; patch: Partial<CodeSource> }
-  | { type: "block/set-kind"; pageId: string; blockId: string; kind: BlockKind; name?: string }
+  | { type: "block/set-kind"; pageId: string; blockId: string; kind: BlockKind; name?: string; thumbnail?: string }
   /** Un trozo de código seleccionado en el editor pasa a un bloque nuevo (componente o plantilla) de esa página. */
   | {
       type: "page/add-code-block";
@@ -16,6 +17,8 @@ export type CodeKindAction =
       name: string;
       blockId: string;
       code: Partial<CodeSource>;
+      /** Obligatoria en una plantilla: la imagen con la que se muestra en la lista de Plantillas. */
+      thumbnail?: string;
       /** `page`: solo se guarda la plantilla (no se coloca ningún bloque); se aplica después a una página. */
       scope?: "section" | "page";
     }
@@ -29,7 +32,7 @@ const findBlock = (state: SiteState, pageId: string, blockId: string): BlockInst
   state.pages.flatMap((p) => p.blocks).find((b) => b.id === blockId);
 
 /** Una definición nueva que guarda el código de un bloque. */
-const codeDefinition = (name: string, kind: "component" | "template", code: CodeSource): ComponentDef => ({
+const codeDefinition = (name: string, kind: "component" | "template", code: CodeSource, thumbnail?: string): ComponentDef => ({
   id: crypto.randomUUID(),
   name,
   description: "Bloque de código",
@@ -41,10 +44,11 @@ const codeDefinition = (name: string, kind: "component" | "template", code: Code
   custom: true,
   code,
   codeKind: kind,
+  ...(thumbnail ? { thumbnail } : {}),
 });
 
 /** Qué pasa con el bloque al elegir cada tipo. Un tipo nuevo es una entrada nueva. */
-const CONVERT: { [K in BlockKind]: (state: SiteState, block: BlockInstance, pageId: string, name: string) => SiteState } = {
+const CONVERT: { [K in BlockKind]: (state: SiteState, block: BlockInstance, pageId: string, name: string, thumbnail?: string) => SiteState } = {
   loose: (state, block, pageId) => {
     const shared = state.components.find((c) => c.id === block.componentId);
     const code = block.code ?? shared?.code;
@@ -55,8 +59,8 @@ const CONVERT: { [K in BlockKind]: (state: SiteState, block: BlockInstance, page
     const next = updateBlock(state, pageId, block.id, (b) => ({ ...b, componentId: def.id, code: undefined }));
     return { ...next, components: [...next.components, def] };
   },
-  template: (state, block, pageId, name) => {
-    const def = codeDefinition(name, "template", { ...block.code! });
+  template: (state, block, pageId, name, thumbnail) => {
+    const def = codeDefinition(name, "template", { ...block.code! }, thumbnail);
     const next = updateBlock(state, pageId, block.id, (b) => ({ ...b, componentId: def.id }));
     return { ...next, components: [...next.components, def] };
   },
@@ -68,18 +72,21 @@ export const CODE_KIND_HANDLERS: Handlers = {
     components: state.components.map((c) => (c.id === componentId && c.code ? { ...c, code: { ...c.code, ...patch } } : c)),
   }),
 
-  "block/set-kind": (state, { pageId, blockId, kind, name }) => {
+  "block/set-kind": (state, { pageId, blockId, kind, name, thumbnail }) => {
     const block = findBlock(state, pageId, blockId);
     // Sin código propio ni compartido no hay nada que convertir en componente o plantilla.
     if (!block || (kind !== "loose" && !block.code)) return state;
-    return CONVERT[kind](state, block, pageId, name?.trim() || "Bloque de código");
+    // Una plantilla siempre lleva su imagen: es lo que se ve en la lista de Plantillas.
+    if (kind === "template" && !thumbnail) return state;
+    return CONVERT[kind](state, block, pageId, uniqueComponentName(state.components, name ?? ""), thumbnail);
   },
 
-  "page/add-code-block": (state, { pageId, kind, name, blockId, code, scope }) => {
+  "page/add-code-block": (state, { pageId, kind, name, blockId, code, scope, thumbnail }) => {
     if (!state.pages.some((p) => p.id === pageId)) return state;
+    if (kind === "template" && !thumbnail) return state;
 
     // Lo que sale del editor suele usar clases de Tailwind (como el código de una página): se carga en el bloque.
-    const def = codeDefinition(name.trim() || "Bloque de código", kind, { ...EMPTY_CODE, tailwind: true, ...code });
+    const def = codeDefinition(uniqueComponentName(state.components, name), kind, { ...EMPTY_CODE, tailwind: true, ...code }, thumbnail);
     if (scope === "page") return { ...state, components: [...state.components, { ...def, codeKind: "template", templateFor: "page" }] };
 
     const block: BlockInstance = {

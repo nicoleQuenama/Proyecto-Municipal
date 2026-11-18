@@ -31,7 +31,10 @@ import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground, spanStyle, stretches } from "../background/background-css";
 import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
+import { clampCanvasSize } from "../canvas-editing/limits";
 import { ContentButton } from "../code-data/content-button";
+import { anchoredPlacement } from "../placement/anchored-placement";
+import { bleedsToEdges } from "./bleed";
 import { codeOf, isCodeBlock } from "./code-source";
 import { ComponentView, type ElementInteraction } from "./component-view";
 import { addCardToComponent, addButtonToComponent, deleteCardFromComponent, duplicateCardInComponent, reorderCardInComponent, reorderElementInComponent, moveElementOrderInComponent } from "./container-card-rules";
@@ -184,7 +187,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
 
   // Vista previa a todo el ancho: lo marcado «Todo el ancho» y lo diseñado de borde a borde llegan a los bordes de la página.
   const autoFill = fullPage && !placement && !stretches(block.box?.span) && !pureCode ? painted : null;
-  const bleeds = fullPage && !placement && (stretches(block.box?.span) || autoFill !== null);
+  const bleeds = bleedsToEdges({ fullPage, placed: !!placement, stretches: stretches(block.box?.span), autoFill: autoFill !== null, isHeaderOrFooter });
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
@@ -368,6 +371,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
         // Un bloque de código con tamaño propio dibuja su anillo a ese ancho, no a todo lo disponible.
         ...(pureCode && block.size?.width ? { width: block.size.width, maxWidth: "100%" } : {}),
+        // Un bloque de código colocado sin tamaño propio conserva el ancho que tenía al colocarlo: con «w-full» abarcaría toda la página y moverlo no se notaría.
+        ...(pureCode && placement && !placement.fixed && !block.size?.width ? { width: placement.width, maxWidth: "none" } : {}),
       }}
     >
       {css && <style>{css}</style>}
@@ -420,15 +425,16 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                 size={gestures.size}
                 active={selected}
                 // El tamaño guardado va siempre al bloque: cada bloque de código tiene el suyo (el alcance «componente» no aplica).
-                onResize={(next) =>
-                  dispatch({
-                    type: "block/size",
-                    pageId: page.id,
-                    blockId: block.id,
-                    // Solo cambia un eje por arrastre; el otro se completa con lo medido.
-                    size: { width: next.width ?? codeBox.width, height: next.height ?? codeBox.height },
-                  })
-                }
+                onResize={(next, anchor) => {
+                  // Solo cambia un eje por arrastre; el otro se completa con lo medido.
+                  const size = { width: next.width ?? codeBox.width, height: next.height ?? codeBox.height };
+                  dispatch({ type: "block/size", pageId: page.id, blockId: block.id, size });
+                  // Colocado: al agarrar el lado izquierdo o el de arriba se mueve también la posición, y el lado contrario se queda.
+                  if (placement) {
+                    const to = clampCanvasSize(size, []);
+                    dispatch({ type: "block/place", pageId: page.id, blockId: block.id, placement: anchoredPlacement(placement, codeBox, to, anchor) });
+                  }
+                }}
               />
             )}
             {editing && selected && <ContentButton

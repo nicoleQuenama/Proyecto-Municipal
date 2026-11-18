@@ -1,5 +1,6 @@
 import { preludeOf } from "../functions/scope";
 import { API_BRIDGE } from "./api-bridge";
+import { captureBridge } from "./capture-bridge";
 import { safeTranspile } from "./transpile";
 import { importMapOf } from "../libraries/library-url";
 import { rootVariablesCss, themeCss } from "../styles/css-variables";
@@ -205,6 +206,7 @@ ${inside("style", code.css)}
 <body data-site-page>
 ${code.html}
 <script>${inside("script", INSPECTOR_BRIDGE)}</script>
+<script>${captureBridge(origin)}</script>
 <script type="module">
 ${inside("script", safeTranspile(`${preludeOf(shared.functions)}\n${code.js}`))}
 </script>

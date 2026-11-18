@@ -12,7 +12,7 @@ function site(kind?: "component" | "template"): SiteState {
   s = siteReducer(s, { type: "page/create", id: "p1", name: "Uno" });
   s = siteReducer(s, { type: "block/add", id: "b1", pageId: "p1", componentId: CODE_COMPONENT_ID });
   s = siteReducer(s, { type: "block/code", pageId: "p1", blockId: "b1", patch: { js: "const a = 1;" } });
-  return kind ? siteReducer(s, { type: "block/set-kind", pageId: "p1", blockId: "b1", kind, name: "X" }) : s;
+  return kind ? siteReducer(s, { type: "block/set-kind", pageId: "p1", blockId: "b1", kind, name: "X", thumbnail: "https://ik.test/t.png" }) : s;
 }
 const ref = { kind: "block-js" as const, pageId: "p1", blockId: "b1" };
 
