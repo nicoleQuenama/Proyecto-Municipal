@@ -1,6 +1,7 @@
 /** Copiar y pegar secciones (Ctrl+C, Ctrl+V, Ctrl+D), una o varias a la vez. */
 
 import { selectBlocks } from "./multi-select";
+import { uniqueComponentName } from "./unique-component-name";
 import type { BlockInstance, ComponentDef, SiteState } from "./types";
 
 /** Lo que se copia de una sección: ella y, si es una figura o un texto dibujado, su propio componente (cada uno es único). */
@@ -43,7 +44,7 @@ function pasteOne(state: SiteState, pageId: string, clip: Clip, blockId: string,
   };
   return {
     ...state,
-    components: copy.component ? [...state.components, { ...copy.component, id: componentId }] : state.components,
+    components: copy.component ? [...state.components, { ...copy.component, id: componentId, name: uniqueComponentName(state.components, copy.component.name) }] : state.components,
     pages: state.pages.map((p) => (p.id === pageId ? { ...p, blocks: [...p.blocks, block] } : p)),
   };
 }
