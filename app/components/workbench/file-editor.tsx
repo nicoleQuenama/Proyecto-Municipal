@@ -15,6 +15,9 @@ import { unwrapDeclarations, wrapDeclarations, wrapperLines } from "./css-wrappe
 import { fileId, kindOf, type FileKindName, type FileRef } from "./file-ref";
 import { fileTarget } from "./file-target";
 import { HtmlOutline } from "./html-outline";
+import { fragmentCode } from "./block-fragment";
+import { adoptExternal } from "./external-change";
+import { MakeBlock } from "./make-block";
 import { MakeFunction, SCOPE_LABELS } from "./make-function";
 import { TargetBar } from "./target-bar";
 
@@ -127,6 +130,17 @@ export default function FileEditor({
   useEffect(() => {
     latest.current = { draft, saved, site, file };
   });
+
+  // Un cambio hecho fuera del editor (el modal «Contenido», deshacer…) se muestra aquí, en lugar de pisarse al guardar.
+  const stored = kind.read(site, file);
+  useEffect(() => {
+    const external = adoptExternal(stored, latest.current.saved);
+    if (external === null) return;
+    setDraft(external);
+    setSaved(external);
+    // Solo cuando cambia lo guardado en el sitio; lo que el editor escribe él mismo ya coincide con `saved`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stored]);
 
   /** Guarda lo escrito si cambió. */
   const flush = () => {
@@ -258,6 +272,28 @@ export default function FileEditor({
     return null;
   };
 
+  /** La página a la que pertenece el archivo; sin ella (CSS global, funciones) no hay dónde poner un bloque. */
+  const ownerPageId = "pageId" in file ? file.pageId : null;
+
+  /** Pasa lo seleccionado a un bloque nuevo de la página y lo quita del archivo. */
+  const createBlock = (blockKind: "component" | "template", name: string): string | null => {
+    if (!selection || !ownerPageId) return "Vuelve a seleccionar el código.";
+
+    dispatch({
+      type: "page/add-code-block",
+      pageId: ownerPageId,
+      kind: blockKind,
+      name,
+      blockId: crypto.randomUUID(),
+      code: fragmentCode(kind.language, selection.text),
+    });
+    editorRef.current?.executeEdits("hacer-bloque", [{ range: selection.range, text: "" }]);
+
+    setSelection(null);
+    setMessage(`${blockKind === "component" ? "Componente" : "Plantilla"} «${name}» creado en la página.`);
+    return null;
+  };
+
   /** Añade al proyecto, desde el CDN, un paquete que el código importa. */
   const addMissing = async (name: string) => {
     try {
@@ -314,15 +350,20 @@ export default function FileEditor({
           }}
         />
 
-        {selection && scopes.length > 0 && (
-          <MakeFunction
-            // key: cada selección nueva empieza con el formulario cerrado y el nombre que le toca.
+        {selection && (scopes.length > 0 || ownerPageId) && (
+          <div
+            className="absolute z-30 flex w-72 flex-col gap-1"
+            style={{ top: selection.top, left: Math.max(8, selection.left) }}
+            // Pulsar aquí no debe quitar la selección del editor.
+            onMouseDown={(e) => e.target instanceof HTMLInputElement || e.preventDefault()}
+            // key: cada selección nueva empieza con los formularios cerrados y el nombre que le toca.
             key={`${selection.range.startLineNumber}:${selection.range.startColumn}:${selection.range.endLineNumber}:${selection.range.endColumn}`}
-            scopes={scopes}
-            initialName={declaredName(selection.text) ?? "miFuncion"}
-            position={{ top: selection.top, left: selection.left }}
-            onCreate={create}
-          />
+          >
+            {scopes.length > 0 && (
+              <MakeFunction scopes={scopes} initialName={declaredName(selection.text) ?? "miFuncion"} onCreate={create} />
+            )}
+            {ownerPageId && <MakeBlock initialName="Bloque nuevo" onCreate={createBlock} />}
+          </div>
         )}
       </div>
       {target && target.outline.length > 0 && (

@@ -23,6 +23,7 @@ import type { ControlAction } from "../forms/control-rules";
 import type { ControlSpec } from "../forms/control-types";
 import type { PageRole, RoleAction } from "./page-roles";
 import type { PageSeo, SeoAction } from "./seo-rules";
+import type { CodeKindAction } from "./code-kind-rules";
 import type { IconName } from "../icons/icon-set";
 import type { LinkParams } from "../dynamic/types";
 import type { DynamicAction } from "../dynamic/dynamic-rules";
@@ -197,6 +198,10 @@ export interface ComponentDef {
   custom: boolean;
   /** Clases de Tailwind y CSS que valen en todos los lugares donde se use el componente (por sección o elemento). */
   styles?: Record<string, CustomStyle>;
+  /** El código de un componente o plantilla hechos desde un bloque de código (sin `elements`). */
+  code?: CodeSource;
+  /** `component`: una definición compartida, cada cambio vale en todos sus lugares. `template`: un molde del que se copia el código. */
+  codeKind?: "component" | "template";
 }
 
 /** Un componente colocado en una página. */
@@ -427,6 +432,7 @@ export type SiteAction =
   | { type: "library/add"; library: Library }
   | SourceAction
   | SeoAction
+  | CodeKindAction
   | DrawAction
   | TextAction
   | PasteAction

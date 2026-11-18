@@ -1,5 +1,6 @@
 /** Las opciones del clic derecho en el explorador, según de quién es cada nodo. Un dueño nuevo es una entrada nueva. */
 
+import { codeOf } from "../site/code-source";
 import { FUNCTION_NAME } from "../functions/scope";
 import type { SiteAction, SiteState } from "../site/types";
 import { kindOf, type FileRef } from "./file-ref";
@@ -60,14 +61,14 @@ const OWNER_MENUS: { [K in NodeOwner["type"]]: (owner: Extract<NodeOwner, { type
   block: (owner, node, site) => {
     const block = site.pages.flatMap((p) => p.blocks).find((b) => b.id === owner.blockId);
     // Una sección de plantilla sin código puede ganarlo: se ofrecen sus archivos para crearlos.
-    const newCodeFiles = block?.code
+    const newCodeFiles = block && codeOf(block, site.components)
       ? []
       : newFiles(site, [
           { kind: "block-html", pageId: owner.pageId, blockId: owner.blockId },
           { kind: "block-css", pageId: owner.pageId, blockId: owner.blockId },
           { kind: "block-js", pageId: owner.pageId, blockId: owner.blockId },
         ]);
-    const isCode = !!block?.code;
+    const isCode = !!block && !!codeOf(block, site.components);
     return [
       ...newCodeFiles,
       {

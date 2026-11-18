@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { CodeFrame } from "../code/code-frame";
 import type { ElementHighlight, ElementPick } from "../code/messages";
 import { useSharedAssets } from "../code/use-shared-assets";
+import { codeOf } from "../site/code-source";
 import { useSite } from "../site/site-context";
 import type { CodeSource } from "../site/types";
 import type { FileRef } from "./file-ref";
@@ -39,30 +40,31 @@ export function BlockPreview({
   hoverLine: number | null;
   onPick: (pick: CodePick | null) => void;
 }) {
-  const { libraries, pages } = useSite();
+  const { libraries, pages, components } = useSite();
   const shared = useSharedAssets(file.blockId);
   const block = pages.find((page) => page.id === file.pageId)?.blocks.find((item) => item.id === file.blockId);
+  const blockCode = block && codeOf(block, components);
 
   const [peek, setPeek] = useState<{ tag: string; html: string } | null>(null);
 
   // Un bloque se ve a tamaño real (100%) hasta que se acerque o se aleje.
   const zoom = usePreviewZoom(1);
 
-  const sourceMap = useMemo(() => buildSourceMap(block?.code?.html ?? ""), [block?.code?.html]);
+  const sourceMap = useMemo(() => buildSourceMap(blockCode?.html ?? ""), [blockCode?.html]);
   const field = FIELD[file.kind];
 
   const highlight = useMemo<ElementHighlight | null>(() => {
-    if (hoverLine === null || !block?.code) return null;
+    if (hoverLine === null || !blockCode) return null;
     if (file.kind === "block-html") {
       const node = nodeAtLine(sourceMap, hoverLine);
       return node ? { path: node.path, kind: "hover" } : null;
     }
     if (file.kind === "block-css") {
-      const selector = selectorAtLine(block.code.css, hoverLine);
+      const selector = selectorAtLine(blockCode.css, hoverLine);
       return selector ? { selector, kind: "hover" } : null;
     }
     return null;
-  }, [hoverLine, file.kind, sourceMap, block]);
+  }, [hoverLine, file.kind, sourceMap, block, blockCode]);
 
   const handleElement = useCallback(
     (event: ElementPick) => {
@@ -83,7 +85,7 @@ export function BlockPreview({
   if (!field) return null;
 
   // Los archivos de la plantilla se crean al escribir en ellos: mientras no haya código, no hay qué previsualizar.
-  if (!block?.code) {
+  if (!blockCode) {
     return (
       <aside aria-label="Vista previa" className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-l border-line bg-white">
         <div className="border-b border-neutral-200 px-3 py-1 text-[11px] text-neutral-500">Vista previa en vivo</div>
@@ -94,7 +96,7 @@ export function BlockPreview({
     );
   }
 
-  const code: CodeSource = block.code;
+  const code: CodeSource = blockCode;
 
   return (
     <aside aria-label="Vista previa" className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-l border-line bg-white">

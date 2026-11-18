@@ -1,6 +1,7 @@
 /** El explorador de archivos del editor: carpetas y archivos derivados de lo que hay en el sitio. */
 
 import { elementLabel } from "../navigation/links";
+import { codeOf } from "../site/code-source";
 import { SECTION_KEY, type BlockInstance, type ComponentDef, type FunctionScope, type Page, type SiteState } from "../site/types";
 import { fileId, kindOf, type FileRef } from "./file-ref";
 import { HIDDEN_WHEN_EMPTY, isEmptyFile } from "./removal";
@@ -85,7 +86,7 @@ function selectionFolder(site: SiteState): TreeNode[] {
   const children = [...code, ...scopeFiles(site, page, block, element ? element.id : SECTION_KEY)];
 
   // Sin código propio, la carpeta además ofrece materializarlo: los archivos pasan a tener su vista previa.
-  const action: TreeAction | undefined = block.code ? undefined : { type: "add-code", pageId: page.id, blockId: block.id };
+  const action: TreeAction | undefined = codeOf(block, site.components) ? undefined : { type: "add-code", pageId: page.id, blockId: block.id };
   return [folder("selection", `Selección · ${element ? elementLabel(element) : def.name}`, children, { action })];
 }
 
@@ -109,7 +110,7 @@ function pageFolder(site: SiteState, page: Page): TreeNode {
     const def = defOf(site, block);
     if (!def) return [];
 
-    if (block.code) {
+    if (codeOf(block, site.components)) {
       return [
         folder(`${page.id}:${block.id}`, `${def.name} ${index + 1}`, [
           ...file(site, { kind: "block-html", pageId: page.id, blockId: block.id }),

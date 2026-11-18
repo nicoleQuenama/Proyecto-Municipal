@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ComponentThumb } from "../site/component-view";
 import type { ComponentDef } from "../site/types";
 import { Badge } from "../ui/badge";
+import { KIND_LABELS } from "../workbench/block-kind";
 import { plural } from "../versioning/versioning-rules";
 
 const rowButton =
@@ -73,12 +74,12 @@ export function ComponentRow({
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-[13px] font-medium">
           <span className="truncate">{def.name}</span>
-          {def.custom && <Badge tone="accent">Propio</Badge>}
+          {def.codeKind ? <Badge tone="accent">{KIND_LABELS[def.codeKind]}</Badge> : def.custom && <Badge tone="accent">Propio</Badge>}
         </p>
         <p className="truncate text-xs text-ink-dim">{def.description}</p>
       </div>
 
-      <button type="button" aria-label={`Editar ${def.name}`} title="Editar en el constructor" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>✎</button>
+      {!def.codeKind && <button type="button" aria-label={`Editar ${def.name}`} title="Editar en el constructor" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>✎</button>}
       <button type="button" aria-label={`Duplicar ${def.name}`} title="Duplicar componente" onClick={onDuplicate} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>⧉</button>
       <button type="button" aria-label={`Eliminar ${def.name}`} title="Eliminar" onClick={() => setConfirming(true)} className={`${rowButton} hidden hover:text-red-400 group-hover:flex focus:flex cursor-pointer`}>×</button>
 

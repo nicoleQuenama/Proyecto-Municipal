@@ -1,5 +1,6 @@
 /** Dónde se usa un archivo de código, para avisar antes de eliminarlo. */
 
+import { codeOf } from "../site/code-source";
 import type { SiteState } from "../site/types";
 import { kindOf, sameFile, type FileRef } from "./file-ref";
 
@@ -20,10 +21,11 @@ function otherCode(site: SiteState, skip: FileRef): Piece[] {
   for (const page of site.pages) {
     all.push({ ref: { kind: "page-js", pageId: page.id }, where: `el código de la página «${page.name}»`, text: page.js ?? "", language: "js" });
     for (const block of page.blocks) {
-      if (block.code) {
+      const code = codeOf(block, site.components);
+      if (code) {
         const where = `una sección de «${page.name}»`;
-        all.push({ ref: { kind: "block-js", pageId: page.id, blockId: block.id }, where, text: block.code.js, language: "js" });
-        all.push({ ref: { kind: "block-html", pageId: page.id, blockId: block.id }, where, text: block.code.html, language: "html" });
+        all.push({ ref: { kind: "block-js", pageId: page.id, blockId: block.id }, where, text: code.js, language: "js" });
+        all.push({ ref: { kind: "block-html", pageId: page.id, blockId: block.id }, where, text: code.html, language: "html" });
       }
       for (const behavior of block.behaviors ?? []) {
         if (behavior.action.kind !== "code") continue;

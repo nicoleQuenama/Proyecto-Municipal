@@ -14,8 +14,6 @@ interface MakeFunctionProps {
   /** Dónde se puede usar la función nueva, según de dónde viene el código. */
   scopes: FunctionScope[];
   initialName: string;
-  /** Posición bajo el final de lo seleccionado, dentro del editor. */
-  position: { top: number; left: number };
   /** Devuelve el motivo si no se pudo crear. */
   onCreate: (scope: FunctionScope, name: string) => string | null;
 }
@@ -24,7 +22,7 @@ interface MakeFunctionProps {
  * La opción que se superpone al seleccionar código: lo convierte en una función con nombre,
  * reutilizable en todo el proyecto, en una sección o en un elemento.
  */
-export function MakeFunction({ scopes, initialName, position, onCreate }: MakeFunctionProps) {
+export function MakeFunction({ scopes, initialName, onCreate }: MakeFunctionProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(initialName);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +33,7 @@ export function MakeFunction({ scopes, initialName, position, onCreate }: MakeFu
   };
 
   return (
-    <div
-      className="absolute z-30 w-72 rounded-lg border border-line bg-panel p-1.5 text-xs text-ink shadow-2xl"
-      style={{ top: position.top, left: Math.max(8, position.left) }}
-      // Pulsar aquí no debe quitar la selección del editor.
-      onMouseDown={(e) => e.target instanceof HTMLInputElement || e.preventDefault()}
-    >
+    <div className="rounded-lg border border-line bg-panel p-1.5 text-xs text-ink shadow-2xl">
       {!open ? (
         <button
           type="button"

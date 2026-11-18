@@ -6,6 +6,7 @@
 
 import { SECTION_KEY, type CodeSource, type FunctionScope, type SiteAction, type SiteState } from "../site/types";
 import { declaredName, type CallSite } from "../functions/scope";
+import { codeOf, sharedDefOf } from "../site/code-source";
 import { elementLabel } from "../navigation/links";
 
 export type CodeLanguage = "html" | "css" | "typescript";
@@ -53,13 +54,18 @@ const blockFile = <R extends Extract<FileRef, { blockId: string; pageId: string 
     const owner = ownerName(site, ref.pageId, ref.blockId);
     return owner && `${owner} · ${fileName}`;
   },
-  read: (site, ref) => blockOf(site, ref.pageId, ref.blockId)?.code?.[field] ?? "",
-  write: (_site, ref, value) => ({
-    type: "block/code",
-    pageId: ref.pageId,
-    blockId: ref.blockId,
-    patch: { [field]: value },
-  }),
+  read: (site, ref) => {
+    const block = blockOf(site, ref.pageId, ref.blockId);
+    return (block && codeOf(block, site.components)?.[field]) ?? "";
+  },
+  write: (site, ref, value) => {
+    const block = blockOf(site, ref.pageId, ref.blockId);
+    // Un componente compartido guarda su código en la definición: así cambia en todos los lugares donde se usa.
+    const shared = block && sharedDefOf(block, site.components);
+    return shared
+      ? { type: "component/code", componentId: shared.id, patch: { [field]: value } }
+      : { type: "block/code", pageId: ref.pageId, blockId: ref.blockId, patch: { [field]: value } };
+  },
   callSite: (_site, ref) => ({ blockId: ref.blockId }),
   scopes: (_site, ref) =>
     extractable ? [{ kind: "global" }, { kind: "block", blockId: ref.blockId }] : [],

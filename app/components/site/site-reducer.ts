@@ -15,6 +15,8 @@ import { CONTROL_HANDLERS } from "../forms/control-rules";
 import { ORDER_HANDLERS } from "./order-rules";
 import { ROLE_HANDLERS } from "./page-roles";
 import { SEO_HANDLERS } from "./seo-rules";
+import { CODE_KIND_HANDLERS } from "./code-kind-rules";
+import { newBlockCode } from "./code-source";
 import { SOURCE_HANDLERS } from "../data-sources/source-rules";
 import { BACKGROUND_HANDLERS } from "../background/background-rules";
 import { DYNAMIC_HANDLERS } from "../dynamic/dynamic-rules";
@@ -25,7 +27,7 @@ import { setHidden } from "./hiding";
 import { purgeHidden } from "./hidden-items";
 import { EXAMPLE_COMPONENTS } from "./component-templates";
 import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
-import { CODE_COMPONENT_ID, DEFAULT_CODE, EMPTY_CODE } from "./code-defaults";
+import { EMPTY_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
 import { placeBlock, placeMedia, placeTitle, transferBlock, transferMedia } from "../placement/placement-rules";
 import { mergePatch, moveBlock, resetFormat, resizeSection, styleBox, styleElements, updateBlock } from "./overrides";
@@ -98,6 +100,7 @@ const HANDLERS: Handlers = {
   ...RESPONSIVE_HANDLERS,
   ...LAYER_HANDLERS,
   ...UNIT_HANDLERS,
+  ...CODE_KIND_HANDLERS,
   "page/create": (state, action) => {
     const name = action.name.trim();
     if (!name || isPageNameTaken(state.pages, name)) return state;
@@ -238,7 +241,7 @@ const HANDLERS: Handlers = {
       id: action.id,
       componentId: action.componentId,
       ...(slot ? { slot } : {}),
-      ...(action.componentId === CODE_COMPONENT_ID ? { code: DEFAULT_CODE } : {}),
+      ...newBlockCode(comp, action.componentId),
     };
     const next = {
       ...state,
@@ -267,7 +270,7 @@ const HANDLERS: Handlers = {
         id: crypto.randomUUID(),
         componentId,
         slot,
-        ...(componentId === CODE_COMPONENT_ID ? { code: DEFAULT_CODE } : {}),
+        ...newBlockCode(comp, componentId),
       };
     });
 

@@ -31,7 +31,8 @@ import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground, spanStyle, stretches } from "../background/background-css";
 import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
-import { CODE_COMPONENT_ID } from "./code-defaults";
+import { ContentButton } from "../code-data/content-button";
+import { codeOf, isCodeBlock } from "./code-source";
 import { ComponentView, type ElementInteraction } from "./component-view";
 import { addCardToComponent, addButtonToComponent, deleteCardFromComponent, duplicateCardInComponent, reorderCardInComponent, reorderElementInComponent, moveElementOrderInComponent } from "./container-card-rules";
 import { customClasses, customCss, isFlowLayout, targetKey } from "./custom-code";
@@ -130,12 +131,13 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const selected = editing && block.id === selectedId;
   // Un bloque de código puro (la plantilla «Bloque de código») es solo su iframe. Una sección de plantilla que
   // además tiene código propio pinta su componente y, debajo, el iframe con ese código.
-  const pureCode = !!block.code && block.componentId === CODE_COMPONENT_ID;
+  const blockCode = codeOf(block, components);
+  const pureCode = isCodeBlock(block, components);
   // Añadido pero aún vacío: no se dibuja una caja vacía bajo la sección; el iframe aparece al escribir algo.
   const extraCode =
-    !!block.code &&
+    !!blockCode &&
     !pureCode &&
-    [block.code.html, block.code.css, block.code.js].some((part) => part.trim() !== "");
+    [blockCode.html, blockCode.css, blockCode.js].some((part) => part.trim() !== "");
   // En un bloque de código la caja real la pinta el iframe: se mide y se le pasa a los gestos para que las manijas no salten.
   const codeRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -402,7 +404,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
           // La caja del bloque: aquí se mide y aquí viven las manijas de redimensionado.
           <div ref={codeRef} className="relative">
             <CodeBlockView
-              code={block.code!}
+              code={blockCode!}
               libraries={libraries}
               shared={shared}
               name={def.name}
@@ -429,6 +431,10 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                 }
               />
             )}
+            {editing && selected && <ContentButton
+                target={{ kind: "block", pageId: page.id, blockId: block.id }}
+                className="absolute right-2 top-2 z-30 h-7 rounded-md bg-accent px-3 text-xs font-medium text-white shadow cursor-pointer"
+              />}
           </div>
         ) : (
           <>
@@ -443,10 +449,10 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               )}
             />
             {/* El código propio de una sección de plantilla se pinta debajo de su componente, sin tocarlo. */}
-            {extraCode && block.code && (
+            {extraCode && blockCode && (
               <div className="relative mt-2 w-full">
                 <CodeBlockView
-                  code={block.code}
+                  code={blockCode}
                   libraries={libraries}
                   shared={shared}
                   name={def.name}
