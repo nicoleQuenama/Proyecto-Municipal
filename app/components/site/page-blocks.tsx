@@ -31,9 +31,11 @@ import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground, spanStyle, stretches } from "../background/background-css";
 import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
+import { CODE_COMPONENT_ID } from "./code-defaults";
 import { ComponentView, type ElementInteraction } from "./component-view";
 import { addCardToComponent, addButtonToComponent, deleteCardFromComponent, duplicateCardInComponent, reorderCardInComponent, reorderElementInComponent, moveElementOrderInComponent } from "./container-card-rules";
 import { customClasses, customCss, isFlowLayout, targetKey } from "./custom-code";
+import { isNavOrFooter } from "./element-style";
 import { HiddenPlaceholder } from "./hidden-placeholder";
 import { applyOverrides, type Resolver } from "./overrides";
 import { selectionOf } from "./multi-select";
@@ -41,6 +43,8 @@ import type { Placement } from "../placement/types";
 import { splitBlocks } from "./rules";
 import { useSite, useSiteDispatch } from "./site-context";
 import { useBlockGestures } from "./use-block-gestures";
+import { EditingLayer } from "../canvas-editing/editing-layer";
+import type { Size } from "../canvas-editing/limits";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
 import { PlacementGrip } from "../placement/placement-grip";
 import { LockClosedIcon, LockOpenIcon } from "../icons/lock-icons";
@@ -73,6 +77,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const fullPage = useContext(FullBleedContext);
   // El fondo liso con que se dibuja la sección (también el que viene de clases o CSS propios), para extenderlo a los bordes.
   const [painted, setPainted] = useState<string | null>(null);
+  // Un bloque de código mide lo que pinta su iframe (no el lienzo del componente): se mide para que las manijas no salten.
+  const [codeBox, setCodeBox] = useState<Size | null>(null);
 
   const behaviors = block.behaviors ?? [];
   const sectionBehaviors = behaviors.filter((b) => b.scope === SECTION_KEY);
@@ -106,6 +112,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     block.slot === "header" ||
     block.slot === "footer" ||
     def?.category === "navigation";
+  // Encabezado, barra de navegación o pie (o sección en flujo): su ancho lo decide la página, no sus manijas.
+  const widthLocked = !!def && (flow || isNavOrFooter(def, isHeaderOrFooter));
 
   const isOverlay = block.placementMode === "overlay";
   // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es del escritorio.
@@ -120,14 +128,36 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   // Con acceso limitado se remarca lo que sí puede cambiar y se atenúa el resto.
   const limited = interactive && mode === "edit" && !!currentUser?.access?.scope;
   const selected = editing && block.id === selectedId;
+  // Un bloque de código puro (la plantilla «Bloque de código») es solo su iframe. Una sección de plantilla que
+  // además tiene código propio pinta su componente y, debajo, el iframe con ese código.
+  const pureCode = !!block.code && block.componentId === CODE_COMPONENT_ID;
+  // Añadido pero aún vacío: no se dibuja una caja vacía bajo la sección; el iframe aparece al escribir algo.
+  const extraCode =
+    !!block.code &&
+    !pureCode &&
+    [block.code.html, block.code.css, block.code.js].some((part) => part.trim() !== "");
+  // En un bloque de código la caja real la pinta el iframe: se mide y se le pasa a los gestos para que las manijas no salten.
+  const codeRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const node = codeRef.current;
+    if (!node || !pureCode) return;
+    const measure = () => setCodeBox({ width: node.offsetWidth, height: node.offsetHeight });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [pureCode]);
+  const gestureView = view && pureCode && codeBox ? { ...view, ...codeBox } : view;
   const gestures = useBlockGestures({
     pageId: page.id,
     blockId: block.id,
-    view,
+    view: gestureView,
     selected,
     selectedElementIds: selected && selectedElementId ? [selectedElementId, ...(alsoSelectedIds ?? [])] : [],
     device,
   });
+  // La caja de la sección se redimensiona siempre que se pueda editar, aunque sus elementos no se muevan solos.
+  const layer = editing && !isBlockLocked && (!adaptive || manual) ? gestures : undefined;
   // Con varias secciones marcadas, arrastrar una mueve todas: se anota dónde estaba cada una al agarrar.
   const groupOrigins = useRef<Record<string, Placement> | null>(null);
   const canDragPlacement = editing && !adaptive && !isBlockLocked;
@@ -147,11 +177,11 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       dispatch({ type: "block/transfer", fromPageId: page.id, toPageId, blockId: block.id, placement }),
   });
   const dropData = useDropData(page.id, block, view?.elements ?? []);
-  const sectionDrop = useDataDrop((ref) => dropData(ref, null), editing && !block.code);
+  const sectionDrop = useDataDrop((ref) => dropData(ref, null), editing && !pureCode);
   if (!def || !view || !resolve) return null;
 
   // Vista previa a todo el ancho: lo marcado «Todo el ancho» y lo diseñado de borde a borde llegan a los bordes de la página.
-  const autoFill = fullPage && !placement && !stretches(block.box?.span) && !block.code ? painted : null;
+  const autoFill = fullPage && !placement && !stretches(block.box?.span) && !pureCode ? painted : null;
   const bleeds = fullPage && !placement && (stretches(block.box?.span) || autoFill !== null);
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
@@ -195,9 +225,12 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     device,
     isHeaderOrFooter,
     onMoveBlock: canDragPlacement ? move.startDrag : undefined,
-    // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón.
+    // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón: sus elementos no se
+    // mueven, pero la caja sí se redimensiona con sus propias manijas (`sectionGestures`).
     // En tablet o móvil solo se arrastra si la persona definió ese diseño; en automático lo calcula el CMS.
-    gestures: editing && !isBlockLocked && !flow && (!adaptive || manual) ? gestures : undefined,
+    gestures: layer && !flow ? layer : undefined,
+    sectionGestures: layer && flow ? layer : undefined,
+    widthLocked,
     selectedElementId: selected ? selectedElementId : null,
     alsoSelectedIds: selected ? alsoSelectedIds : undefined,
     onFollow: (link, elementId) => followLink(withParams(link, elementId)),
@@ -300,18 +333,18 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       {...placementAttributes(placement)}
       {...(placement && !placement.fixed && stretches(block.box?.span) ? { "data-bleed": "" } : {})}
       // El destino de la sección es su lienzo (ver ComponentView); en un bloque de código, la caja entera.
-      {...(block.code ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
-      {...(placement && !block.code ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
+      {...(pureCode ? { "data-target": targetKey(block.id, SECTION_KEY) } : {})}
+      {...(placement && !pureCode ? { "data-target": targetKey(block.id, PLACE_KEY) } : {})}
       {...behaviorProps}
       {...(behaviorProps.onClick ? { "data-interactive": "" } : {})}
       {...sectionDrop.handlers}
       className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && permissionLocked ? "opacity-40 saturate-50" : ""} ${limited && !permissionLocked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${
         customClasses(block, SECTION_KEY, def).includes("w-fit")
           ? "w-fit"
-          : flow || block.code || stretches(block.box?.span) || autoFill || isHeaderOrFooter
+          : flow || pureCode || stretches(block.box?.span) || autoFill || isHeaderOrFooter
             ? "w-full"
             : "w-fit"
-      } ${customClasses(block, SECTION_KEY, def).includes("mx-auto") ? "mx-auto" : ""} max-w-full ${stretches(block.box?.span) ? "" : "rounded-md"} ${
+      } ${customClasses(block, SECTION_KEY, def).includes("mx-auto") ? "mx-auto" : ""} max-w-full ${
         (selected && selectedElementId === null) || (editing && selectedBlockIds?.includes(block.id))
           ? isBlockLocked
             ? "ring-2 ring-amber-500/80"
@@ -321,7 +354,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               ? "hover:ring-1 hover:ring-amber-500/60"
               : "hover:ring-1 hover:ring-accent/50"
             : ""
-      } ${block.code ? customClasses(block, SECTION_KEY) : ""}`}
+      } ${pureCode ? customClasses(block, SECTION_KEY) : ""}`}
       style={{
         margin: box.margin,
         ...(block.box?.blend ? { mixBlendMode: block.box.blend } : {}),
@@ -331,10 +364,12 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         // Una sección fija que ocupa todo el ancho o la pantalla cubre la ventana entera (pantalla de carga, barra fija).
         ...(placement?.fixed && stretches(block.box?.span) ? { left: 0, top: 0, width: "100vw", maxWidth: "none" } : {}),
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
+        // Un bloque de código con tamaño propio dibuja su anillo a ese ancho, no a todo lo disponible.
+        ...(pureCode && block.size?.width ? { width: block.size.width, maxWidth: "100%" } : {}),
       }}
     >
       {css && <style>{css}</style>}
-      {sectionDrop.over && <span aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md border-2 border-emerald-500 bg-emerald-500/10" />}
+      {sectionDrop.over && <span aria-hidden className="pointer-events-none absolute inset-0 z-10 border-2 border-emerald-500 bg-emerald-500/10" />}
       {editing && block.repeat && (
         <BindingBadge
           label="Se repite por cada elemento de"
@@ -348,9 +383,10 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         {...(editing ? editProps : {})}
         // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
         // la sección no hace aparecer barras de desplazamiento.
-        className={`max-w-full ${isHeaderOrFooter ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
+        // Un bloque de código va sin relleno: lo que se mide (y lo que redimensionan las manijas) es la caja del iframe.
+        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
         style={{
-          padding: isHeaderOrFooter ? 0 : box.padding,
+          padding: isHeaderOrFooter || pureCode ? 0 : box.padding,
           background: background ?? autoFill ?? undefined,
           borderRadius: isHeaderOrFooter || stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
           ...(customClasses(block, SECTION_KEY, def).includes("w-fit")
@@ -362,26 +398,64 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         }}
       >
         {hasBackground(backdrop) && <BackgroundLayers bg={backdrop} />}
-        {block.code ? (
-          <CodeBlockView
-            code={block.code}
-            libraries={libraries}
-            shared={shared}
-            name={def.name}
-            editing={editing}
-            onEdit={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
-          />
-        ) : (
-          <FoldedView
-            fold={foldOf(block, device)}
-            view={view}
-            blockId={block.id}
-            editing={editing}
-            background={typeof background === "string" ? background : undefined}
-            render={(shown, extra) => (
-              <ComponentView def={shown} interaction={{ ...interaction, overlay: <>{menuLayer}{extra}</> }} />
+        {pureCode ? (
+          // La caja del bloque: aquí se mide y aquí viven las manijas de redimensionado.
+          <div ref={codeRef} className="relative">
+            <CodeBlockView
+              code={block.code!}
+              libraries={libraries}
+              shared={shared}
+              name={def.name}
+              editing={editing}
+              width={block.size?.width}
+              height={block.size?.height}
+              onEdit={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
+            />
+            {/* En tablet/móvil el tamaño propio no se toca: ahí el bloque se adapta, no se redimensiona a mano. */}
+            {editing && !isBlockLocked && !adaptive && codeBox && (
+              <EditingLayer
+                gestures={gestures}
+                size={gestures.size}
+                active={selected}
+                // El tamaño guardado va siempre al bloque: cada bloque de código tiene el suyo (el alcance «componente» no aplica).
+                onResize={(next) =>
+                  dispatch({
+                    type: "block/size",
+                    pageId: page.id,
+                    blockId: block.id,
+                    // Solo cambia un eje por arrastre; el otro se completa con lo medido.
+                    size: { width: next.width ?? codeBox.width, height: next.height ?? codeBox.height },
+                  })
+                }
+              />
             )}
-          />
+          </div>
+        ) : (
+          <>
+            <FoldedView
+              fold={foldOf(block, device)}
+              view={view}
+              blockId={block.id}
+              editing={editing}
+              background={typeof background === "string" ? background : undefined}
+              render={(shown, extra) => (
+                <ComponentView def={shown} interaction={{ ...interaction, overlay: <>{menuLayer}{extra}</> }} />
+              )}
+            />
+            {/* El código propio de una sección de plantilla se pinta debajo de su componente, sin tocarlo. */}
+            {extraCode && block.code && (
+              <div className="relative mt-2 w-full">
+                <CodeBlockView
+                  code={block.code}
+                  libraries={libraries}
+                  shared={shared}
+                  name={def.name}
+                  editing={editing}
+                  onEdit={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -495,10 +569,10 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
             />
           )}
-          {selected && selectedElementId === null && !block.code && (
+          {selected && selectedElementId === null && !pureCode && (
             <CodeButton
               label="Abrir el código de la sección en el editor"
-              onOpen={() => openFile({ kind: "custom-css", pageId: page.id, blockId: block.id, key: SECTION_KEY })}
+              onOpen={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
               className="absolute -top-2 right-5"
             />
           )}
@@ -543,9 +617,9 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
     <div
       className={`flex flex-col ${
         isTop
-          ? "-mx-10 mb-8 w-[calc(100%+5rem)] max-w-none rounded-t-sm overflow-hidden"
+          ? "-mx-10 mb-8 w-[calc(100%+5rem)] max-w-none overflow-hidden"
           : isBottom
-            ? "-mx-10 mt-auto w-[calc(100%+5rem)] max-w-none rounded-b-sm overflow-hidden"
+            ? "-mx-10 mt-auto w-[calc(100%+5rem)] max-w-none overflow-hidden"
             : "mt-8 gap-6 flex-1"
       }`}
       style={{

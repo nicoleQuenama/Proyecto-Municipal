@@ -80,12 +80,24 @@ export function BlockPreview({
     [file.kind, onPick, sourceMap],
   );
 
-  if (!block?.code || !field) return null;
+  if (!field) return null;
+
+  // Los archivos de la plantilla se crean al escribir en ellos: mientras no haya código, no hay qué previsualizar.
+  if (!block?.code) {
+    return (
+      <aside aria-label="Vista previa" className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-l border-line bg-white">
+        <div className="border-b border-neutral-200 px-3 py-1 text-[11px] text-neutral-500">Vista previa en vivo</div>
+        <p className="flex flex-1 items-center justify-center px-8 text-center text-xs leading-relaxed text-neutral-400">
+          Este archivo está vacío. Lo que escribas aquí se verá al instante y, en la página, debajo de su sección.
+        </p>
+      </aside>
+    );
+  }
 
   const code: CodeSource = block.code;
 
   return (
-    <aside aria-label="Vista previa" className="flex w-[40%] min-w-72 flex-col border-l border-line bg-white">
+    <aside aria-label="Vista previa" className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-l border-line bg-white">
       <div className="flex items-center gap-2 border-b border-neutral-200 px-3 py-1 text-[11px] text-neutral-500">
         <span className="truncate">Vista previa en vivo</span>
         <ZoomBar zoom={zoom} />

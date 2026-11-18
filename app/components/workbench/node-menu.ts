@@ -57,19 +57,34 @@ const OWNER_MENUS: { [K in NodeOwner["type"]]: (owner: Extract<NodeOwner, { type
       },
     },
   ],
-  block: (owner, node) => [
-    {
-      label: "Eliminar bloque de código",
-      danger: true,
-      run: {
-        type: "delete",
-        title: "¿Eliminar este bloque de código?",
-        action: { type: "block/remove", id: owner.blockId },
-        closes: (node.children ?? []).flatMap((child) => (child.ref ? [child.ref] : [])),
-        warnings: ["Se elimina la sección entera de la página, con su HTML, CSS y TypeScript."],
+  block: (owner, node, site) => {
+    const block = site.pages.flatMap((p) => p.blocks).find((b) => b.id === owner.blockId);
+    // Una sección de plantilla sin código puede ganarlo: se ofrecen sus archivos para crearlos.
+    const newCodeFiles = block?.code
+      ? []
+      : newFiles(site, [
+          { kind: "block-html", pageId: owner.pageId, blockId: owner.blockId },
+          { kind: "block-css", pageId: owner.pageId, blockId: owner.blockId },
+          { kind: "block-js", pageId: owner.pageId, blockId: owner.blockId },
+        ]);
+    const isCode = !!block?.code;
+    return [
+      ...newCodeFiles,
+      {
+        label: isCode ? "Eliminar bloque de código" : "Eliminar sección",
+        danger: true,
+        run: {
+          type: "delete",
+          title: isCode ? "¿Eliminar este bloque de código?" : "¿Eliminar esta sección?",
+          action: { type: "block/remove", id: owner.blockId },
+          closes: (node.children ?? []).flatMap((child) => (child.ref ? [child.ref] : [])),
+          warnings: isCode
+            ? ["Se elimina la sección entera de la página, con su HTML, CSS y TypeScript."]
+            : ["Se elimina la sección de la página."],
+        },
       },
-    },
-  ],
+    ];
+  },
   page: (owner, _node, site) => [
     { label: "Cambiar nombre de la página", run: { type: "rename" } },
     ...newFiles(site, [

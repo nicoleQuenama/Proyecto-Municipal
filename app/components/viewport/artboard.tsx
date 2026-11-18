@@ -12,6 +12,7 @@ import { DROP_ATTRIBUTE, pageDrop, useNavigation } from "../navigation/navigatio
 import { usePageCode } from "../behaviors/use-page-code";
 import { MediaList } from "../media/media-list";
 import { VisibilityEye } from "../site/visibility-eye";
+import { PageCodeButton } from "../site/code-button";
 import { PageBlocks } from "../site/page-blocks";
 import { routeOf, splitBlocks } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
@@ -381,6 +382,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
                 {/* Acciones de página (inicio y eliminar con confirmación segura) */}
                 <PageLabelActions page={page} />
 
+                {/* El código de la página: una página nueva no tiene sección donde colgar el ‹› de arriba. */}
+                {mode === "edit" && <PageCodeButton pageId={page.id} />}
+
                 {/* Botón Enfocar */}
                 <button
                   type="button"
@@ -425,16 +429,19 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
                   {unitName ?? "Global"}
                 </span>
               </span>
-              {focusMode && (
-                <button
-                  type="button"
-                  onClick={() => setFocusMode(false)}
-                  className="flex items-center gap-1.5 rounded-md bg-panel border border-line px-2.5 py-1 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors cursor-pointer"
-                  title="Volver a la vista con todas las páginas en mosaico"
-                >
-                  Ver todas las páginas
-                </button>
-              )}
+              <div className="flex items-center gap-1.5">
+                {mode === "edit" && <PageCodeButton pageId={page.id} />}
+                {focusMode && (
+                  <button
+                    type="button"
+                    onClick={() => setFocusMode(false)}
+                    className="flex items-center gap-1.5 rounded-md bg-panel border border-line px-2.5 py-1 text-xs font-medium text-ink-dim hover:text-ink hover:bg-hover transition-colors cursor-pointer"
+                    title="Volver a la vista con todas las páginas en mosaico"
+                  >
+                    Ver todas las páginas
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -462,7 +469,8 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
             ...(page.color ? { background: page.color } : {}),
             ...sideStyle,
             border: !production ? `${Math.max(2, Math.round(2.5 / scale))}px solid ${unitColor.border}` : undefined,
-            borderRadius: !production ? `${Math.max(4, Math.round(8 / scale))}px` : undefined,
+            // Los bordes de la página son rectos: la esquina redondeada solo existía en el lienzo de edición.
+            borderRadius: 0,
             boxShadow: !production
               ? tiled && active
                 ? `0 0 0 ${Math.max(2, Math.round(2 / scale))}px var(--color-accent), 0 0 24px ${unitColor.border}50, 0 10px 25px -5px rgba(0,0,0,0.25)`
@@ -520,7 +528,7 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
               e.preventDefault(); // el clic derecho también activa la página; el formato se abre en la siguiente
               select();
             }}
-            className="absolute inset-0 z-10 cursor-pointer rounded-sm hover:ring-2 hover:ring-accent/60"
+            className="absolute inset-0 z-10 cursor-pointer hover:ring-2 hover:ring-accent/60"
           />
         )}
       </div>

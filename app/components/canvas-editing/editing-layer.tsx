@@ -12,10 +12,12 @@ interface EditingLayerProps {
   /** Solo el lienzo en edición muestra su cuadrícula y sus bordes arrastrables. */
   active: boolean;
   onResize: (size: Partial<Size>) => void;
+  /** El ancho lo decide la página: las manijas laterales no aparecen. */
+  widthLocked?: boolean;
 }
 
 /** Lo que se dibuja encima de un lienzo mientras se edita: cuadrícula, guías, destino de acoplado y bordes. */
-export function EditingLayer({ gestures, size, active, onResize }: EditingLayerProps) {
+export function EditingLayer({ gestures, size, active, onResize, widthLocked }: EditingLayerProps) {
   const { settings } = useCanvasSettings();
 
   return (
@@ -23,7 +25,7 @@ export function EditingLayer({ gestures, size, active, onResize }: EditingLayerP
       {active && settings.grid && <GridOverlay />}
       {gestures.drop && <DropPreview parent={gestures.drop.parent} slot={gestures.drop.slot} />}
       <GuideLines guides={gestures.guides} width={size.width} height={size.height} />
-      {active && <SectionResizeHandles size={size} onResize={onResize} />}
+      {active && <SectionResizeHandles size={size} onResize={onResize} widthLocked={widthLocked} />}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useRef, type ReactNode } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { getBrandColors, getBrandFonts, isRestrictedByBrand } from "../auth/brand-manual";
 import { applyOverrides } from "../site/overrides";
-import { SECTION_KEY } from "../site/types";
+import { EMPTY_CODE } from "../site/code-defaults";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { availableVariables } from "../styles/resolve";
 import { useStyles } from "../styles/use-styles";
@@ -332,12 +332,18 @@ export function FormatMenu() {
       variables: availableVariables(site.variables, { pageId: page.id, componentId: def.id }),
       createVariable: makeCreateVariable(site.variables, dispatch),
       editCode: () => {
-        const key = menu.target.kind === "element" ? menu.target.elementId : SECTION_KEY;
+        // Una sección abre su HTML (sus archivos de plantilla existen desde que se añaden); un elemento sin código propio, su CSS.
         openFile(
-          block.code
-            ? { kind: "block-html", pageId: page.id, blockId: block.id }
-            : { kind: "custom-css", pageId: page.id, blockId: block.id, key },
+          menu.target.kind === "element" && !block.code
+            ? { kind: "custom-css", pageId: page.id, blockId: block.id, key: menu.target.elementId }
+            : { kind: "block-html", pageId: page.id, blockId: block.id },
         );
+        closeFormatMenu();
+      },
+      addCode: () => {
+        // La sección gana sus archivos HTML, CSS y TS (vacíos) y se abre el HTML para empezar a escribir.
+        dispatch({ type: "block/code", pageId: page.id, blockId: block.id, patch: EMPTY_CODE });
+        openFile({ kind: "block-html", pageId: page.id, blockId: block.id });
         closeFormatMenu();
       },
       customize: (elementId) => {

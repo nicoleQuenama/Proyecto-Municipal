@@ -174,6 +174,10 @@ export interface ElementInteraction {
   onMoveBlock?: (e: PointerEvent<HTMLElement>) => void;
   /** Al editar: mover, redimensionar y acoplar los elementos con el ratón. Sin él (sección en flujo), no se pueden. */
   gestures?: BlockGestures;
+  /** Los gestos de la sección aunque sus elementos no se muevan: así una sección en flujo sí tiene sus manijas. */
+  sectionGestures?: BlockGestures;
+  /** El ancho lo decide la página (flujo o barra a todo el ancho): sus manijas laterales no se dibujan. */
+  widthLocked?: boolean;
   /** La sección usa `display: flex` o `grid`: sus elementos se acomodan solos. */
   flow: boolean;
   /** Dispositivo activo en el visor (escritorio, tablet, móvil). */
@@ -551,6 +555,9 @@ export function ComponentView({
   def: ComponentDef;
   interaction?: ElementInteraction;
 }) {
+  // En una sección en flujo no se mueven elementos, pero su lienzo sí tiene manijas: los gestos de sección bastan.
+  const layer = interaction?.gestures ?? interaction?.sectionGestures;
+
   return (
     <div
       ref={interaction?.gestures?.canvasRef}
@@ -576,12 +583,13 @@ export function ComponentView({
       )}
       {cardsOf(def.elements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
       {interaction?.overlay}
-      {interaction?.gestures && (
+      {layer && (
         <EditingLayer
-          gestures={interaction.gestures}
-          size={interaction.gestures.size}
-          active={interaction.gestures.sectionActive}
-          onResize={interaction.gestures.onResizeSection}
+          gestures={layer}
+          size={layer.size}
+          active={layer.sectionActive}
+          onResize={layer.onResizeSection}
+          widthLocked={interaction?.widthLocked}
         />
       )}
     </div>

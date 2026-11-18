@@ -26,6 +26,8 @@ interface CodeFrameProps {
   title: string;
   /** Alto inicial y mínimo mientras el contenido avisa de su tamaño real. */
   minHeight?: number;
+  /** Alto fijo: si se fija, el iframe no se auto-ajusta al contenido (es la altura que eligió la persona). */
+  height?: number;
   /** Lo que el código escribe en su consola. */
   onConsole?: (entry: ConsoleEntry) => void;
   /** Un elemento de la vista previa se señala o se selecciona. */
@@ -44,6 +46,7 @@ export function CodeFrame({
   shared,
   title,
   minHeight = MIN_HEIGHT,
+  height: fixedHeight,
   onConsole,
   onElement,
   highlight,
@@ -51,7 +54,8 @@ export function CodeFrame({
   const origin = useOrigin();
   const sink = useConsoleSink();
   const ref = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(minHeight);
+  const [autoHeight, setAutoHeight] = useState(minHeight);
+  const height = fixedHeight ?? autoHeight;
   const srcDoc = useMemo(() => buildSrcDoc(code, libraries, origin, shared), [code, libraries, origin, shared]);
 
   // Los avisos llegan del iframe y se reparten a quien los pida, sin volver a suscribirse en cada edición.
@@ -68,7 +72,8 @@ export function CodeFrame({
       if (!data || typeof data !== "object") return;
 
       if (data.type === SIZE_MESSAGE) {
-        if (typeof data.height === "number") setHeight(Math.max(minHeight, Math.ceil(data.height)));
+        // Con alto fijo el contenido no manda: la caja es la que eligió la persona.
+        if (fixedHeight === undefined && typeof data.height === "number") setAutoHeight(Math.max(minHeight, Math.ceil(data.height)));
         return;
       }
       if (data.type === LOG_MESSAGE) {
@@ -90,7 +95,7 @@ export function CodeFrame({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [minHeight, title]);
+  }, [minHeight, title, fixedHeight]);
 
   /** Manda al iframe el resaltado que toca. */
   const sendHighlight = useCallback(() => {

@@ -21,3 +21,6 @@ button.addEventListener("click", () => {
 });
 `,
 };
+
+/** Código todavía sin escribir: una sección de plantilla que gana sus archivos empieza con todo en blanco. */
+export const EMPTY_CODE: CodeSource = { tailwind: false, html: "", css: "", js: "" };

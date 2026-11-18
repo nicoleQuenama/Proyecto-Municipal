@@ -5,6 +5,7 @@
  */
 
 import { elementLabel } from "../navigation/links";
+import { CODE_COMPONENT_ID } from "../site/code-defaults";
 import { targetKey } from "../site/custom-code";
 import { SECTION_KEY, type BlockInstance, type CanvasElement, type ComponentDef, type SiteState } from "../site/types";
 
@@ -89,6 +90,8 @@ export function pageOutline(site: SiteState, pageId: string): OutlineLine[] {
 
   return page.blocks.flatMap((block) => {
     const def = site.components.find((c) => c.id === block.componentId);
-    return def && !block.code ? sectionLines(block, def, "page", null) : [];
+    // Un bloque de código puro no tiene sección que describir; una sección con código propio sí.
+    const isPureCode = !!block.code && block.componentId === CODE_COMPONENT_ID;
+    return def && !isPureCode ? sectionLines(block, def, "page", null) : [];
   });
 }

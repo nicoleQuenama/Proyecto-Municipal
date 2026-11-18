@@ -25,7 +25,7 @@ import { setHidden } from "./hiding";
 import { purgeHidden } from "./hidden-items";
 import { EXAMPLE_COMPONENTS } from "./component-templates";
 import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
-import { CODE_COMPONENT_ID, DEFAULT_CODE } from "./code-defaults";
+import { CODE_COMPONENT_ID, DEFAULT_CODE, EMPTY_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
 import { placeBlock, placeMedia, placeTitle, transferBlock, transferMedia } from "../placement/placement-rules";
 import { mergePatch, moveBlock, resetFormat, resizeSection, styleBox, styleElements, updateBlock } from "./overrides";
@@ -249,7 +249,7 @@ const HANDLERS: Handlers = {
   },
 
   "page/apply-template": (state, action) => {
-    let components = [...state.components];
+    const components = [...state.components];
     for (const compId of action.componentIds) {
       if (!components.some((c) => c.id === compId)) {
         const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === compId);
@@ -392,7 +392,8 @@ const HANDLERS: Handlers = {
   "block/code": (state, action) =>
     updateBlock(state, action.pageId, action.blockId, (block) => ({
       ...block,
-      code: { ...(block.code ?? DEFAULT_CODE), ...action.patch },
+      // Una sección de plantilla que gana sus archivos empieza en blanco: no se le coloca el ejemplo de fábrica.
+      code: { ...(block.code ?? EMPTY_CODE), ...action.patch },
     })),
 
   "block/custom": (state, action) =>

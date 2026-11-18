@@ -73,6 +73,8 @@ export interface ModelEnv {
   createVariable: CreateVariable;
   /** Abre el código de este destino en el editor. */
   editCode: () => void;
+  /** Da a la sección sus archivos HTML, CSS y TypeScript (vacíos) y los abre en el editor. */
+  addCode: () => void;
   /** Selecciona el destino: el inspector de la derecha muestra su código propio e interacciones. */
   customize: (elementId?: string) => void;
 }
@@ -223,6 +225,8 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
         { label: "Bajar sección", glyph: "↓", run: () => dispatch({ type: "block/move", pageId, blockId: block.id, direction: 1 }) },
       ],
       actions: [
+        // Sin código propio, la sección puede ganarlo: es la vía a su HTML, su CSS y su TypeScript.
+        ...(block.code ? [] : [{ label: "Añadir código HTML/CSS/TS…", run: env.addCode, code: true }]),
         { label: "Editar código…", run: env.editCode, code: true },
         { label: "Interacciones…", run: () => env.customize() },
         {

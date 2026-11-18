@@ -6,7 +6,10 @@ import { fileId, kindOf, type FileRef } from "./file-ref";
 import { HIDDEN_WHEN_EMPTY, isEmptyFile } from "./removal";
 
 /** Lo que se puede hacer desde una carpeta, además de abrir sus archivos. */
-export type TreeAction = { type: "add-block"; pageId: string } | { type: "add-function" };
+export type TreeAction =
+  | { type: "add-block"; pageId: string }
+  | { type: "add-function" }
+  | { type: "add-code"; pageId: string; blockId: string };
 
 /** De quién es un nodo, para ofrecerle renombrar o eliminar. */
 export type NodeOwner =
@@ -73,15 +76,17 @@ function selectionFolder(site: SiteState): TreeNode[] {
   if (!page || !block || !def) return [];
 
   const element = def.elements.find((e) => e.id === site.selectedElementId);
-  const children = block.code
-    ? [
-        ...file(site, { kind: "block-html", pageId: page.id, blockId: block.id }),
-        ...file(site, { kind: "block-css", pageId: page.id, blockId: block.id }),
-        ...file(site, { kind: "block-js", pageId: page.id, blockId: block.id }),
-      ]
-    : scopeFiles(site, page, block, element ? element.id : SECTION_KEY);
+  // El HTML, el CSS y el TypeScript de la plantilla se muestran aunque aún no existan: se crean al escribir en ellos.
+  const code = [
+    ...file(site, { kind: "block-html", pageId: page.id, blockId: block.id }),
+    ...file(site, { kind: "block-css", pageId: page.id, blockId: block.id }),
+    ...file(site, { kind: "block-js", pageId: page.id, blockId: block.id }),
+  ];
+  const children = [...code, ...scopeFiles(site, page, block, element ? element.id : SECTION_KEY)];
 
-  return [folder("selection", `Selección · ${element ? elementLabel(element) : def.name}`, children)];
+  // Sin código propio, la carpeta además ofrece materializarlo: los archivos pasan a tener su vista previa.
+  const action: TreeAction | undefined = block.code ? undefined : { type: "add-code", pageId: page.id, blockId: block.id };
+  return [folder("selection", `Selección · ${element ? elementLabel(element) : def.name}`, children, { action })];
 }
 
 function projectFolder(site: SiteState): TreeNode {
@@ -135,11 +140,19 @@ function pageFolder(site: SiteState, page: Page): TreeNode {
   );
 }
 
+/** ¿Es un archivo de la página que se está viendo? Sus archivos se muestran aunque estén vacíos: sin plantilla, son lo único que hay que abrir. */
+const isCurrentPageFile = (ref: FileRef, site: SiteState): boolean =>
+  (ref.kind === "page-css" || ref.kind === "page-js") && ref.pageId === site.currentPageId;
+
 /** Quita los archivos eliminados: los que se muestran solo si tienen algo escrito o están abiertos. */
 function prune(nodes: TreeNode[], site: SiteState, open: ReadonlySet<string>): TreeNode[] {
   return nodes.flatMap((node) => {
     if (node.ref) {
-      const hidden = HIDDEN_WHEN_EMPTY.has(node.ref.kind) && isEmptyFile(node.ref, site) && !open.has(node.id);
+      const hidden =
+        HIDDEN_WHEN_EMPTY.has(node.ref.kind) &&
+        isEmptyFile(node.ref, site) &&
+        !open.has(node.id) &&
+        !isCurrentPageFile(node.ref, site);
       return hidden ? [] : [node];
     }
     return [{ ...node, children: node.children && prune(node.children, site, open) }];

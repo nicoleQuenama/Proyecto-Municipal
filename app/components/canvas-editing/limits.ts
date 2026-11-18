@@ -13,11 +13,13 @@ export interface Size {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-/** Lo más pequeño que puede ser un lienzo sin dejar elementos fuera: lo que ocupan, o el mínimo. */
+/** Lo más pequeño que puede ser un lienzo sin dejar elementos fuera: lo que ocupan; sin elementos, el mínimo. */
 export function contentExtent(elements: { x: number; y: number; width: number; height: number }[]): Size {
+  const extent = (pick: (element: { x: number; y: number; width: number; height: number }) => number): number =>
+    elements.length > 0 ? Math.max(...elements.map(pick)) : MIN_CANVAS_SIZE;
   return {
-    width: Math.max(MIN_CANVAS_SIZE, ...elements.map((e) => e.x + e.width)),
-    height: Math.max(MIN_CANVAS_SIZE, ...elements.map((e) => e.y + e.height)),
+    width: extent((element) => element.x + element.width),
+    height: extent((element) => element.y + element.height),
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CODE_COMPONENT_ID } from "../site/code-defaults";
+import { CODE_COMPONENT_ID, EMPTY_CODE } from "../site/code-defaults";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { fileId, kindOf, sameFile, type CodeLanguage, type FileRef } from "./file-ref";
 import { ConfirmDelete } from "./confirm-dialog";
@@ -25,6 +25,13 @@ function freeName(taken: string[]): string {
   let name = "nuevaFuncion";
   for (let n = 2; taken.includes(name); n += 1) name = `nuevaFuncion${n}`;
   return name;
+}
+
+/** Lo que dice el botón + de cada carpeta, según lo que hace. */
+function actionHint(action: TreeAction, label: string): { aria: string; title: string } {
+  if (action.type === "add-block") return { aria: `Añadir un bloque de código a ${label}`, title: "Añadir un bloque de código a la página" };
+  if (action.type === "add-code") return { aria: `Añadir código HTML, CSS y TypeScript a ${label}`, title: "Añadir código a esta sección" };
+  return { aria: "Añadir una función", title: "Añadir una función" };
 }
 
 interface NodeViewProps {
@@ -116,8 +123,8 @@ function NodeView({ node, depth, collapsed, toggle, active, onAction, onMenu, re
         {node.action && !rename && (
           <button
             type="button"
-            aria-label={node.action.type === "add-block" ? `Añadir un bloque de código a ${node.label}` : "Añadir una función"}
-            title={node.action.type === "add-block" ? "Añadir un bloque de código a la página" : "Añadir una función"}
+            aria-label={actionHint(node.action, node.label).aria}
+            title={actionHint(node.action, node.label).title}
             onClick={() => onAction(node.action!)}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
           >
@@ -173,6 +180,11 @@ export function Explorer({ active }: { active: FileRef | null }) {
       const id = crypto.randomUUID();
       dispatch({ type: "function/save", fn: { id, name, code: `function ${name}() {\n  \n}`, scope: { kind: "global" } } });
       openFile({ kind: "function", functionId: id });
+    },
+    // La sección gana sus archivos HTML, CSS y TS (vacíos): a partir de ahí se edita como cualquier bloque de código.
+    "add-code": ({ pageId, blockId }) => {
+      dispatch({ type: "block/code", pageId, blockId, patch: EMPTY_CODE });
+      openFile({ kind: "block-html", pageId, blockId });
     },
   };
   const onAction = (action: TreeAction) => (actions[action.type] as (action: TreeAction) => void)(action);

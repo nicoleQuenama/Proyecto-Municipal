@@ -49,7 +49,8 @@ const blockFile = <R extends Extract<FileRef, { blockId: string; pageId: string 
 ): FileKind<R> => ({
   language,
   name: (site, ref) => {
-    const owner = blockOf(site, ref.pageId, ref.blockId)?.code ? ownerName(site, ref.pageId, ref.blockId) : null;
+    // El nombre no depende de que el código exista aún: así el explorador puede ofrecer crearlo para cualquier sección.
+    const owner = ownerName(site, ref.pageId, ref.blockId);
     return owner && `${owner} · ${fileName}`;
   },
   read: (site, ref) => blockOf(site, ref.pageId, ref.blockId)?.code?.[field] ?? "",
@@ -108,7 +109,8 @@ export const FILE_KINDS: { [K in FileKindName]: FileKind<Extract<FileRef, { kind
   },
 
   "block-html": blockFile("html", "html", "estructura.html", false),
-  "block-css": blockFile("css", "css", "estilos.css", false),
+  // Con otro nombre que «estilos.css» para no confundirlo con el CSS propio de la sección (`custom-css`).
+  "block-css": blockFile("css", "css", "estilos del código.css", false),
   "block-js": blockFile("js", "typescript", "código.ts", true),
 
   "custom-css": {

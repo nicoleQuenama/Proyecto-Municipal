@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { useSite } from "../site/site-context";
+import { useToast } from "../ui/toast";
 import { fileId, sameFile, type FileRef } from "./file-ref";
 import { selectionFile } from "./selection-file";
 
@@ -35,12 +36,16 @@ export function useWorkbench() {
 export function WorkbenchProvider({ children }: { children: ReactNode }) {
   const site = useSite();
   const { currentUser } = useAuth();
+  const toast = useToast();
   const [state, setState] = useState<WorkbenchState>(CLOSED);
 
   const openFile = useCallback(
     (ref?: FileRef) => {
-      // Sin permiso de código no se abre el editor, aunque un botón antiguo siga en pantalla.
-      if (!hasPermission(currentUser, "editCode")) return;
+      // Sin permiso de código no se abre el editor, aunque un botón antiguo siga en pantalla: se avisa para que no parezca un fallo.
+      if (!hasPermission(currentUser, "editCode")) {
+        toast.error("No puedes abrir el editor de código: tu cuenta no tiene ese permiso.");
+        return;
+      }
       const target = ref ?? selectionFile(site);
       setState((current) => ({
         open: true,
@@ -48,7 +53,8 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         activeId: fileId(target),
       }));
     },
-    [site, currentUser?.role],
+    // `currentUser` entero: si cambian los vetos (o el acceso se renueva) el botón debe abrir de verdad.
+    [site, currentUser, toast],
   );
 
   const activate = useCallback((ref: FileRef) => setState((current) => ({ ...current, activeId: fileId(ref) })), []);

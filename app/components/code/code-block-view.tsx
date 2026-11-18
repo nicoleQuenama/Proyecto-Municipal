@@ -12,17 +12,20 @@ interface CodeBlockViewProps {
   name: string;
   /** Al editar, un velo deja seleccionar el bloque (el iframe se «comería» los clics) y un botón abre el editor. */
   editing: boolean;
+  /** Tamaño fijo del bloque si la persona lo redimensionó; sin él, ancho fluido y alto según el contenido. */
+  width?: number;
+  height?: number;
   onEdit: () => void;
 }
 
 /** Un bloque de código tal como se ve en una página. */
-export function CodeBlockView({ code, libraries, shared, name, editing, onEdit }: CodeBlockViewProps) {
+export function CodeBlockView({ code, libraries, shared, name, editing, width, height, onEdit }: CodeBlockViewProps) {
   const { currentUser } = useAuth();
   const canEditCode = hasPermission(currentUser, "editCode");
 
   return (
-    <div className="relative w-full">
-      <CodeFrame code={code} libraries={libraries} shared={shared} title={name} />
+    <div className="relative w-full" style={width ? { maxWidth: "100%" } : undefined}>
+      <CodeFrame code={code} libraries={libraries} shared={shared} title={name} height={height} />
 
       {editing && canEditCode && (
         <>

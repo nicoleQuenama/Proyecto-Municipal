@@ -72,6 +72,24 @@ const placement = (element: CanvasElement) => [
 const rule = (selector: string, declarations: string[]) => `${selector} {\n  ${declarations.join(";\n  ")};\n}`;
 
 /**
+ * Encabezado, barra de navegación o pie: una sección que ocupa todo el ancho de la página. Su ancho lo decide
+ * la página (las manijas laterales no lo cambian); de su alto sí se puede ocupar.
+ */
+export function isNavOrFooter(def: ComponentDef, isHeaderOrFooter?: boolean): boolean {
+  return (
+    Boolean(isHeaderOrFooter) ||
+    def.category === "navigation" ||
+    def.id.toLowerCase().includes("footer") ||
+    def.id.toLowerCase().includes("navbar") ||
+    def.id.toLowerCase().includes("nav") ||
+    def.name.toLowerCase().includes("footer") ||
+    def.name.toLowerCase().includes("pie") ||
+    def.name.toLowerCase().includes("navegaci") ||
+    def.name.toLowerCase().includes("header")
+  );
+}
+
+/**
  * El `<style>` con la capa de estilos base de una sección y de todos sus elementos: su posición y tamaño, su
  * relleno, esquinas y texto. Con `flow` (la sección usa `display: flex` o `grid`) los elementos dejan de ir
  * en su posición y se acomodan según el layout; cada uno conserva su tamaño.
@@ -84,16 +102,7 @@ export function elementBaseCss(
   sectionClasses?: string,
   isHeaderOrFooter?: boolean,
 ): string {
-  const isNavOrFooter =
-    Boolean(isHeaderOrFooter) ||
-    def.category === "navigation" ||
-    def.id.toLowerCase().includes("footer") ||
-    def.id.toLowerCase().includes("navbar") ||
-    def.id.toLowerCase().includes("nav") ||
-    def.name.toLowerCase().includes("footer") ||
-    def.name.toLowerCase().includes("pie") ||
-    def.name.toLowerCase().includes("navegaci") ||
-    def.name.toLowerCase().includes("header");
+  const navWide = isNavOrFooter(def, isHeaderOrFooter);
 
   const section = `[data-target="${blockId}:${SECTION_KEY}"]`;
   const gridConfig = sectionClasses ? parseResponsiveGridConfig(sectionClasses) : null;
@@ -110,10 +119,10 @@ export function elementBaseCss(
     rule(section, [
       "position: relative",
       "flex-shrink: 0",
-      ...(flow || isNavOrFooter
+      ...(flow || navWide
         ? ["min-width: 0", "width: 100%"]
         : [`width: ${def.width}px`, `height: ${def.height}px`]),
-      ...(isNavOrFooter ? [`min-height: ${def.height}px`] : []),
+      ...(navWide ? [`min-height: ${def.height}px`] : []),
     ]),
     ...(cols !== null
       ? [
@@ -127,7 +136,7 @@ export function elementBaseCss(
       // Solo una figura rectangular sin texto ni contenedor padre que cubra toda la sección es un backdrop.
       const isBackdropElement =
         !flow &&
-        isNavOrFooter &&
+        navWide &&
         element.kind === "rect" &&
         !element.text &&
         !element.parentId &&
@@ -137,7 +146,7 @@ export function elementBaseCss(
         element.height >= def.height * 0.85;
 
       const isNavbar =
-        isNavOrFooter &&
+        navWide &&
         (def.id.toLowerCase().includes("navbar") ||
           def.id.toLowerCase().includes("nav") ||
           def.name.toLowerCase().includes("navegaci") ||

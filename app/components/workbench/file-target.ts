@@ -5,6 +5,7 @@
  */
 
 import { elementLabel } from "../navigation/links";
+import { CODE_COMPONENT_ID } from "../site/code-defaults";
 import { targetKey } from "../site/custom-code";
 import { SECTION_KEY, type SiteState } from "../site/types";
 import type { FileKindName, FileRef } from "./file-ref";
@@ -54,11 +55,13 @@ function scopeTarget(site: SiteState, pageId: string, blockId: string, key: stri
   };
 }
 
-/** Un bloque de código: su HTML, su CSS y su TypeScript. */
+/** El código de una sección o de un bloque de código: su HTML, su CSS y su TypeScript, aunque aún no existan. */
 function codeBlockTarget(site: SiteState, pageId: string, blockId: string): FileTarget | null {
-  if (!blockOf(site, pageId, blockId)?.code) return null;
+  const block = blockOf(site, pageId, blockId);
+  if (!block) return null;
+  const def = site.components.find((c) => c.id === block.componentId);
   return {
-    label: "Bloque de código",
+    label: block.componentId === CODE_COMPONENT_ID ? "Bloque de código" : `Sección «${def?.name ?? ""}» · código propio`,
     selector: `[data-target="${targetKey(blockId, SECTION_KEY)}"]`,
     elements: [],
     outline: [],
