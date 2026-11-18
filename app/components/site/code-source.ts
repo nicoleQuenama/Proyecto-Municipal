@@ -1,5 +1,5 @@
 import { CODE_COMPONENT_ID, DEFAULT_CODE } from "./code-defaults";
-import type { BlockInstance, CodeSource, ComponentDef } from "./types";
+import type { BlockInstance, CodeSource, ComponentDef, SiteAction } from "./types";
 
 const defOf = (block: BlockInstance, components: ComponentDef[]) => components.find((c) => c.id === block.componentId);
 
@@ -24,4 +24,12 @@ export function isCodeBlock(block: BlockInstance, components: ComponentDef[]): b
 export function newBlockCode(def: ComponentDef | undefined, componentId: string): { code?: CodeSource } {
   if (componentId === CODE_COMPONENT_ID) return { code: DEFAULT_CODE };
   return def?.codeKind === "template" && def.code ? { code: { ...def.code } } : {};
+}
+
+/** La acción que guarda un cambio en el código de un bloque: en su definición si es un componente compartido, o en el propio bloque. */
+export function codePatchAction(block: BlockInstance, components: ComponentDef[], pageId: string, patch: Partial<CodeSource>): SiteAction {
+  const shared = sharedDefOf(block, components);
+  return shared
+    ? { type: "component/code", componentId: shared.id, patch }
+    : { type: "block/code", pageId, blockId: block.id, patch };
 }

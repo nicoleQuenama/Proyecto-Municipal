@@ -16,9 +16,16 @@ const inputClass = "h-8 w-full rounded-md border border-line bg-canvas px-2 text
 
 /** Un texto que se guarda al terminar de escribir (Enter o salir del campo), no en cada letra. */
 function TextInput({ label, value, suggestions, onChange }: DataFieldProps) {
-  const [draft, setDraft] = useState(String(value ?? ""));
+  const text = String(value ?? "");
+  const [draft, setDraft] = useState(text);
+  // Si el valor cambia por fuera (mover o quitar una fila, o editar el código), el campo lo muestra en lugar de su borrador.
+  const [seen, setSeen] = useState(text);
+  if (text !== seen) {
+    setSeen(text);
+    setDraft(text);
+  }
   const list = `sugerencias-${label.replace(/\s+/g, "-")}`;
-  const commit = () => draft !== value && onChange(draft);
+  const commit = () => draft !== text && onChange(draft);
 
   return (
     <>

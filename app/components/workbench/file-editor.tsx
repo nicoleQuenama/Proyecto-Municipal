@@ -16,6 +16,7 @@ import { fileId, kindOf, type FileKindName, type FileRef } from "./file-ref";
 import { fileTarget } from "./file-target";
 import { HtmlOutline } from "./html-outline";
 import { fragmentCode } from "./block-fragment";
+import { trackSelection, type SelectionInfo } from "./selection-tracker";
 import { adoptExternal } from "./external-change";
 import { CHOICES, MakeBlock, type BlockChoice } from "./make-block";
 import { MakeFunction, SCOPE_LABELS } from "./make-function";
@@ -43,15 +44,6 @@ const PLACEHOLDERS: Partial<Record<FileKindName, string>> = {
   "page-js": '// Se ejecuta al abrir la página en «Probar».\napi.log("Página lista");',
   "behavior-js": '// Se ejecuta con la interacción. «element» es este destino:\nelement.classList.toggle("activo");\napi.animate("bounce");',
 };
-const MIN_SELECTION = 2;
-
-interface SelectionInfo {
-  text: string;
-  range: Selection;
-  top: number;
-  left: number;
-}
-
 const sameScope = (a: FunctionScope, b: FunctionScope) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Lo que se escribe en la barra de estado del archivo. */
@@ -222,15 +214,12 @@ export default function FileEditor({
       editor.onDidDispose(() => listener.dispose());
     }
 
-    // Al seleccionar código aparece, bajo la selección, la opción de convertirlo en función.
-    editor.onDidChangeCursorSelection(({ selection: range }) => {
-      const text = editor.getModel()?.getValueInRange(range) ?? "";
-      const at = editor.getScrolledVisiblePosition(range.getEndPosition());
-      if (range.isEmpty() || text.trim().length < MIN_SELECTION || !at) return setSelection(null);
-
-      setMessage(null);
-      setSelection({ text, range, top: at.top + at.height + 6, left: at.left });
+    // Al terminar de seleccionar código (también con Ctrl+A) se superpone la opción de convertirlo en función, componente o plantilla.
+    const stopTracking = trackSelection(editor, (info) => {
+      if (info) setMessage(null);
+      setSelection(info);
     });
+    editor.onDidDispose(stopTracking);
   };
 
   // El elemento elegido en la vista previa se marca en el código y se trae a la pantalla.

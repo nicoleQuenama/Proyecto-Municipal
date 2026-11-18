@@ -1,4 +1,5 @@
 import { preludeOf } from "../functions/scope";
+import { API_BRIDGE } from "./api-bridge";
 import { safeTranspile } from "./transpile";
 import { importMapOf } from "../libraries/library-url";
 import { rootVariablesCss, themeCss } from "../styles/css-variables";
@@ -186,11 +187,12 @@ export function buildSrcDoc(code: CodeSource, libraries: Library[], origin: stri
   const variables = code.tailwind ? themeCss(shared.variables) : rootVariablesCss(shared.variables);
 
   return `<!doctype html>
-<html>
+<html data-page-id>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>${inside("script", CONSOLE_BRIDGE)}</script>
+<script>${API_BRIDGE}</script>
 ${code.tailwind ? `<script src="${origin}/api/vendor/tailwind"></script>` : ""}
 ${libraries.length > 0 ? `<script type="importmap">${inside("script", importMap)}</script>` : ""}
 <style${code.tailwind ? ' type="text/tailwindcss"' : ""}>
@@ -200,7 +202,7 @@ ${inside("style", shared.globalCss)}
 ${inside("style", code.css)}
 </style>
 </head>
-<body>
+<body data-site-page>
 ${code.html}
 <script>${inside("script", INSPECTOR_BRIDGE)}</script>
 <script type="module">

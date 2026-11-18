@@ -78,7 +78,8 @@ export const CODE_KIND_HANDLERS: Handlers = {
   "page/add-code-block": (state, { pageId, kind, name, blockId, code, scope }) => {
     if (!state.pages.some((p) => p.id === pageId)) return state;
 
-    const def = codeDefinition(name.trim() || "Bloque de código", kind, { ...EMPTY_CODE, ...code });
+    // Lo que sale del editor suele usar clases de Tailwind (como el código de una página): se carga en el bloque.
+    const def = codeDefinition(name.trim() || "Bloque de código", kind, { ...EMPTY_CODE, tailwind: true, ...code });
     if (scope === "page") return { ...state, components: [...state.components, { ...def, codeKind: "template", templateFor: "page" }] };
 
     const block: BlockInstance = {

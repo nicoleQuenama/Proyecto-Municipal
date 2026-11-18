@@ -610,7 +610,8 @@ function ProductionView() {
   return (
     // Las páginas con función (carga, 404) son pantallas completas: lo que sobra de su diseño se recorta, no se desplaza.
     <div {...{ [SITE_VIEW_ATTRIBUTE]: "" }} onClickCapture={clickThrough} className={`fixed inset-0 z-40 bg-neutral-300 ${page.role ? "overflow-hidden" : "overflow-auto"}`}>
-      <PageArtboard page={page} active tiled={false} production shellPage={shellPage} />
+      {/* Al cambiar el código de la página se monta de nuevo: así lo que dibujó el código anterior no se queda duplicado. */}
+      <PageArtboard key={`${page.id}:${page.js ?? ""}`} page={page} active tiled={false} production shellPage={shellPage} />
       <SkeletonLayer />
       <LoadingLayer />
     </div>

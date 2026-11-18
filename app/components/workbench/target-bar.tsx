@@ -9,6 +9,7 @@ import { fileId, type CodeLanguage, type FileRef } from "./file-ref";
 import type { FileTarget } from "./file-target";
 import { ContentButton } from "../code-data/content-button";
 import { BlockKindSelect } from "./block-kind-select";
+import { TailwindToggle } from "./tailwind-toggle";
 import { useWorkbench } from "./workbench-context";
 
 /** Cómo funciona el destino en cada lenguaje, en una frase. */
@@ -100,7 +101,10 @@ export function TargetBar({ file, language, target }: TargetBarProps) {
       )}
 
       {(file.kind === "block-html" || file.kind === "block-css" || file.kind === "block-js") && (
-        <BlockKindSelect pageId={file.pageId} blockId={file.blockId} />
+        <>
+          <BlockKindSelect pageId={file.pageId} blockId={file.blockId} />
+          <TailwindToggle pageId={file.pageId} blockId={file.blockId} />
+        </>
       )}
 
       {(file.kind === "page-js" || file.kind === "block-js") && (

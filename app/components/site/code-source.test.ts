@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CODE_COMPONENT_ID, DEFAULT_CODE } from "./code-defaults";
-import { codeOf, isCodeBlock, sharedDefOf } from "./code-source";
+import { codeOf, codePatchAction, isCodeBlock, sharedDefOf } from "./code-source";
 import { INITIAL_SITE } from "./initial-site";
 import { siteReducer } from "./site-reducer";
 import type { BlockInstance, CodeSource, ComponentDef, SiteState } from "./types";
@@ -152,5 +152,23 @@ describe("plantillas de página", () => {
     const s = site();
     expect(siteReducer(s, { type: "page/apply-code-template", pageId: "p2", componentId: "nada" })).toBe(s);
     expect(siteReducer(s, { type: "page/apply-code-template", pageId: "p2", componentId: CODE_COMPONENT_ID })).toBe(s);
+  });
+});
+
+describe("el código extraído del editor", () => {
+  it("nace con Tailwind, porque suele usar sus clases", () => {
+    const s = siteReducer(site(), { type: "page/add-code-block", pageId: "p2", kind: "component", name: "H", blockId: "n9", code: { js: "x" } });
+    expect(codeOf(block(s, "n9", "p2"), s.components)?.tailwind).toBe(true);
+  });
+});
+
+describe("codePatchAction", () => {
+  it("un bloque suelto o plantilla guarda en su propio código", () => {
+    const s = site();
+    expect(codePatchAction(block(s, "b1"), s.components, "p1", { tailwind: true })).toEqual({ type: "block/code", pageId: "p1", blockId: "b1", patch: { tailwind: true } });
+  });
+  it("un componente compartido guarda en su definición", () => {
+    const s = siteReducer(site(), { type: "block/set-kind", pageId: "p1", blockId: "b1", kind: "component", name: "H" });
+    expect(codePatchAction(block(s, "b1"), s.components, "p1", { tailwind: true })).toMatchObject({ type: "component/code", patch: { tailwind: true } });
   });
 });

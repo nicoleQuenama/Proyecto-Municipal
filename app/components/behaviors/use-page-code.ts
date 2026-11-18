@@ -9,6 +9,7 @@ import { useSite } from "../site/site-context";
 import type { Page } from "../site/types";
 import { executeCode } from "./execute-code";
 import { createApi } from "./page-api";
+import { alreadyRan, type RanFor } from "./run-guard";
 
 /** El JavaScript de una página: se ejecuta cuando la página aparece al probar el sitio. `ref` va en el marco de la página. */
 export function usePageCode(page: Page, active: boolean) {
@@ -18,11 +19,15 @@ export function usePageCode(page: Page, active: boolean) {
   const origin = useOrigin();
   const sink = useConsoleSink();
   const source = page.js ?? "";
+  const ran = useRef<RanFor | null>(null);
 
   useEffect(() => {
     if (!active || !origin || !source.trim()) return;
 
     const element = ref.current;
+    const run = { element, key: `${page.id}:${source}` };
+    if (alreadyRan(ran.current, run)) return;
+    ran.current = run;
     const api = createApi({ element, blockId: "", pages, followLink, sink, source: "Página" });
     void executeCode(source, "page", { libraries, origin, api, element, sink, functions: functionsFor(functions, {}) });
     // Solo al aparecer la página o al cambiar su código; las demás dependencias no deben repetirlo.

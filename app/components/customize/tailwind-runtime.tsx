@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useSite } from "../site/site-context";
+import { needsTailwind } from "./needs-tailwind";
 
 const SCRIPT_ID = "tailwind-runtime";
 
@@ -11,9 +12,7 @@ const SCRIPT_ID = "tailwind-runtime";
  */
 export function TailwindRuntime() {
   const { pages, components } = useSite();
-  const hasClasses = (styles: Record<string, { classes: string }> | undefined) =>
-    Object.values(styles ?? {}).some((style) => style.classes.trim() !== "");
-  const needed = pages.some((page) => page.blocks.some((block) => hasClasses(block.custom))) || components.some((def) => hasClasses(def.styles));
+  const needed = needsTailwind(pages, components);
 
   useEffect(() => {
     if (!needed || document.getElementById(SCRIPT_ID)) return;
