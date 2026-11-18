@@ -47,6 +47,13 @@ function findTarget(blockId: string, key: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`${targetSelector(other, PLACE_KEY)}, ${targetSelector(other, SECTION_KEY)}`);
 }
 
+/** Busca en la sección Y la incluye a ella misma (`querySelector` solo devuelve descendientes: el selector de la propia página nunca coincidía). */
+function queryAll(root: HTMLElement | null, selector: string): HTMLElement[] {
+  if (!root) return [];
+  const inside = [...root.querySelectorAll<HTMLElement>(selector)];
+  return root.matches(selector) ? [root, ...inside] : inside;
+}
+
 /** Muestra, oculta o alterna una parte del bloque (solo mientras se prueba el sitio). */
 export function setVisibility(blockId: string, key: string, mode: "show" | "hide" | "toggle") {
   const target = findTarget(blockId, key);
@@ -84,8 +91,8 @@ export function createApi({ element, blockId, pages, followLink, sink = null, so
     get section() {
       return section();
     },
-    query: (selector) => section()?.querySelector<HTMLElement>(selector) ?? null,
-    queryAll: (selector) => [...(section()?.querySelectorAll<HTMLElement>(selector) ?? [])],
+    query: (selector) => queryAll(section(), selector)[0] ?? null,
+    queryAll: (selector) => queryAll(section(), selector),
     navigate: (name) => {
       const wanted = String(name).toLowerCase();
       const page = pages.find((p) => p.slug === wanted || p.name.toLowerCase() === wanted || p.id === wanted);
