@@ -16,5 +16,5 @@ interface BleedInput {
  */
 export const bleedsToEdges = ({ fullPage, placed, stretches, autoFill, isHeaderOrFooter }: BleedInput): boolean => {
   if (placed) return false;
-  return fullPage ? stretches || autoFill : stretches || isHeaderOrFooter;
+  return stretches || isHeaderOrFooter || (fullPage && autoFill);
 };

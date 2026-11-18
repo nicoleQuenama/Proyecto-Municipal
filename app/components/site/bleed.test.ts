@@ -22,6 +22,10 @@ describe("bleedsToEdges", () => {
     expect(bleedsToEdges({ ...base, fullPage: true })).toBe(false);
   });
 
+  it("en «Probar» el encabezado y el pie también llegan a los costados", () => {
+    expect(bleedsToEdges({ ...base, fullPage: true, isHeaderOrFooter: true })).toBe(true);
+  });
+
   it("lo colocado con posición libre nunca se estira", () => {
     expect(bleedsToEdges({ ...base, placed: true, isHeaderOrFooter: true, stretches: true })).toBe(false);
   });

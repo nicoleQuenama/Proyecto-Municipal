@@ -4,6 +4,7 @@ import { withoutOrphanShapes } from "../drawing/draw-rules";
 import type { Behavior } from "../behaviors/types";
 import { selectBlocks } from "./multi-select";
 import { SECTION_KEY, type BlockInstance, type CanvasElement, type ComponentDef, type SiteState } from "./types";
+import { uniqueComponentName } from "./unique-component-name";
 
 export type JoinAction = { type: "blocks/join"; pageId: string; blockIds: string[]; blockId: string; componentId: string };
 
@@ -72,7 +73,7 @@ export function joinBlocks(state: SiteState, pageId: string, blockIds: string[],
 
   const component: ComponentDef = {
     id: componentId,
-    name: "Grupo",
+    name: uniqueComponentName(state.components, "Grupo"),
     description: `${parts.length} secciones unidas`,
     category: "sections",
     width: right - left,
