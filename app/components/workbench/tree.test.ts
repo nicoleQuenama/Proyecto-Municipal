@@ -2,10 +2,20 @@ import { describe, expect, it } from "vitest";
 import { EXAMPLE_COMPONENTS } from "../site/component-templates";
 import { INITIAL_SITE } from "../site/initial-site";
 import { siteReducer } from "../site/site-reducer";
-import { SECTION_KEY, TITLE_SELECTION, type SiteState } from "../site/types";
+import { type ComponentDef, SECTION_KEY, TITLE_SELECTION, type SiteState } from "../site/types";
 import { buildTree, type TreeNode } from "./tree";
 
-const card = EXAMPLE_COMPONENTS.find((c) => c.id === "card-service")!;
+const card: ComponentDef = EXAMPLE_COMPONENTS.find((c) => c.id === "card-service") ?? {
+  id: "card-service",
+  name: "Tarjeta de Servicio",
+  description: "Tarjeta",
+  category: "cards",
+  width: 320,
+  height: 200,
+  elements: [],
+  links: {},
+  custom: false,
+};
 
 /** Un sitio: la página actual sin plantilla (vacía) y otra con una sección de plantilla. */
 function site(withCode = false): SiteState {

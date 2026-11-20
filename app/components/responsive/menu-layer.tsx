@@ -33,6 +33,12 @@ export function MenuLayer({ setup, view, blockId, live, links, behaviors, backgr
   const close = useCallback(() => setOpen(false), [setOpen]);
   const frame = menuButtonFrame(view, config);
   const panelBg = panelBackground(view, config, background);
+  const isDark =
+    background?.includes("#0") ||
+    background?.includes("#1") ||
+    background?.includes("#2") ||
+    (view.styles?.$section?.classes && /bg-(slate|neutral|zinc|gray)-(700|800|900|950)|bg-black/.test(view.styles.$section.classes));
+  const iconColor = config.iconColor ?? (isDark ? "#f8fafc" : items.find((i) => i.color)?.color ?? "#0f172a");
 
   return (
     <>
@@ -48,8 +54,8 @@ export function MenuLayer({ setup, view, blockId, live, links, behaviors, backgr
           e.stopPropagation();
           setOpen(!open);
         }}
-        className="absolute z-20 flex cursor-pointer items-center justify-center rounded-lg hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-sky-500"
-        style={{ top: frame.top, right: frame.right, width: frame.size, height: frame.size, color: config.iconColor ?? items[0]?.color ?? "#0f172a" }}
+        className={`absolute z-20 flex cursor-pointer items-center justify-center rounded-lg ${isDark ? "hover:bg-white/10" : "hover:bg-black/10"} focus-visible:outline-2 focus-visible:outline-sky-500`}
+        style={{ top: frame.top, right: frame.right, width: frame.size, height: frame.size, color: iconColor }}
       >
         <IconGlyph name={open && config.panel === "drop" ? "close" : config.icon} size={config.iconSize} />
       </button>

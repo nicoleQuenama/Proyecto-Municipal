@@ -119,10 +119,10 @@ export function elementBaseCss(
     rule(section, [
       "position: relative",
       "flex-shrink: 0",
-      ...(flow || navWide
+      ...(flow || navWide || def.width >= 1000
         ? ["min-width: 0", "width: 100%"]
         : [`width: ${def.width}px`, `height: ${def.height}px`]),
-      ...(navWide ? [`min-height: ${def.height}px`] : []),
+      ...(navWide || def.width >= 1000 ? [`min-height: ${def.height}px`] : []),
     ]),
     ...(cols !== null
       ? [
@@ -234,14 +234,30 @@ export function elementBaseCss(
       ])
     );
   }
-  if (flow) {
+  if (flow && !navWide) {
     unlayeredRules.push(
       rule(`${section} > [data-el]`, [
         "position: relative !important",
         "left: auto !important",
         "top: auto !important",
+        "display: flex !important",
+        "flex-direction: column !important",
+        "height: auto !important",
+        "min-height: fit-content !important",
         "min-width: 0 !important",
         "max-width: 100% !important",
+        "box-sizing: border-box !important",
+        "gap: 0.5rem !important",
+      ]),
+      rule(`${section} > [data-el] > [data-el]`, [
+        "position: relative !important",
+        "left: auto !important",
+        "top: auto !important",
+        "width: 100% !important",
+        "height: auto !important",
+        "min-height: fit-content !important",
+        "max-width: 100% !important",
+        "min-width: 0 !important",
         "box-sizing: border-box !important",
       ]),
       rule(`${section}[class*="grid"] > [data-el]`, [
@@ -250,7 +266,14 @@ export function elementBaseCss(
       rule(`${section}[class*="flex-row"] > [data-el]`, [
         device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
         device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
-      ])
+      ]),
+      ...(device === "mobile"
+        ? [
+            rule(`${section}[class*="grid"]`, [
+              "grid-template-columns: repeat(1, minmax(0, 1fr)) !important",
+            ]),
+          ]
+        : []),
     );
   }
 

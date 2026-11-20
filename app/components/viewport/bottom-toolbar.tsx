@@ -5,7 +5,7 @@ import { CanvasSettingsMenu } from "../canvas-editing/canvas-settings-menu";
 import { toolCommandId } from "../commands/command-definitions";
 import { useCommands } from "../commands/commands-context";
 import { AdaptAssistant } from "./adapt-assistant";
-import { CursorIcon, HandIcon, SearchIcon } from "./icons";
+import { CursorIcon, HandIcon, SearchIcon, TextIcon } from "./icons";
 import { InsertMenus } from "./insert-menus";
 import { MoreMenu } from "./more-menu";
 import { PageSelector } from "./page-selector";
@@ -14,10 +14,11 @@ import { active, Divider, iconButton, idle } from "./toolbar-parts";
 import { useViewport, type Tool } from "./viewport-context";
 import { ZoomControls } from "./zoom-controls";
 
-/** Las herramientas de uso constante: mover elementos y desplazar el lienzo. */
+/** Las herramientas de uso constante: mover elementos, desplazar el lienzo y escribir texto. */
 const BASIC_TOOLS: { value: Tool; label: string; icon: ReactNode }[] = [
   { value: "select", label: "Mover", icon: <CursorIcon /> },
   { value: "hand", label: "Mano", icon: <HandIcon /> },
+  { value: "text", label: "Texto", icon: <TextIcon /> },
 ];
 
 /**

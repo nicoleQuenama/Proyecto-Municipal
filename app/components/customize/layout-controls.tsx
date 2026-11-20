@@ -94,11 +94,24 @@ interface LayoutControlsProps {
   onToggleMenuPreview?: () => void;
   /** Agrega un nuevo enlace al header */
   onAddHeaderLink?: () => void;
+  /** Agrega un nuevo botón CTA al header */
+  onAddHeaderButton?: () => void;
+  /** Elimina un enlace o botón del header */
+  onDeleteHeaderElement?: (elementId: string) => void;
+  /** Restablece la cabecera a la plantilla municipal oficial */
+  onResetMunicipalHeader?: () => void;
   /** Alterna o prueba el buscador en cabecera */
   hasSearchInHeader?: boolean;
   onToggleSearchInHeader?: () => void;
   /** Lista de enlaces del header con su estado de inclusión en el menú móvil */
-  headerLinks?: { id: string; label: string; inMenu: boolean }[];
+  headerLinks?: {
+    id: string;
+    label: string;
+    inMenu: boolean;
+    role?: string;
+    targetPage?: string | null;
+    targetUrl?: string | null;
+  }[];
   /** Alterna si un enlace del header va dentro del menú móvil */
   onToggleHeaderItemInMenu?: (elementId: string, inMenu: boolean) => void;
   /** Si el elemento seleccionado está dentro del menú móvil */
@@ -122,6 +135,18 @@ interface LayoutControlsProps {
   totalFooterCols?: number;
   /** Reordena el elemento seleccionado hacia arriba/antes o abajo/después */
   onMoveElementOrder?: (direction: -1 | 1) => void;
+  /** Ámbito de edición para cabecera y pie de página ("global" = todo el sitio, "page" = solo esta página) */
+  scopeMode?: "global" | "page";
+  onSetScopeMode?: (mode: "global" | "page") => void;
+  /** Columnas del footer con sus elementos para edición directa */
+  footerColumnsList?: {
+    id: string;
+    index: number;
+    title: string;
+    items: { id: string; text: string; role?: string; kind: string }[];
+  }[];
+  /** Callback para seleccionar un elemento desde la lista */
+  onSelectElement?: (elementId: string) => void;
 }
 
 /** Controles intuitivos y compactos de distribución automática, cuadrícula responsiva, separación y relleno. */
@@ -151,6 +176,9 @@ export function LayoutControls({
   isMenuOpenPreview,
   onToggleMenuPreview,
   onAddHeaderLink,
+  onAddHeaderButton,
+  onDeleteHeaderElement,
+  onResetMunicipalHeader,
   hasSearchInHeader,
   onToggleSearchInHeader,
   headerLinks,
@@ -166,6 +194,10 @@ export function LayoutControls({
   currentColIndex,
   totalFooterCols,
   onMoveElementOrder,
+  scopeMode,
+  onSetScopeMode,
+  footerColumnsList,
+  onSelectElement,
 }: LayoutControlsProps) {
   const viewport = useSafeViewport();
   const [showColumns, setShowColumns] = useState(false);
@@ -200,131 +232,79 @@ export function LayoutControls({
               <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">Navegación</span>
             </div>
             <p className="text-[11px] text-ink-dim leading-snug">
-              Configura cómo se despliega la navegación en tabletas y celulares: menú hamburguesa, panel lateral deslizante o enlaces visibles.
+              Gestiona los enlaces, botones y el buscador oficial de la alcaldía.
             </p>
 
-            <div className="flex flex-col gap-1.5 pt-1">
-              <span className="text-[10px] font-semibold text-ink uppercase">Modo en tablet y móvil:</span>
-              <div className="grid grid-cols-2 gap-1 text-[11px]">
-                <button
-                  type="button"
-                  aria-pressed={activeMenuMode === "drop"}
-                  onClick={() => onSelectHeaderMenuMode?.("drop")}
-                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
-                    activeMenuMode === "drop"
-                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                      : "border-line bg-canvas text-ink hover:bg-hover"
-                  } cursor-pointer`}
-                  title="Al tocar el botón de menú, las opciones caen desplegadas bajo la barra"
-                >
-                  <span className="text-xs font-bold">≡</span>
-                  <span>Hamburguesa</span>
-                </button>
-
-                <button
-                  type="button"
-                  aria-pressed={activeMenuMode === "right"}
-                  onClick={() => onSelectHeaderMenuMode?.("right")}
-                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
-                    activeMenuMode === "right"
-                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                      : "border-line bg-canvas text-ink hover:bg-hover"
-                  } cursor-pointer`}
-                  title="Panel deslizante lateral desde la derecha (Drawer)"
-                >
-                  <span className="text-xs font-bold">→|</span>
-                  <span>Lateral Derecho</span>
-                </button>
-
-                <button
-                  type="button"
-                  aria-pressed={activeMenuMode === "left"}
-                  onClick={() => onSelectHeaderMenuMode?.("left")}
-                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
-                    activeMenuMode === "left"
-                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                      : "border-line bg-canvas text-ink hover:bg-hover"
-                  } cursor-pointer`}
-                  title="Panel deslizante lateral desde la izquierda (Drawer)"
-                >
-                  <span className="text-xs font-bold">|←</span>
-                  <span>Lateral Izquierdo</span>
-                </button>
-
-                <button
-                  type="button"
-                  aria-pressed={activeMenuMode === "full"}
-                  onClick={() => onSelectHeaderMenuMode?.("full")}
-                  className={`h-8 rounded border px-2 font-medium transition-colors flex items-center justify-start gap-1.5 ${
-                    activeMenuMode === "full"
-                      ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                      : "border-line bg-canvas text-ink hover:bg-hover"
-                  } cursor-pointer`}
-                  title="Cubre la pantalla completa con un menú moderno e inmersivo"
-                >
-                  <span className="text-xs font-bold">[  ]</span>
-                  <span>Pantalla Completa</span>
-                </button>
+            {onSetScopeMode && (
+              <div className="flex flex-col gap-1 rounded-md bg-canvas/90 p-2 border border-line">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-ink">
+                  <span>Ámbito de cambios:</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${scopeMode === "global" ? "bg-accent/20 text-accent" : "bg-amber-500/20 text-amber-600"}`}>
+                    {scopeMode === "global" ? "Todo el portal (Global)" : "Solo esta página"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[11px] mt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onSetScopeMode("global")}
+                    className={`h-6 rounded font-medium transition-colors ${
+                      scopeMode === "global"
+                        ? "bg-accent text-white shadow-xs font-semibold"
+                        : "border border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Todo el portal (Global)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSetScopeMode("page")}
+                    className={`h-6 rounded font-medium transition-colors ${
+                      scopeMode === "page"
+                        ? "bg-accent text-white shadow-xs font-semibold"
+                        : "border border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Solo esta página
+                  </button>
+                </div>
+                <span className="text-[10px] text-ink-dim">
+                  {scopeMode === "global"
+                    ? "Los cambios en enlaces, botones o colores se verán en todas las páginas."
+                    : "Los cambios solo afectarán a la página actual."}
+                </span>
               </div>
+            )}
 
-              <button
-                type="button"
-                aria-pressed={activeMenuMode === "none"}
-                onClick={() => onSelectHeaderMenuMode?.("none")}
-                className={`mt-0.5 h-7 rounded border px-2 text-[11px] font-medium transition-colors flex items-center justify-center gap-1.5 ${
-                  activeMenuMode === "none"
-                    ? "border-accent bg-accent/20 text-accent font-semibold"
-                    : "border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
-                } cursor-pointer`}
-                title="Muestra los enlaces visibles directamente sin plegar en menú"
-              >
-                Enlaces directos visibles (Sin botón de menú)
-              </button>
+            <div className="flex items-center gap-2 rounded-md bg-accent/10 px-2.5 py-2 text-[11px] text-accent">
+              <span className="text-sm font-bold leading-none">≡</span>
+              <span className="leading-snug">
+                En tablet y móvil se pliega automáticamente en <strong>menú hamburguesa</strong>.
+              </span>
             </div>
 
-            {activeMenuMode !== "none" && (
-              <div className="flex flex-col gap-1 pt-1.5 border-t border-accent/20">
-                <span className="text-[10px] font-semibold text-ink-dim uppercase">Activar menú en:</span>
-                <div className="grid grid-cols-3 gap-1 text-[11px]">
-                  <button
-                    type="button"
-                    aria-pressed={menuBreakpointChoice === "all"}
-                    onClick={() => onSetMenuBreakpoints?.("all")}
-                    className={`h-7 rounded border font-medium transition-colors ${
-                      menuBreakpointChoice === "all"
-                        ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                        : "border-line bg-canvas text-ink hover:bg-hover"
-                    } cursor-pointer`}
-                    title="Se pliega en menú hamburguesa o lateral en PC, tablet y móvil"
-                  >
-                    PC, Tablet y Móvil
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={menuBreakpointChoice === "mobile-tablet"}
-                    onClick={() => onSetMenuBreakpoints?.("mobile-tablet")}
-                    className={`h-7 rounded border font-medium transition-colors ${
-                      menuBreakpointChoice === "mobile-tablet"
-                        ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                        : "border-line bg-canvas text-ink hover:bg-hover"
-                    } cursor-pointer`}
-                    title="Se pliega en menú hamburguesa o lateral en móvil y tablet"
-                  >
-                    Móvil y Tablet
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={menuBreakpointChoice === "mobile-only"}
-                    onClick={() => onSetMenuBreakpoints?.("mobile-only")}
-                    className={`h-7 rounded border font-medium transition-colors ${
-                      menuBreakpointChoice === "mobile-only"
-                        ? "border-accent bg-accent text-white shadow-xs font-semibold"
-                        : "border-line bg-canvas text-ink hover:bg-hover"
-                    } cursor-pointer`}
-                    title="En PC y tablet se ve la barra completa, solo se pliega en móvil"
-                  >
-                    Solo en Móvil
-                  </button>
+            {onSelectHeaderMenuMode && (
+              <div className="flex flex-col gap-1 rounded-md bg-canvas/90 p-2 border border-line">
+                <span className="text-[10px] font-semibold text-ink-dim uppercase">Estilo de menú móvil:</span>
+                <div className="grid grid-cols-4 gap-1 text-[10px]">
+                  {[
+                    { mode: "drop", label: "Desplegable" },
+                    { mode: "right", label: "Lat. Der." },
+                    { mode: "left", label: "Lat. Izq." },
+                    { mode: "full", label: "Completa" },
+                  ].map((m) => (
+                    <button
+                      key={m.mode}
+                      type="button"
+                      onClick={() => onSelectHeaderMenuMode(m.mode as any)}
+                      className={`h-6 rounded border font-medium transition-colors ${
+                        activeMenuMode === m.mode
+                          ? "border-accent bg-accent text-white font-semibold"
+                          : "border-line bg-canvas text-ink hover:bg-hover"
+                      } cursor-pointer`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -339,50 +319,121 @@ export function LayoutControls({
                   {isMenuOpenPreview ? "Cerrar previsualización de menú" : "Probar menú desplegado en el lienzo"}
                 </button>
               )}
-              <div className="flex gap-1.5">
+              <div className="grid grid-cols-3 gap-1">
                 {onAddHeaderLink && (
                   <button
                     type="button"
                     onClick={onAddHeaderLink}
-                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    className="flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-1.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    title="Añadir un enlace de texto de navegación"
                   >
-                    <span>+</span> Añadir enlace
+                    <span>+</span> Enlace
+                  </button>
+                )}
+                {onAddHeaderButton && (
+                  <button
+                    type="button"
+                    onClick={onAddHeaderButton}
+                    className="flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-1.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    title="Añadir un botón destacado (CTA) estilo Portal Vecinal"
+                  >
+                    <span>+</span> Botón
                   </button>
                 )}
                 {onToggleSearchInHeader && (
                   <button
                     type="button"
                     onClick={onToggleSearchInHeader}
-                    className="flex-1 flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    className="flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-1.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    title="Añadir o probar buscador de trámites"
                   >
-                    {hasSearchInHeader ? "Probar buscador" : "+ Añadir buscador"}
+                    {hasSearchInHeader ? "Buscador ↗" : "+ Buscador"}
                   </button>
                 )}
               </div>
             </div>
 
-            {headerLinks && headerLinks.length > 0 && activeMenuMode !== "none" && (
+            {headerLinks && headerLinks.length > 0 && (
               <div className="flex flex-col gap-1 pt-1.5 border-t border-accent/20">
-                <span className="text-[10px] font-semibold text-ink-dim uppercase">
-                  Opciones en el menú ({headerLinks.filter((l) => l.inMenu).length}/{headerLinks.length}):
-                </span>
-                <div className="flex flex-col gap-1 max-h-36 overflow-y-auto pr-0.5">
-                  {headerLinks.map((linkItem) => (
-                    <label
-                      key={linkItem.id}
-                      className="flex items-center justify-between gap-1.5 rounded bg-canvas px-2 py-1 text-[11px] text-ink border border-line cursor-pointer hover:bg-hover"
-                    >
-                      <span className="truncate">{linkItem.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={linkItem.inMenu}
-                        onChange={(e) => onToggleHeaderItemInMenu?.(linkItem.id, e.target.checked)}
-                        className="rounded accent-accent cursor-pointer"
-                        title={linkItem.inMenu ? "Dentro del menú desplegable" : "Fijo en la barra"}
-                      />
-                    </label>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-ink-dim uppercase">
+                    Botones y enlaces ({headerLinks.length}):
+                  </span>
+                  <span className="text-[9px] text-ink-dim">
+                    {headerLinks.filter((l) => l.inMenu).length} en menú móvil
+                  </span>
                 </div>
+                <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-0.5">
+                  {headerLinks.map((linkItem) => {
+                    const isSelected = selectedElementId === linkItem.id;
+                    const isBtn = linkItem.role === "button";
+                    return (
+                      <div
+                        key={linkItem.id}
+                        className={`flex items-center justify-between gap-1.5 rounded-md px-2 py-1 text-[11px] border transition-colors ${
+                          isSelected
+                            ? "bg-accent/15 border-accent text-ink font-medium ring-1 ring-accent/30"
+                            : "bg-canvas border-line text-ink hover:bg-hover"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => onSelectCard?.(linkItem.id)}
+                          className="min-w-0 flex-1 flex items-center gap-1.5 truncate text-left cursor-pointer"
+                          title="Clic para seleccionar y editar en el lienzo"
+                        >
+                          <span className="text-[10px] shrink-0 opacity-70">
+                            {isBtn ? "•" : "—"}
+                          </span>
+                          <span className="truncate">{linkItem.label}</span>
+                          {linkItem.targetPage && (
+                            <span className="shrink-0 rounded bg-sky-500/15 text-sky-400 px-1 py-0.2 text-[9px] font-medium">
+                              → {linkItem.targetPage}
+                            </span>
+                          )}
+                          {linkItem.targetUrl && (
+                            <span className="shrink-0 rounded bg-amber-500/15 text-amber-500 px-1 py-0.2 text-[9px] font-medium">
+                              ↗ Web
+                            </span>
+                          )}
+                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {activeMenuMode !== "none" && onToggleHeaderItemInMenu && (
+                            <input
+                              type="checkbox"
+                              checked={linkItem.inMenu}
+                              onChange={(e) => onToggleHeaderItemInMenu(linkItem.id, e.target.checked)}
+                              className="rounded accent-accent cursor-pointer h-3.5 w-3.5"
+                              title={linkItem.inMenu ? "Dentro del menú desplegable móvil" : "Fijo en la barra"}
+                            />
+                          )}
+                          {onDeleteHeaderElement && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteHeaderElement(linkItem.id)}
+                              className="flex h-4 w-4 items-center justify-center rounded text-red-400 hover:bg-red-500/20 hover:text-red-500 cursor-pointer text-xs"
+                              title="Eliminar este enlace o botón"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {onResetMunicipalHeader && (
+              <div className="pt-1.5 border-t border-accent/20">
+                <button
+                  type="button"
+                  onClick={onResetMunicipalHeader}
+                  className="w-full flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                >
+                  Restablecer a Cabecera Municipal Oficial
+                </button>
               </div>
             )}
           </div>
@@ -399,12 +450,52 @@ export function LayoutControls({
               Organiza el pie de página en columnas proporcionales. En dispositivos móviles se adaptan automáticamente sin sobreponerse.
             </p>
 
+            {onSetScopeMode && (
+              <div className="flex flex-col gap-1 rounded-md bg-canvas/90 p-2 border border-line">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-ink">
+                  <span>Ámbito de cambios:</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${scopeMode === "global" ? "bg-accent/20 text-accent" : "bg-amber-500/20 text-amber-600"}`}>
+                    {scopeMode === "global" ? "Todo el portal (Global)" : "Solo esta página"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[11px] mt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onSetScopeMode("global")}
+                    className={`h-6 rounded font-medium transition-colors ${
+                      scopeMode === "global"
+                        ? "bg-accent text-white shadow-xs font-semibold"
+                        : "border border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Todo el portal (Global)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSetScopeMode("page")}
+                    className={`h-6 rounded font-medium transition-colors ${
+                      scopeMode === "page"
+                        ? "bg-accent text-white shadow-xs font-semibold"
+                        : "border border-line bg-canvas text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Solo esta página
+                  </button>
+                </div>
+                <span className="text-[10px] text-ink-dim">
+                  {scopeMode === "global"
+                    ? "Los cambios en enlaces o columnas del pie se verán en todas las páginas."
+                    : "Los cambios en el pie solo afectarán a la página actual."}
+                </span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-1.5 pt-1">
-              <span className="text-[10px] font-medium text-ink-dim">Distribución en columnas:</span>
+              <span className="text-[10px] font-semibold text-ink-dim uppercase">Distribución de columnas:</span>
               <div className="grid grid-cols-4 gap-1 text-[11px]">
                 {[
-                  { cols: 3, label: "3 Cols" },
                   { cols: 4, label: "4 Cols" },
+                  { cols: 3, label: "3 Cols" },
                   { cols: 2, label: "2 Cols" },
                   { cols: 1, label: "1 Col" },
                 ].map((c) => (
@@ -413,7 +504,7 @@ export function LayoutControls({
                     type="button"
                     onClick={() => onOrganizeFooter?.(c.cols as any)}
                     className={`h-7 rounded border font-medium transition-colors ${
-                      (totalFooterCols === c.cols || (c.cols === 3 && !totalFooterCols))
+                      (totalFooterCols === c.cols || (c.cols === 4 && (!totalFooterCols || totalFooterCols === 4)))
                         ? "border-accent bg-accent text-white shadow-xs font-semibold"
                         : "border-line bg-canvas text-ink hover:bg-hover"
                     } cursor-pointer`}
@@ -422,13 +513,22 @@ export function LayoutControls({
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-ink-dim leading-snug">
+                {totalFooterCols === 3
+                  ? "3 columnas en PC · 2 en Tablet · 1 columna vertical en móvil sin sobreponerse."
+                  : totalFooterCols === 2
+                    ? "2 columnas en PC y Tablet · 1 columna vertical en móvil sin sobreponerse."
+                    : totalFooterCols === 1
+                      ? "1 columna centrada verticalmente en todas las pantallas."
+                      : "Recomendado GAMC: 4 columnas en PC · 2 en Tablet · 1 columna vertical en móvil sin sobreponerse."}
+              </p>
             </div>
 
             <div className="flex flex-col gap-1.5 pt-1">
               {onOrganizeFooter && (
                 <button
                   type="button"
-                  onClick={() => onOrganizeFooter(3)}
+                  onClick={() => onOrganizeFooter((totalFooterCols as any) || 4)}
                   className="flex items-center justify-center gap-1 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 cursor-pointer"
                 >
                   Reorganizar y ordenar automáticamente
@@ -440,15 +540,58 @@ export function LayoutControls({
                   onClick={onResetMunicipalFooter}
                   className="flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-3 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
                 >
-                  Restablecer a plantilla municipal completa
+                  Restablecer a Pie Municipal Oficial
                 </button>
               )}
             </div>
+
+            {footerColumnsList && footerColumnsList.length > 0 && (
+              <div className="flex flex-col gap-2 pt-2 border-t border-line/60">
+                <span className="text-[10px] font-semibold text-ink-dim uppercase">
+                  Contenido de las columnas:
+                </span>
+                <div className="flex flex-col gap-2">
+                  {footerColumnsList.map((col) => (
+                    <div key={col.id} className="flex flex-col gap-1.5 rounded-md bg-canvas/80 p-2 border border-line text-xs">
+                      <div className="flex items-center justify-between font-semibold text-ink">
+                        <span>Columna {col.index + 1}: {col.title}</span>
+                        {onAddFooterLink && (
+                          <button
+                            type="button"
+                            onClick={() => onAddFooterLink(col.index)}
+                            className="text-[10px] font-semibold text-accent hover:underline cursor-pointer"
+                          >
+                            + Añadir enlace
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1 pt-0.5">
+                        {col.items.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => onSelectElement?.(item.id)}
+                            className="flex items-center justify-between rounded px-2 py-1 text-left text-[11px] text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer border border-transparent hover:border-line group"
+                            title="Haz clic para seleccionar y editar su texto"
+                          >
+                            <span className="truncate max-w-[170px]">{item.text}</span>
+                            <span className="text-[10px] text-accent font-medium opacity-80 group-hover:opacity-100 shrink-0 ml-1">Editar ✎</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Presets Rápidos */}
-        <div className="flex flex-col gap-1.5">
+        {/* Los controles genéricos de cuadrícula, bento, carrusel y tarjetas solo aplican a secciones regulares */}
+        {!isHeader && !isFooter && (
+          <>
+            {/* Presets Rápidos */}
+            <div className="flex flex-col gap-1.5">
           <span className="text-[11px] font-medium text-ink">Presets rápidos</span>
           <div className="flex flex-wrap gap-1">
             {(Object.keys(QUICK_PRESETS) as QuickPresetKey[]).map((key) => {
@@ -1105,7 +1248,9 @@ export function LayoutControls({
             </div>
           </div>
         </Collapsible>
-      </Collapsible>
+        </>
+      )}
+    </Collapsible>
     );
   }
 
@@ -1288,7 +1433,7 @@ export function LayoutControls({
           </div>
         </div>
       )}
-      {inGridSection && (
+      {!isHeader && !isFooter && inGridSection && (
         <div className="flex flex-col gap-2">
           <p className="text-[11px] text-ink-dim">
             Cuánto ocupa esta tarjeta o elemento en la cuadrícula.
@@ -1313,7 +1458,7 @@ export function LayoutControls({
       )}
 
       {/* Control directo del Gap del contenedor padre */}
-      {sectionPreset !== "free" && onSectionChange && (
+      {!isHeader && !isFooter && sectionPreset !== "free" && onSectionChange && (
         <div className="flex flex-col gap-1.5 pt-2 border-t border-line">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-ink">Separación del contenedor (Gap)</span>
@@ -1351,7 +1496,7 @@ export function LayoutControls({
       )}
 
       {/* Posición & Orden del elemento en el contenedor */}
-      {sectionPreset !== "free" && onMoveElementOrder && (
+      {!isHeader && !isFooter && sectionPreset !== "free" && onMoveElementOrder && (
         <div className="flex flex-col gap-1.5 pt-2 border-t border-line">
           <span className="text-[11px] font-medium text-ink">Posición & Orden en el contenedor</span>
           <div className="grid grid-cols-2 gap-1.5">
@@ -1379,7 +1524,7 @@ export function LayoutControls({
       )}
 
       {/* Acciones de la tarjeta en el contenedor */}
-      {sectionPreset !== "free" && (onDuplicateCard || onAddCard || onDeleteCard) && (
+      {!isHeader && !isFooter && sectionPreset !== "free" && (onDuplicateCard || onAddCard || onDeleteCard) && (
         <div className="flex flex-col gap-1.5 pt-2 border-t border-line">
           <span className="text-[11px] font-medium text-ink">Acciones de tarjeta</span>
           <div className="flex flex-wrap gap-1">

@@ -6,9 +6,15 @@ import type { CanvasElement } from "../site/types";
 import type { BuilderAction } from "./builder-reducer";
 import { isMediaKind, patchFromFile } from "./media-patch";
 
-const carriesFiles = (e: DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
+const carriesFiles = (e: DragEvent) =>
+  Array.from(e.dataTransfer.types).includes("Files") ||
+  e.dataTransfer.types.includes("application/x-cms-media") ||
+  e.dataTransfer.types.includes("text/uri-list");
 
-/** Imágenes en el lienzo: soltar un archivo sobre una imagen la rellena; sobre el lienzo, agrega una imagen nueva. */
+const isFrameOrMedia = (kind?: string): boolean =>
+  kind === "image" || kind === "video" || kind === "rect" || kind === "ellipse";
+
+/** Imágenes y marcos en el lienzo: soltar un archivo sobre una figura o imagen la rellena como marco. */
 export function useCanvasMedia(dispatch: Dispatch<BuilderAction>, canvasRef: RefObject<HTMLDivElement | null>) {
   const input = useRef<HTMLInputElement>(null);
   const picking = useRef<string | null>(null);
@@ -36,13 +42,32 @@ export function useCanvasMedia(dispatch: Dispatch<BuilderAction>, canvasRef: Ref
     onDragLeave: () => setOverId(null),
     onDrop: (e: DragEvent) => {
       setOverId(null);
+      if (!canvasRef.current) return;
+      const box = canvasRef.current.getBoundingClientRect();
+      const scale = box.width / canvasRef.current.offsetWidth || 1;
+      const targetElement = target && isFrameOrMedia(target.kind) ? target : null;
+
+      // Si se arrastró desde la pestaña de medios/archivos de la app
+      const mediaUri = e.dataTransfer.getData("application/x-cms-media") || e.dataTransfer.getData("text/uri-list");
+      if (mediaUri && (mediaUri.startsWith("http://") || mediaUri.startsWith("https://") || mediaUri.startsWith("/") || mediaUri.startsWith("data:"))) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (targetElement) {
+          return dispatch({ type: "update", id: targetElement.id, patch: { src: mediaUri } });
+        }
+        const element = newElement("image", crypto.randomUUID(), {
+          src: mediaUri,
+          x: (e.clientX - box.left) / scale,
+          y: (e.clientY - box.top) / scale,
+        });
+        return dispatch({ type: "add", element });
+      }
+
       const file = e.dataTransfer.files[0];
       if (!file) return;
       e.preventDefault();
-      e.stopPropagation(); // la zona de soltado de toda la ventana no lo vuelve a tomar
-      const box = canvasRef.current!.getBoundingClientRect();
-      const scale = box.width / canvasRef.current!.offsetWidth || 1;
-      void place(file, target && isMediaKind(target.kind) ? target : null, {
+      e.stopPropagation();
+      void place(file, targetElement, {
         x: (e.clientX - box.left) / scale,
         y: (e.clientY - box.top) / scale,
       });

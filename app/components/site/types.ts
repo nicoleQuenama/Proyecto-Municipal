@@ -98,6 +98,8 @@ export interface CanvasElement {
   eager?: boolean;
   /** Cómo llena el cuadro una imagen o un video: «cover» recorta, «contain» la muestra entera. */
   fit?: "cover" | "contain";
+  /** Si es true, la figura actúa como marco estilo Canva para recibir imágenes */
+  frame?: boolean;
   /** Imagen de portada de un video de archivo. */
   poster?: string;
   /** Opciones de reproducción de un video de archivo. */
@@ -418,7 +420,8 @@ export type SiteAction =
   | { type: "media/add"; item: MediaItem }
   | { type: "media/remove"; id: string }
   | { type: "media/poster"; pageId: string; mediaId: string; poster: string | null; local?: boolean }
-  | { type: "block/add"; id: string; componentId: string; pageId?: string }
+  | { type: "block/add"; id: string; componentId: string; pageId?: string; scope?: "page" | "global"; slot?: "header" | "body" | "footer" }
+  | { type: "block/replace-component"; pageId: string; blockId: string; componentId: string }
   | { type: "block/remove"; id: string }
   | { type: "block/select"; id: string }
   | { type: "component/save"; component: ComponentDef }

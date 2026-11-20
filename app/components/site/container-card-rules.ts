@@ -351,44 +351,53 @@ export function createDefaultMunicipalFooter(id?: string): ComponentDef {
   const col1 = nextId();
   const col2 = nextId();
   const col3 = nextId();
+  const col4 = nextId();
 
   return {
     id: compId,
     name: "Pie de página (Footer)",
-    description: "Cierre institucional full-width con enlaces y derechos",
+    description: "Cierre institucional en 4 columnas: Identidad, Trámites, Transparencia y Contacto",
     category: "navigation",
     width: 1024,
-    height: 250,
+    height: 260,
     custom: true,
     styles: {
       [SECTION_KEY]: {
-        classes: "grid grid-cols-1 md:grid-cols-3 gap-8 p-8 md:p-12 bg-slate-950 text-slate-300 border-t border-slate-800 w-full",
+        classes: "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 p-6 lg:p-10 bg-slate-900 text-slate-200 border-t border-slate-800 w-full",
         css: "",
       },
     },
     elements: [
-      // Columna 1: Identidad y Servicios Digitales
-      newElement("rect", col1, { role: "container", x: 32, y: 24, width: 300, height: 200, fill: "transparent", radius: 0 }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 0, width: 290, height: 32, text: "Portal Municipal", fontSize: 22, bold: true, color: "#ffffff", role: "heading" }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 40, width: 290, height: 48, text: "Atención ciudadana, participación y servicios comunales abiertos para todos los vecinos.", fontSize: 13, color: "#94a3b8" }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 96, width: 290, height: 24, text: "Horario: Lun a Vie 08:30 - 17:30 hrs", fontSize: 12, color: "#64748b" }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 128, width: 290, height: 36, text: "© 2026 Ilustre Municipalidad. Todos los derechos reservados.", fontSize: 11, color: "#475569" }),
+      // Columna 1: Logo municipal e Identidad
+      newElement("rect", col1, { role: "container", x: 24, y: 24, width: 220, height: 210, fill: "transparent", radius: 0 }),
+      newElement("ellipse", nextId(), { parentId: col1, role: "image", frame: true, src: "/login-brand.svg", alt: "Escudo GAMC", x: 0, y: 0, width: 44, height: 44, fill: "#475569" }),
+      newElement("text", nextId(), { parentId: col1, x: 0, y: 52, width: 210, height: 24, text: "Gobierno Autónomo Municipal", fontSize: 15, bold: true, color: "#ffffff", role: "heading" }),
+      newElement("text", nextId(), { parentId: col1, x: 0, y: 80, width: 210, height: 48, text: "Portal oficial de trámites, servicios y participación ciudadana.", fontSize: 12, color: "#94a3b8" }),
+      newElement("text", nextId(), { parentId: col1, x: 0, y: 136, width: 210, height: 32, text: "© 2026 GAMC. Todos los derechos reservados.", fontSize: 11, color: "#94a3b8" }),
 
-      // Columna 2: Trámites y Enlaces Frecuentes
-      newElement("rect", col2, { role: "container", x: 364, y: 24, width: 280, height: 200, fill: "transparent", radius: 0 }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 0, width: 270, height: 28, text: "Trámites en Línea", fontSize: 15, bold: true, color: "#38bdf8", role: "heading" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 36, width: 270, height: 24, text: "• Ventanilla Única Digital", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 66, width: 270, height: 24, text: "• Pago de Patentes y Permisos", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 96, width: 270, height: 24, text: "• Farmacia Comunal y Salud", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 126, width: 270, height: 24, text: "• Subsidios y Becas 2026", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      // Columna 2: Trámites y Servicios
+      newElement("rect", col2, { role: "container", x: 270, y: 24, width: 220, height: 210, fill: "transparent", radius: 0 }),
+      newElement("text", nextId(), { parentId: col2, x: 0, y: 0, width: 210, height: 24, text: "Trámites y Servicios", fontSize: 14, bold: true, color: "#f8fafc", role: "heading" }),
+      newElement("text", nextId(), { parentId: col2, x: 0, y: 32, width: 210, height: 22, text: "• Ventanilla Única Digital", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("text", nextId(), { parentId: col2, x: 0, y: 58, width: 210, height: 22, text: "• Catastro y Territorio", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("text", nextId(), { parentId: col2, x: 0, y: 84, width: 210, height: 22, text: "• Licencias de Actividades", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("text", nextId(), { parentId: col2, x: 0, y: 110, width: 210, height: 22, text: "• Pagos de Impuestos en Línea", fontSize: 13, color: "#cbd5e1", role: "link" }),
 
-      // Columna 3: Contacto y Emergencias Comunal
-      newElement("rect", col3, { role: "container", x: 676, y: 24, width: 280, height: 200, fill: "transparent", radius: 0 }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 0, width: 270, height: 28, text: "Contacto y Emergencias", fontSize: 15, bold: true, color: "#38bdf8", role: "heading" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 36, width: 270, height: 24, text: "Emergencias: 1404 (24/7)", fontSize: 13, bold: true, color: "#f87171" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 66, width: 270, height: 24, text: "Mesa Central: (600) 123-4567", fontSize: 13, color: "#cbd5e1" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 96, width: 270, height: 24, text: "Portal de Transparencia Activa", fontSize: 13, color: "#94a3b8", role: "link" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 126, width: 270, height: 24, text: "contacto@municipalidad.gob", fontSize: 12, color: "#64748b" }),
+      // Columna 3: Transparencia y Normativas
+      newElement("rect", col3, { role: "container", x: 516, y: 24, width: 220, height: 210, fill: "transparent", radius: 0 }),
+      newElement("text", nextId(), { parentId: col3, x: 0, y: 0, width: 210, height: 24, text: "Transparencia y Normas", fontSize: 14, bold: true, color: "#f8fafc", role: "heading" }),
+      newElement("text", nextId(), { parentId: col3, x: 0, y: 32, width: 210, height: 22, text: "• Rendición Pública de Cuentas", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("text", nextId(), { parentId: col3, x: 0, y: 58, width: 210, height: 22, text: "• Gaceta y Decretos Ediles", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("text", nextId(), { parentId: col3, x: 0, y: 84, width: 210, height: 22, text: "• Licitaciones y Convocatorias", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("text", nextId(), { parentId: col3, x: 0, y: 110, width: 210, height: 22, text: "• Presupuesto Participativo", fontSize: 13, color: "#cbd5e1", role: "link" }),
+
+      // Columna 4: Horarios y Contacto Ciudadano
+      newElement("rect", col4, { role: "container", x: 762, y: 24, width: 230, height: 210, fill: "transparent", radius: 0 }),
+      newElement("text", nextId(), { parentId: col4, x: 0, y: 0, width: 220, height: 24, text: "Horarios y Contacto", fontSize: 14, bold: true, color: "#f8fafc", role: "heading" }),
+      newElement("text", nextId(), { parentId: col4, x: 0, y: 32, width: 220, height: 22, text: "Lun a Vie: 08:00 - 16:00", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col4, x: 0, y: 58, width: 220, height: 22, text: "Línea Gratuita: 800-14-0200", fontSize: 12, bold: true, color: "#f8fafc" }),
+      newElement("text", nextId(), { parentId: col4, x: 0, y: 84, width: 220, height: 22, text: "Plaza 14 de Septiembre, GAMC", fontSize: 12, color: "#94a3b8" }),
+      newElement("text", nextId(), { parentId: col4, x: 0, y: 110, width: 220, height: 22, text: "contacto@gamc.gob.bo", fontSize: 12, color: "#f8fafc", role: "link" }),
     ],
     links: {},
   };
@@ -421,12 +430,35 @@ export function organizeFooterIntoColumns(
     return colDiff !== 0 ? colDiff : a.y - b.y;
   });
 
-  // Dividir en grupos para cada columna
-  const groups: CanvasElement[][] = Array.from({ length: columnCount }, () => []);
-  sorted.forEach((el, index) => {
-    const targetGroup = index % columnCount;
-    groups[targetGroup].push(el);
-  });
+  // Si los elementos ya vienen organizados por columnas existentes, preservar sus agrupaciones
+  const existingContainers = def.elements.filter((e) => e.role === "container" && !e.parentId);
+  let groups: CanvasElement[][] = [];
+
+  if (existingContainers.length > 0) {
+    const existingGroups = existingContainers.map((c) =>
+      rawContent.filter((el) => el.parentId === c.id).sort((a, b) => a.y - b.y)
+    ).filter((g) => g.length > 0);
+
+    if (existingGroups.length === columnCount) {
+      groups = existingGroups;
+    } else if (existingGroups.length < columnCount) {
+      groups = [...existingGroups];
+      while (groups.length < columnCount) groups.push([]);
+    } else {
+      // Si hay más contenedores que columnCount, consolidar manteniendo contigüidad
+      groups = Array.from({ length: columnCount }, () => []);
+      existingGroups.forEach((eg, idx) => {
+        const target = Math.min(idx, columnCount - 1);
+        groups[target].push(...eg);
+      });
+    }
+  } else {
+    // Dividir en grupos contiguos para que los encabezados permanezcan con sus enlaces
+    const chunkSize = Math.ceil(sorted.length / columnCount);
+    groups = Array.from({ length: columnCount }, (_, i) =>
+      sorted.slice(i * chunkSize, (i + 1) * chunkSize)
+    );
+  }
 
   const colWidth = Math.round((def.width - 64 - (columnCount - 1) * 32) / columnCount);
   const newElements: CanvasElement[] = [];
@@ -464,12 +496,12 @@ export function organizeFooterIntoColumns(
 
   const gridClasses =
     columnCount === 1
-      ? "flex flex-col items-center justify-center text-center gap-4 p-8 md:p-12 w-full bg-slate-950 text-slate-300 border-t border-slate-800"
+      ? "flex flex-col items-center justify-center text-center gap-4 p-6 lg:p-10 w-full bg-slate-900 text-slate-200 border-t border-slate-800"
       : columnCount === 2
-        ? "grid grid-cols-1 md:grid-cols-2 gap-8 p-8 md:p-12 w-full bg-slate-950 text-slate-300 border-t border-slate-800"
+        ? "grid grid-cols-2 gap-4 sm:gap-6 p-6 lg:p-10 w-full bg-slate-900 text-slate-200 border-t border-slate-800"
         : columnCount === 4
-          ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 p-8 md:p-12 w-full bg-slate-950 text-slate-300 border-t border-slate-800"
-          : "grid grid-cols-1 md:grid-cols-3 gap-8 p-8 md:p-12 w-full bg-slate-950 text-slate-300 border-t border-slate-800";
+          ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 p-6 lg:p-10 w-full bg-slate-900 text-slate-200 border-t border-slate-800"
+          : "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 p-6 lg:p-10 w-full bg-slate-900 text-slate-200 border-t border-slate-800";
 
   return {
     ...def,
@@ -640,6 +672,169 @@ export function addSearchButtonToHeader(
       elements: [...def.elements, searchBtn],
     },
     searchId,
+  };
+}
+
+/**
+ * Crea una cabecera municipal oficial limpia y moderna con logo (marco Canva con escudo oficial),
+ * 4 enlaces de navegación (Transparencia, Proyectos, GAMC, Servicios) y buscador global ciudadano.
+ */
+export function createDefaultMunicipalHeader(id?: string): ComponentDef {
+  const compId = id || crypto.randomUUID();
+  let count = 0;
+  const nextId = () => `${compId}-e${++count}`;
+  const logoId = nextId();
+  const link1 = nextId();
+  const link2 = nextId();
+  const link3 = nextId();
+  const link4 = nextId();
+  const searchBtn = nextId();
+
+  return {
+    id: compId,
+    name: "Cabecera Municipal Oficial",
+    description: "Barra de navegación institucional con escudo, 4 enlaces y buscador ciudadano",
+    category: "navigation",
+    width: 1024,
+    height: 72,
+    custom: true,
+    styles: {
+      [SECTION_KEY]: {
+        classes: "flex items-center justify-between px-6 py-3.5 bg-slate-800 text-slate-100 border-b border-slate-700 w-full shadow-md",
+        css: "",
+      },
+    },
+    elements: [
+      // Marco para Escudo / Logo (estilo Canva con escudo oficial)
+      newElement("ellipse", logoId, {
+        role: "image",
+        frame: true,
+        src: "/login-brand.svg",
+        alt: "Escudo Municipal",
+        x: 24,
+        y: 12,
+        width: 48,
+        height: 48,
+        fill: "#475569",
+      }),
+      // Enlace 1: Transparencia
+      newElement("text", link1, {
+        role: "link",
+        x: 240,
+        y: 24,
+        width: 110,
+        height: 24,
+        text: "Transparencia",
+        fontSize: 14,
+        color: "#f1f5f9",
+        align: "center",
+      }),
+      // Enlace 2: Proyectos
+      newElement("text", link2, {
+        role: "link",
+        x: 370,
+        y: 24,
+        width: 90,
+        height: 24,
+        text: "Proyectos",
+        fontSize: 14,
+        color: "#f1f5f9",
+        align: "center",
+      }),
+      // Enlace 3: GAMC
+      newElement("text", link3, {
+        role: "link",
+        x: 480,
+        y: 24,
+        width: 70,
+        height: 24,
+        text: "GAMC",
+        fontSize: 14,
+        color: "#f1f5f9",
+        align: "center",
+      }),
+      // Enlace 4: Servicios
+      newElement("text", link4, {
+        role: "link",
+        x: 570,
+        y: 24,
+        width: 80,
+        height: 24,
+        text: "Servicios",
+        fontSize: 14,
+        color: "#f1f5f9",
+        align: "center",
+      }),
+      // Buscador Global Ciudadano (Botón con ícono de lupa)
+      newElement("rect", searchBtn, {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 880,
+        y: 16,
+        width: 110,
+        height: 40,
+        fill: "#475569",
+        radius: 8,
+        text: "Buscar",
+        icon: "search",
+        color: "#ffffff",
+        bold: true,
+        align: "center",
+      }),
+    ],
+    links: {},
+  };
+}
+
+/** Añade un nuevo botón de acción a la cabecera. */
+export function addButtonToHeader(
+  def: ComponentDef,
+  label = "Nuevo botón",
+): { component: ComponentDef; newButtonId: string } {
+  const newButtonId = crypto.randomUUID();
+  const existingButtons = def.elements.filter((e) => e.role === "button");
+  const existingLinks = def.elements.filter((e) => e.role === "link");
+
+  let newX = 780;
+  let newY = 14;
+  if (existingButtons.length > 0) {
+    const last = existingButtons[existingButtons.length - 1];
+    newX = last.x + last.width + 12;
+    newY = last.y;
+  } else if (existingLinks.length > 0) {
+    const last = existingLinks[existingLinks.length - 1];
+    newX = last.x + last.width + 24;
+    newY = 14;
+  }
+
+  const newBtn = newElement("rect", newButtonId, {
+    x: newX,
+    y: newY,
+    width: 130,
+    height: 40,
+    text: label,
+    fill: "#0d99ff",
+    radius: 8,
+    color: "#ffffff",
+    bold: true,
+    role: "button",
+    align: "center",
+  });
+
+  return {
+    component: {
+      ...def,
+      elements: [...def.elements, newBtn],
+    },
+    newButtonId,
+  };
+}
+
+/** Elimina un elemento de la cabecera. */
+export function deleteElementFromHeader(def: ComponentDef, elementId: string): ComponentDef {
+  return {
+    ...def,
+    elements: def.elements.filter((e) => e.id !== elementId),
   };
 }
 

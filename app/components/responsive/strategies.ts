@@ -24,9 +24,9 @@ export function navbarMenuLayout(def: ComponentDef, available: number): Componen
       return { ...el, x: 0, y: 0, width: available, height };
     }
     // Icono o logo institucional
-    if (el.x < 120 && (el.kind === "rect" || el.kind === "image" || el.kind === "icon") && (!el.text || !el.text.trim())) {
-      const elH = Math.min(el.height, 36);
-      const elW = Math.min(el.width, 36);
+    if (el.x < 120 && (el.kind === "rect" || el.kind === "image" || el.kind === "icon" || el.kind === "ellipse" || el.role === "image") && (!el.text || !el.text.trim())) {
+      const elH = Math.min(el.height, 40);
+      const elW = Math.min(el.width, 40);
       return { ...el, x: 16, y: Math.round((height - elH) / 2), width: elW, height: elH };
     }
     // Título de la marca
@@ -35,10 +35,10 @@ export function navbarMenuLayout(def: ComponentDef, available: number): Componen
         (other) =>
           other.id !== el.id &&
           other.x < el.x &&
-          (other.kind === "rect" || other.kind === "image" || other.kind === "icon") &&
+          (other.kind === "rect" || other.kind === "image" || other.kind === "icon" || other.kind === "ellipse" || other.role === "image") &&
           !other.text?.trim(),
       );
-      const left = hasLogo ? 60 : 16;
+      const left = hasLogo ? 64 : 16;
       const maxW = Math.max(120, available - left - 60);
       const textH = Math.min(el.height, 28);
       return {
@@ -47,7 +47,7 @@ export function navbarMenuLayout(def: ComponentDef, available: number): Componen
         y: Math.round((height - textH) / 2),
         width: Math.min(el.width, maxW),
         height: textH,
-        fontSize: Math.min(el.fontSize, available < 400 ? 16 : 18),
+        fontSize: Math.min(el.fontSize, available < 400 ? 15 : 17),
       };
     }
     return { ...el, y: Math.min(el.y, height - el.height) };
@@ -67,8 +67,23 @@ export const STRATEGIES: Record<AutoStrategy, (def: ComponentDef, available: num
 /** Con al menos tantos elementos visibles, una sección ancha se apila; con menos es «una sola pieza» y se escala. */
 export const MIN_ELEMENTS_TO_STACK = 2;
 
-/** La estrategia inteligente: apilar una sección ancha con varios elementos; escalar una pieza sola. */
+/** La estrategia inteligente: apilar una sección ancha con varios elementos; escalar una pieza sola; cabeceras usan menú en tablet/móvil. */
 export function smartStrategy(def: ComponentDef, available: number): AutoStrategy {
+  const isNav =
+    (def.category === "navigation" ||
+      def.id.toLowerCase().includes("navbar") ||
+      def.id.toLowerCase().includes("nav") ||
+      def.id.toLowerCase().includes("header") ||
+      def.name.toLowerCase().includes("cabecera") ||
+      def.name.toLowerCase().includes("navegaci")) &&
+    !def.id.toLowerCase().includes("footer") &&
+    !def.name.toLowerCase().includes("pie");
+
+  // Las cabeceras institucionales en pantallas menores a 1024px (tablets y móviles) usan menú hamburguesa
+  if (isNav && available < 1024) {
+    return "menu";
+  }
+
   const visible = def.elements.filter((element) => !element.hidden).length;
   return def.width > available && visible >= MIN_ELEMENTS_TO_STACK ? "stack" : "scale";
 }

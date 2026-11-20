@@ -16,8 +16,8 @@ interface KindTraits {
 
 /** Un tipo nuevo de elemento es una entrada nueva aquí. */
 export const KIND_TRAITS: Record<ElementKind, KindTraits> = {
-  rect: { label: "Rectángulo", hasFill: true, hasText: true, hasRadius: true, hasMedia: false },
-  ellipse: { label: "Elipse", hasFill: true, hasText: true, hasRadius: false, hasMedia: false },
+  rect: { label: "Rectángulo / Marco", hasFill: true, hasText: true, hasRadius: true, hasMedia: true },
+  ellipse: { label: "Elipse / Círculo", hasFill: true, hasText: true, hasRadius: false, hasMedia: true },
   triangle: { label: "Triángulo", hasFill: true, hasText: false, hasRadius: false, hasMedia: false },
   line: { label: "Línea", hasFill: true, hasText: false, hasRadius: false, hasMedia: false },
   text: { label: "Texto", hasFill: false, hasText: true, hasRadius: false, hasMedia: false },

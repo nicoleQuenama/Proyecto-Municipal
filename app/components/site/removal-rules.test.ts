@@ -7,9 +7,22 @@ import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "
 import { deletionPlan } from "./deletion-plan";
 import { siteReducer } from "./site-reducer";
 import { undoLabel } from "./undo-rules";
-import type { SiteState } from "./types";
+import type { ComponentDef, SiteState } from "./types";
 
-const card = EXAMPLE_COMPONENTS.find((c) => c.id === "card-service")!;
+const card: ComponentDef = {
+  id: "card-service",
+  name: "Tarjeta de Servicio",
+  description: "",
+  category: "cards",
+  width: 320,
+  height: 200,
+  elements: [
+    { id: "e1", kind: "rect", role: "none", x: 0, y: 0, width: 320, height: 200, fill: "#fff", radius: 8, text: "", fontSize: 16, color: "#000", bold: false, align: "left", fontFamily: "", src: "" },
+    { id: "e2", kind: "text", role: "heading", x: 20, y: 20, width: 200, height: 28, fill: "transparent", radius: 0, text: "Trámite", fontSize: 18, color: "#000", bold: true, align: "left", fontFamily: "", src: "" },
+  ],
+  links: {},
+  custom: false,
+};
 const first = card.elements[0].id;
 const second = card.elements[1].id;
 

@@ -115,14 +115,18 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     slot === "bottom" ||
     block.slot === "header" ||
     block.slot === "footer" ||
-    def?.category === "navigation";
+    def?.category === "navigation" ||
+    Boolean(def?.id.toLowerCase().includes("header")) ||
+    Boolean(def?.id.toLowerCase().includes("footer")) ||
+    Boolean(def?.name.toLowerCase().includes("cabecera")) ||
+    Boolean(def?.name.toLowerCase().includes("pie"));
   // Encabezado, barra de navegación o pie (o sección en flujo): su ancho lo decide la página, no sus manijas.
   const widthLocked = !!def && (flow || isNavOrFooter(def, isHeaderOrFooter));
 
   const isOverlay = block.placementMode === "overlay";
-  // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es del escritorio.
-  // Encabezados y pies de página se mantienen en flujo salvo que se elija explícitamente sobreponer.
-  const placement = adaptive || (isHeaderOrFooter && !isOverlay) || block.placementMode === "flow" ? undefined : block.placement;
+  // Encabezados y pies de página siempre se mantienen en el flujo de la página (arriba y abajo), nunca sobreponen.
+  // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es solo de secciones del cuerpo en escritorio.
+  const placement = adaptive || isHeaderOrFooter || block.placementMode === "flow" ? undefined : block.placement;
 
   // Una cuenta con acceso limitado solo edita las secciones que se le asignaron; el resto se ve pero no se toca.
   const { currentUser } = useAuth();
@@ -187,7 +191,20 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
 
   // Vista previa a todo el ancho: lo marcado «Todo el ancho» y lo diseñado de borde a borde llegan a los bordes de la página.
   const autoFill = fullPage && !placement && !stretches(block.box?.span) && !pureCode ? painted : null;
-  const bleeds = bleedsToEdges({ fullPage, placed: !!placement, stretches: stretches(block.box?.span), autoFill: autoFill !== null, isHeaderOrFooter });
+  // Los bloques de los slots superior e inferior ya viven en un contenedor que sangra hasta los bordes de la hoja
+  // (ver PageBlocks): si la sección sangrara otra vez, su caja se saldría 40 px por costado y recortaría su contenido.
+  const inBleedSlot = slot === "top" || slot === "bottom";
+  const bleeds = inBleedSlot
+    ? false
+    : bleedsToEdges({
+        fullPage,
+        placed: !!placement,
+        stretches: stretches(block.box?.span),
+        autoFill: autoFill !== null,
+        isHeaderOrFooter,
+        defWidth: def.width,
+        hasExplicitContentSpan: block.box?.span === "content",
+      });
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
@@ -246,26 +263,26 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onContextMenu: (elementId, point) =>
       openFormatMenu({ kind: "element", pageId: page.id, blockId: block.id, elementId }, point),
     onOpenCode: (elementId) => openFile({ kind: "custom-css", pageId: page.id, blockId: block.id, key: elementId }),
-    onReorderFlow: editing && !isBlockLocked
+    onReorderFlow: editing && !isBlockLocked && !isHeaderOrFooter
       ? (elementId, direction) => {
           const updated = moveElementOrderInComponent(def, elementId, direction);
           dispatch({ type: "component/save", component: updated });
         }
       : undefined,
-    onReorderElement: editing && !isBlockLocked
+    onReorderElement: editing && !isBlockLocked && !isHeaderOrFooter
       ? (sourceId, targetId, position) => {
           const updated = reorderElementInComponent(def, sourceId, targetId, position);
           dispatch({ type: "component/save", component: updated });
         }
       : undefined,
-    onDuplicateCard: editing && !isBlockLocked
+    onDuplicateCard: editing && !isBlockLocked && !isHeaderOrFooter
       ? (elementId) => {
           const { component: updated, newCardId } = duplicateCardInComponent(def, elementId);
           dispatch({ type: "component/save", component: updated });
           dispatch({ type: "element/select", id: newCardId });
         }
       : undefined,
-    onAddCard: editing && !isBlockLocked
+    onAddCard: editing && !isBlockLocked && !isHeaderOrFooter
       ? () => {
           const { component: updated, newCardId } =
             def.category === "buttons"
@@ -278,8 +295,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
           dispatch({ type: "element/select", id: newCardId });
         }
       : undefined,
-    addCardLabel: def.category === "buttons" ? "Botón" : "Tarjeta",
-    onDeleteCard: editing && !isBlockLocked
+    addCardLabel: isHeaderOrFooter ? undefined : def.category === "buttons" ? "Botón" : "Tarjeta",
+    onDeleteCard: editing && !isBlockLocked && !isHeaderOrFooter
       ? (elementId) => {
           const updated = deleteCardFromComponent(def, elementId);
           dispatch({ type: "component/save", component: updated });
@@ -346,7 +363,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && permissionLocked ? "opacity-40 saturate-50" : ""} ${limited && !permissionLocked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${
         customClasses(block, SECTION_KEY, def).includes("w-fit")
           ? "w-fit"
-          : flow || pureCode || stretches(block.box?.span) || autoFill || isHeaderOrFooter
+          : flow || pureCode || stretches(block.box?.span) || autoFill || isHeaderOrFooter || bleeds
             ? "w-full"
             : "w-fit"
       } ${customClasses(block, SECTION_KEY, def).includes("mx-auto") ? "mx-auto" : ""} max-w-full ${
@@ -391,14 +408,14 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
         // la sección no hace aparecer barras de desplazamiento.
         // Un bloque de código va sin relleno: lo que se mide (y lo que redimensionan las manijas) es la caja del iframe.
-        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
+        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
         style={{
-          padding: isHeaderOrFooter || pureCode ? 0 : box.padding,
+          padding: isHeaderOrFooter || bleeds || pureCode ? 0 : box.padding,
           background: background ?? autoFill ?? undefined,
-          borderRadius: isHeaderOrFooter || stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
+          borderRadius: isHeaderOrFooter || bleeds || stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
           ...(customClasses(block, SECTION_KEY, def).includes("w-fit")
             ? { width: "fit-content" }
-            : isHeaderOrFooter
+            : isHeaderOrFooter || bleeds
               ? { width: "100%", display: "block" }
               : spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined && !placement.fixed, fullPage)),
           ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),
@@ -414,8 +431,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               shared={shared}
               name={def.name}
               editing={editing}
-              width={block.size?.width}
-              height={block.size?.height}
+              width={adaptive ? undefined : block.size?.width}
+              height={adaptive ? undefined : block.size?.height}
               onEdit={() => openFile({ kind: "block-html", pageId: page.id, blockId: block.id })}
             />
             {/* En tablet/móvil el tamaño propio no se toca: ahí el bloque se adapta, no se redimensiona a mano. */}
@@ -487,51 +504,60 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                   : "border-line bg-canvas/95"
               }`}
             >
-              <button
-                type="button"
-                title={isBlockLocked ? "Sección bloqueada · Desbloquea para mover" : "Subir sección en la página"}
-                aria-label="Subir sección"
-                disabled={isBlockLocked}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isBlockLocked) return;
-                  dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: -1 });
-                }}
-                className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
-                  isBlockLocked
-                    ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
-                    : "text-ink hover:bg-hover active:scale-95"
-                } cursor-pointer`}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                title={isBlockLocked ? "Sección bloqueada · Desbloquea para mover" : "Bajar sección en la página"}
-                aria-label="Bajar sección"
-                disabled={isBlockLocked}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isBlockLocked) return;
-                  dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: 1 });
-                }}
-                className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
-                  isBlockLocked
-                    ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
-                    : "text-ink hover:bg-hover active:scale-95"
-                } cursor-pointer`}
-              >
-                ↓
-              </button>
-              <span className="h-3 w-px bg-line" />
-              <PlacementGrip
-                label={def.name}
-                onStart={move.startDrag}
-                onSelect={select}
-                disabled={isBlockLocked}
-                className="relative flex"
-              />
-              <span className="h-3 w-px bg-line" />
+              {!isHeaderOrFooter && (
+                <>
+                  <button
+                    type="button"
+                    title={isBlockLocked ? "Sección bloqueada · Desbloquea para mover" : "Subir sección en la página"}
+                    aria-label="Subir sección"
+                    disabled={isBlockLocked}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isBlockLocked) return;
+                      dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: -1 });
+                    }}
+                    className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
+                      isBlockLocked
+                        ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
+                        : "text-ink hover:bg-hover active:scale-95"
+                    } cursor-pointer`}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    title={isBlockLocked ? "Sección bloqueada · Desbloquea para mover" : "Bajar sección en la página"}
+                    aria-label="Bajar sección"
+                    disabled={isBlockLocked}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isBlockLocked) return;
+                      dispatch({ type: "block/move", pageId: page.id, blockId: block.id, direction: 1 });
+                    }}
+                    className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
+                      isBlockLocked
+                        ? "cursor-not-allowed opacity-30 text-ink-dim hover:bg-transparent"
+                        : "text-ink hover:bg-hover active:scale-95"
+                    } cursor-pointer`}
+                  >
+                    ↓
+                  </button>
+                  <span className="h-3 w-px bg-line" />
+                  <PlacementGrip
+                    label={def.name}
+                    onStart={move.startDrag}
+                    onSelect={select}
+                    disabled={isBlockLocked}
+                    className="relative flex"
+                  />
+                  <span className="h-3 w-px bg-line" />
+                </>
+              )}
+              {isHeaderOrFooter && (
+                <span className="text-[10px] font-semibold text-accent px-1">
+                  {slot === "top" || block.slot === "header" || def.category === "navigation" ? "Encabezado" : "Pie de página"}
+                </span>
+              )}
               <button
                 type="button"
                 aria-label={isBlockLocked ? "Desbloquear sección" : "Bloquear sección"}
@@ -573,14 +599,14 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
             >
               <LockClosedIcon className="h-3.5 w-3.5" />
             </button>
-          ) : (
+          ) : !isHeaderOrFooter ? (
             <PlacementGrip
               label={def.name}
               onStart={move.startDrag}
               onSelect={select}
               className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
             />
-          )}
+          ) : null}
           {selected && selectedElementId === null && !pureCode && (
             <CodeButton
               label="Abrir el código de la sección en el editor"
@@ -631,7 +657,7 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
         isTop
           ? "-mx-10 mb-8 w-[calc(100%+5rem)] max-w-none overflow-hidden"
           : isBottom
-            ? "-mx-10 mt-auto w-[calc(100%+5rem)] max-w-none overflow-hidden"
+            ? "-mx-10 mt-auto pt-8 w-[calc(100%+5rem)] max-w-none"
             : "mt-8 gap-6 flex-1"
       }`}
       style={{
@@ -650,7 +676,8 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
                 marginLeft: "calc(var(--page-px, 2.5rem) * -1)",
                 marginRight: "calc(var(--page-px, 2.5rem) * -1)",
                 marginBottom: "calc(var(--page-pb, 3rem) * -1)",
-                bottom: 0,
+                marginTop: "auto",
+                position: "relative",
                 width: "calc(100% + 2 * var(--page-px, 2.5rem))",
                 maxWidth: "none",
               }

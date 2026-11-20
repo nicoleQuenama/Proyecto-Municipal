@@ -352,6 +352,20 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const footerColumns = def.elements.filter((e) => !e.parentId && e.role === "container");
   const totalFooterCols = footerColumns.length > 0 ? footerColumns.length : 3;
 
+  const footerColumnsList = footerColumns.map((col, idx) => ({
+    id: col.id,
+    index: idx,
+    title: def.elements.find((e) => e.parentId === col.id && (e.role === "heading" || e.kind === "text"))?.text || `Columna ${idx + 1}`,
+    items: def.elements
+      .filter((e) => e.parentId === col.id)
+      .map((e) => ({
+        id: e.id,
+        text: e.text || (e.role === "image" ? "Logo / Escudo" : "Elemento"),
+        role: e.role,
+        kind: e.kind,
+      })),
+  }));
+
   const currentParentColId = element?.parentId;
   const currentColIndex = currentParentColId
     ? footerColumns.findIndex((c) => c.id === currentParentColId)
@@ -403,7 +417,58 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   return (
     <div className="flex flex-col gap-4">
       <HideOnControls pageId={pageId} block={block} def={def} elementId={element?.id} />
-      {(def.id.includes("search") || element?.control?.name?.includes("search") || element?.text.toLowerCase().includes("buscar")) && (
+      {canEditContent && element && (element.kind === "text" || typeof element.text === "string" || element.role === "button" || element.role === "link") && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <label htmlFor="inspector-element-text" className="text-xs font-semibold text-ink">
+              Contenido de texto
+            </label>
+            <span className="text-[10px] text-ink-dim font-normal">Doble clic en lienzo para editar</span>
+          </div>
+          <textarea
+            id="inspector-element-text"
+            rows={element.text && element.text.length > 50 ? 3 : 2}
+            value={element.text ?? ""}
+            onChange={(e) =>
+              dispatch({
+                type: "component/text",
+                componentId: def.id,
+                pageId,
+                blockId: block.id,
+                elementId: element.id,
+                text: e.target.value,
+              })
+            }
+            placeholder="Escribe el texto aquí..."
+            className="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-xs text-ink focus:border-accent focus:outline-hidden resize-y transition-colors font-medium"
+          />
+        </div>
+      )}
+      {canEditContent && element && (element.kind === "image" || element.role === "image") && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
+          <label htmlFor="inspector-image-src" className="text-xs font-semibold text-ink">
+            Ruta o URL de la imagen
+          </label>
+          <input
+            id="inspector-image-src"
+            type="text"
+            value={element.src ?? ""}
+            onChange={(e) =>
+              dispatch({
+                type: "component/element",
+                componentId: def.id,
+                pageId,
+                blockId: block.id,
+                elementId: element.id,
+                patch: { src: e.target.value },
+              })
+            }
+            placeholder="/ruta-o-url-de-imagen.svg"
+            className="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-xs text-ink focus:border-accent focus:outline-hidden transition-colors font-mono"
+          />
+        </div>
+      )}
+      {(def.id.includes("search") || element?.control?.name?.includes("search") || Boolean(element?.text?.toLowerCase().includes("buscar"))) && (
         <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-3 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-ink">Buscador Ciudadano</span>
@@ -511,108 +576,202 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
-            <span className="text-[10px] text-ink-dim font-medium">Posicionamiento en la página:</span>
-            <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
-              <button
-                type="button"
-                disabled={block.locked}
-                aria-pressed={block.placementMode !== "overlay"}
-                onClick={() => dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" })}
-                className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
-                  block.locked
-                    ? "cursor-not-allowed opacity-40 text-ink-dim"
-                    : block.placementMode !== "overlay"
-                      ? "bg-accent text-white shadow-xs font-semibold"
+          {isHeader ? (
+            <div className="flex flex-col gap-1 pt-1.5 border-t border-line/60">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-ink-dim font-medium">Ubicación en el portal:</span>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: "block/lock", pageId, blockId: block.id, locked: !block.locked })}
+                  className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
+                    block.locked
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
                       : "text-ink-dim hover:text-ink hover:bg-hover"
-                } cursor-pointer`}
-                title={block.locked ? "Sección bloqueada" : "Se ajusta automáticamente según el contenido de la página sin sobreponerse"}
-              >
-                Ajustar a contenido
-              </button>
-              <button
-                type="button"
-                disabled={block.locked}
-                aria-pressed={block.placementMode === "overlay"}
-                onClick={() => {
-                  dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "overlay" });
-                  // Sin posición propia aún: queda donde se ve ahora, para poder moverlo desde ahí sin que salte.
-                  const at = block.placement ? null : currentPlacement(block.id);
-                  if (at) dispatch({ type: "block/place", pageId, blockId: block.id, placement: at });
-                }}
-                className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
-                  block.locked
-                    ? "cursor-not-allowed opacity-40 text-ink-dim"
+                  } cursor-pointer`}
+                  title={block.locked ? "Desbloquear encabezado" : "Bloquear encabezado"}
+                >
+                  {block.locked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-accent font-medium leading-snug">
+                El encabezado se ancla automáticamente en la parte superior a ancho completo.
+              </p>
+            </div>
+          ) : isFooter ? (
+            <div className="flex flex-col gap-1 pt-1.5 border-t border-line/60">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-ink-dim font-medium">Ubicación en el portal:</span>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: "block/lock", pageId, blockId: block.id, locked: !block.locked })}
+                  className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
+                    block.locked
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
+                      : "text-ink-dim hover:text-ink hover:bg-hover"
+                  } cursor-pointer`}
+                  title={block.locked ? "Desbloquear pie de página" : "Bloquear pie de página"}
+                >
+                  {block.locked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-accent font-medium leading-snug">
+                El pie de página se ancla siempre al final del portal sin sobreponerse al cuerpo.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
+                <span className="text-[10px] text-ink-dim font-medium">Posicionamiento en la página:</span>
+                <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
+                  <button
+                    type="button"
+                    disabled={block.locked}
+                    aria-pressed={block.placementMode !== "overlay"}
+                    onClick={() => {
+                      dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" });
+                      if (block.placement) dispatch({ type: "block/place", pageId, blockId: block.id, placement: null as any });
+                    }}
+                    className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
+                      block.locked
+                        ? "cursor-not-allowed opacity-40 text-ink-dim"
+                        : block.placementMode !== "overlay"
+                          ? "bg-accent text-white shadow-xs font-semibold"
+                          : "text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                    title={block.locked ? "Sección bloqueada" : "Se ajusta automáticamente según el contenido de la página sin sobreponerse"}
+                  >
+                    Ajustar a contenido
+                  </button>
+                  <button
+                    type="button"
+                    disabled={block.locked}
+                    aria-pressed={block.placementMode === "overlay"}
+                    onClick={() => {
+                      dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "overlay" });
+                      const at = block.placement ? null : currentPlacement(block.id);
+                      if (at) dispatch({ type: "block/place", pageId, blockId: block.id, placement: at });
+                    }}
+                    className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
+                      block.locked
+                        ? "cursor-not-allowed opacity-40 text-ink-dim"
+                        : block.placementMode === "overlay"
+                          ? "bg-accent text-white shadow-xs font-semibold"
+                          : "text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                    title={block.locked ? "Sección bloqueada" : "Permite mover libremente y sobreponer sobre otros elementos"}
+                  >
+                    Sobreponer (libre)
+                  </button>
+                </div>
+                <p className="text-[10px] text-ink-dim">
+                  {block.locked
+                    ? "Sección bloqueada: desbloquea la sección para cambiar su modo o moverla."
                     : block.placementMode === "overlay"
-                      ? "bg-accent text-white shadow-xs font-semibold"
-                      : "text-ink-dim hover:text-ink hover:bg-hover"
-                } cursor-pointer`}
-                title={block.locked ? "Sección bloqueada" : "Permite mover libremente y sobreponer sobre otros elementos"}
-              >
-                Sobreponer (libre)
-              </button>
-            </div>
-            <p className="text-[10px] text-ink-dim">
-              {block.locked
-                ? "Sección bloqueada estilo Canva: desbloquea la sección para cambiar su modo o moverla."
-                : block.placementMode === "overlay"
-                  ? "Modo libre: arrastra la sección en el lienzo para moverla o sobreponerla a otras."
-                  : currentSlot === "footer"
-                    ? "Modo recomendado: el footer permanece siempre al final de la página y se adapta automáticamente al contenido."
-                    : "Modo recomendado: la sección respeta el flujo de la página y se ajusta automáticamente según el contenido."}
-            </p>
-          </div>
+                      ? "Modo libre: arrastra la sección en el lienzo para moverla o sobreponerla a otras."
+                      : "Modo recomendado: la sección respeta el flujo de la página y se ajusta automáticamente."}
+                </p>
+              </div>
 
-          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-ink-dim font-medium">Orden en la página:</span>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "block/lock", pageId, blockId: block.id, locked: !block.locked })}
-                className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
-                  block.locked
-                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
-                    : "text-ink-dim hover:text-ink hover:bg-hover"
-                } cursor-pointer`}
-                title={block.locked ? "Desbloquear sección" : "Bloquear sección"}
-              >
-                {block.locked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                disabled={block.locked}
-                onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: -1 })}
-                className={`flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium transition-colors ${
-                  block.locked
-                    ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
-                    : "text-ink hover:bg-hover active:scale-95"
-                } cursor-pointer`}
-                title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más arriba"}
-              >
-                <span className="font-bold">↑</span> Subir sección
-              </button>
-              <button
-                type="button"
-                disabled={block.locked}
-                onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: 1 })}
-                className={`flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium transition-colors ${
-                  block.locked
-                    ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
-                    : "text-ink hover:bg-hover active:scale-95"
-                } cursor-pointer`}
-                title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más abajo"}
-              >
-                <span className="font-bold">↓</span> Bajar sección
-              </button>
-            </div>
-            <p className="text-[10px] text-ink-dim">
-              {block.locked
-                ? "Esta sección está bloqueada: su posición y contenido están fijos estilo Canva."
-                : "Cambia la posición de esta sección respecto a las demás en el orden vertical de la página."}
-            </p>
-          </div>
+              <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-ink-dim font-medium">Ancho en el lienzo:</span>
+                  <span className="text-[10px] text-accent font-semibold">
+                    {block.box?.span === "content" ? "Con márgenes (944px)" : "Ajustado al lienzo (1024px)"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 rounded-md bg-canvas p-1 text-[11px]">
+                  <button
+                    type="button"
+                    disabled={block.locked}
+                    aria-pressed={block.box?.span !== "content"}
+                    onClick={() => dispatch({ type: "block/box", pageId, blockId: block.id, patch: { span: "width" } })}
+                    className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
+                      block.locked
+                        ? "cursor-not-allowed opacity-40 text-ink-dim"
+                        : block.box?.span !== "content"
+                          ? "bg-accent text-white shadow-xs font-semibold"
+                          : "text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                    title="Ajusta la sección a todo el ancho del lienzo (1024px) para que no se desplace ni se corte a los costados"
+                  >
+                    Ajustar al lienzo (1024px)
+                  </button>
+                  <button
+                    type="button"
+                    disabled={block.locked}
+                    aria-pressed={block.box?.span === "content"}
+                    onClick={() => dispatch({ type: "block/box", pageId, blockId: block.id, patch: { span: "content" } })}
+                    className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
+                      block.locked
+                        ? "cursor-not-allowed opacity-40 text-ink-dim"
+                        : block.box?.span === "content"
+                          ? "bg-accent text-white shadow-xs font-semibold"
+                          : "text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                    title="Contrae la sección dentro de los márgenes laterales estándar (40px a cada lado)"
+                  >
+                    Con márgenes (40px)
+                  </button>
+                </div>
+                <p className="text-[10px] text-ink-dim">
+                  {block.box?.span === "content"
+                    ? "La sección queda limitada dentro de los márgenes de 40px."
+                    : "La sección aprovecha los 1024px completos del lienzo para que las tarjetas y botones queden en su posición exacta sin salirse."}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-ink-dim font-medium">Orden en la página:</span>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: "block/lock", pageId, blockId: block.id, locked: !block.locked })}
+                    className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
+                      block.locked
+                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
+                        : "text-ink-dim hover:text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                    title={block.locked ? "Desbloquear sección" : "Bloquear sección"}
+                  >
+                    {block.locked ? <LockClosedIcon className="h-3.5 w-3.5" /> : <LockOpenIcon className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    disabled={block.locked}
+                    onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: -1 })}
+                    className={`flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium transition-colors ${
+                      block.locked
+                        ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
+                        : "text-ink hover:bg-hover active:scale-95"
+                    } cursor-pointer`}
+                    title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más arriba"}
+                  >
+                    <span className="font-bold">↑</span> Subir sección
+                  </button>
+                  <button
+                    type="button"
+                    disabled={block.locked}
+                    onClick={() => dispatch({ type: "block/move", pageId, blockId: block.id, direction: 1 })}
+                    className={`flex items-center justify-center gap-1.5 h-7 rounded border border-line bg-canvas px-2 text-xs font-medium transition-colors ${
+                      block.locked
+                        ? "cursor-not-allowed opacity-40 text-ink-dim hover:bg-canvas"
+                        : "text-ink hover:bg-hover active:scale-95"
+                    } cursor-pointer`}
+                    title={block.locked ? "Sección bloqueada · Desbloquea para mover" : "Mover esta sección más abajo"}
+                  >
+                    <span className="font-bold">↓</span> Bajar sección
+                  </button>
+                </div>
+                <p className="text-[10px] text-ink-dim">
+                  {block.locked
+                    ? "Esta sección está bloqueada: su posición y contenido están fijos estilo Canva."
+                    : "Cambia la posición de esta sección respecto a las demás en el orden vertical de la página."}
+                </p>
+              </div>
+            </>
+          )}
 
           <Hint>
             {currentSlot === "footer"
@@ -725,6 +884,22 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           currentAlign={element?.align as any}
           currentColIndex={currentColIndex}
           totalFooterCols={totalFooterCols}
+          footerColumnsList={footerColumnsList}
+          onSelectElement={(id) => dispatch({ type: "element/select", id })}
+          scopeMode={block.scope === "page" || level === "block" ? "page" : "global"}
+          onSetScopeMode={(mode) => {
+            if (mode === "global") {
+              setLevel("component");
+              if (block.scope !== "global") {
+                dispatch({ type: "block/scope", pageId, blockId: block.id, scope: "global" });
+              }
+            } else {
+              setLevel("block");
+              if (block.scope !== "page") {
+                dispatch({ type: "block/scope", pageId, blockId: block.id, scope: "page" });
+              }
+            }
+          }}
         />
       )}
 

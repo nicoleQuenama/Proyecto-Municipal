@@ -31,6 +31,11 @@ export function adaptToDevice(
 
   const layout = block.responsive?.[device];
   if (layout) return applyLayout(shown, layout);
-  // Una sección con flex o grid ya se acomoda sola.
-  return flow ? shown : STRATEGIES[strategyFor(shown, block, device, available)](shown, available, block);
+  const strategy = strategyFor(shown, block, device, available);
+  // Si la estrategia es menú (por ejemplo cabeceras en móvil y tablet), se pliega en barra con botón hamburguesa
+  if (strategy === "menu") {
+    return STRATEGIES.menu(shown, available, block);
+  }
+  // Una sección con flex o grid ya se acomoda sola salvo que requiera menú.
+  return flow ? shown : STRATEGIES[strategy](shown, available, block);
 }

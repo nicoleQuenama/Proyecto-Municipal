@@ -1,6 +1,7 @@
 /** Crear una figura dibujada en la página: un componente propio de un solo elemento y su bloque ya colocado. */
 
 import { newElement } from "../site/component-templates";
+import { uniqueComponentName } from "../site/unique-component-name";
 import type { BlockInstance, CanvasElement, ComponentDef, ElementKind, SiteState } from "../site/types";
 import type { DrawFrame } from "./draw-plan";
 
@@ -37,7 +38,7 @@ export function drawShape(state: SiteState, input: DrawShapeInput): SiteState {
   });
   const component: ComponentDef = {
     id: componentId,
-    name: `Forma · ${label}`,
+    name: uniqueComponentName(state.components, `Forma · ${label}`),
     description: `${label} dibujado en la página`,
     // Su caja sigue las reglas de «Secciones», como cualquier categoría propia (ver `categories.ts`).
     category: "sections",

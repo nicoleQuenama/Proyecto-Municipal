@@ -10,6 +10,7 @@ import {
   reorderElementInComponent,
   addButtonToComponent,
   createDefaultMunicipalFooter,
+  createDefaultMunicipalHeader,
   organizeFooterIntoColumns,
   moveElementToFooterColumn,
   addLinkToFooterColumn,
@@ -126,10 +127,24 @@ describe("container-card-rules", () => {
     expect(step2.elements[1].text).toBe("Cancelar");
   });
 
-  it("crea el footer municipal predeterminado con 3 columnas", () => {
+  it("crea el footer municipal predeterminado con 4 columnas", () => {
     const footer = createDefaultMunicipalFooter();
-    expect(footer.elements.filter((e) => !e.parentId && e.role === "container")).toHaveLength(3);
-    expect(footer.styles?.[SECTION_KEY]?.classes).toContain("grid-cols-1 md:grid-cols-3");
+    expect(footer.elements.filter((e) => !e.parentId && e.role === "container")).toHaveLength(4);
+    expect(footer.styles?.[SECTION_KEY]?.classes).toContain("grid-cols-2 sm:grid-cols-2 lg:grid-cols-4");
+  });
+
+  it("crea la cabecera municipal oficial con logo, 4 enlaces y buscador", () => {
+    const header = createDefaultMunicipalHeader();
+    const logo = header.elements.find((e) => e.role === "image");
+    expect(logo).toBeDefined();
+    expect(logo?.src).toBe("/login-brand.svg");
+
+    const links = header.elements.filter((e) => e.role === "link");
+    expect(links.map((l) => l.text)).toEqual(["Transparencia", "Proyectos", "GAMC", "Servicios"]);
+
+    const searchBtn = header.elements.find((e) => e.control?.name === "search-trigger");
+    expect(searchBtn).toBeDefined();
+    expect(searchBtn?.text).toBe("Buscar");
   });
 
   it("organiza elementos sueltos en columnas de footer", () => {

@@ -32,6 +32,7 @@ import { VersionsDialog } from "../versioning/versions-dialog";
 import { CanvasPages, CanvasSurface } from "../viewport/artboard";
 import { BottomToolbar } from "../viewport/bottom-toolbar";
 import { ViewportSwitcher } from "../viewport/viewport-switcher";
+import { CodeEditorButton } from "../workbench/code-editor-button";
 import { WorkbenchHost } from "../workbench/workbench";
 
 export function EditorWorkspace() {
@@ -49,6 +50,7 @@ export function EditorWorkspace() {
             <HistoryButtons />
             <DemoButton />
             <ViewportSwitcher />
+            <CodeEditorButton />
             <div className="ml-auto flex items-center px-3">
               <ProfileMenu />
             </div>

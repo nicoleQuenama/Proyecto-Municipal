@@ -61,7 +61,9 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
             onClick={(e) => {
               const down = press.current;
               const still = down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 3;
-              if (still && down.wasSelected && element.kind === "image" && !element.src) media.pick(element);
+              if (still && down.wasSelected && (element.kind === "image" || element.frame || (element.kind === "rect" || element.kind === "ellipse") && element.role === "image") && !element.src) {
+                media.pick(element);
+              }
             }}
             {...media.drop(element)}
             className={`absolute cursor-move touch-none select-none ${
@@ -98,9 +100,16 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
       )}
 
       {state.elements.length === 0 && (
-        <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-xs text-slate-400">
-          Lienzo vacío. Agrega elementos con la barra de la izquierda o carga una plantilla.
-        </p>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-slate-400">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-40">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M12 8v8M8 12h8" />
+          </svg>
+          <p className="text-xs font-medium text-slate-500">Lienzo en blanco</p>
+          <p className="text-[11px] max-w-[220px] text-slate-400 leading-relaxed">
+            Agrega marcos, formas, textos o botones desde la barra izquierda para diseñar tu componente.
+          </p>
+        </div>
       )}
     </div>
   );

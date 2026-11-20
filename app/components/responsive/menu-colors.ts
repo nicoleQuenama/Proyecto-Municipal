@@ -32,11 +32,21 @@ export function contrast(a: string, b: string): number | null {
   return (high + 0.05) / (low + 0.05);
 }
 
+import { SECTION_KEY } from "../site/types";
+
 /** El fondo del panel: el elegido, el de la sección, el del rectángulo que la cubre o blanco. */
 export function panelBackground(view: ComponentDef, config: MenuConfig, sectionBackground?: string): string {
+  if (config.panelBackground) return config.panelBackground;
+  if (sectionBackground) return sectionBackground;
   const size = { width: view.width, height: view.height };
   const backdrop = view.elements.find((e) => e.kind === "rect" && !e.hidden && !NO_FILL.has(e.fill) && isBackdrop(e, size));
-  return config.panelBackground || sectionBackground || backdrop?.fill || LIGHT;
+  if (backdrop?.fill) return backdrop.fill;
+
+  const classes = view.styles?.[SECTION_KEY]?.classes || "";
+  if (/bg-(slate|zinc|neutral|gray|stone)-(700|800|900|950)/.test(classes)) {
+    return "#1e293b";
+  }
+  return LIGHT;
 }
 
 /** El color del texto: el elegido; si no, el del elemento, salvo que no se lea sobre el fondo (entonces claro u oscuro). */

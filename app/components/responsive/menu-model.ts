@@ -27,7 +27,7 @@ export function defaultMenu(def: ComponentDef): MenuConfig {
   const items = def.elements.filter((element) => {
     if (!fitsInMenu(element)) return false;
     if (element.role === "heading") return false;
-    if (element.x < 120 && (element.kind === "rect" || element.kind === "image" || element.kind === "icon") && !element.text?.trim()) return false;
+    if (element.x < 120 && (element.kind === "rect" || element.kind === "image" || element.kind === "icon" || element.kind === "ellipse" || element.role === "image") && !element.text?.trim()) return false;
     if (isNav) {
       return (
         element.role === "link" ||
