@@ -5,6 +5,7 @@ import { CanvasSettingsMenu } from "../canvas-editing/canvas-settings-menu";
 import { toolCommandId } from "../commands/command-definitions";
 import { useCommands } from "../commands/commands-context";
 import { AdaptAssistant } from "./adapt-assistant";
+import { DesktopMargin } from "./desktop-margin";
 import { CursorIcon, HandIcon, SearchIcon } from "./icons";
 import { InsertMenus } from "./insert-menus";
 import { MoreMenu } from "./more-menu";
@@ -31,6 +32,7 @@ export function BottomToolbar() {
   return (
     <>
     <AdaptAssistant />
+    <DesktopMargin />
     <div
       role="toolbar"
       aria-label="Herramientas del lienzo"

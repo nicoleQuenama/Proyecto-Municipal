@@ -1,7 +1,7 @@
 import { DEVICES } from "../viewport/viewport-context";
 
-export const MIN_ELEMENT_SIZE = 8;
-export const MIN_CANVAS_SIZE = 80;
+export const MIN_ELEMENT_SIZE = 1;
+export const MIN_CANVAS_SIZE = 24;
 /** Una página publicada no puede ser más ancha que la mayor pantalla ni tan alta que sea inmanejable. */
 export const MAX_CANVAS_WIDTH = Math.max(...DEVICES.map((device) => device.width));
 export const MAX_CANVAS_HEIGHT = 1200;

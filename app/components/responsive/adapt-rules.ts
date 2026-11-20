@@ -31,7 +31,7 @@ export type AdaptAction =
   | { type: "responsive/adapt"; pageId: string; blockId: string; device: Device; strategy: AutoStrategy | null }
   | { type: "responsive/adapt-page"; pageId: string; device: AdaptiveDevice; includeManual: boolean }
   | { type: "responsive/hide"; pageId: string; blockId: string; elementId?: string; device: Device; hidden: boolean }
-  | { type: "responsive/margin"; pageId: string; device: AdaptiveDevice; margin: number | null };
+  | { type: "responsive/margin"; pageId: string; device: Device; margin: number | null };
 
 export const ADAPT_HANDLERS: {
   [K in AdaptAction["type"]]: (state: SiteState, action: Extract<AdaptAction, { type: K }>) => SiteState;

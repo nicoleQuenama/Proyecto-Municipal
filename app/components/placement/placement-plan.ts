@@ -21,6 +21,8 @@ export interface PlacementDrag {
   grab: { x: number; y: number };
   size: { width: number; height: number };
   start: { x: number; y: number };
+  /** Margen del elemento: `left`/`top` se cuentan desde antes del margen, así que la caja se ve corrida por él. */
+  margin: { x: number; y: number };
   moved: boolean;
   /** Dónde quedó en el último movimiento. */
   last: Placement;
@@ -34,6 +36,8 @@ export function beginPlacementDrag(item: HTMLElement, page: HTMLElement, pointer
   const box = item.getBoundingClientRect();
   const edges = edgesIn(page, item, scale);
   const size = { width: box.width / scale, height: box.height / scale };
+  const style = getComputedStyle(item);
+  const margin = { x: parseFloat(style.marginLeft) || 0, y: parseFloat(style.marginTop) || 0 };
 
   return {
     item,
@@ -41,9 +45,10 @@ export function beginPlacementDrag(item: HTMLElement, page: HTMLElement, pointer
     scale,
     grab: { x: (pointer.x - box.left) / scale, y: (pointer.y - box.top) / scale },
     size,
-    start: { x: edges.left, y: edges.top },
+    start: { x: edges.left - margin.x, y: edges.top - margin.y },
+    margin,
     moved: false,
-    last: { x: edges.left, y: edges.top, width: size.width },
+    last: { x: edges.left - margin.x, y: edges.top - margin.y, width: size.width },
   };
 }
 
@@ -85,7 +90,7 @@ export function planDragStep(drag: PlacementDrag, e: PointerEvent, settings: Can
   const final = snapped?.edges ?? edges;
 
   return {
-    placement: { x: Math.round(final.left), y: Math.round(final.top), width: Math.round(drag.size.width) },
+    placement: { x: Math.round(final.left - drag.margin.x), y: Math.round(final.top - drag.margin.y), width: Math.round(drag.size.width) },
     guides: snapped?.guides ?? null,
   };
 }
@@ -107,7 +112,11 @@ export function settleDrag(drag: PlacementDrag, e: PointerEvent, canTransfer: bo
     return {
       kind: "transfer",
       pageId,
-      placement: { x: Math.max(0, Math.round(corner.x)), y: Math.max(0, Math.round(corner.y)), width: drag.last.width },
+      placement: {
+        x: Math.max(0, Math.round(corner.x - drag.margin.x)),
+        y: Math.max(0, Math.round(corner.y - drag.margin.y)),
+        width: drag.last.width,
+      },
     };
   }
 

@@ -31,7 +31,10 @@ import { BackgroundLayers } from "../background/background-layers";
 import { hasBackground, spanStyle, stretches } from "../background/background-css";
 import { useViewport } from "../viewport/viewport-context";
 import { CodeButton } from "./code-button";
-import { clampCanvasSize } from "../canvas-editing/limits";
+import { clampCanvasSize, type ResizeAnchor } from "../canvas-editing/limits";
+import { useCanvasSettings } from "../canvas-editing/settings-context";
+import { EMPTY_TEXT } from "./text-rules";
+import { measurePlacement } from "../placement/measure-placement";
 import { ContentButton } from "../code-data/content-button";
 import { anchoredPlacement } from "../placement/anchored-placement";
 import { bleedsToEdges } from "./bleed";
@@ -42,7 +45,7 @@ import { customClasses, customCss, isFlowLayout, targetKey } from "./custom-code
 import { isNavOrFooter } from "./element-style";
 import { HiddenPlaceholder } from "./hidden-placeholder";
 import { applyOverrides, type Resolver } from "./overrides";
-import { selectionOf } from "./multi-select";
+import { selectionOf, toggleBlock } from "./multi-select";
 import type { Placement } from "../placement/types";
 import { splitBlocks } from "./rules";
 import { useSite, useSiteDispatch } from "./site-context";
@@ -52,6 +55,7 @@ import type { Size } from "../canvas-editing/limits";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
 import { PlacementGrip } from "../placement/placement-grip";
 import { LockClosedIcon, LockOpenIcon } from "../icons/lock-icons";
+import { useFlowReorder } from "../placement/use-flow-reorder";
 import { usePlacementDrag } from "../placement/use-placement-drag";
 import { PLACE_KEY, SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
 import { VisibilityEye } from "./visibility-eye";
@@ -74,6 +78,8 @@ interface PageBlockProps {
 function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const { components, pages, selectedId, selectedElementId, alsoSelectedIds, selectedBlockIds, libraries } = useSite();
   const dispatch = useSiteDispatch();
+  const { settings: canvasSettings } = useCanvasSettings();
+  const scope = canvasSettings.scope;
   const styles = useStyles(page.id);
   const { mode, followLink } = useNavigation();
   const { openFormatMenu } = useFormatMenu();
@@ -153,7 +159,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     return () => observer.disconnect();
   }, [pureCode]);
   const gestureView = view && pureCode && codeBox ? { ...view, ...codeBox } : view;
-  const gestures = useBlockGestures({
+  const ownGestures = useBlockGestures({
     pageId: page.id,
     blockId: block.id,
     view: gestureView,
@@ -161,6 +167,19 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     selectedElementIds: selected && selectedElementId ? [selectedElementId, ...(alsoSelectedIds ?? [])] : [],
     device,
   });
+  // Agrandar desde la izquierda o desde arriba mueve la posición: una sección que sigue el flujo se coloca primero donde está.
+  const placeWhereItIs = (anchor?: { left?: boolean; top?: boolean }) => {
+    if (placement || adaptive || !(anchor?.left || anchor?.top) || !ref.current) return;
+    const here = measurePlacement(ref.current);
+    if (here) dispatch({ type: "block/place", pageId: page.id, blockId: block.id, placement: here });
+  };
+  const gestures = {
+    ...ownGestures,
+    onResizeSection: (size: Partial<Size>, anchor?: ResizeAnchor) => {
+      placeWhereItIs(anchor);
+      ownGestures.onResizeSection(size, anchor);
+    },
+  };
   // La caja de la sección se redimensiona siempre que se pueda editar, aunque sus elementos no se muevan solos.
   const layer = editing && !isBlockLocked && (!adaptive || manual) ? gestures : undefined;
   // Con varias secciones marcadas, arrastrar una mueve todas: se anota dónde estaba cada una al agarrar.
@@ -182,16 +201,22 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onTransfer: (toPageId, placement) =>
       dispatch({ type: "block/transfer", fromPageId: page.id, toPageId, blockId: block.id, placement }),
   });
+  // Una sección en flujo se reordena al arrastrarla; una flotante (colocada) se mueve libremente.
+  const reorder = useFlowReorder({
+    enabled: editing && !adaptive && !isBlockLocked,
+    blockId: block.id,
+    onReorder: (beforeId) => {
+      const group = selectionOf({ selectedId, selectedBlockIds });
+      dispatch({ type: "block/reorder", pageId: page.id, blockId: block.id, alsoIds: group.length > 1 && group.includes(block.id) ? group : undefined, beforeId });
+    },
+  });
+  const startMove = placement ? move.startDrag : reorder.startDrag;
   const dropData = useDropData(page.id, block, view?.elements ?? []);
   const sectionDrop = useDataDrop((ref) => dropData(ref, null), editing && !pureCode);
   if (!def || !view || !resolve) return null;
 
   // Vista previa a todo el ancho: lo marcado «Todo el ancho» y lo diseñado de borde a borde llegan a los bordes de la página.
   const autoFill = fullPage && !placement && !stretches(block.box?.span) && !pureCode ? painted : null;
-<<<<<<< Updated upstream
-  // El contenedor del encabezado y del pie ya sale del relleno de la hoja: salir otra vez duplicaría el margen y recortaría el contenido.
-  const bleeds = slot !== "top" && slot !== "bottom" && bleedsToEdges({ fullPage, placed: !!placement, stretches: stretches(block.box?.span), autoFill: autoFill !== null, isHeaderOrFooter: isHeaderOrFooter || (pureCode && widthLocked) });
-=======
   // Los bloques de los slots superior e inferior ya viven en un contenedor que sangra hasta los bordes de la hoja
   // (ver PageBlocks): si la sección sangrara otra vez, su caja se saldría 40 px por costado y el overflow-hidden
   // del contenedor recortaría su propio contenido (se ve «cortado en las laterales»).
@@ -199,7 +224,6 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const bleeds = inBleedSlot
     ? false
     : bleedsToEdges({ fullPage, placed: !!placement, stretches: stretches(block.box?.span), autoFill: autoFill !== null, isHeaderOrFooter });
->>>>>>> Stashed changes
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
@@ -223,6 +247,9 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   }
 
   const select = () => dispatch({ type: "block/select", id: block.id });
+  // Ctrl o Mayús + clic: esta sección se suma a la selección (o se quita si ya estaba), para mover o borrar varias a la vez.
+  const toggleSelect = () =>
+    dispatch({ type: "block/select-many", ids: toggleBlock(selectionOf({ selectedId, selectedBlockIds }), block.id), pageId: page.id });
   // Una figura dibujada mide exactamente lo dibujado: sin relleno ni fondo de caja.
   const box = def.drawn ? { padding: 0 } : boxStyle(styles.block(def));
   const css = customCss(block);
@@ -241,7 +268,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     flow,
     device,
     isHeaderOrFooter,
-    onMoveBlock: canDragPlacement ? move.startDrag : undefined,
+    onMoveBlock: placement ? (canDragPlacement ? move.startDrag : undefined) : reorder.startDrag,
     // En una sección en flujo (flex o grid) la posición la decide el layout, no el ratón: sus elementos no se
     // mueven, pero la caja sí se redimensiona con sus propias manijas (`sectionGestures`).
     // En tablet o móvil solo se arrastra si la persona definió ese diseño; en automático lo calcula el CMS.
@@ -251,8 +278,11 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     selectedElementId: selected ? selectedElementId : null,
     alsoSelectedIds: selected ? alsoSelectedIds : undefined,
     onFollow: (link, elementId) => followLink(withParams(link, elementId)),
+    // Según el alcance elegido, el texto cambia solo en este bloque o en el componente (y en todos sus bloques).
     onEditText: (elementId, text) =>
-      dispatch({ type: "component/text", componentId: def.id, pageId: page.id, blockId: block.id, elementId, text }),
+      scope === "block"
+        ? dispatch({ type: "block/style", pageId: page.id, blockId: block.id, elementIds: [elementId], patch: { text: text.trim() === "" ? EMPTY_TEXT : text } })
+        : dispatch({ type: "component/text", componentId: def.id, pageId: page.id, blockId: block.id, elementId, text }),
     onToggleHidden: (elementId, hidden) =>
       setHidden({ kind: "element", pageId: page.id, blockId: block.id, elementId }, hidden),
     onContextMenu: (elementId, point) =>
@@ -304,6 +334,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onBind: (elementId, ref) => dispatch({ type: "binding/set", pageId: page.id, blockId: block.id, elementId, ref }),
     onSelect: (elementId, add) => {
       if (!interactive) return;
+      // Con otra sección ya seleccionada, Ctrl+clic en esta suma la sección entera (no solo uno de sus elementos).
+      if (add && !selected && selectionOf({ selectedId, selectedBlockIds }).length > 0) return toggleSelect();
       if (!add || !selected) select();
       if (!isBlockLocked) {
         dispatch({ type: "element/select", id: elementId, add: add && selected });
@@ -333,7 +365,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     tabIndex: 0,
     "aria-pressed": selected,
     "aria-label": `Seleccionar ${def.name}`,
-    onClick: select,
+    onClick: (e: MouseEvent) => (e.ctrlKey || e.metaKey || e.shiftKey ? toggleSelect() : select()),
     onKeyDown: (e: KeyboardEvent) => e.key === "Enter" && select(),
     onContextMenu: (e: MouseEvent) => {
       e.preventDefault();
@@ -406,7 +438,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         // Un bloque de código va sin relleno: lo que se mide (y lo que redimensionan las manijas) es la caja del iframe.
         className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
         style={{
-          padding: isHeaderOrFooter || pureCode ? 0 : box.padding,
+          // Un componente que ya ocupa todo el ancho de la hoja va sin relleno: con él se correría y se saldría por la derecha.
+          padding: isHeaderOrFooter || pureCode || (view?.width ?? 0) >= available ? 0 : box.padding,
           background: background ?? autoFill ?? undefined,
           borderRadius: isHeaderOrFooter || stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
           ...(customClasses(block, SECTION_KEY, def).includes("w-fit")
@@ -442,6 +475,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                 onResize={(next, anchor) => {
                   // Solo cambia un eje por arrastre; el otro se completa con lo medido.
                   const size = { width: next.width ?? codeBox.width, height: next.height ?? codeBox.height };
+                  placeWhereItIs(anchor);
                   dispatch({ type: "block/size", pageId: page.id, blockId: block.id, size });
                   // Colocado: al agarrar el lado izquierdo o el de arriba se mueve también la posición, y el lado contrario se queda.
                   if (placement) {
@@ -540,7 +574,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
               <span className="h-3 w-px bg-line" />
               <PlacementGrip
                 label={def.name}
-                onStart={move.startDrag}
+                onStart={startMove}
                 onSelect={select}
                 disabled={isBlockLocked}
                 className="relative flex"
@@ -590,7 +624,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
           ) : (
             <PlacementGrip
               label={def.name}
-              onStart={move.startDrag}
+              onStart={startMove}
               onSelect={select}
               className={`absolute -top-3 left-1/2 -translate-x-1/2 focus:flex ${selected ? "flex" : "hidden group-hover:flex"}`}
             />
@@ -643,10 +677,10 @@ export function PageBlocks({ page, interactive, slot }: PageBlocksProps) {
     <div
       className={`flex flex-col ${
         isTop
-          ? "-mx-10 mb-8 w-[calc(100%+5rem)] max-w-none overflow-hidden"
+          ? "-mx-10 mb-0 w-[calc(100%+5rem)] max-w-none overflow-hidden"
           : isBottom
             ? "-mx-10 mt-auto w-[calc(100%+5rem)] max-w-none overflow-hidden"
-            : "mt-8 gap-6 flex-1"
+            : "mt-0 gap-6 flex-1"
       }`}
       style={{
         gap: isTop || isBottom ? undefined : styles.page.gap,

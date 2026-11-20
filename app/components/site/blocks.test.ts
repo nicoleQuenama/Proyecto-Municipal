@@ -92,3 +92,16 @@ describe("block actions", () => {
     expect(placed.pages[0].blocks[0].placement).toBeUndefined();
   });
 });
+
+describe("insertAfterSelected", () => {
+  const b = (id: string, slot?: "top" | "body" | "bottom") => ({ id, componentId: "c", ...(slot ? { slot } : {}) }) as never;
+  it("mete el bloque nuevo debajo del seleccionado", async () => {
+    const { insertAfterSelected } = await import("./insert-after-selected");
+    expect(insertAfterSelected([b("a"), b("c")], b("n"), "a").map((x) => x.id)).toEqual(["a", "n", "c"]);
+  });
+  it("sin selección, o de otra zona, va al final", async () => {
+    const { insertAfterSelected } = await import("./insert-after-selected");
+    expect(insertAfterSelected([b("a"), b("c")], b("n"), null).map((x) => x.id)).toEqual(["a", "c", "n"]);
+    expect(insertAfterSelected([b("a", "bottom"), b("c")], b("n"), "a").map((x) => x.id)).toEqual(["a", "c", "n"]);
+  });
+});

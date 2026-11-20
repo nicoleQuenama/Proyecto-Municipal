@@ -145,6 +145,7 @@ export type ElementOverride = Partial<
     | "fontFamily"
     | "bold"
     | "italic"
+    | "text"
     | "underline"
     | "overline"
     | "strike"
@@ -418,6 +419,7 @@ export type SiteAction =
   | { type: "media/add"; item: MediaItem }
   | { type: "media/remove"; id: string }
   | { type: "media/poster"; pageId: string; mediaId: string; poster: string | null; local?: boolean }
+  | { type: "page/apply-template"; pageId: string; componentIds: string[]; replace?: boolean }
   | { type: "block/add"; id: string; componentId: string; pageId?: string }
   | { type: "block/remove"; id: string }
   | { type: "block/select"; id: string }
@@ -477,6 +479,8 @@ export type SiteAction =
       anchor?: ResizeAnchor;
     }
   | { type: "block/move"; pageId: string; blockId: string; direction: -1 | 1 }
+  /** Arrastrar una sección en flujo: cae antes de `beforeId`, o al final si es `null`. */
+  | { type: "block/reorder"; pageId: string; blockId: string; /** Si hay varias seleccionadas, todas se mueven juntas. */ alsoIds?: string[]; beforeId: string | null }
   | { type: "block/lock"; pageId: string; blockId: string; locked?: boolean }
   | { type: "block/reset"; pageId: string; blockId: string }
   | { type: "link/set"; componentId: string; elementId: string; link: LinkTarget | null }
@@ -495,7 +499,6 @@ export type SiteAction =
   | { type: "block/scope"; pageId: string; blockId: string; scope: "page" | "global" }
   | { type: "block/placement-mode"; pageId: string; blockId: string; mode: "flow" | "overlay" }
   | { type: "page/layout-toggles"; pageId: string; patch: { hideHeader?: boolean; hideFooter?: boolean } }
-  | { type: "page/apply-template"; pageId: string; componentIds: string[]; replace?: boolean }
   | { type: "project-media/add"; asset: ProjectMediaAsset }
   | { type: "project-media/remove"; id: string }
   | { type: "project-media/replace"; oldSrc: string; newSrc: string; newAlt?: string }

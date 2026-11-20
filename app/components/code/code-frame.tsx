@@ -55,7 +55,8 @@ export function CodeFrame({
   const sink = useConsoleSink();
   const ref = useRef<HTMLIFrameElement>(null);
   const [autoHeight, setAutoHeight] = useState(minHeight);
-  const height = fixedHeight ?? autoHeight;
+  // El alto elegido es un mínimo: nunca queda más bajo que el contenido, o el iframe mostraría su propia barra de scroll.
+  const height = Math.max(fixedHeight ?? 0, autoHeight);
   const srcDoc = useMemo(() => buildSrcDoc(code, libraries, origin, shared), [code, libraries, origin, shared]);
 
   // Los avisos llegan del iframe y se reparten a quien los pida, sin volver a suscribirse en cada edición.
@@ -72,8 +73,7 @@ export function CodeFrame({
       if (!data || typeof data !== "object") return;
 
       if (data.type === SIZE_MESSAGE) {
-        // Con alto fijo el contenido no manda: la caja es la que eligió la persona.
-        if (fixedHeight === undefined && typeof data.height === "number") setAutoHeight(Math.max(minHeight, Math.ceil(data.height)));
+        if (typeof data.height === "number") setAutoHeight(Math.max(minHeight, Math.ceil(data.height)));
         return;
       }
       if (data.type === LOG_MESSAGE) {
@@ -95,7 +95,7 @@ export function CodeFrame({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [minHeight, title, fixedHeight]);
+  }, [minHeight, title]);
 
   /** Manda al iframe el resaltado que toca. */
   const sendHighlight = useCallback(() => {

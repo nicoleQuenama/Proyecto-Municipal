@@ -219,7 +219,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
   // Con la página a todo el ancho, el contenido (diseñado a 1024 px) queda centrado y el fondo llega a los bordes.
   // El relleno lateral propio de la página (o el de por defecto) se suma al centrado.
   const sides = styles.page.padding?.split(/\s+/);
-  const ownSide = sides ? (sides[3] ?? sides[1] ?? sides[0]) : "2.5rem";
+  // El margen lateral que la persona fijó para el escritorio manda sobre el relleno de las reglas de estilo.
+  const customSide = page.sideMargin?.desktop;
+  const ownSide = customSide !== undefined ? `${customSide}px` : sides ? (sides[3] ?? sides[1] ?? sides[0]) : "2.5rem";
   const frame = useRef<HTMLDivElement>(null);
   const frameWidth = useWidth(frame);
   const centeredOnly = Math.max(0, (frameWidth - current.width) / 2);
@@ -228,7 +230,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
     ? { paddingLeft: margin, paddingRight: margin }
     : fullWidth
       ? { paddingLeft: centered, paddingRight: centered }
-      : undefined;
+      : customSide !== undefined
+        ? { paddingLeft: ownSide, paddingRight: ownSide }
+        : undefined;
   const pagePx = isAdaptive(device) ? `${margin}px` : fullWidth ? centered : ownSide;
   // El ancho (sin zoom) en que se maqueta la página: de él depende el tamaño de los textos adaptables.
   const layoutWidth = production && fitScale === 1 ? frameWidth || current.width : current.width;

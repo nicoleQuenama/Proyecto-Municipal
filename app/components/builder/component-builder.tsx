@@ -7,6 +7,7 @@ import { isComponentNameTaken } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { ComponentDef, ElementKind } from "../site/types";
 import { Modal } from "../ui/modal";
+import { fitHeight, savedGap } from "./auto-height";
 import { BuilderHeader } from "./builder-header";
 import { builderReducer, initialBuilderState } from "./builder-reducer";
 import { BuilderStage } from "./builder-stage";
@@ -45,18 +46,24 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
     if (isComponentNameTaken(components, name, initial?.id)) return setError("Ya existe un componente con ese nombre.");
     if (state.elements.length === 0) return setError("Agrega al menos un elemento al lienzo.");
 
-    const count = state.elements.length;
+    // El alto sigue al contenido (quitar o agregar algo al final acorta o alarga la sección) con el aire que ya tenía el
+    // diseño. Si la persona cambió el alto a mano, se respeta tal cual.
+    const heightEditedByHand = state.height !== initialBuilderState(initial).height;
+    const fitted = heightEditedByHand
+      ? { height: state.height, elements: state.elements }
+      : fitHeight(state.elements, { width: state.width, height: state.height }, isEditing && initial ? savedGap(initial) : undefined);
+    const count = fitted.elements.length;
     siteDispatch({
       type: "component/save",
       component: {
         id: initial?.id ?? newId(),
         name,
-        description: `${count} ${count === 1 ? "elemento" : "elementos"} · ${state.width}×${state.height}`,
+        description: `${count} ${count === 1 ? "elemento" : "elementos"} · ${state.width}×${fitted.height}`,
         category: state.category,
         width: state.width,
-        height: state.height,
-        elements: state.elements,
-        links: pruneLinks(state.links, state.elements),
+        height: fitted.height,
+        elements: fitted.elements,
+        links: pruneLinks(state.links, fitted.elements),
         custom: true,
       },
     });

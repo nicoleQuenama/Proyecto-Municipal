@@ -50,7 +50,8 @@ export function usePlacementDrag({ enabled, onPlace, onBegin, onTransfer }: Plac
 
     if (!current.moved) {
       const corner = cornerAt(e, current, current.page);
-      if (Math.hypot(corner.x - current.start.x, corner.y - current.start.y) * current.scale < DRAG_THRESHOLD) return;
+      const travelled = Math.hypot(corner.x - current.margin.x - current.start.x, corner.y - current.margin.y - current.start.y);
+      if (travelled * current.scale < DRAG_THRESHOLD) return;
       current.moved = true;
       setDragging(true);
     }

@@ -39,6 +39,8 @@ import {
 } from "./rules";
 import { replaceMediaInSite } from "../media/media-usage";
 import { clearRule, saveVariable, setRuleProp, withoutScope } from "../styles/mutations";
+import { insertAfterSelected } from "./insert-after-selected";
+import { dropBlocks } from "./reorder-block";
 import {
   TITLE_SELECTION,
   type Page,
@@ -50,6 +52,13 @@ function updateCurrentPage(state: SiteState, update: (page: Page) => Page): Site
   return {
     ...state,
     pages: state.pages.map((page) => (page.id === state.currentPageId ? update(page) : page)),
+  };
+}
+
+function updatePageBlocks(state: SiteState, pageId: string, update: (blocks: Page["blocks"]) => Page["blocks"]): SiteState {
+  return {
+    ...state,
+    pages: state.pages.map((page) => (page.id === pageId ? { ...page, blocks: update(page.blocks) } : page)),
   };
 }
 
@@ -246,7 +255,7 @@ const HANDLERS: Handlers = {
     const next = {
       ...state,
       components,
-      pages: state.pages.map((page) => (page.id === pageId ? { ...page, blocks: [...page.blocks, block] } : page)),
+      pages: state.pages.map((page) => (page.id === pageId ? { ...page, blocks: insertAfterSelected(page.blocks, block, state.selectedId) } : page)),
     };
     return { ...next, selectedId: action.id, selectedElementId: null };
   },
@@ -381,6 +390,13 @@ const HANDLERS: Handlers = {
   "block/size": (state, action) => resizeSection(state, action.pageId, action.blockId, action.size, action.backdropId, action.anchor),
 
   "block/move": (state, action) => moveBlock(state, action.pageId, action.blockId, action.direction),
+
+  "block/reorder": (state, action) =>
+    updatePageBlocks(state, action.pageId, (blocks) =>
+      dropBlocks(blocks, [action.blockId, ...(action.alsoIds ?? [])], action.beforeId, (block) =>
+        getBlockSlot(block, state.components.find((c) => c.id === block.componentId)),
+      ),
+    ),
 
   "block/lock": (state, action) =>
     updateBlock(state, action.pageId, action.blockId, (b) => ({

@@ -27,3 +27,8 @@ type Handlers = { [K in MultiSelectAction["type"]]: (state: SiteState, action: E
 export const MULTI_SELECT_HANDLERS: Handlers = {
   "block/select-many": (state, action) => ({ ...selectBlocks(state, action.ids), ...(action.pageId ? { currentPageId: action.pageId } : {}) }),
 };
+
+/** Ctrl o Mayús + clic: suma la sección a la selección, o la quita si ya estaba. Nunca deja la lista vacía de golpe. */
+export function toggleBlock(selected: string[], id: string): string[] {
+  return selected.includes(id) ? selected.filter((current) => current !== id) : [...selected, id];
+}
