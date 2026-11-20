@@ -169,7 +169,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const layer = editing && !isBlockLocked && (!adaptive || manual) ? gestures : undefined;
   // Con varias secciones marcadas, arrastrar una mueve todas: se anota dónde estaba cada una al agarrar.
   const groupOrigins = useRef<Record<string, Placement> | null>(null);
-  const canDragPlacement = editing && !adaptive && !isBlockLocked;
+  // Un encabezado o pie en flujo ocupa el ancho de la página: arrastrarlo lo soltaría como un bloque flotante recortado.
+  const canDragPlacement = editing && !adaptive && !isBlockLocked && (!isHeaderOrFooter || isOverlay);
   const move = usePlacementDrag({
     enabled: canDragPlacement,
     onBegin: () => {
@@ -387,7 +388,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         ...(placement?.fixed && stretches(block.box?.span) ? { left: 0, top: 0, width: "100vw", maxWidth: "none" } : {}),
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
         // Un bloque de código con tamaño propio dibuja su anillo a ese ancho, no a todo lo disponible.
-        ...(pureCode && block.size?.width ? { width: block.size.width, maxWidth: "100%" } : {}),
+        // Un encabezado o pie de código conserva el ancho de la página: solo su alto es propio.
+        ...(pureCode && block.size?.width && !widthLocked ? { width: block.size.width, maxWidth: "100%" } : {}),
         // Un bloque de código colocado sin tamaño propio conserva el ancho que tenía al colocarlo: con «w-full» abarcaría toda la página y moverlo no se notaría.
         ...(pureCode && placement && !placement.fixed && !block.size?.width ? { width: placement.width, maxWidth: "none" } : {}),
       }}
@@ -441,6 +443,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                 gestures={gestures}
                 size={gestures.size}
                 active={selected}
+                widthLocked={widthLocked}
                 // El tamaño guardado va siempre al bloque: cada bloque de código tiene el suyo (el alcance «componente» no aplica).
                 onResize={(next, anchor) => {
                   // Solo cambia un eje por arrastre; el otro se completa con lo medido.
