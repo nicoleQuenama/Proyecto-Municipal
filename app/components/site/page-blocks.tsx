@@ -188,8 +188,18 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
 
   // Vista previa a todo el ancho: lo marcado «Todo el ancho» y lo diseñado de borde a borde llegan a los bordes de la página.
   const autoFill = fullPage && !placement && !stretches(block.box?.span) && !pureCode ? painted : null;
+<<<<<<< Updated upstream
   // El contenedor del encabezado y del pie ya sale del relleno de la hoja: salir otra vez duplicaría el margen y recortaría el contenido.
   const bleeds = slot !== "top" && slot !== "bottom" && bleedsToEdges({ fullPage, placed: !!placement, stretches: stretches(block.box?.span), autoFill: autoFill !== null, isHeaderOrFooter: isHeaderOrFooter || (pureCode && widthLocked) });
+=======
+  // Los bloques de los slots superior e inferior ya viven en un contenedor que sangra hasta los bordes de la hoja
+  // (ver PageBlocks): si la sección sangrara otra vez, su caja se saldría 40 px por costado y el overflow-hidden
+  // del contenedor recortaría su propio contenido (se ve «cortado en las laterales»).
+  const inBleedSlot = slot === "top" || slot === "bottom";
+  const bleeds = inBleedSlot
+    ? false
+    : bleedsToEdges({ fullPage, placed: !!placement, stretches: stretches(block.box?.span), autoFill: autoFill !== null, isHeaderOrFooter });
+>>>>>>> Stashed changes
 
   const setHidden = (target: HideTarget, hidden: boolean) => dispatch({ type: "hidden/set", target, hidden });
   const blockTarget: HideTarget = { kind: "block", pageId: page.id, blockId: block.id };
