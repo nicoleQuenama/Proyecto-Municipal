@@ -65,6 +65,25 @@ type Renderer = (element: CanvasElement, text: CSSProperties, inherit: boolean) 
 const shape =
   (corner: (element: CanvasElement) => number | string): Renderer =>
   function renderShape(element, text, inherit) {
+    if (element.src) {
+      return (
+        <div
+          className="flex h-full w-full items-center justify-center overflow-hidden"
+          style={{
+            ...text,
+            ...(inherit ? { borderRadius: "inherit" } : { background: element.fill, borderRadius: corner(element) }),
+          }}
+        >
+          <img
+            src={optimizedSrc(element.src)}
+            alt={element.alt ?? ""}
+            draggable={false}
+            className="h-full w-full"
+            style={{ borderRadius: inherit ? "inherit" : corner(element), objectFit: element.fit ?? "cover" }}
+          />
+        </div>
+      );
+    }
     return (
       <div
         className="flex h-full w-full items-center overflow-hidden px-2"
@@ -415,13 +434,18 @@ function PositionedElement({
             }`}
           />
         )}
-        <VisibilityEye
-          hidden={false}
-          label={elementLabel(element)}
-          onToggle={() => interaction.onToggleHidden(element.id, true)}
-          className="absolute -top-2 -left-2 hidden group-hover/element:flex focus:flex"
-        />
-        {isLinkable(element) && <LinkHandle element={ref} link={link} label={elementLabel(element)} />}
+        {/* En cabeceras y pies de página no saturar con ojos ni cadenas de enlace salvo que el elemento esté seleccionado */}
+        {(!interaction.isHeaderOrFooter || selected) && (
+          <VisibilityEye
+            hidden={false}
+            label={elementLabel(element)}
+            onToggle={() => interaction.onToggleHidden(element.id, true)}
+            className="absolute -top-2 -left-2 hidden group-hover/element:flex focus:flex"
+          />
+        )}
+        {isLinkable(element) && (!interaction.isHeaderOrFooter || selected) && (
+          <LinkHandle element={ref} link={link} label={elementLabel(element)} />
+        )}
         {selected && gestures && (
           <ElementHandles
             onStart={(e, handle) => gestures.startDrag(e, element, handle)}
@@ -438,7 +462,7 @@ function PositionedElement({
             className="absolute -top-3 -right-3"
           />
         )}
-        {selected && interaction.flow && (
+        {selected && interaction.flow && !interaction.isHeaderOrFooter && (
           <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border border-line bg-canvas/95 px-1.5 py-0.5 shadow-lg backdrop-blur-xs">
             {interaction.onReorderFlow && (
               <>

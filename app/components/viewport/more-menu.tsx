@@ -11,18 +11,17 @@ import { active, iconButton, idle } from "./toolbar-parts";
 import { useViewport, type Tool } from "./viewport-context";
 
 /** Las herramientas menos usadas: se eligen una herramienta del lienzo o se abre el editor de código. */
-type MoreValue = Extract<Tool, "frame" | "text" | "icon" | "gradient" | "comment"> | "code";
+type MoreValue = Extract<Tool, "frame" | "icon" | "gradient" | "comment"> | "code";
 
 const MORE_ITEMS: (MenuItem<MoreValue> & { icon: ReactNode })[] = [
   { value: "frame", label: "Marco", icon: <FrameIcon /> },
-  { value: "text", label: "Texto", icon: <TextIcon /> },
   { value: "icon", label: "Icono", icon: <StarIcon /> },
   { value: "gradient", label: "Degradado", icon: <GradientIcon /> },
   { value: "comment", label: "Comentar", icon: <CommentIcon /> },
   { value: "code", label: "Editor de código", icon: <CodeIcon />, dividerBefore: true },
 ];
 
-const MORE_TOOLS: Tool[] = ["frame", "text", "icon", "gradient", "comment"];
+const MORE_TOOLS: Tool[] = ["frame", "icon", "gradient", "comment"];
 
 /** El menú «Más»: agrupa lo poco usado para que la barra no se llene de botones. */
 export function MoreMenu() {
@@ -43,7 +42,6 @@ export function MoreMenu() {
   // Cada opción hace lo suyo: elegir una herramienta o abrir el editor.
   const run: Record<MoreValue, () => void> = {
     frame: () => setTool("frame"),
-    text: () => setTool("text"),
     icon: () => setTool("icon"),
     gradient: () => setTool("gradient"),
     comment: () => setTool("comment"),

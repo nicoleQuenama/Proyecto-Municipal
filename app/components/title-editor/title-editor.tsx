@@ -78,76 +78,8 @@ interface TitleCanvasProps {
   interactive: boolean;
 }
 
-/** El titular de una página, tal como se ve en el lienzo. */
+/** El titular de una página: desactivado ya que no se utiliza en el diseño limpio del CMS. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function TitleCanvas({ page, interactive }: TitleCanvasProps) {
-  const effective = useEffectiveTitle(page);
-  const dispatch = useSiteDispatch();
-  const { mode } = useNavigation();
-  // Al conectar o probar, o en una página que no es la actual, no se escribe en el titular.
-  const shown = interactive && mode === "edit" ? effective : { ...effective, editing: false };
-  const setHidden = (hidden: boolean) =>
-    dispatch({ type: "hidden/set", target: { kind: "title", pageId: page.id }, hidden });
-
-  const place = (placement: Placement) => dispatch({ type: "title/place", pageId: page.id, placement });
-  // La posición libre es del escritorio: en tablet y móvil el titular va en el flujo y no se arrastra.
-  const placement = useDevicePlacement(page.titlePlacement);
-  const { device } = useViewport();
-  const movable = interactive && mode === "edit" && !isAdaptive(device);
-  const move = usePlacementDrag({ enabled: movable, onPlace: place });
-  const resize = useWidthResize({ enabled: movable, onPlace: place });
-
-  // Eliminado: no existe en la página (ni oculto). Se vuelve a añadir desde la barra de formato.
-  if (page.titleRemoved) return null;
-
-  // Oculto: no se ve. Al editar queda un ojo en su lugar para volver a mostrarlo.
-  if (page.titleHidden) {
-    return mode === "edit" ? (
-      <HiddenPlaceholder
-        label="Titular oculto"
-        onShow={() => setHidden(false)}
-        onDelete={interactive ? () => dispatch({ type: "title/removed", pageId: page.id, removed: true }) : undefined}
-      />
-    ) : null;
-  }
-
-  return (
-    <div
-      {...placementAttributes(placement)}
-      className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""}`}
-      style={{
-        ...placementStyle(placement, true),
-        ...(effective.applyToSite ? { fontFamily: effective.font } : {}),
-      }}
-    >
-      {/* key: al cambiar de página el titular se vuelve a montar con su texto. */}
-      <TitlePreview
-        key={page.id}
-        state={shown}
-        onTextChange={(text) => interactive && dispatch({ type: "title/patch", patch: { text } })}
-      />
-      {movable && <WidthHandles onStart={resize.startResize} />}
-      {movable && (
-        <PlacementGrip label="el titular" onStart={move.startDrag} className="absolute top-1 left-1 hidden group-hover:flex focus:flex" />
-      )}
-      {mode === "edit" && (
-        <VisibilityEye
-          hidden={false}
-          label="el titular"
-          onToggle={() => setHidden(true)}
-          className="absolute top-1 right-8 hidden group-hover:flex focus:flex"
-        />
-      )}
-      {interactive && mode === "edit" && (
-        <button
-          type="button"
-          aria-label="Eliminar el titular"
-          title="Eliminar el titular"
-          onClick={() => dispatch({ type: "title/removed", pageId: page.id, removed: true })}
-          className="absolute top-1 right-1 z-20 hidden h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white group-hover:flex focus:flex cursor-pointer"
-        >
-          ×
-        </button>
-      )}
-    </div>
-  );
+  return null;
 }

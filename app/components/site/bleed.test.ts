@@ -29,4 +29,10 @@ describe("bleedsToEdges", () => {
   it("lo colocado con posición libre nunca se estira", () => {
     expect(bleedsToEdges({ ...base, placed: true, isHeaderOrFooter: true, stretches: true })).toBe(false);
   });
+
+  it("en el lienzo, una sección diseñada a todo el ancho del lienzo (>= 1000px) llega a los costados para no desbordar", () => {
+    expect(bleedsToEdges({ ...base, defWidth: 1024 })).toBe(true);
+    expect(bleedsToEdges({ ...base, defWidth: 800 })).toBe(false);
+    expect(bleedsToEdges({ ...base, defWidth: 1024, hasExplicitContentSpan: true })).toBe(false);
+  });
 });

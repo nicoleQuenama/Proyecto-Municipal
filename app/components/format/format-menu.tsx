@@ -3,8 +3,10 @@
 import { useRef, type ReactNode } from "react";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { getBrandColors, getBrandFonts, isRestrictedByBrand } from "../auth/brand-manual";
-import { applyOverrides } from "../site/overrides";
 import { EMPTY_CODE } from "../site/code-defaults";
+import { componentToHtml } from "../site/component-to-html";
+import { applyOverrides } from "../site/overrides";
+import { SECTION_KEY } from "../site/types";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { availableVariables } from "../styles/resolve";
 import { useStyles } from "../styles/use-styles";
@@ -341,8 +343,18 @@ export function FormatMenu() {
         closeFormatMenu();
       },
       addCode: () => {
-        // La sección gana sus archivos HTML, CSS y TS (vacíos) y se abre el HTML para empezar a escribir.
-        dispatch({ type: "block/code", pageId: page.id, blockId: block.id, patch: EMPTY_CODE });
+        // La sección gana su código HTML semántico, CSS y TS listos para editarse en el editor.
+        dispatch({
+          type: "block/code",
+          pageId: page.id,
+          blockId: block.id,
+          patch: {
+            html: componentToHtml(def, block),
+            css: def.styles?.[SECTION_KEY]?.css ?? "",
+            js: "",
+            tailwind: true,
+          },
+        });
         openFile({ kind: "block-html", pageId: page.id, blockId: block.id });
         closeFormatMenu();
       },

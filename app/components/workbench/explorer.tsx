@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { CODE_COMPONENT_ID, EMPTY_CODE } from "../site/code-defaults";
+import { componentToHtml } from "../site/component-to-html";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { SECTION_KEY } from "../site/types";
 import { fileId, kindOf, sameFile, type CodeLanguage, type FileRef } from "./file-ref";
 import { ConfirmDelete } from "./confirm-dialog";
 import { ContextMenu } from "./context-menu";
@@ -181,9 +183,19 @@ export function Explorer({ active }: { active: FileRef | null }) {
       dispatch({ type: "function/save", fn: { id, name, code: `function ${name}() {\n  \n}`, scope: { kind: "global" } } });
       openFile({ kind: "function", functionId: id });
     },
-    // La sección gana sus archivos HTML, CSS y TS (vacíos): a partir de ahí se edita como cualquier bloque de código.
+    // La sección gana sus archivos HTML, CSS y TS listos para editarse en el editor.
     "add-code": ({ pageId, blockId }) => {
-      dispatch({ type: "block/code", pageId, blockId, patch: EMPTY_CODE });
+      const page = site.pages.find((p) => p.id === pageId);
+      const block = page?.blocks.find((b) => b.id === blockId);
+      const def = block && site.components.find((c) => c.id === block.componentId);
+      dispatch({
+        type: "block/code",
+        pageId,
+        blockId,
+        patch: def
+          ? { html: componentToHtml(def, block), css: def.styles?.[SECTION_KEY]?.css ?? "", js: "", tailwind: true }
+          : EMPTY_CODE,
+      });
       openFile({ kind: "block-html", pageId, blockId });
     },
   };

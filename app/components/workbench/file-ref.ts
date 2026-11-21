@@ -42,6 +42,8 @@ const blockOf = (site: SiteState, pageId: string, blockId: string) =>
   pageOf(site, pageId)?.blocks.find((b) => b.id === blockId);
 
 /** Un archivo del código de un bloque de código: HTML, CSS o JavaScript. */
+import { componentToHtml } from "../site/component-to-html";
+
 const blockFile = <R extends Extract<FileRef, { blockId: string; pageId: string }> & { kind: string }>(
   field: keyof Pick<CodeSource, "html" | "css" | "js">,
   language: CodeLanguage,
@@ -56,15 +58,28 @@ const blockFile = <R extends Extract<FileRef, { blockId: string; pageId: string 
   },
   read: (site, ref) => {
     const block = blockOf(site, ref.pageId, ref.blockId);
-    return (block && codeOf(block, site.components)?.[field]) ?? "";
+    if (!block) return "";
+    const code = codeOf(block, site.components);
+    if (code && code[field] && code[field].trim() !== "") {
+      return code[field];
+    }
+    if (field === "html") {
+      const def = site.components.find((c) => c.id === block.componentId);
+      if (def) return componentToHtml(def, block);
+    }
+    if (field === "css") {
+      const def = site.components.find((c) => c.id === block.componentId);
+      if (def?.styles?.[SECTION_KEY]?.css) return def.styles[SECTION_KEY].css;
+    }
+    return code?.[field] ?? "";
   },
   write: (site, ref, value) => {
     const block = blockOf(site, ref.pageId, ref.blockId);
     // Un componente compartido guarda su código en la definición: así cambia en todos los lugares donde se usa.
     const shared = block && sharedDefOf(block, site.components);
     return shared
-      ? { type: "component/code", componentId: shared.id, patch: { [field]: value } }
-      : { type: "block/code", pageId: ref.pageId, blockId: ref.blockId, patch: { [field]: value } };
+      ? { type: "component/code", componentId: shared.id, patch: { [field]: value, tailwind: true } }
+      : { type: "block/code", pageId: ref.pageId, blockId: ref.blockId, patch: { [field]: value, tailwind: true } };
   },
   callSite: (_site, ref) => ({ blockId: ref.blockId }),
   scopes: (_site, ref) =>

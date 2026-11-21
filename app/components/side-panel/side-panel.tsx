@@ -62,7 +62,6 @@ export function SidePanel() {
   const { top, body, bottom } = splitBlocks(page, components, pages);
   const items: StructureItem[] = [
     ...top.flatMap(toItem),
-    ...(page.titleRemoved ? [] : [{ id: TITLE_SELECTION, name: "Titular", meta: "", icon: "T", removable: true }]),
     ...body.flatMap(toItem),
     ...bottom.flatMap(toItem),
   ];

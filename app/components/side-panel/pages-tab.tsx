@@ -9,6 +9,7 @@ import { PageSeoForm } from "./page-seo-form";
 import { InlineForm } from "../ui/inline-form";
 import { isPageNameTaken, routeOf, slugify } from "../site/rules";
 import { useSite, useSiteDispatch } from "../site/site-context";
+import { createDefaultMunicipalFooter, createDefaultMunicipalHeader } from "../site/container-card-rules";
 import type { Page } from "../site/types";
 import { plural } from "../versioning/versioning-rules";
 import { CodeIcon, EyeIcon, EyeOffIcon } from "../viewport/icons";
@@ -32,9 +33,14 @@ interface PageRowProps {
 }
 
 function PageRow({ page, pages, isCurrent }: PageRowProps) {
+  const { components } = useSite();
   const dispatch = useSiteDispatch();
   const { openFile } = useWorkbench();
   const { currentUser } = useAuth();
+  const ownHeader = page.blocks.find((b) => b.slot === "header");
+  const ownFooter = page.blocks.find((b) => b.slot === "footer");
+  const isHeaderCustom = ownHeader && ownHeader.scope === "page";
+  const isFooterCustom = ownFooter && ownFooter.scope === "page";
   const canEditCode = hasPermission(currentUser, "editCode");
   // Una página global que esta persona no puede editar se ve, pero sin opciones (la base de datos tampoco la dejaría).
   const readOnly = isPageReadOnly(currentUser, page);
@@ -372,31 +378,116 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
       {styling && <PageBackground page={page} />}
       {layoutOpen && (
         <div className="flex flex-col gap-2 rounded-md border border-line bg-canvas/60 p-2.5 text-xs">
-          <p className="text-[11px] font-semibold text-ink">Encabezado y pie de página en esta página:</p>
-          <label className="flex items-center gap-2 text-ink hover:text-accent cursor-pointer text-[12px]">
-            <input
-              type="checkbox"
-              checked={!page.hideHeader}
-              onChange={(e) =>
-                dispatch({ type: "page/layout-toggles", pageId: page.id, patch: { hideHeader: !e.target.checked } })
-              }
-              className="h-3.5 w-3.5 rounded accent-accent"
-            />
-            Mostrar Encabezado (Header)
-          </label>
-          <label className="flex items-center gap-2 text-ink hover:text-accent cursor-pointer text-[12px]">
-            <input
-              type="checkbox"
-              checked={!page.hideFooter}
-              onChange={(e) =>
-                dispatch({ type: "page/layout-toggles", pageId: page.id, patch: { hideFooter: !e.target.checked } })
-              }
-              className="h-3.5 w-3.5 rounded accent-accent"
-            />
-            Mostrar Pie de página (Footer)
-          </label>
-          <p className="text-[10px] text-ink-dim">
-            Desmarca cualquiera para que esta página no muestre el encabezado o pie de página.
+          <p className="text-[11px] font-semibold text-ink">Estructura de la página (Header & Footer):</p>
+          
+          <div className="flex flex-col gap-1.5">
+            <label className="flex items-center gap-2 text-ink hover:text-accent cursor-pointer text-[12px]">
+              <input
+                type="checkbox"
+                checked={!page.hideHeader}
+                onChange={(e) =>
+                  dispatch({ type: "page/layout-toggles", pageId: page.id, patch: { hideHeader: !e.target.checked } })
+                }
+                className="h-3.5 w-3.5 rounded accent-accent"
+              />
+              Mostrar Encabezado (Header)
+            </label>
+            {!page.hideHeader && (
+              <div className="ml-5 flex items-center justify-between text-[11px] bg-canvas/80 p-1.5 rounded border border-line/60">
+                <span className="text-ink-dim">Alcance:</span>
+                <select
+                  aria-label="Alcance del encabezado"
+                  value={isHeaderCustom ? "page" : "global"}
+                  onChange={(e) => {
+                    const mode = e.target.value;
+                    if (mode === "page") {
+                      if (!ownHeader) {
+                        const headerComp = components.find(
+                          (c) => c.id === "header-oficial" || (c.category === "navigation" && !c.name.toLowerCase().includes("footer"))
+                        );
+                        if (headerComp) {
+                          dispatch({
+                            type: "block/add",
+                            pageId: page.id,
+                            id: crypto.randomUUID(),
+                            componentId: headerComp.id,
+                            slot: "header",
+                            scope: "page",
+                          });
+                        }
+                      } else {
+                        dispatch({ type: "block/scope", pageId: page.id, blockId: ownHeader.id, scope: "page" });
+                      }
+                    } else {
+                      if (ownHeader) {
+                        dispatch({ type: "block/scope", pageId: page.id, blockId: ownHeader.id, scope: "global" });
+                      }
+                    }
+                  }}
+                  className="h-6 rounded border border-line bg-canvas px-1.5 text-[11px] text-ink outline-none"
+                >
+                  <option value="global">Global (Todo el portal)</option>
+                  <option value="page">Solo esta página</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-line">
+            <label className="flex items-center gap-2 text-ink hover:text-accent cursor-pointer text-[12px]">
+              <input
+                type="checkbox"
+                checked={!page.hideFooter}
+                onChange={(e) =>
+                  dispatch({ type: "page/layout-toggles", pageId: page.id, patch: { hideFooter: !e.target.checked } })
+                }
+                className="h-3.5 w-3.5 rounded accent-accent"
+              />
+              Mostrar Pie de página (Footer)
+            </label>
+            {!page.hideFooter && (
+              <div className="ml-5 flex items-center justify-between text-[11px] bg-canvas/80 p-1.5 rounded border border-line/60">
+                <span className="text-ink-dim">Alcance:</span>
+                <select
+                  aria-label="Alcance del pie de página"
+                  value={isFooterCustom ? "page" : "global"}
+                  onChange={(e) => {
+                    const mode = e.target.value;
+                    if (mode === "page") {
+                      if (!ownFooter) {
+                        const footerComp = components.find(
+                          (c) => c.id === "footer-oficial" || (c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie")))
+                        );
+                        if (footerComp) {
+                          dispatch({
+                            type: "block/add",
+                            pageId: page.id,
+                            id: crypto.randomUUID(),
+                            componentId: footerComp.id,
+                            slot: "footer",
+                            scope: "page",
+                          });
+                        }
+                      } else {
+                        dispatch({ type: "block/scope", pageId: page.id, blockId: ownFooter.id, scope: "page" });
+                      }
+                    } else {
+                      if (ownFooter) {
+                        dispatch({ type: "block/scope", pageId: page.id, blockId: ownFooter.id, scope: "global" });
+                      }
+                    }
+                  }}
+                  className="h-6 rounded border border-line bg-canvas px-1.5 text-[11px] text-ink outline-none"
+                >
+                  <option value="global">Global (Todo el portal)</option>
+                  <option value="page">Solo esta página</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <p className="text-[10px] text-ink-dim pt-1 border-t border-line">
+            Elige si esta página usa la cabecera/pie oficial global o una versión personalizada para esta página.
           </p>
         </div>
       )}
@@ -405,7 +496,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
 }
 
 export function PagesTab() {
-  const { pages, currentPageId } = useSite();
+  const { pages, currentPageId, components } = useSite();
   const dispatch = useSiteDispatch();
   const { unitFilter, setUnitFilter } = useViewport();
   const unitNames = useUnitNames();
@@ -418,6 +509,42 @@ export function PagesTab() {
     if (isPageNameTaken(pages, name)) return "Ya existe una página con ese nombre.";
     const id = crypto.randomUUID();
     dispatch({ type: "page/create", id, name });
+
+    // Cada página nueva creada debe tener su Header y Footer oficiales
+    let headerComp = components.find(
+      (c) => c.id === "header-oficial" || (c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("pie")),
+    );
+    if (!headerComp) {
+      headerComp = createDefaultMunicipalHeader("header-oficial");
+      dispatch({ type: "component/save", component: headerComp });
+    }
+
+    let footerComp = components.find(
+      (c) => c.id === "footer-oficial" || (c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie"))),
+    );
+    if (!footerComp) {
+      footerComp = createDefaultMunicipalFooter("footer-oficial");
+      dispatch({ type: "component/save", component: footerComp });
+    }
+
+    dispatch({
+      type: "block/add",
+      pageId: id,
+      id: crypto.randomUUID(),
+      componentId: headerComp.id,
+      slot: "header",
+      scope: "global",
+    });
+
+    dispatch({
+      type: "block/add",
+      pageId: id,
+      id: crypto.randomUUID(),
+      componentId: footerComp.id,
+      slot: "footer",
+      scope: "global",
+    });
+
     // Una página dinámica nace con una ruta de ejemplo que se edita con el botón «:id».
     if (dynamic) dispatch({ type: "page/route", id, route: `/${slugify(name)}/:id` });
   };

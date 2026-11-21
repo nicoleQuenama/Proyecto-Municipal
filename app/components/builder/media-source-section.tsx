@@ -24,7 +24,10 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const kind = isMediaKind(element.kind) ? element.kind : "image";
-  const copy = COPY[kind];
+  const isFrame = Boolean(element.frame || element.kind === "rect" || element.kind === "ellipse");
+  const copy = isFrame
+    ? { title: "Marco de Imagen / Foto", empty: "Suelta una imagen sobre este marco", upload: "Subir foto al marco", url: "https://…/foto.jpg" }
+    : COPY[kind];
 
   const applyFile = async (file: File | undefined) => {
     if (!file) return;
@@ -42,28 +45,39 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
   };
 
   const drop = useFileDrop((file) => void applyFile(file));
-  const preview = kind === "image" ? element.src : element.poster;
+  const preview = kind === "image" || isFrame ? element.src : element.poster;
 
   return (
     <section aria-label={copy.title} className="flex flex-col gap-2 border-t border-line pt-3">
-      <h4 className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">{copy.title}</h4>
+      <div className="flex items-center justify-between">
+        <h4 className="text-[11px] font-semibold tracking-wider text-ink-dim uppercase">{copy.title}</h4>
+        {preview && (
+          <button
+            type="button"
+            onClick={() => onChange({ src: "" })}
+            className="text-[10px] text-red-400 hover:text-red-300 hover:underline cursor-pointer"
+          >
+            Quitar foto
+          </button>
+        )}
+      </div>
 
       <div
         {...drop.handlers}
-        className={`flex min-h-20 flex-col items-center justify-center gap-1 rounded-md border border-dashed p-2 text-center text-[11px] text-ink-dim ${
-          drop.over ? "border-accent bg-accent/10" : "border-line"
+        className={`flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed p-2.5 text-center text-[11px] text-ink-dim transition-colors ${
+          drop.over ? "border-accent bg-accent/15" : "border-line bg-canvas/40"
         }`}
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Vista previa" className="max-h-24 max-w-full rounded object-contain" />
+          <img src={preview} alt="Vista previa" className="max-h-24 max-w-full rounded object-cover shadow-xs" />
         ) : (
           <span>{kind === "video" && element.src ? "Video enlazado (sin portada)" : copy.empty}</span>
         )}
-        <button type="button" className={`${actionButton} w-full cursor-pointer`} onClick={() => fileInput.current?.click()}>
+        <button type="button" className={`${actionButton} w-full cursor-pointer font-medium`} onClick={() => fileInput.current?.click()}>
           {copy.upload}
         </button>
-        <span>o arrastra un archivo hasta aquí</span>
+        <span className="text-[10px]">o arrastra un archivo desde tu equipo o panel</span>
       </div>
 
       <input

@@ -243,13 +243,22 @@ const HANDLERS: Handlers = {
     if (!state.pages.some((p) => p.id === pageId)) return state;
 
     const comp = components.find((c) => c.id === action.componentId);
-    const slot = comp ? getBlockSlot({ id: action.id, componentId: action.componentId }, comp) : undefined;
+    const slot = action.slot ?? (comp ? getBlockSlot({ id: action.id, componentId: action.componentId }, comp) : undefined);
 
-    // Un bloque de código nace con un ejemplo que ya funciona.
+    const isNavHeader =
+      slot === "header" ||
+      (comp &&
+        (comp.category === "navigation" || comp.id.includes("header") || comp.name.toLowerCase().includes("cabecera")) &&
+        !comp.id.includes("footer") &&
+        !comp.name.toLowerCase().includes("pie"));
+
+    // Un bloque de código nace con un ejemplo que ya funciona. Cabeceras nacen con menú en tablet y móvil.
     const block = {
       id: action.id,
       componentId: action.componentId,
       ...(slot ? { slot } : {}),
+      ...(action.scope ? { scope: action.scope } : {}),
+      ...(isNavHeader ? { adapt: { tablet: "menu" as const, mobile: "menu" as const } } : {}),
       ...newBlockCode(comp, action.componentId),
     };
     const next = {
@@ -535,6 +544,8 @@ const HANDLERS: Handlers = {
     updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, slot: action.slot })),
   "block/scope": (state, action) =>
     updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, scope: action.scope })),
+  "block/replace-component": (state, action) =>
+    updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, componentId: action.componentId })),
   "block/placement-mode": (state, action) =>
     updateBlock(state, action.pageId, action.blockId, (b) => {
       if (action.mode === "flow") {
