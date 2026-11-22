@@ -52,6 +52,7 @@ import { LayerControls } from "./layer-controls";
 import { BehaviorEditor } from "./behavior-editor";
 import { RemoveButton } from "./remove-button";
 import { HideOnControls } from "./hide-on-controls";
+import { colorInputValue } from "../format/format-options";
 
 const fieldClass =
   "h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent";
@@ -424,6 +425,147 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   return (
     <div className="flex flex-col gap-4">
       <HideOnControls pageId={pageId} block={block} def={def} elementId={element?.id} />
+
+      {/* Control de Color Individual para el elemento o tarjeta seleccionada */}
+      {canEditContent && element && (
+        <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink">Color individual</span>
+            <span className="text-[10px] text-ink-dim font-medium">Solo esta tarjeta/elemento</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-0.5">
+            {/* Fondo / Relleno */}
+            {element.kind !== "icon" && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-medium text-ink-dim">Fondo / Relleno</label>
+                <div className="flex items-center gap-1.5">
+                  <label
+                    title="Seleccionar color de fondo"
+                    className="relative block size-7 shrink-0 cursor-pointer rounded-md border border-line shadow-2xs hover:scale-105 transition-transform"
+                    style={{ background: element.fill && element.fill !== "transparent" ? element.fill : "#ffffff" }}
+                  >
+                    <input
+                      type="color"
+                      aria-label="Color de fondo del elemento"
+                      value={colorInputValue(element.fill || "#ffffff")}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "component/element",
+                          componentId: def.id,
+                          pageId,
+                          blockId: block.id,
+                          elementId: element.id,
+                          patch: { fill: e.target.value },
+                        })
+                      }
+                      className="absolute inset-0 size-full cursor-pointer opacity-0"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={element.fill ?? ""}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "component/element",
+                        componentId: def.id,
+                        pageId,
+                        blockId: block.id,
+                        elementId: element.id,
+                        patch: { fill: e.target.value },
+                      })
+                    }
+                    placeholder="#ffffff"
+                    className="w-full h-7 rounded border border-line bg-canvas px-1.5 text-[11px] font-mono text-ink focus:border-accent focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Texto / Ícono */}
+            {(element.kind === "text" || Boolean(element.text) || element.kind === "icon" || element.role === "button" || element.role === "link") && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-medium text-ink-dim">Texto / Ícono</label>
+                <div className="flex items-center gap-1.5">
+                  <label
+                    title="Seleccionar color de texto"
+                    className="relative block size-7 shrink-0 cursor-pointer rounded-md border border-line shadow-2xs hover:scale-105 transition-transform"
+                    style={{ background: element.color && element.color !== "transparent" ? element.color : "#0f172a" }}
+                  >
+                    <input
+                      type="color"
+                      aria-label="Color de texto del elemento"
+                      value={colorInputValue(element.color || "#0f172a")}
+                      onChange={(e) =>
+                        dispatch({
+                          type: "component/element",
+                          componentId: def.id,
+                          pageId,
+                          blockId: block.id,
+                          elementId: element.id,
+                          patch: { color: e.target.value },
+                        })
+                      }
+                      className="absolute inset-0 size-full cursor-pointer opacity-0"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={element.color ?? ""}
+                    onChange={(e) =>
+                      dispatch({
+                        type: "component/element",
+                        componentId: def.id,
+                        pageId,
+                        blockId: block.id,
+                        elementId: element.id,
+                        patch: { color: e.target.value },
+                      })
+                    }
+                    placeholder="#0f172a"
+                    className="w-full h-7 rounded border border-line bg-canvas px-1.5 text-[11px] font-mono text-ink focus:border-accent focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Paleta rápida de 1-clic */}
+          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+            <span className="text-[9px] text-ink-dim font-medium mr-0.5">Rápidos:</span>
+            {[
+              { val: "#0d99ff", name: "Azul" },
+              { val: "#86cdea", name: "Celeste GAMC" },
+              { val: "#bae6fd", name: "Celeste claro" },
+              { val: "#1b1550", name: "Marino GAMC" },
+              { val: "#10b981", name: "Verde" },
+              { val: "#f59e0b", name: "Ámbar" },
+              { val: "#8b5cf6", name: "Morado" },
+              { val: "#f8fafc", name: "Gris claro" },
+              { val: "#ffffff", name: "Blanco" },
+              { val: "#0f172a", name: "Oscuro" },
+            ].map((c) => (
+              <button
+                key={c.val}
+                type="button"
+                title={c.name}
+                onClick={() =>
+                  dispatch({
+                    type: "component/element",
+                    componentId: def.id,
+                    pageId,
+                    blockId: block.id,
+                    elementId: element.id,
+                    patch: element.kind === "text" && !element.fill ? { color: c.val } : { fill: c.val },
+                  })
+                }
+                style={{ backgroundColor: c.val }}
+                className="size-4.5 rounded-full border border-line shadow-2xs hover:scale-125 transition-transform cursor-pointer"
+              />
+            ))}
+          </div>
+        </div>
+      )}
       {canEditContent && element && (element.kind === "text" || typeof element.text === "string" || element.role === "button" || element.role === "link") && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
           <div className="flex items-center justify-between">

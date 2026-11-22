@@ -182,42 +182,126 @@ export function duplicateCardInComponent(
 
 const CARD_COLORS = ["#0d99ff", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
 
-/** Agrega una nueva tarjeta limpia y estilizada al contenedor. Si ya existen tarjetas, replica su estilo y tamaño. */
+/** Agrega una nueva tarjeta limpia y estilizada al contenedor. Si ya existen tarjetas, adapta su tamaño y posición pero con contenido y color individual nuevo. */
 export function addCardToComponent(
   def: ComponentDef,
   customTitle?: string,
 ): { component: ComponentDef; newCardId: string } {
-  // Si el componente ya tiene tarjetas existentes (como las del compañero), clonamos la última para mantener el diseño idéntico
   const existingCards = getContainerCards(def);
-  if (existingCards.length > 0) {
-    const lastCardId = existingCards[existingCards.length - 1].id;
-    const duplicated = duplicateCardInComponent(def, lastCardId);
-    if (customTitle) {
-      const newHeading = duplicated.component.elements.find(
-        (e) => e.parentId === duplicated.newCardId && (e.role === "heading" || e.kind === "text"),
-      );
-      if (newHeading) {
-        duplicated.component.elements = duplicated.component.elements.map((e) =>
-          e.id === newHeading.id ? { ...e, text: customTitle } : e,
-        );
-      }
-    }
-    return duplicated;
-  }
-
+  const index = existingCards.length;
   const newCardId = crypto.randomUUID();
-  const topElements = def.elements.filter((e) => !e.parentId);
-  const index = topElements.length;
   const color = CARD_COLORS[index % CARD_COLORS.length];
   const title = customTitle || `Tarjeta ${index + 1}`;
 
+  // Si el componente ya tiene tarjetas existentes, adaptamos tamaño y posición pero con contenido limpio y color propio
+  if (existingCards.length > 0) {
+    const lastCardInfo = existingCards[existingCards.length - 1];
+    const lastRootEl = def.elements.find((e) => e.id === lastCardInfo.id);
+    const lastKids = findCardChildren(def.elements, lastCardInfo.id);
+
+    if (lastRootEl) {
+      // Calcular la posición óptima de la nueva tarjeta (misma fila o saltando a la siguiente si está llena)
+      const siblingCards = def.elements.filter(
+        (e) => !e.parentId && e.kind === lastRootEl.kind && Math.abs(e.width - lastRootEl.width) <= 40 && Math.abs(e.height - lastRootEl.height) <= 40,
+      );
+
+      let nextX = lastRootEl.x + 24;
+      let nextY = lastRootEl.y;
+
+      if (siblingCards.length > 0) {
+        siblingCards.sort((a, b) => (Math.abs(a.y - b.y) > 10 ? a.y - b.y : a.x - b.x));
+        const lastSibling = siblingCards[siblingCards.length - 1];
+        const firstSibling = siblingCards[0];
+
+        let gap = 16;
+        const firstRowCards = siblingCards.filter((c) => Math.abs(c.y - firstSibling.y) <= 10);
+        if (firstRowCards.length >= 2) {
+          firstRowCards.sort((a, b) => a.x - b.x);
+          gap = Math.max(8, firstRowCards[1].x - (firstRowCards[0].x + firstRowCards[0].width));
+        }
+
+        const candidateX = lastSibling.x + lastSibling.width + gap;
+        if (candidateX + lastRootEl.width <= def.width - 16) {
+          nextX = candidateX;
+          nextY = lastSibling.y;
+        } else {
+          // Salta a la siguiente fila
+          nextX = firstSibling.x;
+          nextY = lastSibling.y + lastSibling.height + Math.max(16, gap);
+        }
+      }
+
+      const deltaX = nextX - lastRootEl.x;
+      const deltaY = nextY - lastRootEl.y;
+
+      // La nueva tarjeta tiene las mismas proporciones de la cuadrícula, pero con su propio color y datos limpios
+      const newCardRoot: CanvasElement = {
+        ...lastRootEl,
+        id: newCardId,
+        x: nextX,
+        y: nextY,
+        fill: color, // Color propio e individual
+      };
+
+      // Si la tarjeta previa tenía hijos, adaptamos la estructura con textos limpios (no duplicado exacto)
+      let newChildren: CanvasElement[] = [];
+      if (lastKids.length > 0) {
+        newChildren = lastKids.map((kid) => {
+          const kidId = crypto.randomUUID();
+          let newText = kid.text;
+          if (kid.role === "heading" || (kid.kind === "text" && (kid.fontSize ?? 16) >= 13)) {
+            newText = title;
+          } else if (kid.kind === "text" && (kid.text === "ENLACE EXTERNO" || kid.text === "TRÁMITE")) {
+            newText = "TRÁMITE";
+          } else if (kid.kind === "text" && (kid.fontSize ?? 16) < 13 && kid.text) {
+            newText = "Descripción del nuevo servicio o trámite.";
+          }
+          return {
+            ...kid,
+            id: kidId,
+            parentId: newCardId,
+            x: kid.x + deltaX,
+            y: kid.y + deltaY,
+            text: newText,
+          };
+        });
+      } else {
+        newChildren.push(
+          newElement("text", crypto.randomUUID(), {
+            parentId: newCardId,
+            role: "heading",
+            x: nextX + 16,
+            y: nextY + 16,
+            width: lastRootEl.width - 32,
+            height: 26,
+            text: title,
+            fontSize: 16,
+            bold: true,
+          }),
+        );
+      }
+
+      const newHeight = Math.max(def.height, nextY + lastRootEl.height + 24);
+
+      return {
+        component: {
+          ...def,
+          height: newHeight,
+          elements: [...def.elements, newCardRoot, ...newChildren],
+        },
+        newCardId,
+      };
+    }
+  }
+
+  // Plantilla limpia predeterminada si no hay tarjetas previas
   const containerCard = newElement("rect", newCardId, {
     role: "container",
     x: 0,
     y: 0,
     width: 240,
     height: 190,
-    fill: "#f8fafc",
+    fill: color,
     radius: 16,
   });
 
@@ -227,7 +311,7 @@ export function addCardToComponent(
     y: 16,
     width: 40,
     height: 40,
-    fill: color,
+    fill: "#ffffff",
     radius: 10,
   });
 
@@ -252,7 +336,7 @@ export function addCardToComponent(
     height: 60,
     text: "Descripción del contenido o servicio de esta tarjeta.",
     fontSize: 13,
-    color: "#64748b",
+    color: "#ffffff",
   });
 
   return {
@@ -264,15 +348,27 @@ export function addCardToComponent(
   };
 }
 
-/** Elimina una tarjeta y todos sus hijos dentro del componente. */
+/** Elimina una tarjeta y todos sus hijos dentro del componente, adaptando la altura del bloque al contenido restante. */
 export function deleteCardFromComponent(def: ComponentDef, cardElementId: string): ComponentDef {
   const rootId = findRootCardId(def.elements, cardElementId);
   const children = findCardChildren(def.elements, rootId);
   const toDelete = new Set([rootId, ...children.map((c) => c.id)]);
 
+  const remaining = def.elements.filter((e) => !toDelete.has(e.id));
+
+  // Recalcular la altura adaptada del bloque según los elementos restantes
+  let adaptedHeight = def.height;
+  if (remaining.length > 0) {
+    const maxBottom = remaining.reduce((max, el) => Math.max(max, el.y + el.height), 0);
+    if (maxBottom > 0) {
+      adaptedHeight = Math.max(120, maxBottom + 24);
+    }
+  }
+
   return {
     ...def,
-    elements: def.elements.filter((e) => !toDelete.has(e.id)),
+    height: adaptedHeight,
+    elements: remaining,
   };
 }
 

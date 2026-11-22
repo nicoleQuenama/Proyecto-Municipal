@@ -293,6 +293,25 @@ describe("container-card-rules", () => {
     expect(sixthChild).toBeDefined();
     expect(sixthChild.x).toBe(30);
     expect(sixthChild.y).toBe(320);
+
+    // Al eliminar la 6ta tarjeta (fila 2), la altura del bloque debe adaptarse y reducirse de nuevo
+    const shrunk = deleteCardFromComponent(updated, newCardId);
+    expect(getContainerCards(shrunk)).toHaveLength(5);
+    expect(shrunk.height).toBeLessThan(updated.height);
+    expect(shrunk.height).toBe(100 + 180 + 24); // Máximo elemento en y:100 + h:180 + 24
+  });
+
+  it("al agregar una nueva tarjeta genera color individual nuevo y título limpio propio", () => {
+    const comp = makeTestComponent(); // Tiene 2 tarjetas
+    const { component: updated, newCardId } = addCardToComponent(comp, "Trámite de Licencias");
+    const newRoot = updated.elements.find((e) => e.id === newCardId)!;
+    // La nueva tarjeta debe tener un color individual propio (no idéntico por duplicado ciego)
+    expect(newRoot.fill).toBeDefined();
+    expect(newRoot.fill).not.toBe("transparent");
+
+    // Y el título debe ser el nuevo, no el de la tarjeta anterior
+    const newTitle = updated.elements.find((e) => e.parentId === newCardId && (e.role === "heading" || e.kind === "text"))!;
+    expect(newTitle.text).toBe("Trámite de Licencias");
   });
 });
 
