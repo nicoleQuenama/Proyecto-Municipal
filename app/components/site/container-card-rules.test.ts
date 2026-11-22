@@ -313,6 +313,14 @@ describe("container-card-rules", () => {
     const newTitle = updated.elements.find((e) => e.parentId === newCardId && (e.role === "heading" || e.kind === "text"))!;
     expect(newTitle.text).toBe("Trámite de Licencias");
   });
+
+  it("obtiene tarjetas con su color de relleno fill para gestión de tarjetas", () => {
+    const comp = makeTestComponent();
+    const cards = getContainerCards(comp);
+    expect(cards).toHaveLength(2);
+    expect(cards[0].fill).toBe("#cbd5e1");
+    expect(cards[1].fill).toBe("#cbd5e1");
+  });
 });
 
 

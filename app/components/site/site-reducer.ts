@@ -340,7 +340,17 @@ const HANDLERS: Handlers = {
     if (!action.add || !action.id || state.selectedElementId === null) {
       return { ...state, selectedElementId: action.id, alsoSelectedIds: undefined };
     }
-    if (action.id === state.selectedElementId) return state;
+    if (action.id === state.selectedElementId) {
+      if (state.alsoSelectedIds && state.alsoSelectedIds.length > 0) {
+        const [nextPrimary, ...rest] = state.alsoSelectedIds;
+        return {
+          ...state,
+          selectedElementId: nextPrimary,
+          alsoSelectedIds: rest.length > 0 ? rest : undefined,
+        };
+      }
+      return state;
+    }
     const also = state.alsoSelectedIds ?? [];
     const id = action.id;
     return { ...state, alsoSelectedIds: also.includes(id) ? also.filter((other) => other !== id) : [...also, id] };

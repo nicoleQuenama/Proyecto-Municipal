@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useViewport } from "../viewport/viewport-context";
 import { DesktopIcon, TabletIcon, MobileIcon } from "../viewport/icons";
+import { colorInputValue } from "../format/format-options";
 import { NumberField } from "../ui/number-field";
 import { Collapsible } from "../ui/collapsible";
 import {
@@ -43,6 +44,7 @@ export interface ContainerCardItem {
   id: string;
   title: string;
   elementCount: number;
+  fill?: string;
 }
 
 interface LayoutControlsProps {
@@ -69,6 +71,8 @@ interface LayoutControlsProps {
   onDuplicateCard?: (cardId: string) => void;
   /** Eliminar tarjeta del contenedor */
   onDeleteCard?: (cardId: string) => void;
+  /** Cambiar color de fondo de una tarjeta específica */
+  onCardColorChange?: (cardId: string, color: string) => void;
   /** Rellenar con 3 tarjetas automáticas */
   onFillThreeCards?: () => void;
   /** Rellenar con N tarjetas automáticas (ej. 3 o 5) */
@@ -165,6 +169,7 @@ export function LayoutControls({
   onAddButton,
   onDuplicateCard,
   onDeleteCard,
+  onCardColorChange,
   onFillThreeCards,
   onFillCards,
   onSelectCard,
@@ -708,7 +713,23 @@ export function LayoutControls({
                         >
                           {idx + 1}. {card.title}
                         </button>
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-1">
+                          {/* Selector de color de fondo para la tarjeta */}
+                          {!isButtons && (
+                            <label
+                              title={`Cambiar color de fondo de ${card.title}`}
+                              className="relative flex size-4.5 shrink-0 items-center justify-center rounded border border-line shadow-2xs hover:scale-110 transition-transform cursor-pointer"
+                              style={{ background: card.fill && card.fill !== "transparent" ? card.fill : "#ffffff" }}
+                            >
+                              <input
+                                type="color"
+                                aria-label={`Color de fondo de ${card.title}`}
+                                value={colorInputValue(card.fill || "#ffffff")}
+                                onChange={(e) => onCardColorChange?.(card.id, e.target.value)}
+                                className="absolute inset-0 size-full cursor-pointer opacity-0"
+                              />
+                            </label>
+                          )}
                           {onDuplicateCard && (
                             <button
                               type="button"

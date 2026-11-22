@@ -373,13 +373,18 @@ function PositionedElement({
         } : undefined}
         {...(gestures && isBackdrop(element, gestures.size) ? { "data-backdrop": "" } : {})}
         {...drop.handlers}
-        style={boundStyle}
+        style={{
+          ...boundStyle,
+          ...(element.fill && element.fill !== "transparent" ? { background: element.fill } : {}),
+        }}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${
           canReorder ? "cursor-grab active:cursor-grabbing" : gestures && !isFlow ? "cursor-move touch-none select-none" : ""
         }`}
         onPointerDown={(e) => {
           // Los botones del elemento (ojo, enlace, código) siguen siendo botones.
           if ((e.target as Element).closest("button")) return;
+          // Si se pulsa Shift/Ctrl/Cmd, no iniciar arrastre para permitir selección múltiple sin reiniciar la selección
+          if (e.shiftKey || e.ctrlKey || e.metaKey) return;
           // El fondo de una tarjeta (una pieza que ocupa toda la sección) arrastra el bloque entero.
           if (gestures && isBackdrop(element, gestures.size)) return interaction.onMoveBlock?.(e);
           // Si el contenedor está en flujo (flex/grid), NO se mueve libremente por coordenadas absolutas x/y

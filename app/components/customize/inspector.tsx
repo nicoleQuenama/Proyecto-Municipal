@@ -53,6 +53,7 @@ import { BehaviorEditor } from "./behavior-editor";
 import { RemoveButton } from "./remove-button";
 import { HideOnControls } from "./hide-on-controls";
 import { colorInputValue } from "../format/format-options";
+import { LayersPanel } from "../layers/layers-panel";
 
 const fieldClass =
   "h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent";
@@ -196,6 +197,27 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     const { component: updated, newButtonId } = addButtonToComponent(def);
     dispatch({ type: "component/save", component: updated });
     dispatch({ type: "element/select", id: newButtonId });
+  };
+
+  const handleCardColorChange = (cardId: string, color: string) => {
+    if (!canEditContent) return;
+    dispatch({
+      type: "component/element",
+      componentId: def.id,
+      pageId,
+      blockId: block.id,
+      elementId: cardId,
+      patch: { fill: color },
+    });
+    const cur = def.styles?.[cardId]?.classes || block.custom?.[cardId]?.classes;
+    if (cur && /\bbg-\S+/.test(cur)) {
+      const cleaned = cur.replace(/\bbg-\S+/g, "").trim();
+      dispatch(
+        level === "block"
+          ? { type: "block/custom", pageId, blockId: block.id, key: cardId, patch: { classes: cleaned } }
+          : { type: "component/styles", componentId: def.id, key: cardId, patch: { classes: cleaned } },
+      );
+    }
   };
 
   const isHeader =
@@ -434,6 +456,20 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
             <span className="text-[10px] text-ink-dim font-medium">Solo esta tarjeta/elemento</span>
           </div>
 
+          {rootCardId && rootCardId !== element.id && (
+            <div className="flex items-center justify-between gap-2 rounded bg-canvas/80 px-2 py-1 text-[11px] text-ink-dim border border-line">
+              <span className="truncate">Elemento dentro de tarjeta</span>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: "element/select", id: rootCardId })}
+                className="shrink-0 text-accent font-semibold hover:underline cursor-pointer"
+                title="Seleccionar la tarjeta contenedora para cambiar su fondo"
+              >
+                Editar tarjeta entera
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2 pt-0.5">
             {/* Fondo / Relleno */}
             {element.kind !== "icon" && (
@@ -449,32 +485,40 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                       type="color"
                       aria-label="Color de fondo del elemento"
                       value={colorInputValue(element.fill || "#ffffff")}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const newFill = e.target.value;
                         dispatch({
                           type: "component/element",
                           componentId: def.id,
                           pageId,
                           blockId: block.id,
                           elementId: element.id,
-                          patch: { fill: e.target.value },
-                        })
-                      }
+                          patch: { fill: newFill },
+                        });
+                        if (custom.classes && /\bbg-\S+/.test(custom.classes)) {
+                          saveStyle({ classes: custom.classes.replace(/\bbg-\S+/g, "").trim() }, canEditContent);
+                        }
+                      }}
                       className="absolute inset-0 size-full cursor-pointer opacity-0"
                     />
                   </label>
                   <input
                     type="text"
                     value={element.fill ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newFill = e.target.value;
                       dispatch({
                         type: "component/element",
                         componentId: def.id,
                         pageId,
                         blockId: block.id,
                         elementId: element.id,
-                        patch: { fill: e.target.value },
-                      })
-                    }
+                        patch: { fill: newFill },
+                      });
+                      if (custom.classes && /\bbg-\S+/.test(custom.classes)) {
+                        saveStyle({ classes: custom.classes.replace(/\bbg-\S+/g, "").trim() }, canEditContent);
+                      }
+                    }}
                     placeholder="#ffffff"
                     className="w-full h-7 rounded border border-line bg-canvas px-1.5 text-[11px] font-mono text-ink focus:border-accent focus:outline-hidden"
                   />
@@ -549,16 +593,20 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 key={c.val}
                 type="button"
                 title={c.name}
-                onClick={() =>
+                onClick={() => {
+                  const isText = element.kind === "text" && !element.fill;
                   dispatch({
                     type: "component/element",
                     componentId: def.id,
                     pageId,
                     blockId: block.id,
                     elementId: element.id,
-                    patch: element.kind === "text" && !element.fill ? { color: c.val } : { fill: c.val },
-                  })
-                }
+                    patch: isText ? { color: c.val } : { fill: c.val },
+                  });
+                  if (!isText && custom.classes && /\bbg-\S+/.test(custom.classes)) {
+                    saveStyle({ classes: custom.classes.replace(/\bbg-\S+/g, "").trim() }, canEditContent);
+                  }
+                }}
                 style={{ backgroundColor: c.val }}
                 className="size-4.5 rounded-full border border-line shadow-2xs hover:scale-125 transition-transform cursor-pointer"
               />
@@ -654,6 +702,30 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       {canEditStyles && (
         <Collapsible title="Colores de la sección" defaultOpen={!element}>
           <SectionColorPalette pageId={pageId} block={block} def={def} />
+        </Collapsible>
+      )}
+      {canEditContent && def.elements.length > 0 && (
+        <Collapsible title={`Capas (${def.elements.length})`} defaultOpen={!element}>
+          <LayersPanel
+            elements={def.elements}
+            selectedId={element?.id ?? null}
+            onSelect={(id) => dispatch({ type: "element/select", id })}
+            onPatch={(id, patch) =>
+              dispatch({
+                type: "component/element",
+                componentId: def.id,
+                pageId,
+                blockId: block.id,
+                elementId: id,
+                patch,
+              })
+            }
+            onReorder={(ids) => {
+              const idMap = new Map(def.elements.map((e) => [e.id, e]));
+              const reordered = ids.map((id) => idMap.get(id)!).filter(Boolean);
+              dispatch({ type: "component/save", component: { ...def, elements: reordered } });
+            }}
+          />
         </Collapsible>
       )}
       {!element && canEditContent && (
@@ -1004,6 +1076,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           onAddCard={canEditContent ? handleAddCard : undefined}
           onDuplicateCard={canEditContent ? handleDuplicateCard : undefined}
           onDeleteCard={canEditContent ? handleDeleteCard : undefined}
+          onCardColorChange={canEditContent ? handleCardColorChange : undefined}
           onFillThreeCards={canEditContent ? handleFillThreeCards : undefined}
           onFillCards={canEditContent ? handleFillCards : undefined}
           onSelectCard={(id) => dispatch({ type: "element/select", id })}

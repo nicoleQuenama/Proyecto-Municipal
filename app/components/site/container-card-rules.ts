@@ -5,6 +5,7 @@ export interface ContainerCardInfo {
   id: string;
   title: string;
   elementCount: number;
+  fill?: string;
 }
 
 /** Encuentra los elementos hijos de una tarjeta, ya sea por parentId explícito o por contención geométrica. */
@@ -57,6 +58,7 @@ export function getContainerCards(def: ComponentDef): ContainerCardInfo[] {
       id: root.id,
       title,
       elementCount: 1 + children.length,
+      fill: root.fill,
     };
   });
 }

@@ -24,6 +24,20 @@ describe("selection", () => {
     expect(s.alsoSelectedIds?.includes("e2")).toBe(false);
   });
 
+  // Toggling primary element promotes first alsoSelectedId
+  it("toggles primary element and promotes next", () => {
+    let s = siteReducer(base(), { type: "element/select", id: "e1" });
+    s = siteReducer(s, { type: "element/select", id: "e2", add: true });
+    s = siteReducer(s, { type: "element/select", id: "e3", add: true });
+    expect(s.selectedElementId).toBe("e1");
+    expect(s.alsoSelectedIds).toEqual(["e2", "e3"]);
+
+    // Shift-clicking e1 (the primary) promotes e2 and leaves e3
+    s = siteReducer(s, { type: "element/select", id: "e1", add: true });
+    expect(s.selectedElementId).toBe("e2");
+    expect(s.alsoSelectedIds).toEqual(["e3"]);
+  });
+
   // Sets main if none
   it("sets main on add", () => {
     const s = siteReducer(base(), { type: "element/select", id: "e1", add: true });
