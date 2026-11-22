@@ -130,21 +130,28 @@ describe("container-card-rules", () => {
   it("crea el footer municipal predeterminado con 4 columnas", () => {
     const footer = createDefaultMunicipalFooter();
     expect(footer.elements.filter((e) => !e.parentId && e.role === "container")).toHaveLength(4);
-    expect(footer.styles?.[SECTION_KEY]?.classes).toContain("grid-cols-2 sm:grid-cols-2 lg:grid-cols-4");
+    expect(footer.styles?.[SECTION_KEY]?.classes).toBe("w-full");
   });
 
-  it("crea la cabecera municipal oficial con logo, 4 enlaces y buscador", () => {
+  it("crea la cabecera municipal oficial con logo, enlaces y buscador", () => {
     const header = createDefaultMunicipalHeader();
     const logo = header.elements.find((e) => e.role === "image");
     expect(logo).toBeDefined();
-    expect(logo?.src).toBe("/login-brand.svg");
+    expect(logo?.src).toBe("/logo-municipal.png");
 
     const links = header.elements.filter((e) => e.role === "link");
-    expect(links.map((l) => l.text)).toEqual(["Transparencia", "Proyectos", "GAMC", "Servicios"]);
+    expect(links.map((l) => l.text)).toEqual([
+      "Trámites y Leyes",
+      "Cocha Unida",
+      "GAMC",
+      "Noticias",
+      "Gabinete de Transparencia",
+      "Servicios",
+    ]);
 
     const searchBtn = header.elements.find((e) => e.control?.name === "search-trigger");
     expect(searchBtn).toBeDefined();
-    expect(searchBtn?.text).toBe("Buscar");
+    expect(searchBtn?.text).toBe("⌕");
   });
 
   it("organiza elementos sueltos en columnas de footer", () => {

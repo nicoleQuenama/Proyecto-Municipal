@@ -355,49 +355,54 @@ export function createDefaultMunicipalFooter(id?: string): ComponentDef {
 
   return {
     id: compId,
-    name: "Pie de página (Footer)",
-    description: "Cierre institucional en 4 columnas: Identidad, Trámites, Transparencia y Contacto",
+    name: "Pie de Página Municipal Oficial",
+    description: "Cierre institucional en 4 columnas limpias con escudo, trámites, normas y contacto",
     category: "navigation",
     width: 1024,
-    height: 260,
+    height: 240,
     custom: true,
     styles: {
       [SECTION_KEY]: {
-        classes: "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 p-6 lg:p-10 bg-slate-900 text-slate-200 border-t border-slate-800 w-full",
+        classes: "w-full",
         css: "",
       },
     },
     elements: [
+      newElement("rect", nextId(), { role: "none", x: 0, y: 0, width: 1024, height: 240, fill: "#0f172a", radius: 0 }),
+      newElement("rect", nextId(), { role: "none", x: 0, y: 0, width: 1024, height: 2, fill: "#1e293b", radius: 0 }),
+
       // Columna 1: Logo municipal e Identidad
-      newElement("rect", col1, { role: "container", x: 24, y: 24, width: 220, height: 210, fill: "transparent", radius: 0 }),
-      newElement("ellipse", nextId(), { parentId: col1, role: "image", frame: true, src: "/login-brand.svg", alt: "Escudo GAMC", x: 0, y: 0, width: 44, height: 44, fill: "#475569" }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 52, width: 210, height: 24, text: "Gobierno Autónomo Municipal", fontSize: 15, bold: true, color: "#ffffff", role: "heading" }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 80, width: 210, height: 48, text: "Portal oficial de trámites, servicios y participación ciudadana.", fontSize: 12, color: "#94a3b8" }),
-      newElement("text", nextId(), { parentId: col1, x: 0, y: 136, width: 210, height: 32, text: "© 2026 GAMC. Todos los derechos reservados.", fontSize: 11, color: "#94a3b8" }),
+      newElement("rect", col1, { role: "container", x: 40, y: 28, width: 220, height: 190, fill: "transparent", radius: 0 }),
+      newElement("ellipse", nextId(), { parentId: col1, role: "image", frame: true, src: "/logo-municipal.png", alt: "Escudo GAMC", x: 0, y: 0, width: 44, height: 44, fill: "#1e293b", radius: 8 }),
+      newElement("text", nextId(), { parentId: col1, role: "heading", x: 0, y: 52, width: 210, height: 22, text: "Gobierno Autónomo Municipal", fontSize: 14, bold: true, color: "#ffffff" }),
+      newElement("text", nextId(), { parentId: col1, role: "text", x: 0, y: 78, width: 210, height: 38, text: "Portal oficial de trámites, servicios y participación ciudadana.", fontSize: 11, color: "#94a3b8" }),
+      newElement("text", nextId(), { parentId: col1, role: "text", x: 0, y: 124, width: 210, height: 20, text: "© 2026 GAMC. Cochabamba, Bolivia.", fontSize: 10, color: "#64748b" }),
 
       // Columna 2: Trámites y Servicios
-      newElement("rect", col2, { role: "container", x: 270, y: 24, width: 220, height: 210, fill: "transparent", radius: 0 }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 0, width: 210, height: 24, text: "Trámites y Servicios", fontSize: 14, bold: true, color: "#f8fafc", role: "heading" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 32, width: 210, height: 22, text: "• Ventanilla Única Digital", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 58, width: 210, height: 22, text: "• Catastro y Territorio", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 84, width: 210, height: 22, text: "• Licencias de Actividades", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col2, x: 0, y: 110, width: 210, height: 22, text: "• Pagos de Impuestos en Línea", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("rect", col2, { role: "container", x: 285, y: 28, width: 210, height: 190, fill: "transparent", radius: 0 }),
+      newElement("text", nextId(), { parentId: col2, role: "heading", x: 0, y: 0, width: 195, height: 22, text: "Trámites y Servicios", fontSize: 13, bold: true, color: "#f8fafc" }),
+      newElement("text", nextId(), { parentId: col2, role: "link", x: 0, y: 28, width: 195, height: 20, text: "• Ventanilla Única Digital", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col2, role: "link", x: 0, y: 52, width: 195, height: 20, text: "• Catastro y Territorio", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col2, role: "link", x: 0, y: 76, width: 195, height: 20, text: "• Licencias de Actividades", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col2, role: "link", x: 0, y: 100, width: 195, height: 20, text: "• Pagos de Impuestos en Línea", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col2, role: "link", x: 0, y: 124, width: 195, height: 20, text: "• Seguimiento de Trámites", fontSize: 12, color: "#cbd5e1" }),
 
       // Columna 3: Transparencia y Normativas
-      newElement("rect", col3, { role: "container", x: 516, y: 24, width: 220, height: 210, fill: "transparent", radius: 0 }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 0, width: 210, height: 24, text: "Transparencia y Normas", fontSize: 14, bold: true, color: "#f8fafc", role: "heading" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 32, width: 210, height: 22, text: "• Rendición Pública de Cuentas", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 58, width: 210, height: 22, text: "• Gaceta y Decretos Ediles", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 84, width: 210, height: 22, text: "• Licitaciones y Convocatorias", fontSize: 13, color: "#cbd5e1", role: "link" }),
-      newElement("text", nextId(), { parentId: col3, x: 0, y: 110, width: 210, height: 22, text: "• Presupuesto Participativo", fontSize: 13, color: "#cbd5e1", role: "link" }),
+      newElement("rect", col3, { role: "container", x: 525, y: 28, width: 210, height: 190, fill: "transparent", radius: 0 }),
+      newElement("text", nextId(), { parentId: col3, role: "heading", x: 0, y: 0, width: 195, height: 22, text: "Transparencia y Normas", fontSize: 13, bold: true, color: "#f8fafc" }),
+      newElement("text", nextId(), { parentId: col3, role: "link", x: 0, y: 28, width: 195, height: 20, text: "• Rendición Pública de Cuentas", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col3, role: "link", x: 0, y: 52, width: 195, height: 20, text: "• Gaceta y Decretos Ediles", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col3, role: "link", x: 0, y: 76, width: 195, height: 20, text: "• Licitaciones y Convocatorias", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col3, role: "link", x: 0, y: 100, width: 195, height: 20, text: "• Presupuesto Participativo", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col3, role: "link", x: 0, y: 124, width: 195, height: 20, text: "• Marco Normativo Municipal", fontSize: 12, color: "#cbd5e1" }),
 
       // Columna 4: Horarios y Contacto Ciudadano
-      newElement("rect", col4, { role: "container", x: 762, y: 24, width: 230, height: 210, fill: "transparent", radius: 0 }),
-      newElement("text", nextId(), { parentId: col4, x: 0, y: 0, width: 220, height: 24, text: "Horarios y Contacto", fontSize: 14, bold: true, color: "#f8fafc", role: "heading" }),
-      newElement("text", nextId(), { parentId: col4, x: 0, y: 32, width: 220, height: 22, text: "Lun a Vie: 08:00 - 16:00", fontSize: 12, color: "#cbd5e1" }),
-      newElement("text", nextId(), { parentId: col4, x: 0, y: 58, width: 220, height: 22, text: "Línea Gratuita: 800-14-0200", fontSize: 12, bold: true, color: "#f8fafc" }),
-      newElement("text", nextId(), { parentId: col4, x: 0, y: 84, width: 220, height: 22, text: "Plaza 14 de Septiembre, GAMC", fontSize: 12, color: "#94a3b8" }),
-      newElement("text", nextId(), { parentId: col4, x: 0, y: 110, width: 220, height: 22, text: "contacto@gamc.gob.bo", fontSize: 12, color: "#f8fafc", role: "link" }),
+      newElement("rect", col4, { role: "container", x: 765, y: 28, width: 230, height: 190, fill: "transparent", radius: 0 }),
+      newElement("text", nextId(), { parentId: col4, role: "heading", x: 0, y: 0, width: 215, height: 22, text: "Horarios y Contacto", fontSize: 13, bold: true, color: "#f8fafc" }),
+      newElement("text", nextId(), { parentId: col4, role: "text", x: 0, y: 28, width: 215, height: 20, text: "Lun a Vie: 08:00 - 16:00", fontSize: 12, color: "#cbd5e1" }),
+      newElement("text", nextId(), { parentId: col4, role: "text", x: 0, y: 52, width: 215, height: 20, text: "Línea Gratuita: 800-14-0200", fontSize: 12, bold: true, color: "#f8fafc" }),
+      newElement("text", nextId(), { parentId: col4, role: "text", x: 0, y: 76, width: 215, height: 20, text: "Plaza 14 de Septiembre, GAMC", fontSize: 12, color: "#94a3b8" }),
+      newElement("text", nextId(), { parentId: col4, role: "link", x: 0, y: 100, width: 215, height: 20, text: "contacto@gamc.gob.bo", fontSize: 12, color: "#38bdf8" }),
     ],
     links: {},
   };
@@ -683,103 +688,78 @@ export function createDefaultMunicipalHeader(id?: string): ComponentDef {
   const compId = id || crypto.randomUUID();
   let count = 0;
   const nextId = () => `${compId}-e${++count}`;
-  const logoId = nextId();
-  const link1 = nextId();
-  const link2 = nextId();
-  const link3 = nextId();
-  const link4 = nextId();
-  const searchBtn = nextId();
 
   return {
     id: compId,
     name: "Cabecera Municipal Oficial",
-    description: "Barra de navegación institucional con escudo, 4 enlaces y buscador ciudadano",
+    description: "Barra de navegación institucional blanca con escudo, enlaces y buscador ciudadano",
     category: "navigation",
     width: 1024,
     height: 72,
     custom: true,
     styles: {
       [SECTION_KEY]: {
-        classes: "flex items-center justify-between px-6 py-3.5 bg-slate-800 text-slate-100 border-b border-slate-700 w-full shadow-md",
+        classes: "flex items-center justify-between px-6 py-3.5 bg-white text-slate-800 border-b border-slate-200/80 w-full shadow-xs",
         css: "",
       },
     },
     elements: [
-      // Marco para Escudo / Logo (estilo Canva con escudo oficial)
-      newElement("ellipse", logoId, {
+      newElement("rect", nextId(), { role: "none", x: 0, y: 0, width: 1024, height: 72, fill: "#ffffff", radius: 0 }),
+      newElement("rect", nextId(), { role: "none", x: 0, y: 71, width: 1024, height: 1, fill: "#e5e7eb", radius: 0 }),
+      newElement("ellipse", nextId(), {
         role: "image",
         frame: true,
-        src: "/login-brand.svg",
+        src: "/logo-municipal.png",
         alt: "Escudo Municipal",
-        x: 24,
-        y: 12,
-        width: 48,
-        height: 48,
-        fill: "#475569",
+        x: 21,
+        y: 14,
+        width: 44,
+        height: 44,
+        fill: "#86cdea",
+        radius: 8,
       }),
-      // Enlace 1: Transparencia
-      newElement("text", link1, {
-        role: "link",
-        x: 240,
-        y: 24,
-        width: 110,
-        height: 24,
-        text: "Transparencia",
-        fontSize: 14,
-        color: "#f1f5f9",
-        align: "center",
+      newElement("text", nextId(), {
+        role: "heading",
+        x: 73,
+        y: 17,
+        width: 160,
+        height: 20,
+        text: "COCHABAMBA",
+        fontSize: 16,
+        color: "#1b1550",
+        bold: true,
       }),
-      // Enlace 2: Proyectos
-      newElement("text", link2, {
-        role: "link",
-        x: 370,
-        y: 24,
-        width: 90,
-        height: 24,
-        text: "Proyectos",
-        fontSize: 14,
-        color: "#f1f5f9",
-        align: "center",
+      newElement("text", nextId(), {
+        role: "text",
+        x: 73,
+        y: 38,
+        width: 160,
+        height: 14,
+        text: "Gobierno de la Ciudad",
+        fontSize: 10,
+        color: "#4b5563",
       }),
-      // Enlace 3: GAMC
-      newElement("text", link3, {
-        role: "link",
-        x: 480,
-        y: 24,
-        width: 70,
-        height: 24,
-        text: "GAMC",
-        fontSize: 14,
-        color: "#f1f5f9",
-        align: "center",
-      }),
-      // Enlace 4: Servicios
-      newElement("text", link4, {
-        role: "link",
-        x: 570,
-        y: 24,
-        width: 80,
-        height: 24,
-        text: "Servicios",
-        fontSize: 14,
-        color: "#f1f5f9",
-        align: "center",
-      }),
-      // Buscador Global Ciudadano (Botón con ícono de lupa)
-      newElement("rect", searchBtn, {
+      newElement("text", nextId(), { role: "link", x: 240, y: 29, width: 110, height: 16, text: "Trámites y Leyes", fontSize: 12, color: "#1b1550" }),
+      newElement("text", nextId(), { role: "link", x: 364, y: 29, width: 80, height: 16, text: "Cocha Unida", fontSize: 12, color: "#1b1550" }),
+      newElement("text", nextId(), { role: "link", x: 458, y: 29, width: 45, height: 16, text: "GAMC", fontSize: 12, color: "#1b1550" }),
+      newElement("text", nextId(), { role: "link", x: 518, y: 29, width: 60, height: 16, text: "Noticias", fontSize: 12, color: "#1b1550" }),
+      newElement("text", nextId(), { role: "link", x: 592, y: 29, width: 175, height: 16, text: "Gabinete de Transparencia", fontSize: 12, color: "#1b1550" }),
+      newElement("text", nextId(), { role: "link", x: 782, y: 29, width: 65, height: 16, text: "Servicios", fontSize: 12, color: "#1b1550" }),
+      newElement("rect", nextId(), {
         role: "button",
         control: { kind: "button", name: "search-trigger" },
-        x: 880,
-        y: 16,
-        width: 110,
-        height: 40,
-        fill: "#475569",
+        x: 960,
+        y: 19,
+        width: 34,
+        height: 34,
+        fill: "#efe9f8",
         radius: 8,
-        text: "Buscar",
+        text: "⌕",
         icon: "search",
-        color: "#ffffff",
+        color: "#4a1070",
         bold: true,
         align: "center",
+        fontSize: 16,
       }),
     ],
     links: {},

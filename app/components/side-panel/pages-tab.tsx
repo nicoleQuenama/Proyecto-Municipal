@@ -402,9 +402,13 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                     const mode = e.target.value;
                     if (mode === "page") {
                       if (!ownHeader) {
-                        const headerComp = components.find(
-                          (c) => c.id === "header-oficial" || (c.category === "navigation" && !c.name.toLowerCase().includes("footer"))
-                        );
+                        const homePage = pages.find((p) => p.isHome || p.slug === "inicio" || p.name.toLowerCase() === "inicio");
+                        const homeHeaderId = homePage?.blocks.find((b) => b.slot === "header")?.componentId;
+                        const headerComp =
+                          (homeHeaderId ? components.find((c) => c.id === homeHeaderId) : null) ??
+                          components.find((c) => c.id === "header-oficial") ??
+                          components.find((c) => c.name.toLowerCase().includes("cabecera municipal oficial") || c.name.toLowerCase().includes("header oficial")) ??
+                          components.find((c) => c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("pie"));
                         if (headerComp) {
                           dispatch({
                             type: "block/add",
@@ -455,9 +459,13 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                     const mode = e.target.value;
                     if (mode === "page") {
                       if (!ownFooter) {
-                        const footerComp = components.find(
-                          (c) => c.id === "footer-oficial" || (c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie")))
-                        );
+                        const homePage = pages.find((p) => p.isHome || p.slug === "inicio" || p.name.toLowerCase() === "inicio");
+                        const homeFooterId = homePage?.blocks.find((b) => b.slot === "footer")?.componentId;
+                        const footerComp =
+                          (homeFooterId ? components.find((c) => c.id === homeFooterId) : null) ??
+                          components.find((c) => c.id === "footer-oficial") ??
+                          components.find((c) => c.name.toLowerCase().includes("pie de página municipal oficial") || c.name.toLowerCase().includes("footer oficial")) ??
+                          components.find((c) => c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie")));
                         if (footerComp) {
                           dispatch({
                             type: "block/add",
@@ -510,18 +518,28 @@ export function PagesTab() {
     const id = crypto.randomUUID();
     dispatch({ type: "page/create", id, name });
 
-    // Cada página nueva creada debe tener su Header y Footer oficiales
-    let headerComp = components.find(
-      (c) => c.id === "header-oficial" || (c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("pie")),
-    );
+    // Cada página nueva creada debe tener su Header y Footer oficiales exactamente como en la página de inicio
+    const homePage = pages.find((p) => p.isHome || p.slug === "inicio" || p.name.toLowerCase() === "inicio");
+    const homeHeaderBlock = homePage?.blocks.find((b) => b.slot === "header");
+    const homeFooterBlock = homePage?.blocks.find((b) => b.slot === "footer");
+
+    let headerComp =
+      (homeHeaderBlock ? components.find((c) => c.id === homeHeaderBlock.componentId) : null) ??
+      components.find((c) => c.id === "header-oficial") ??
+      components.find((c) => c.name.toLowerCase().includes("cabecera municipal oficial") || c.name.toLowerCase().includes("header oficial")) ??
+      components.find((c) => c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("pie"));
+
     if (!headerComp) {
       headerComp = createDefaultMunicipalHeader("header-oficial");
       dispatch({ type: "component/save", component: headerComp });
     }
 
-    let footerComp = components.find(
-      (c) => c.id === "footer-oficial" || (c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie"))),
-    );
+    let footerComp =
+      (homeFooterBlock ? components.find((c) => c.id === homeFooterBlock.componentId) : null) ??
+      components.find((c) => c.id === "footer-oficial") ??
+      components.find((c) => c.name.toLowerCase().includes("pie de página municipal oficial") || c.name.toLowerCase().includes("footer oficial")) ??
+      components.find((c) => c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie")));
+
     if (!footerComp) {
       footerComp = createDefaultMunicipalFooter("footer-oficial");
       dispatch({ type: "component/save", component: footerComp });
