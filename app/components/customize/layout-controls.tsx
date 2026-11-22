@@ -71,6 +71,8 @@ interface LayoutControlsProps {
   onDeleteCard?: (cardId: string) => void;
   /** Rellenar con 3 tarjetas automáticas */
   onFillThreeCards?: () => void;
+  /** Rellenar con N tarjetas automáticas (ej. 3 o 5) */
+  onFillCards?: (count: number) => void;
   /** Seleccionar una tarjeta de la lista */
   onSelectCard?: (cardId: string) => void;
   /** Categoría del componente padre (buttons, cards, sections, etc.) */
@@ -164,6 +166,7 @@ export function LayoutControls({
   onDuplicateCard,
   onDeleteCard,
   onFillThreeCards,
+  onFillCards,
   onSelectCard,
   category,
   componentId,
@@ -619,14 +622,16 @@ export function LayoutControls({
           </p>
         </div>
 
-        {/* Gestión del Contenedor (Horizontal / Cuadrícula / Columna / Botones) */}
-        {currentPreset !== "free" && (
+        {/* Gestión del Contenedor (Horizontal / Cuadrícula / Columna / Botones / Tarjetas) */}
+        {(currentPreset !== "free" || (containerCards && containerCards.length > 0)) && (
           <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-ink">
                 {isButtons
                   ? "Contenedor de Botones CTA"
-                  : `Contenedor ${currentPreset === "row" ? "Horizontal (Fila)" : inGrid ? "en Cuadrícula" : "Vertical"}`}
+                  : currentPreset === "free"
+                    ? "Gestión de Tarjetas"
+                    : `Contenedor ${currentPreset === "row" ? "Horizontal (Fila)" : inGrid ? "en Cuadrícula" : "Vertical"}`}
               </span>
               <span className="text-[10px] font-medium text-ink-dim">
                 {containerCards?.length ?? 0} {isButtons ? (containerCards?.length === 1 ? "botón" : "botones") : (containerCards?.length === 1 ? "tarjeta" : "tarjetas")}
@@ -638,7 +643,9 @@ export function LayoutControls({
                 ? "Contenedor auto-layout para botones CTA: agrupa y alinea botones con espaciado y márgenes configurables."
                 : currentPreset === "row"
                   ? "Contenedor auto-layout horizontal: las tarjetas se acomodan automáticamente en fila una al lado de la otra."
-                  : "Contenedor auto-layout: las tarjetas se acomodan y distribuyen solas en las columnas."}
+                  : currentPreset === "free"
+                    ? "Tarjetas en esta sección: puedes agregar más tarjetas o duplicar las existentes (saltan de fila automáticamente si hay más de 5)."
+                    : "Contenedor auto-layout: las tarjetas se acomodan y distribuyen solas en las columnas."}
             </p>
 
             <div className="flex items-center gap-1.5 pt-1">
@@ -651,15 +658,29 @@ export function LayoutControls({
                   <span>+</span> {isButtons ? "Agregar botón" : "Agregar tarjeta"}
                 </button>
               )}
-              {!isButtons && onFillThreeCards && (
-                <button
-                  type="button"
-                  onClick={onFillThreeCards}
-                  title="Crea o restablece 3 tarjetas de ejemplo en este contenedor"
-                  className="flex items-center gap-1 rounded-md border border-accent/40 bg-canvas px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
-                >
-                  3 Tarjetas
-                </button>
+              {!isButtons && (
+                <div className="flex items-center gap-1">
+                  {onFillThreeCards && (
+                    <button
+                      type="button"
+                      onClick={onFillThreeCards}
+                      title="Crea o restablece 3 tarjetas de ejemplo en este contenedor"
+                      className="flex items-center gap-1 rounded-md border border-accent/40 bg-canvas px-2 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    >
+                      3 Tarjetas
+                    </button>
+                  )}
+                  {onFillCards && (
+                    <button
+                      type="button"
+                      onClick={() => onFillCards(5)}
+                      title="Crea o restablece 5 tarjetas en este contenedor"
+                      className="flex items-center gap-1 rounded-md border border-accent/40 bg-canvas px-2 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
+                    >
+                      5 Tarjetas
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 

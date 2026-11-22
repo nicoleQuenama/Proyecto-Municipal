@@ -7,12 +7,51 @@ export interface ContainerCardInfo {
   elementCount: number;
 }
 
-/** Obtiene las tarjetas (elementos raíz sin parentId) y su título descriptivo dentro del componente. */
+/** Encuentra los elementos hijos de una tarjeta, ya sea por parentId explícito o por contención geométrica. */
+export function findCardChildren(elements: CanvasElement[], rootId: string): CanvasElement[] {
+  const explicit = elements.filter((e) => e.parentId === rootId);
+  if (explicit.length > 0) return explicit;
+
+  const rootEl = elements.find((e) => e.id === rootId);
+  if (!rootEl || rootEl.kind !== "rect" || rootEl.width < 80 || rootEl.height < 50) return [];
+
+  // Elementos sin parentId cuyo centro está contenido geométricamente dentro del rectángulo
+  return elements.filter((e) => {
+    if (e.id === rootId || e.parentId) return false;
+    const cx = e.x + e.width / 2;
+    const cy = e.y + e.height / 2;
+    return (
+      cx >= rootEl.x - 2 &&
+      cx <= rootEl.x + rootEl.width + 2 &&
+      cy >= rootEl.y - 2 &&
+      cy <= rootEl.y + rootEl.height + 2
+    );
+  });
+}
+
+/** Obtiene las tarjetas y su título descriptivo dentro del componente, soportando tanto auto-layout como tarjetas fijas. */
 export function getContainerCards(def: ComponentDef): ContainerCardInfo[] {
-  const topElements = def.elements.filter((e) => !e.parentId);
-  return topElements.map((root, idx) => {
-    const children = def.elements.filter((e) => e.parentId === root.id);
-    const heading = children.find((c) => c.role === "heading" || c.kind === "text") ?? (root.kind === "text" ? root : null);
+  const topRoots = def.elements.filter((e) => !e.parentId);
+
+  // Identificar si hay tarjetas rectangulares contenedoras (con role "container" o con hijos)
+  const cardsWithChildren = topRoots.filter((root) => {
+    if (root.role === "container") return true;
+    if (root.kind === "rect" && root.width >= 100 && root.height >= 60) {
+      if (root.width >= def.width * 0.85 && root.height >= def.height * 0.8) return false;
+      const kids = findCardChildren(def.elements, root.id);
+      return kids.length > 0;
+    }
+    return false;
+  });
+
+  const rootsToUse = cardsWithChildren.length > 0 ? cardsWithChildren : topRoots;
+
+  return rootsToUse.map((root, idx) => {
+    const children = findCardChildren(def.elements, root.id);
+    const heading =
+      children.find((c) => c.role === "heading" || (c.kind === "text" && (c.fontSize ?? 16) >= 13)) ??
+      children.find((c) => c.kind === "text") ??
+      (root.kind === "text" ? root : null);
     const title = heading?.text?.trim() || root.text?.trim() || `Tarjeta ${idx + 1}`;
     return {
       id: root.id,
@@ -26,10 +65,27 @@ export function getContainerCards(def: ComponentDef): ContainerCardInfo[] {
 export function findRootCardId(elements: CanvasElement[], elementId: string): string {
   const el = elements.find((e) => e.id === elementId);
   if (!el) return elementId;
-  return el.parentId ? findRootCardId(elements, el.parentId) : el.id;
+  if (el.parentId) return findRootCardId(elements, el.parentId);
+
+  // Si no tiene parentId explícito, verificar si está dentro de algún rectángulo de tarjeta
+  const container = elements.find((candidate) => {
+    if (candidate.id === elementId || candidate.kind !== "rect" || candidate.parentId) return false;
+    if (candidate.width < 80 || candidate.height < 50) return false;
+    if (candidate.width * candidate.height <= el.width * el.height && candidate.kind === el.kind) return false;
+    const cx = el.x + el.width / 2;
+    const cy = el.y + el.height / 2;
+    return (
+      cx >= candidate.x - 2 &&
+      cx <= candidate.x + candidate.width + 2 &&
+      cy >= candidate.y - 2 &&
+      cy <= candidate.y + candidate.height + 2
+    );
+  });
+
+  return container ? container.id : el.id;
 }
 
-/** Duplica una tarjeta y todos sus hijos dentro del componente, insertándola a continuación. */
+/** Duplica una tarjeta y todos sus hijos dentro del componente, acomodándola limpiamente sin sobreponer. */
 export function duplicateCardInComponent(
   def: ComponentDef,
   cardElementId: string,
@@ -38,20 +94,60 @@ export function duplicateCardInComponent(
   const rootEl = def.elements.find((e) => e.id === rootId);
   if (!rootEl) return { component: def, newCardId: cardElementId };
 
-  const children = def.elements.filter((e) => e.parentId === rootId);
+  const children = findCardChildren(def.elements, rootId);
   const newRootId = crypto.randomUUID();
+
+  // Calcular la posición óptima de la nueva tarjeta:
+  // Detectar tarjetas hermanas de tamaño similar en la misma sección
+  const siblingCards = def.elements.filter(
+    (e) => !e.parentId && e.kind === rootEl.kind && Math.abs(e.width - rootEl.width) <= 40 && Math.abs(e.height - rootEl.height) <= 40,
+  );
+
+  let nextX = rootEl.x + 24;
+  let nextY = rootEl.y;
+
+  if (siblingCards.length > 0) {
+    // Ordenar de arriba a abajo y de izquierda a derecha
+    siblingCards.sort((a, b) => (Math.abs(a.y - b.y) > 10 ? a.y - b.y : a.x - b.x));
+    const lastSibling = siblingCards[siblingCards.length - 1];
+    const firstSibling = siblingCards[0];
+
+    // Detectar separación (gap) horizontal típica
+    let gap = 16;
+    const firstRowCards = siblingCards.filter((c) => Math.abs(c.y - firstSibling.y) <= 10);
+    if (firstRowCards.length >= 2) {
+      firstRowCards.sort((a, b) => a.x - b.x);
+      gap = Math.max(8, firstRowCards[1].x - (firstRowCards[0].x + firstRowCards[0].width));
+    }
+
+    const candidateX = lastSibling.x + lastSibling.width + gap;
+    // Si cabe en la misma fila:
+    if (candidateX + rootEl.width <= def.width - 16) {
+      nextX = candidateX;
+      nextY = lastSibling.y;
+    } else {
+      // Salta a la siguiente fila limpiamente (para tener 6, 7, 8 o más tarjetas sin salirse)
+      nextX = firstSibling.x;
+      nextY = lastSibling.y + lastSibling.height + Math.max(16, gap);
+    }
+  }
+
+  const deltaX = nextX - rootEl.x;
+  const deltaY = nextY - rootEl.y;
 
   const clonedRoot: CanvasElement = {
     ...rootEl,
     id: newRootId,
-    x: rootEl.x + 24,
-    y: rootEl.y,
+    x: nextX,
+    y: nextY,
   };
 
   const clonedChildren: CanvasElement[] = children.map((c) => ({
     ...c,
     id: crypto.randomUUID(),
     parentId: newRootId,
+    x: c.x + deltaX,
+    y: c.y + deltaY,
   }));
 
   // Encontrar el último índice de este grupo de tarjeta en el array de elementos
@@ -71,9 +167,13 @@ export function duplicateCardInComponent(
     ...def.elements.slice(insertIndex),
   ];
 
+  // Agrandar la altura del componente si la nueva fila sobrepasa la dimensión
+  const newHeight = Math.max(def.height, nextY + rootEl.height + 24);
+
   return {
     component: {
       ...def,
+      height: newHeight,
       elements: newElements,
     },
     newCardId: newRootId,
@@ -82,11 +182,29 @@ export function duplicateCardInComponent(
 
 const CARD_COLORS = ["#0d99ff", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
 
-/** Agrega una nueva tarjeta limpia y estilizada al contenedor. */
+/** Agrega una nueva tarjeta limpia y estilizada al contenedor. Si ya existen tarjetas, replica su estilo y tamaño. */
 export function addCardToComponent(
   def: ComponentDef,
   customTitle?: string,
 ): { component: ComponentDef; newCardId: string } {
+  // Si el componente ya tiene tarjetas existentes (como las del compañero), clonamos la última para mantener el diseño idéntico
+  const existingCards = getContainerCards(def);
+  if (existingCards.length > 0) {
+    const lastCardId = existingCards[existingCards.length - 1].id;
+    const duplicated = duplicateCardInComponent(def, lastCardId);
+    if (customTitle) {
+      const newHeading = duplicated.component.elements.find(
+        (e) => e.parentId === duplicated.newCardId && (e.role === "heading" || e.kind === "text"),
+      );
+      if (newHeading) {
+        duplicated.component.elements = duplicated.component.elements.map((e) =>
+          e.id === newHeading.id ? { ...e, text: customTitle } : e,
+        );
+      }
+    }
+    return duplicated;
+  }
+
   const newCardId = crypto.randomUUID();
   const topElements = def.elements.filter((e) => !e.parentId);
   const index = topElements.length;
@@ -149,7 +267,7 @@ export function addCardToComponent(
 /** Elimina una tarjeta y todos sus hijos dentro del componente. */
 export function deleteCardFromComponent(def: ComponentDef, cardElementId: string): ComponentDef {
   const rootId = findRootCardId(def.elements, cardElementId);
-  const children = def.elements.filter((e) => e.parentId === rootId);
+  const children = findCardChildren(def.elements, rootId);
   const toDelete = new Set([rootId, ...children.map((c) => c.id)]);
 
   return {
@@ -158,17 +276,22 @@ export function deleteCardFromComponent(def: ComponentDef, cardElementId: string
   };
 }
 
-/** Rellena el componente con 3 tarjetas pre-diseñadas para contenedor horizontal. */
-export function fillComponentWithThreeCards(def: ComponentDef): ComponentDef {
+/** Rellena el componente con N tarjetas pre-diseñadas (3, 4, 5 o más). */
+export function fillComponentWithCards(def: ComponentDef, count = 3): ComponentDef {
   const items = [
     { title: "Atención Vecinal", desc: "Consultas y trámites digitales en línea.", color: "#0d99ff" },
     { title: "Pagos y Tributos", desc: "Pago seguro y al día de contribuciones.", color: "#10b981" },
     { title: "Seguridad y Apoyo", desc: "Canales de contacto y asistencia 24/7.", color: "#8b5cf6" },
+    { title: "Gaceta y Normas", desc: "Leyes, decretos y resoluciones municipales.", color: "#f59e0b" },
+    { title: "Plataformas Digitales", desc: "Sistemas en línea para trámites ciudadanos.", color: "#06b6d4" },
+    { title: "Transparencia", desc: "Rendición de cuentas e información pública.", color: "#ec4899" },
   ];
 
+  const takeItems = items.slice(0, Math.min(count, items.length));
   const newElements: CanvasElement[] = [];
 
-  for (const item of items) {
+  for (let i = 0; i < count; i++) {
+    const item = takeItems[i % takeItems.length];
     const cardId = crypto.randomUUID();
     newElements.push(
       newElement("rect", cardId, { role: "container", x: 0, y: 0, width: 240, height: 190, fill: "#f8fafc", radius: 16 }),
@@ -182,6 +305,11 @@ export function fillComponentWithThreeCards(def: ComponentDef): ComponentDef {
     ...def,
     elements: newElements,
   };
+}
+
+/** Rellena el componente con 3 tarjetas pre-diseñadas para contenedor horizontal. */
+export function fillComponentWithThreeCards(def: ComponentDef): ComponentDef {
+  return fillComponentWithCards(def, 3);
 }
 
 /** Reordena una tarjeta hacia adelante o atrás en el flujo del contenedor. */

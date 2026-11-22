@@ -216,6 +216,84 @@ describe("container-card-rules", () => {
     expect(cards[0].id).toBe("card-2");
     expect(cards[1].id).toBe("card-1");
   });
+
+  it("detecta tarjetas y sus hijos geométricos sin parentId (diseño libre de compañeros)", () => {
+    const flatComp: ComponentDef = {
+      id: "flat-cards",
+      name: "Tarjetas sueltas",
+      description: "Prueba de tarjetas sin parentId",
+      category: "sections",
+      width: 1024,
+      height: 340,
+      custom: true,
+      links: {},
+      elements: [
+        // Tarjeta 1
+        newElement("rect", "card-1", { x: 20, y: 100, width: 180, height: 180, fill: "#bae6fd" }),
+        newElement("text", "card-1-tag", { x: 30, y: 110, width: 100, height: 14, text: "TAG 1" }),
+        newElement("text", "card-1-title", { x: 30, y: 140, width: 150, height: 24, text: "Servicio 1" }),
+        // Tarjeta 2
+        newElement("rect", "card-2", { x: 220, y: 100, width: 180, height: 180, fill: "#bae6fd" }),
+        newElement("text", "card-2-tag", { x: 230, y: 110, width: 100, height: 14, text: "TAG 2" }),
+        newElement("text", "card-2-title", { x: 230, y: 140, width: 150, height: 24, text: "Servicio 2" }),
+      ],
+    };
+
+    const cards = getContainerCards(flatComp);
+    expect(cards).toHaveLength(2);
+    expect(cards[0].id).toBe("card-1");
+    expect(cards[0].elementCount).toBe(3); // rect + tag + title
+    expect(cards[1].id).toBe("card-2");
+    expect(cards[1].elementCount).toBe(3);
+
+    // findRootCardId debe encontrar card-1 a partir de card-1-title
+    expect(findRootCardId(flatComp.elements, "card-1-title")).toBe("card-1");
+  });
+
+  it("salta a la siguiente fila al duplicar cuando la fila actual está llena (ej. más de 5 tarjetas)", () => {
+    // 5 tarjetas de 180px con 20px de separación en un lienzo de 1024px:
+    // x: 20, 220, 420, 620, 820 -> la 5ta llega a 820+180 = 1000px.
+    const fiveCardsComp: ComponentDef = {
+      id: "five-cards",
+      name: "5 Tarjetas en fila",
+      description: "Fila de 5 tarjetas completas",
+      category: "sections",
+      width: 1024,
+      height: 320,
+      custom: true,
+      links: {},
+      elements: [
+        newElement("rect", "c1", { x: 20, y: 100, width: 180, height: 180 }),
+        newElement("text", "c1-t", { parentId: "c1", text: "T1", x: 30, y: 120, width: 150, height: 20 }),
+        newElement("rect", "c2", { x: 220, y: 100, width: 180, height: 180 }),
+        newElement("text", "c2-t", { parentId: "c2", text: "T2", x: 230, y: 120, width: 150, height: 20 }),
+        newElement("rect", "c3", { x: 420, y: 100, width: 180, height: 180 }),
+        newElement("text", "c3-t", { parentId: "c3", text: "T3", x: 430, y: 120, width: 150, height: 20 }),
+        newElement("rect", "c4", { x: 620, y: 100, width: 180, height: 180 }),
+        newElement("text", "c4-t", { parentId: "c4", text: "T4", x: 630, y: 120, width: 150, height: 20 }),
+        newElement("rect", "c5", { x: 820, y: 100, width: 180, height: 180 }),
+        newElement("text", "c5-t", { parentId: "c5", text: "T5", x: 830, y: 120, width: 150, height: 20 }),
+      ],
+    };
+
+    // Duplicar la 5ta tarjeta para obtener la 6ta tarjeta
+    const { component: updated, newCardId } = duplicateCardInComponent(fiveCardsComp, "c5");
+    const cards = getContainerCards(updated);
+    expect(cards).toHaveLength(6);
+
+    const sixthCard = updated.elements.find((e) => e.id === newCardId)!;
+    // Como 820 + 180 + 20 + 180 = 1200 > 1024, debe saltar a la fila 2 alineado a la izquierda (x: 20)
+    expect(sixthCard.x).toBe(20);
+    expect(sixthCard.y).toBe(300); // 100 + 180 + 20
+    // La altura del componente debe haberse expandido automáticamente
+    expect(updated.height).toBeGreaterThanOrEqual(300 + 180 + 24);
+
+    // Y los hijos de la 6ta tarjeta deben tener coordenadas congruentes y parentId
+    const sixthChild = updated.elements.find((e) => e.parentId === newCardId)!;
+    expect(sixthChild).toBeDefined();
+    expect(sixthChild.x).toBe(30);
+    expect(sixthChild.y).toBe(320);
+  });
 });
 
 

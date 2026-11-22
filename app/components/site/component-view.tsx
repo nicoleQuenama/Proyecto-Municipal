@@ -462,9 +462,9 @@ function PositionedElement({
             className="absolute -top-3 -right-3"
           />
         )}
-        {selected && interaction.flow && !interaction.isHeaderOrFooter && (
+        {selected && (interaction.flow || interaction.onDuplicateCard) && !interaction.isHeaderOrFooter && (
           <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border border-line bg-canvas/95 px-1.5 py-0.5 shadow-lg backdrop-blur-xs">
-            {interaction.onReorderFlow && (
+            {interaction.onReorderFlow && interaction.flow && (
               <>
                 <button
                   type="button"

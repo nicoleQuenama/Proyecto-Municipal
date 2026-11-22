@@ -25,6 +25,7 @@ import {
   deleteCardFromComponent,
   duplicateCardInComponent,
   fillComponentWithThreeCards,
+  fillComponentWithCards,
   findRootCardId,
   getContainerCards,
   organizeFooterIntoColumns,
@@ -180,6 +181,12 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleFillThreeCards = () => {
     if (!canEditContent) return;
     const updated = fillComponentWithThreeCards(def);
+    dispatch({ type: "component/save", component: updated });
+  };
+
+  const handleFillCards = (count: number) => {
+    if (!canEditContent) return;
+    const updated = fillComponentWithCards(def, count);
     dispatch({ type: "component/save", component: updated });
   };
 
@@ -856,6 +863,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           onDuplicateCard={canEditContent ? handleDuplicateCard : undefined}
           onDeleteCard={canEditContent ? handleDeleteCard : undefined}
           onFillThreeCards={canEditContent ? handleFillThreeCards : undefined}
+          onFillCards={canEditContent ? handleFillCards : undefined}
           onSelectCard={(id) => dispatch({ type: "element/select", id })}
           category={def.category}
           componentId={def.id}
