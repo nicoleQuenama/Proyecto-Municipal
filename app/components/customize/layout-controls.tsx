@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useViewport } from "../viewport/viewport-context";
 import { DesktopIcon, TabletIcon, MobileIcon } from "../viewport/icons";
 import { colorInputValue } from "../format/format-options";
+import { BRAND_CARD_COLORS } from "../auth/brand-manual";
 import { NumberField } from "../ui/number-field";
 import { Collapsible } from "../ui/collapsible";
 import {
@@ -349,21 +350,34 @@ function OptionCardsManager({
                     </button>
 
                     <div className="flex items-center gap-1 shrink-0">
-                      {/* Selector de color */}
+                      {/* Selector de color de tarjeta según Manual de Marca */}
                       {onCardColorChange && (
-                        <label
-                          title={`Color de fondo de ${card.title}`}
-                          className="relative flex size-4.5 shrink-0 items-center justify-center rounded border border-line shadow-2xs hover:scale-110 transition-transform cursor-pointer"
-                          style={{ background: card.fill && card.fill !== "transparent" ? card.fill : "#ffffff" }}
+                        <select
+                          title={`Color de fondo de ${card.title} (Manual de Marca)`}
+                          aria-label={`Color de fondo de ${card.title}`}
+                          value={
+                            BRAND_CARD_COLORS.find(
+                              (c) => c.value.toLowerCase() === (card.fill || "").toLowerCase()
+                            )?.value ?? ""
+                          }
+                          onChange={(e) => {
+                            if (e.target.value) onCardColorChange(card.id, e.target.value);
+                          }}
+                          className="h-5 rounded border border-line bg-canvas px-1 text-[9px] text-ink outline-none focus:border-accent cursor-pointer [&>option]:bg-panel max-w-[85px] truncate"
                         >
-                          <input
-                            type="color"
-                            aria-label={`Color de fondo de ${card.title}`}
-                            value={colorInputValue(card.fill || "#ffffff")}
-                            onChange={(e) => onCardColorChange(card.id, e.target.value)}
-                            className="absolute inset-0 size-full cursor-pointer opacity-0"
-                          />
-                        </label>
+                          {!BRAND_CARD_COLORS.some(
+                            (c) => c.value.toLowerCase() === (card.fill || "").toLowerCase()
+                          ) && (
+                            <option value="" disabled>
+                              Color institucional...
+                            </option>
+                          )}
+                          {BRAND_CARD_COLORS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.name}
+                            </option>
+                          ))}
+                        </select>
                       )}
 
                       {/* Duplicar */}
@@ -1017,21 +1031,34 @@ export function LayoutControls({
                           {idx + 1}. {card.title}
                         </button>
                         <div className="flex items-center gap-1">
-                          {/* Selector de color de fondo para la tarjeta */}
-                          {!isButtons && (
-                            <label
-                              title={`Cambiar color de fondo de ${card.title}`}
-                              className="relative flex size-4.5 shrink-0 items-center justify-center rounded border border-line shadow-2xs hover:scale-110 transition-transform cursor-pointer"
-                              style={{ background: card.fill && card.fill !== "transparent" ? card.fill : "#ffffff" }}
+                          {/* Selector de color de fondo para la tarjeta según Manual de Marca */}
+                          {!isButtons && onCardColorChange && (
+                            <select
+                              title={`Color de fondo de ${card.title} (Manual de Marca)`}
+                              aria-label={`Color de fondo de ${card.title}`}
+                              value={
+                                BRAND_CARD_COLORS.find(
+                                  (c) => c.value.toLowerCase() === (card.fill || "").toLowerCase()
+                                )?.value ?? ""
+                              }
+                              onChange={(e) => {
+                                if (e.target.value) onCardColorChange(card.id, e.target.value);
+                              }}
+                              className="h-5 rounded border border-line bg-canvas px-1 text-[9px] text-ink outline-none focus:border-accent cursor-pointer [&>option]:bg-panel max-w-[85px] truncate"
                             >
-                              <input
-                                type="color"
-                                aria-label={`Color de fondo de ${card.title}`}
-                                value={colorInputValue(card.fill || "#ffffff")}
-                                onChange={(e) => onCardColorChange?.(card.id, e.target.value)}
-                                className="absolute inset-0 size-full cursor-pointer opacity-0"
-                              />
-                            </label>
+                              {!BRAND_CARD_COLORS.some(
+                                (c) => c.value.toLowerCase() === (card.fill || "").toLowerCase()
+                              ) && (
+                                <option value="" disabled>
+                                  Color institucional...
+                                </option>
+                              )}
+                              {BRAND_CARD_COLORS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
                           )}
                           {onDuplicateCard && (
                             <button

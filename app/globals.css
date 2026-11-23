@@ -13,7 +13,75 @@
   --color-line: #444444;
   --color-ink: #ffffff;
   --color-ink-dim: #a3a3a3;
-  --color-accent: #0d99ff;
+  --color-accent: #00A7D6;
+
+  /* --- BRAND TOKENS GAMC --- */
+  --color-brand-primary: #00A7D6;
+  --color-brand-primary-hover: #008BB3;
+  --color-brand-primary-light: #34C3E8;
+  --color-brand-primary-soft: #8AD4E7;
+  --color-brand-primary-tint: #E6F6FB;
+  --color-brand-secondary: #462D81;
+  --color-brand-secondary-light: #695CA8;
+  --color-brand-accent-warm: #F47B38;
+  --color-brand-accent-pink: #F05D80;
+  --color-brand-accent-teal: #0DA593;
+  --color-brand-success: #0DA593;
+  --color-brand-success-bg: #ABDBCB;
+  --color-brand-warning: #F47B38;
+  --color-brand-warning-bg: #FFE6C2;
+  --color-brand-warning-highlight: #FFDA18;
+  --color-brand-error: #A91E5D;
+  --color-brand-error-bg: #F5C3C0;
+}
+
+/* --- DESIGN SYSTEM SPECIFICATION: COCHA (G.A.M.C.) TOKENS --- */
+:root {
+  /* --- BRAND PRIMARY (Celeste Institucional) --- */
+  --color-primary: #00A7D6;
+  --color-primary-hover: #008BB3;
+  --color-primary-light: #34C3E8;
+  --color-primary-soft: #8AD4E7;
+  --color-primary-tint: #E6F6FB;
+  --color-primario: #00A7D6;
+  --color-celeste-oscuro: #008BB3;
+
+  /* --- BRAND SECONDARY (Contraste Institucional) --- */
+  --color-secondary: #462D81;
+  --color-secondary-light: #695CA8;
+  --color-secundario: #462D81;
+
+  /* --- ACCENTS (Diferenciación de módulos / CTAs) --- */
+  --color-accent-warm: #F47B38;
+  --color-accent-pink: #F05D80;
+  --color-accent-teal: #0DA593;
+  --color-acento: #F47B38;
+
+  /* --- SEMANTIC / FEEDBACK STATES --- */
+  --color-success: #0DA593;
+  --color-success-bg: #ABDBCB;
+  --color-warning: #F47B38;
+  --color-warning-bg: #FFE6C2;
+  --color-warning-highlight: #FFDA18;
+  --color-error: #A91E5D;
+  --color-error-bg: #F5C3C0;
+  --color-info: #00A7D6;
+
+  /* --- NEUTRALS & SURFACES (60% de la interfaz) --- */
+  --bg-main: #FFFFFF;
+  --bg-surface: #F8FAFC;
+  --border-subtle: #E2E8F0;
+  --color-fondo: #FFFFFF;
+  --color-superficie: #F8FAFC;
+  --color-borde: #E2E8F0;
+
+  /* --- TYPOGRAPHY COLORS (WCAG AA/AAA Compliant) --- */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-on-primary: #FFFFFF;
+  --color-texto: #0F172A;
+  --color-texto-secundario: #475569;
 }
 
 /* Las líneas fijas «& {» y «}» del editor de CSS de un elemento. */

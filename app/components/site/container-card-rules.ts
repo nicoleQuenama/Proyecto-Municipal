@@ -186,7 +186,7 @@ export function duplicateCardInComponent(
   };
 }
 
-const CARD_COLORS = ["#0d99ff", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"];
+const CARD_COLORS = ["#ffffff", "#f8fafc", "#e6f6fb", "#00a7d6", "#462d81", "#34c3e8", "#f47b38", "#0da593"];
 
 /** Agrega una nueva tarjeta limpia y estilizada al contenedor. Si ya existen tarjetas, adapta su tamaño y posición pero con contenido y color individual nuevo. */
 export function addCardToComponent(
