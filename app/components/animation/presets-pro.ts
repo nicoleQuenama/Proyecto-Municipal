@@ -9,7 +9,7 @@ const EXPO_OUT = "cubic-bezier(.16,1,.3,1)";
 export const PRO_PRESETS = {
   float: {
     label: "Flotar",
-    icon: "☁",
+    icon: "≋",
     ownEasing: true,
     parts: ({ distance }) => [
       { prop: "move", from: ORIGIN, to: px(0, -distance / 3), easing: "ease-in-out", iterations: 0, direction: "alternate" },
@@ -25,7 +25,7 @@ export const PRO_PRESETS = {
   },
   "glow-pulse": {
     label: "Brillo",
-    icon: "✦",
+    icon: "•",
     ownEasing: true,
     parts: ({ distance }) => [
       { prop: "glow", from: 0, to: distance, easing: "ease-in-out", iterations: 0, direction: "alternate" },
@@ -33,7 +33,7 @@ export const PRO_PRESETS = {
   },
   heartbeat: {
     label: "Latido doble",
-    icon: "♡",
+    icon: "◈",
     ownEasing: true,
     parts: ({ distance }) => {
       const big = 1 + distance / 300;
@@ -88,7 +88,7 @@ export const PRO_PRESETS = {
   },
   "ken-burns": {
     label: "Zoom suave",
-    icon: "⛶",
+    icon: "⊡",
     ownEasing: true,
     durationScale: 6,
     parts: ({ distance }) => [

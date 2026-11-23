@@ -37,8 +37,15 @@ export function MenuLayer({ setup, view, blockId, live, links, behaviors, backgr
     background?.includes("#0") ||
     background?.includes("#1") ||
     background?.includes("#2") ||
+    background?.includes("gradient") ||
+    background?.includes("celeste") ||
+    background?.includes("primario") ||
+    background?.includes("marino") ||
+    panelBg?.includes("gradient") ||
+    panelBg?.includes("celeste") ||
+    panelBg?.includes("primario") ||
     (view.styles?.$section?.classes && /bg-(slate|neutral|zinc|gray)-(700|800|900|950)|bg-black/.test(view.styles.$section.classes));
-  const iconColor = config.iconColor ?? (isDark ? "#f8fafc" : items.find((i) => i.color)?.color ?? "#0f172a");
+  const iconColor = config.iconColor ?? (isDark ? "#ffffff" : items.find((i) => i.color)?.color ?? "#0f172a");
 
   return (
     <>

@@ -2,7 +2,7 @@
 
 export type ControlKind = "button" | "submit" | "input" | "textarea" | "select" | "checkbox";
 
-export type InputType = "text" | "email" | "tel" | "number" | "password" | "date" | "search";
+export type InputType = "text" | "email" | "tel" | "number" | "password" | "date" | "search" | "radio";
 
 /** Los datos del rol; el aspecto (relleno, esquinas, tipografía) sigue siendo el del propio elemento. */
 export interface ControlSpec {
@@ -33,6 +33,7 @@ export const INPUT_TYPE_LABELS: Record<InputType, string> = {
   password: "Contraseña",
   date: "Fecha",
   search: "Búsqueda",
+  radio: "Seleccionables",
 };
 
 /** Los datos con que empieza cada rol al asignarlo. */

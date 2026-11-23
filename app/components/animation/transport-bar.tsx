@@ -30,7 +30,9 @@ export function TransportBar(props: TransportBarProps) {
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1 border-y border-line bg-panel px-3 py-1.5">
-      <button type="button" aria-label="Ir al inicio" title="Ir al inicio" onClick={props.onRestart} className={`${icon} cursor-pointer`}>⏮</button>
+      <button type="button" aria-label="Ir al inicio" title="Ir al inicio" onClick={props.onRestart} className={`${icon} cursor-pointer`}>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
+      </button>
       <button
         type="button"
         aria-label={playing ? "Pausa" : "Reproducir"}
@@ -38,9 +40,15 @@ export function TransportBar(props: TransportBarProps) {
         onClick={props.onToggle}
         className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm text-white cursor-pointer"
       >
-        {playing ? "⏸" : "▶"}
+        {playing ? (
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+        ) : (
+          <svg className="h-3.5 w-3.5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+        )}
       </button>
-      <button type="button" aria-label="Repetir" title="Repetir desde el inicio" onClick={props.onReplay} className={`${icon} cursor-pointer`}>↻</button>
+      <button type="button" aria-label="Repetir" title="Repetir desde el inicio" onClick={props.onReplay} className={`${icon} cursor-pointer`}>
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" /><path d="M3 21v-5h5" /></svg>
+      </button>
       <span className="mx-2 font-mono text-xs tabular-nums">
         {formatTime(time)} <span className="text-ink-dim">/ {formatTime(total)}</span>
       </span>

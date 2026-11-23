@@ -42,6 +42,9 @@ export function panelBackground(view: ComponentDef, config: MenuConfig, sectionB
   const backdrop = view.elements.find((e) => e.kind === "rect" && !e.hidden && !NO_FILL.has(e.fill) && isBackdrop(e, size));
   if (backdrop?.fill) return backdrop.fill;
 
+  const gradientRect = view.elements.find((e) => e.kind === "rect" && !e.hidden && e.fill?.includes("gradient"));
+  if (gradientRect?.fill) return gradientRect.fill;
+
   const classes = view.styles?.[SECTION_KEY]?.classes || "";
   if (/bg-(slate|zinc|neutral|gray|stone)-(700|800|900|950)/.test(classes)) {
     return "#1e293b";
@@ -52,6 +55,15 @@ export function panelBackground(view: ComponentDef, config: MenuConfig, sectionB
 /** El color del texto: el elegido; si no, el del elemento, salvo que no se lea sobre el fondo (entonces claro u oscuro). */
 export function panelText(background: string, preferred: string, chosen?: string): string {
   if (chosen) return chosen;
+  if (
+    background?.includes("gradient") ||
+    background?.includes("celeste") ||
+    background?.includes("primario") ||
+    background?.includes("marino") ||
+    background?.includes("slate")
+  ) {
+    return LIGHT;
+  }
   const ratio = contrast(background, preferred);
   if (ratio === null || ratio >= MIN_CONTRAST) return preferred;
   const bg = channels(background);

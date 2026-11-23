@@ -55,10 +55,16 @@ export function SearchDialog() {
       ? rawHits
       : rawHits.filter((hit) => hit.category === selectedCategory);
 
-  const handleSelectHit = (pageId?: string) => {
+  const handleSelectHit = (pageId?: string, blockId?: string) => {
     if (pageId) {
       dispatch({ type: "page/select", id: pageId });
       navigation.followLink?.({ kind: "page", pageId });
+      if (blockId) {
+        setTimeout(() => {
+          const target = document.querySelector(`[data-block-id="${blockId}"]`) || document.querySelector(`[data-target*="${blockId}"]`);
+          target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 120);
+      }
     }
     setOpen(false);
   };
@@ -115,7 +121,7 @@ export function SearchDialog() {
         </div>
 
         {/* Filtros por Categoría */}
-        {query.trim().length > 0 && rawHits.length > 0 && (
+        {rawHits.length > 0 && (
           <div className="flex items-center gap-1.5 border-b border-line/60 px-4 py-2 bg-canvas/20 overflow-x-auto text-xs">
             <span className="text-[11px] text-ink-dim font-medium mr-1 shrink-0">Filtrar:</span>
             {categories.map((cat) => {
@@ -140,7 +146,7 @@ export function SearchDialog() {
 
         {/* Contenido de resultados o sugerencias */}
         <div className="min-h-60 max-h-[60vh] overflow-y-auto p-4 flex flex-col gap-3">
-          {query.trim().length === 0 ? (
+          {query.trim().length === 0 && selectedCategory === "all" ? (
             <div className="flex flex-col gap-4 py-2">
               <div>
                 <span className="text-[11px] font-semibold text-ink-dim uppercase tracking-wider">
@@ -162,13 +168,13 @@ export function SearchDialog() {
 
               <div className="pt-2 border-t border-line/60">
                 <span className="text-[11px] font-semibold text-ink-dim uppercase tracking-wider">
-                  Trámites y servicios destacados
+                  Catálogo de trámites y servicios municipales ({hits.length})
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                  {hits.slice(0, 4).map((hit) => (
+                  {hits.map((hit) => (
                     <div
                       key={hit.id}
-                      onClick={() => handleSelectHit(hit.pageId)}
+                      onClick={() => handleSelectHit(hit.pageId, hit.blockId)}
                       className="flex flex-col gap-1 rounded-xl border border-line/80 bg-canvas/60 p-3 hover:border-accent hover:bg-accent/5 hover:shadow-xs transition-all cursor-pointer group"
                     >
                       <div className="flex items-center justify-between">
@@ -199,7 +205,7 @@ export function SearchDialog() {
                 {hits.map((hit) => (
                   <li
                     key={hit.id}
-                    onClick={() => handleSelectHit(hit.pageId)}
+                    onClick={() => handleSelectHit(hit.pageId, hit.blockId)}
                     className="flex items-start justify-between gap-3 rounded-xl border border-line bg-canvas p-3.5 hover:border-accent hover:bg-accent/5 hover:shadow-xs transition-all cursor-pointer group"
                   >
                     <div className="flex flex-col gap-1 min-w-0 flex-1">

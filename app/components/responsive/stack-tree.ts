@@ -26,9 +26,12 @@ export function buildTree(elements: CanvasElement[]): StackNode[] {
   const roots: StackNode[] = [];
 
   for (const el of elements) {
-    const parent = elements
-      .filter((p) => p !== el && isPanel(p) && area(p) > area(el) && inside(el, p))
-      .sort((a, b) => area(a) - area(b))[0];
+    let parent = el.parentId ? elements.find((p) => p.id === el.parentId) : undefined;
+    if (!parent) {
+      parent = elements
+        .filter((p) => p !== el && isPanel(p) && area(p) > area(el) && inside(el, p))
+        .sort((a, b) => area(a) - area(b))[0];
+    }
     (parent ? nodes.get(parent.id)!.children : roots).push(nodes.get(el.id)!);
   }
   return roots;

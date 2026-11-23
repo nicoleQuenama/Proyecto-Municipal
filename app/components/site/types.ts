@@ -178,6 +178,10 @@ export interface BlockBox {
   radius?: SizeValue;
   /** Cómo se mezcla la sección con lo que tiene detrás (multiplicar, pantalla…): deja ver el fondo a través de ella. */
   blend?: BlendMode;
+  /** Margen vertical a lo alto (px) aplicado arriba y abajo de la sección. */
+  marginY?: number;
+  /** Relleno vertical a lo alto (px) aplicado arriba y abajo del interior de la sección. */
+  paddingY?: number;
 }
 
 /**

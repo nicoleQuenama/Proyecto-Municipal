@@ -82,7 +82,11 @@ export function LayerRow(props: LayerRowProps) {
         {element.hidden ? "◌" : "◉"}
       </button>
       <button type="button" aria-label={`${element.locked ? "Desbloquear" : "Bloquear"} ${name}`} aria-pressed={element.locked === true} title={element.locked ? "Desbloquear" : "Bloquear (no se mueve ni se selecciona en el lienzo)"} onClick={props.onToggleLocked} className={`${iconButton} ${element.locked ? "text-accent" : ""} cursor-pointer`}>
-        {element.locked ? "⚿" : "○"}
+        {element.locked ? (
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+        ) : (
+          <svg className="h-3.5 w-3.5 opacity-40 hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>
+        )}
       </button>
     </li>
   );

@@ -91,6 +91,16 @@ describe("block actions", () => {
     const placed = siteReducer(s, { type: "block/place", pageId: "p1", blockId: "b1", placement: { x: 100, y: 100, width: 300 } });
     expect(placed.pages[0].blocks[0].placement).toBeUndefined();
   });
+
+  // Un click antiguo guardado con placement null no debe tumbar el editor
+  it("ignora un placement nulo", () => {
+    let s = { ...base(), components: [...INITIAL_SITE.components, comp("c1")] };
+    s = siteReducer(s, { type: "page/create", id: "p1", name: "Home" });
+    s = siteReducer(s, { type: "block/add", id: "b1", componentId: "c1" });
+
+    const untouched = siteReducer(s, { type: "block/place", pageId: "p1", blockId: "b1", placement: null as never });
+    expect(untouched).toBe(s);
+  });
 });
 
 describe("insertAfterSelected", () => {

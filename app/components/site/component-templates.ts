@@ -1,6 +1,6 @@
 import type { LinkTarget } from "../navigation/types";
-import { CODE_COMPONENT_ID } from "./code-defaults";
-import { type CanvasElement, type ComponentDef, type CustomStyle, type ElementKind } from "./types";
+import { CODE_COMPONENT_ID } from "./code-defaults.ts";
+import type { CanvasElement, ComponentDef, CustomStyle, ElementKind } from "./types.ts";
 
 /** Valores comunes; cada tipo de elemento ajusta lo que necesita. */
 const BASE: Omit<CanvasElement, "id" | "kind"> = {

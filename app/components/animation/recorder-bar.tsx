@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigation } from "../navigation/navigation-context";
+import { MarginControl } from "../viewport/margin-control";
 import { useCurrentPage, useSite } from "../site/site-context";
 import { useRecorder } from "./recorder-context";
 import { AnimatePanel } from "./animate-panel";
@@ -72,7 +73,7 @@ export function RecorderBar() {
 
   if (minimized && startedAt === null) {
     return (
-      <div className="absolute bottom-20 left-1/2 z-30 -translate-x-1/2">
+      <div className="absolute bottom-20 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2">
         <button
           type="button"
           onClick={() => setMinimized(false)}
@@ -80,7 +81,6 @@ export function RecorderBar() {
           aria-label="Abrir barra de animaciones"
           className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-[11px] font-medium text-ink shadow-lg transition-all hover:bg-hover hover:scale-105 cursor-pointer"
         >
-          <span className="text-accent font-bold">✦</span>
           <span>Animar</span>
           {animations.length > 0 && (
             <span className="rounded-full bg-accent/20 px-1.5 py-0.2 text-[9px] font-semibold text-accent">
@@ -88,42 +88,46 @@ export function RecorderBar() {
             </span>
           )}
         </button>
+        <MarginControl />
       </div>
     );
   }
 
   return (
     <div className="absolute bottom-20 left-1/2 z-30 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-col-reverse items-center gap-1.5">
-      <div role="toolbar" aria-label="Grabador de animaciones" className="flex items-center gap-1 rounded-xl border border-line bg-panel p-1.5 text-ink shadow-2xl">
-        {startedAt === null ? (
-          <>
-            <Button
-              disabled={!canAddEffect}
-              title={canAddEffect ? "Elige un efecto sin grabar nada" : "Selecciona una sección o un elemento"}
-              onClick={() => setAnimating((open) => !open)}
-              className="bg-accent text-white hover:bg-accent/80"
-            >
-              ✦ Animar
-            </Button>
-            <Button onClick={start}>
-              <span className="size-2.5 rounded-full bg-red-500" aria-hidden /> Start Animation
-            </Button>
-            <Button disabled={animations.length === 0} onClick={() => openPreview(animations[animations.length - 1].id)}>
-              ▶ Animaciones ({animations.length})
-            </Button>
-            <button
-              type="button"
-              onClick={() => setMinimized(true)}
-              title="Ocultar barra de animaciones"
-              aria-label="Minimizar barra de animaciones"
-              className="ml-1 flex h-6 w-6 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
-            >
-              ×
-            </button>
-          </>
-        ) : (
-          <Recording since={startedAt} />
-        )}
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
+        <div role="toolbar" aria-label="Grabador de animaciones" className="flex items-center gap-1 rounded-xl border border-line bg-panel p-1.5 text-ink shadow-2xl">
+          {startedAt === null ? (
+            <>
+              <Button
+                disabled={!canAddEffect}
+                title={canAddEffect ? "Elige un efecto sin grabar nada" : "Selecciona una sección o un elemento"}
+                onClick={() => setAnimating((open) => !open)}
+                className="bg-accent text-white hover:bg-accent/80"
+              >
+                Animar
+              </Button>
+              <Button onClick={start}>
+                <span className="size-2.5 rounded-full bg-red-500" aria-hidden /> Iniciar grabación
+              </Button>
+              <Button disabled={animations.length === 0} onClick={() => openPreview(animations[animations.length - 1].id)}>
+                Animaciones ({animations.length})
+              </Button>
+              <button
+                type="button"
+                onClick={() => setMinimized(true)}
+                title="Ocultar barra de animaciones"
+                aria-label="Minimizar barra de animaciones"
+                className="ml-1 flex h-6 w-6 items-center justify-center rounded text-xs text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
+              >
+                ×
+              </button>
+            </>
+          ) : (
+            <Recording since={startedAt} />
+          )}
+        </div>
+        <MarginControl />
       </div>
       {animating && startedAt === null && canAddEffect && (
         <AnimatePanel key={`${site.selectedId}:${site.selectedElementId}:${site.alsoSelectedIds?.join(",")}`} onClose={() => setAnimating(false)} />

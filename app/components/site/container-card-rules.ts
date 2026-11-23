@@ -1,5 +1,5 @@
-import { SECTION_KEY, type CanvasElement, type ComponentDef } from "./types";
-import { newElement } from "./component-templates";
+import { SECTION_KEY, type CanvasElement, type ComponentDef } from "./types.ts";
+import { newElement } from "./component-templates.ts";
 
 export interface ContainerCardInfo {
   id: string;
@@ -34,9 +34,10 @@ export function findCardChildren(elements: CanvasElement[], rootId: string): Can
 export function getContainerCards(def: ComponentDef): ContainerCardInfo[] {
   const topRoots = def.elements.filter((e) => !e.parentId);
 
-  // Identificar si hay tarjetas rectangulares contenedoras (con role "container" o con hijos)
+  // Identificar si hay tarjetas rectangulares contenedoras (con role "container" o rectángulos con hijos)
   const cardsWithChildren = topRoots.filter((root) => {
     if (root.role === "container") return true;
+    if (root.id.endsWith("-bg") || root.id.includes("bg-") || (root.role as string) === "background" || root.role === "button") return false;
     if (root.kind === "rect" && root.width >= 100 && root.height >= 60) {
       if (root.width >= def.width * 0.85 && root.height >= def.height * 0.8) return false;
       const kids = findCardChildren(def.elements, root.id);
@@ -45,7 +46,8 @@ export function getContainerCards(def: ComponentDef): ContainerCardInfo[] {
     return false;
   });
 
-  const rootsToUse = cardsWithChildren.length > 0 ? cardsWithChildren : topRoots;
+  // Solo devolvemos tarjetas si realmente existen en el componente; no convertir cualquier elemento o figura en tarjeta
+  const rootsToUse = cardsWithChildren;
 
   return rootsToUse.map((root, idx) => {
     const children = findCardChildren(def.elements, root.id);
@@ -69,10 +71,12 @@ export function findRootCardId(elements: CanvasElement[], elementId: string): st
   if (!el) return elementId;
   if (el.parentId) return findRootCardId(elements, el.parentId);
 
-  // Si no tiene parentId explícito, verificar si está dentro de algún rectángulo de tarjeta
+  // Si no tiene parentId explícito, verificar si está dentro de algún contenedor de tarjeta real (no fondos ni formas generales)
   const container = elements.find((candidate) => {
     if (candidate.id === elementId || candidate.kind !== "rect" || candidate.parentId) return false;
-    if (candidate.width < 80 || candidate.height < 50) return false;
+    if (candidate.id.endsWith("-bg") || candidate.id.includes("bg-") || (candidate.role as string) === "background") return false;
+    if (candidate.width < 100 || candidate.height < 60) return false;
+    if (candidate.width >= 900 && candidate.height >= 500) return false;
     if (candidate.width * candidate.height <= el.width * el.height && candidate.kind === el.kind) return false;
     const cx = el.x + el.width / 2;
     const cy = el.y + el.height / 2;
@@ -581,7 +585,7 @@ export function createDefaultMunicipalFooter(id?: string): ComponentDef {
 
   return {
     id: compId,
-    name: "Pie de Página Municipal Oficial",
+    name: "Portal · Cierre institucional",
     description: "Cierre institucional en 4 columnas limpias con escudo, trámites, normas y contacto",
     category: "navigation",
     width: 1024,
@@ -917,20 +921,20 @@ export function createDefaultMunicipalHeader(id?: string): ComponentDef {
 
   return {
     id: compId,
-    name: "Cabecera Municipal Oficial",
-    description: "Barra de navegación institucional blanca con escudo, enlaces y buscador ciudadano",
+    name: "Encabezado del portal",
+    description: "Barra de navegación institucional con degradado oficial de la marca, enlaces y buscador ciudadano",
     category: "navigation",
     width: 1024,
-    height: 72,
+    height: 88,
     custom: true,
     styles: {
       [SECTION_KEY]: {
-        classes: "flex items-center justify-between px-6 py-3.5 bg-white text-slate-800 border-b border-slate-200/80 w-full shadow-xs",
-        css: "",
+        classes: "flex items-center justify-between px-6 py-3.5 text-white w-full shadow-md",
+        css: "background: linear-gradient(100deg, var(--color-celeste-oscuro) 0%, var(--color-primario) 100%);",
       },
     },
     elements: [
-      newElement("rect", nextId(), { role: "none", x: 0, y: 0, width: 1024, height: 72, fill: "#ffffff", radius: 0 }),
+      newElement("rect", nextId(), { role: "none", x: 0, y: 0, width: 1024, height: 88, fill: "linear-gradient(100deg, var(--color-celeste-oscuro) 0%, var(--color-primario) 100%)", radius: 0 }),
       newElement("rect", nextId(), { role: "none", x: 0, y: 71, width: 1024, height: 1, fill: "#e5e7eb", radius: 0 }),
       newElement("ellipse", nextId(), {
         role: "image",
@@ -1043,4 +1047,891 @@ export function deleteElementFromHeader(def: ComponentDef, elementId: string): C
     elements: def.elements.filter((e) => e.id !== elementId),
   };
 }
+
+/**
+ * Crea una sección Hero para la página de Buscador Municipal con título, descripción,
+ * caja de búsqueda interactiva y botones de acceso rápido que abren el buscador modal.
+ */
+export function createMunicipalSearchHero(id?: string): ComponentDef {
+  const compId = id || crypto.randomUUID();
+  let count = 0;
+  const nextId = () => `${compId}-e${++count}`;
+
+  return {
+    id: compId,
+    name: "Portal · Buscador Hero",
+    description: "Cabecera institucional con barra de búsqueda rápida y disparador del buscador modal de trámites",
+    category: "sections",
+    width: 1024,
+    height: 250,
+    custom: true,
+    styles: {
+      [SECTION_KEY]: {
+        classes: "w-full py-8 px-6",
+        css: "background: linear-gradient(100deg, var(--color-celeste-oscuro) 0%, var(--color-primario) 100%);",
+      },
+    },
+    elements: [
+      newElement("rect", nextId(), {
+        role: "none",
+        x: 0,
+        y: 0,
+        width: 1024,
+        height: 250,
+        fill: "linear-gradient(100deg, var(--color-celeste-oscuro) 0%, var(--color-primario) 100%)",
+        radius: 0,
+      }),
+      newElement("text", nextId(), {
+        role: "heading",
+        x: 32,
+        y: 20,
+        width: 450,
+        height: 16,
+        text: "PORTAL DE ATENCIÓN Y TRÁMITES GAMC",
+        fontSize: 11,
+        color: "var(--color-acento, #ffd200)",
+        bold: true,
+      }),
+      newElement("text", nextId(), {
+        role: "heading",
+        x: 32,
+        y: 42,
+        width: 720,
+        height: 38,
+        text: "Buscador de Trámites y Servicios",
+        fontSize: 32,
+        color: "#ffffff",
+        bold: true,
+      }),
+      newElement("text", nextId(), {
+        role: "text",
+        x: 32,
+        y: 86,
+        width: 760,
+        height: 22,
+        text: "Encuentra trámites digitales, licencias, catastro, salud y atención ciudadana de Cochabamba.",
+        fontSize: 14,
+        color: "#e2e8f0",
+      }),
+      // Input funcional de búsqueda interactiva
+      newElement("rect", nextId(), {
+        role: "none",
+        control: {
+          kind: "input",
+          inputType: "search",
+          name: "search-query",
+          placeholder: "¿Qué trámite o servicio estás buscando? (Ej. licencias, catastro, RUAT...)",
+        },
+        x: 32,
+        y: 122,
+        width: 610,
+        height: 48,
+        fill: "#ffffff",
+        color: "#0f172a",
+        radius: 8,
+        fontSize: 14,
+      }),
+      // Botón de búsqueda modal
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 654,
+        y: 122,
+        width: 170,
+        height: 48,
+        fill: "var(--color-acento, #ffd200)",
+        radius: 8,
+        text: "Buscar trámites",
+        color: "#0f172a",
+        bold: true,
+        fontSize: 14,
+        align: "center",
+      }),
+      // Sugerencias rápidas
+      newElement("text", nextId(), {
+        role: "text",
+        x: 32,
+        y: 188,
+        width: 130,
+        height: 20,
+        text: "Búsquedas rápidas:",
+        fontSize: 11,
+        color: "#e2e8f0",
+        bold: true,
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 164,
+        y: 184,
+        width: 115,
+        height: 28,
+        fill: "rgba(255, 255, 255, 0.18)",
+        radius: 6,
+        text: "Ventanilla Única",
+        color: "#ffffff",
+        fontSize: 11,
+        bold: true,
+        align: "center",
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 287,
+        y: 184,
+        width: 80,
+        height: 28,
+        fill: "rgba(255, 255, 255, 0.18)",
+        radius: 6,
+        text: "Licencias",
+        color: "#ffffff",
+        fontSize: 11,
+        bold: true,
+        align: "center",
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 375,
+        y: 184,
+        width: 80,
+        height: 28,
+        fill: "rgba(255, 255, 255, 0.18)",
+        radius: 6,
+        text: "Catastro",
+        color: "#ffffff",
+        fontSize: 11,
+        bold: true,
+        align: "center",
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 463,
+        y: 184,
+        width: 115,
+        height: 28,
+        fill: "rgba(255, 255, 255, 0.18)",
+        radius: 6,
+        text: "Impuestos RUAT",
+        color: "#ffffff",
+        fontSize: 11,
+        bold: true,
+        align: "center",
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 586,
+        y: 184,
+        width: 95,
+        height: 28,
+        fill: "rgba(255, 255, 255, 0.18)",
+        radius: 6,
+        text: "Salud GAMC",
+        color: "#ffffff",
+        fontSize: 11,
+        bold: true,
+        align: "center",
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 689,
+        y: 184,
+        width: 125,
+        height: 28,
+        fill: "rgba(255, 255, 255, 0.18)",
+        radius: 6,
+        text: "Emergencias 151",
+        color: "#ffffff",
+        fontSize: 11,
+        bold: true,
+        align: "center",
+      }),
+    ],
+    links: {},
+  };
+}
+
+/**
+ * Crea una lista / directorio de trámites y servicios municipales en tarjetas,
+ * organizada con categorías, descripciones y disparadores de búsqueda y navegación.
+ */
+export function createMunicipalSearchList(id?: string): ComponentDef {
+  const compId = id || crypto.randomUUID();
+  let count = 0;
+  const nextId = () => `${compId}-e${++count}`;
+
+  const cardsData = [
+    {
+      category: "Trámite",
+      badgeFill: "#e0f2fe",
+      badgeColor: "#0369a1",
+      title: "Ventanilla Única Digital (SITRAM)",
+      desc: "Ingreso de correspondencia ciudadana, licencias y seguimiento en tiempo real con hoja de ruta municipal.",
+      btnText: "Iniciar trámite →",
+    },
+    {
+      category: "Trámite",
+      badgeFill: "#e0f2fe",
+      badgeColor: "#0369a1",
+      title: "Catastro y Certificación Territorial",
+      desc: "Emisión de certificados catastrales, aprobación de planos de loteamiento y registro de bienes inmuebles.",
+      btnText: "Consultar catastro →",
+    },
+    {
+      category: "Trámite",
+      badgeFill: "#e0f2fe",
+      badgeColor: "#0369a1",
+      title: "Licencias de Funcionamiento",
+      desc: "Apertura y renovación de actividades económicas comerciales, industriales y de servicios en Cochabamba.",
+      btnText: "Requisitos de licencia →",
+    },
+    {
+      category: "Trámite",
+      badgeFill: "#e0f2fe",
+      badgeColor: "#0369a1",
+      title: "Pago de Impuestos y Patentes (RUAT)",
+      desc: "Liquidación y cobro de impuestos sobre vehículos automotores, inmuebles y patentes con descuentos oficiales.",
+      btnText: "Pagar en línea →",
+    },
+    {
+      category: "Servicio",
+      badgeFill: "#dcfce7",
+      badgeColor: "#15803d",
+      title: "Salud Municipal y Farmacias GAMC",
+      desc: "Red de centros de salud municipal, postas médicas barriales y acceso a medicamentos esenciales a costo social.",
+      btnText: "Ver centros de salud →",
+    },
+    {
+      category: "Contacto",
+      badgeFill: "#ffe4e6",
+      badgeColor: "#be123c",
+      title: "Líneas de Emergencia y Atención 24/7",
+      desc: "Línea Gratuita 800-14-0200, Ambulancias SEM 151, Defensoría de la Niñez 156 y Guardia Municipal.",
+      btnText: "Llamar a emergencias →",
+    },
+  ];
+
+  const elements: CanvasElement[] = [
+    newElement("rect", nextId(), { role: "none", x: 0, y: 0, width: 1024, height: 580, fill: "#ffffff", radius: 0 }),
+    newElement("text", nextId(), {
+      role: "heading",
+      x: 32,
+      y: 20,
+      width: 600,
+      height: 28,
+      text: "Trámites y Servicios Disponibles",
+      fontSize: 22,
+      color: "var(--color-primario, #0c4a6e)",
+      bold: true,
+    }),
+    newElement("text", nextId(), {
+      role: "text",
+      x: 32,
+      y: 52,
+      width: 750,
+      height: 20,
+      text: "Consulta los requisitos, aranceles y canales oficiales de atención municipal en Cochabamba.",
+      fontSize: 13,
+      color: "#64748b",
+    }),
+  ];
+
+  const colWidth = 464;
+  const cardHeight = 140;
+  const leftX = 32;
+  const rightX = 528;
+  const startY = 88;
+  const gapY = 16;
+
+  cardsData.forEach((item, index) => {
+    const row = Math.floor(index / 2);
+    const isRight = index % 2 === 1;
+    const x = isRight ? rightX : leftX;
+    const y = startY + row * (cardHeight + gapY);
+
+    const cardContainerId = nextId();
+    elements.push(
+      newElement("rect", cardContainerId, {
+        role: "container",
+        x,
+        y,
+        width: colWidth,
+        height: cardHeight,
+        fill: "#f8fafc",
+        radius: 8,
+      }),
+      newElement("rect", nextId(), {
+        role: "none",
+        parentId: cardContainerId,
+        x: x + 16,
+        y: y + 16,
+        width: 65,
+        height: 20,
+        fill: item.badgeFill,
+        radius: 4,
+        text: item.category,
+        color: item.badgeColor,
+        bold: true,
+        fontSize: 10,
+        align: "center",
+      }),
+      newElement("text", nextId(), {
+        role: "heading",
+        parentId: cardContainerId,
+        x: x + 88,
+        y: y + 16,
+        width: colWidth - 104,
+        height: 20,
+        text: item.title,
+        fontSize: 14,
+        color: "var(--color-primario, #0c4a6e)",
+        bold: true,
+      }),
+      newElement("text", nextId(), {
+        role: "text",
+        parentId: cardContainerId,
+        x: x + 16,
+        y: y + 44,
+        width: colWidth - 32,
+        height: 48,
+        text: item.desc,
+        fontSize: 12,
+        color: "#64748b",
+      }),
+      newElement("rect", nextId(), {
+        role: "button",
+        parentId: cardContainerId,
+        control: { kind: "button", name: "search-trigger" },
+        x: x + 16,
+        y: y + 96,
+        width: 160,
+        height: 28,
+        fill: "linear-gradient(100deg, var(--color-celeste-oscuro) 0%, var(--color-primario) 100%)",
+        radius: 6,
+        text: item.btnText,
+        color: "#ffffff",
+        bold: true,
+        fontSize: 11,
+        align: "center",
+      }),
+    );
+  });
+
+  return {
+    id: compId,
+    name: "Portal · Lista de Trámites y Servicios",
+    description: "Catálogo y lista organizada de trámites, servicios y consultas ciudadanas",
+    category: "cards",
+    width: 1024,
+    height: 580,
+    custom: true,
+    styles: {
+      [SECTION_KEY]: {
+        classes: "w-full py-8 px-6 bg-white",
+        css: "",
+      },
+    },
+    elements,
+    links: {},
+  };
+}
+
+/**
+ * Sección «Trámites y Leyes»: tres seleccionables cambian las cards visibles, con minibuscador y lista de fechas.
+ * Los seleccionables son un grupo de radio (estado nativo), así que el resaltado y el filtrado funcionan también en el
+ * sitio publicado sin código en un iframe. «opcion 1» muestra los dos decretos; las otras dos, uno cada una.
+ */
+export function createTramitesLeyesDecretos(id?: string): ComponentDef {
+  const compId = id || crypto.randomUUID();
+  const el = (suffix: string) => `${compId}-${suffix}`;
+
+  const card = (
+    prefix: string,
+    x: number,
+    y: number,
+    kindText?: string,
+    titleText = "Título",
+    bodyText = "Información",
+    dateText = "Fecha",
+  ) => {
+    const cardId = el(`${prefix}-card`);
+    const cardWidth = 304;
+    const cardHeight = 220;
+    const pad = 16;
+    const innerWidth = cardWidth - pad * 2;
+    const optMatch = prefix.match(/opt\d+/);
+    const resolvedKind =
+      kindText ||
+      (optMatch
+        ? optMatch[0] === "opt1"
+          ? "Decretos"
+          : optMatch[0] === "opt2"
+            ? "Leyes"
+            : "Normativas"
+        : "Categoría");
+
+    return [
+      newElement("rect", cardId, { role: "container", x, y, width: cardWidth, height: cardHeight, fill: "#ffffff", radius: 12 }),
+      newElement("text", el(`${prefix}-kind`), { role: "text", parentId: cardId, x: x + pad, y: y + 16, width: innerWidth, height: 18, text: resolvedKind, fontSize: 12, bold: true, color: "#0284c7" }),
+      newElement("text", el(`${prefix}-title`), { role: "heading", parentId: cardId, x: x + pad, y: y + 38, width: innerWidth, height: 24, text: titleText, fontSize: 16, bold: true, color: "#0f172a" }),
+      newElement("text", el(`${prefix}-body`), { role: "text", parentId: cardId, x: x + pad, y: y + 66, width: innerWidth, height: 56, text: bodyText, fontSize: 13, color: "#475569" }),
+      newElement("text", el(`${prefix}-date`), { role: "text", parentId: cardId, x: x + pad, y: y + 128, width: innerWidth, height: 18, text: dateText, fontSize: 12, color: "#64748b" }),
+      newElement("rect", el(`${prefix}-btn`), { role: "button", parentId: cardId, control: { kind: "button", name: "abrir-pdf" }, x: x + pad, y: y + 156, width: innerWidth, height: 38, fill: "#0284c7", radius: 8, text: "Abrir PDF", color: "#ffffff", bold: true, fontSize: 13, align: "center" }),
+    ];
+  };
+
+  return {
+    id: compId,
+    name: "Portal · Trámites y Leyes — Decretos",
+    description: "Tres seleccionables interactivos con cards dedicadas para Decretos, Leyes y Normativas",
+    category: "sections",
+    width: 1024,
+    height: 480,
+    custom: true,
+    styles: {
+      [SECTION_KEY]: {
+        classes: "w-full py-6 px-6 bg-slate-50",
+        css: [
+          `& [data-el*="-opt2-"], & [data-el*="-opt3-"] { display: none !important; }`,
+          `& [data-el*="-opt1-"] { display: block !important; }`,
+          `&:has(input[name="opcion"][value="opcion 2"]:checked) [data-el*="-opt1-"], &:has(input[name="opcion"][value="Leyes"]:checked) [data-el*="-opt1-"], &:has(label:nth-child(2) input:checked) [data-el*="-opt1-"], &[data-active-option="opt2"] [data-el*="-opt1-"], :where([data-active-option="opt2"]) [data-el*="-opt1-"] { display: none !important; }`,
+          `&:has(input[name="opcion"][value="opcion 2"]:checked) [data-el*="-opt3-"], &:has(input[name="opcion"][value="Leyes"]:checked) [data-el*="-opt3-"], &:has(label:nth-child(2) input:checked) [data-el*="-opt3-"], &[data-active-option="opt2"] [data-el*="-opt3-"], :where([data-active-option="opt2"]) [data-el*="-opt3-"] { display: none !important; }`,
+          `&:has(input[name="opcion"][value="opcion 2"]:checked) [data-el*="-opt2-"], &:has(input[name="opcion"][value="Leyes"]:checked) [data-el*="-opt2-"], &:has(label:nth-child(2) input:checked) [data-el*="-opt2-"], &[data-active-option="opt2"] [data-el*="-opt2-"], :where([data-active-option="opt2"]) [data-el*="-opt2-"] { display: block !important; }`,
+          `&:has(input[name="opcion"][value="opcion 3"]:checked) [data-el*="-opt1-"], &:has(input[name="opcion"][value="Normativas"]:checked) [data-el*="-opt1-"], &:has(label:nth-child(3) input:checked) [data-el*="-opt1-"], &[data-active-option="opt3"] [data-el*="-opt1-"], :where([data-active-option="opt3"]) [data-el*="-opt1-"] { display: none !important; }`,
+          `&:has(input[name="opcion"][value="opcion 3"]:checked) [data-el*="-opt2-"], &:has(input[name="opcion"][value="Normativas"]:checked) [data-el*="-opt2-"], &:has(label:nth-child(3) input:checked) [data-el*="-opt2-"], &[data-active-option="opt3"] [data-el*="-opt2-"], :where([data-active-option="opt3"]) [data-el*="-opt2-"] { display: none !important; }`,
+          `&:has(input[name="opcion"][value="opcion 3"]:checked) [data-el*="-opt3-"], &:has(input[name="opcion"][value="Normativas"]:checked) [data-el*="-opt3-"], &:has(label:nth-child(3) input:checked) [data-el*="-opt3-"], &[data-active-option="opt3"] [data-el*="-opt3-"], :where([data-active-option="opt3"]) [data-el*="-opt3-"] { display: block !important; }`,
+          `&[data-active-option="opt1"] [data-el*="-opt2-"], :where([data-active-option="opt1"]) [data-el*="-opt2-"] { display: none !important; }`,
+          `&[data-active-option="opt1"] [data-el*="-opt3-"], :where([data-active-option="opt1"]) [data-el*="-opt3-"] { display: none !important; }`,
+          `&[data-active-option="opt1"] [data-el*="-opt1-"], :where([data-active-option="opt1"]) [data-el*="-opt1-"] { display: block !important; }`,
+          `& [data-el*="-bar"] { display: none !important; }`,
+          `& [data-el*="-card"] { border: 1px solid #e2e8f0 !important; border-radius: 12px !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; overflow: hidden !important; max-width: 100% !important; box-sizing: border-box !important; background: #ffffff !important; }`,
+          `& [data-el*="-body"] { overflow: hidden !important; text-overflow: ellipsis !important; }`,
+        ].join("\n"),
+      },
+    },
+    elements: [
+      newElement("rect", el("bg"), { role: "none", x: 0, y: 0, width: 1024, height: 480, fill: "#f8fafc", radius: 0 }),
+      newElement("text", el("title"), { role: "heading", x: 40, y: 24, width: 600, height: 36, text: "Trámites y Leyes", fontSize: 30, bold: true, color: "#1b1550" }),
+      newElement("text", el("subtitle"), { role: "text", x: 40, y: 64, width: 700, height: 22, text: "Consulta los decretos ejecutivos y la normativa municipal de Cochabamba.", fontSize: 14, color: "#475569" }),
+      newElement("text", el("options-label"), { role: "text", x: 40, y: 96, width: 440, height: 18, text: "Selecciona una opción", fontSize: 11, bold: true, color: "#475569" }),
+      newElement("rect", el("options"), {
+        role: "none",
+        control: { kind: "input", inputType: "radio", name: "opcion", options: ["Decretos", "Leyes", "Normativas"] },
+        x: 40, y: 118, width: 440, height: 42, fill: "transparent", radius: 19, color: "#0f172a",
+      }),
+      newElement("rect", el("search"), {
+        role: "none",
+        control: { kind: "input", inputType: "search", name: "search-query", placeholder: "Buscar decreto o normativa..." },
+        x: 500, y: 118, width: 230, height: 42, fill: "#ffffff", radius: 8, color: "#0f172a", fontSize: 13,
+      }),
+      newElement("rect", el("search-button"), {
+        role: "button",
+        control: { kind: "button", name: "search-trigger" },
+        x: 738, y: 118, width: 86, height: 42, fill: "#0284c7", radius: 8,
+        text: "Buscar", color: "#ffffff", bold: true, fontSize: 13, align: "center",
+      }),
+      newElement("text", el("date-label"), { role: "text", x: 832, y: 96, width: 152, height: 18, text: "Seleccionar la fecha", fontSize: 11, bold: true, color: "#475569", hiddenOn: ["mobile", "tablet"] }),
+      newElement("rect", el("date"), {
+        role: "none",
+        control: { kind: "select", name: "fecha", options: ["Todas las fechas", "2021-09-02", "2020-09-29", "2020-07-21"] },
+        x: 832, y: 118, width: 152, height: 42, fill: "#ffffff", radius: 8, color: "#0f172a", fontSize: 13,
+      }),
+
+      // Opcion 1 (fila de 3 cards en PC - Categoría automática: Decretos)
+      ...card("opt1-c1", 40, 176, "Decretos", "Título", "Información", "Fecha"),
+      ...card("opt1-c2", 360, 176, "Decretos", "Título", "Información", "Fecha"),
+      ...card("opt1-c3", 680, 176, "Decretos", "Título", "Información", "Fecha"),
+
+      // Opcion 2 (fila de 3 cards en PC - Categoría automática: Leyes)
+      ...card("opt2-c1", 40, 176, "Leyes", "Título", "Información", "Fecha"),
+      ...card("opt2-c2", 360, 176, "Leyes", "Título", "Información", "Fecha"),
+      ...card("opt2-c3", 680, 176, "Leyes", "Título", "Información", "Fecha"),
+
+      // Opcion 3 (fila de 3 cards en PC - Categoría automática: Normativas)
+      ...card("opt3-c1", 40, 176, "Normativas", "Título", "Información", "Fecha"),
+      ...card("opt3-c2", 360, 176, "Normativas", "Título", "Información", "Fecha"),
+      ...card("opt3-c3", 680, 176, "Normativas", "Título", "Información", "Fecha"),
+    ],
+    links: {},
+  };
+}
+
+export interface ComponentOptionItem {
+  key: string;
+  label: string;
+  index: number;
+}
+
+/** Detecta si un componente tiene un conjunto de opciones (pestañas o radio buttons) para filtrar cards. */
+export function getComponentOptions(def: ComponentDef): ComponentOptionItem[] {
+  const optionsEl = def.elements.find(
+    (e) =>
+      e.control?.name === "opcion" ||
+      (e.control?.kind === "input" && e.control?.inputType === "radio") ||
+      (e.control?.kind === "select" && e.control?.name === "opcion"),
+  );
+
+  const rawOptions = optionsEl?.control?.options;
+  if (Array.isArray(rawOptions) && rawOptions.length > 0) {
+    return rawOptions.map((label, idx) => ({
+      key: `opt${idx + 1}`,
+      label,
+      index: idx,
+    }));
+  }
+
+  // Si no hay control explícito pero hay tarjetas con sufijo -opt1-, -opt2-, -opt3-
+  const hasOpt1 = def.elements.some((e) => e.id.includes("-opt1-"));
+  const hasOpt2 = def.elements.some((e) => e.id.includes("-opt2-"));
+  const hasOpt3 = def.elements.some((e) => e.id.includes("-opt3-"));
+
+  if (hasOpt1 || hasOpt2 || hasOpt3) {
+    const list: ComponentOptionItem[] = [];
+    if (hasOpt1) list.push({ key: "opt1", label: "Decretos", index: 0 });
+    if (hasOpt2) list.push({ key: "opt2", label: "Leyes", index: 1 });
+    if (hasOpt3) list.push({ key: "opt3", label: "Normativas", index: 2 });
+    return list;
+  }
+
+  return [];
+}
+
+/** Obtiene el nombre de la categoría asignada a una opción (ej: "Decretos" para opt1). */
+export function getCategoryForOption(def: ComponentDef, optionKey: string): string {
+  const options = getComponentOptions(def);
+  const found = options.find((o) => o.key === optionKey);
+  if (found && found.label?.trim()) {
+    return found.label.trim();
+  }
+  if (optionKey === "opt1") return "Decretos";
+  if (optionKey === "opt2") return "Leyes";
+  if (optionKey === "opt3") return "Normativas";
+  return "Categoría";
+}
+
+/** Extrae el prefijo de la tarjeta (ej. "opt1-c1") a partir del id de cualquiera de sus elementos. */
+export function getCardPrefix(elementId: string): string | null {
+  const match = elementId.match(/(opt\d+-[a-zA-Z0-9]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Prefijo nuevo para una tarjeta, sin chocar con los ids ya guardados.
+ * Al mover se intenta conservar el tag original (`c1`), pero si la opción destino ya tiene una tarjeta con ese tag
+ * se genera uno fresco: reutilizarlo duplicaría los ids de todos los elementos de la tarjeta y React avisaría
+ * de claves repetidas al renderizar.
+ */
+function freshCardPrefix(def: ComponentDef, optionKey: string, preferredTag?: string): string {
+  const isFree = (tag: string) =>
+    !def.elements.some((e) => e.id.startsWith(`${def.id}-${optionKey}-${tag}-`));
+
+  if (preferredTag && /^[a-zA-Z0-9]+$/.test(preferredTag) && isFree(preferredTag)) {
+    return `${optionKey}-${preferredTag}`;
+  }
+
+  const base = `c${Date.now().toString(36).slice(-4)}`;
+  let tag = base;
+  for (let i = 1; !isFree(tag); i++) tag = `${base}${i}`;
+  return `${optionKey}-${tag}`;
+}
+
+/** Obtiene las tarjetas pertenecientes a una opción específica. */
+export function getCardsForOption(def: ComponentDef, optionKey: string): ContainerCardInfo[] {
+  const cardRoots = def.elements.filter(
+    (e) => e.id.includes(`-${optionKey}-`) && (e.id.endsWith("-card") || e.role === "container"),
+  );
+
+  return cardRoots.map((root, idx) => {
+    const prefix = getCardPrefix(root.id);
+    const related = prefix ? def.elements.filter((e) => e.id.includes(prefix)) : [root];
+    const heading = related.find((e) => e.role === "heading" || e.id.endsWith("-title"));
+    const title = heading?.text?.trim() || root.text?.trim() || `Tarjeta ${idx + 1}`;
+    return {
+      id: root.id,
+      title,
+      elementCount: related.length,
+      fill: root.fill,
+    };
+  });
+}
+
+/** Agrega una nueva tarjeta limpia y estilizada a una opción específica del componente con categoría automática. */
+export function addCardToOption(
+  def: ComponentDef,
+  optionKey: string,
+  customTitle?: string,
+): { component: ComponentDef; newCardId: string } {
+  const prefix = freshCardPrefix(def, optionKey);
+  const compId = def.id;
+  const el = (suffix: string) => `${compId}-${prefix}-${suffix}`;
+  const rootId = el("card");
+
+  // Calcular la posición col/row en cuadrícula de 3 columnas
+  const existingCards = def.elements.filter(
+    (e) => e.id.includes(`-${optionKey}-`) && (e.id.endsWith("-card") || e.role === "container"),
+  );
+  const cardIndex = existingCards.length;
+  const col = cardIndex % 3;
+  const row = Math.floor(cardIndex / 3);
+
+  const cardWidth = 304;
+  const cardHeight = 220;
+  const gapX = 16;
+  const gapY = 16;
+  const nextX = 40 + col * (cardWidth + gapX);
+  const nextY = 176 + row * (cardHeight + gapY);
+
+  const title = customTitle || "Título";
+  const categoryText = getCategoryForOption(def, optionKey);
+  const pad = 16;
+  const innerWidth = cardWidth - pad * 2;
+
+  const newElements: CanvasElement[] = [
+    newElement("rect", rootId, { role: "container", x: nextX, y: nextY, width: cardWidth, height: cardHeight, fill: "#ffffff", radius: 12 }),
+    newElement("text", el("kind"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 16, width: innerWidth, height: 18, text: categoryText, fontSize: 12, bold: true, color: "#0284c7" }),
+    newElement("text", el("title"), { role: "heading", parentId: rootId, x: nextX + pad, y: nextY + 38, width: innerWidth, height: 24, text: title, fontSize: 16, bold: true, color: "#0f172a" }),
+    newElement("text", el("body"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 66, width: innerWidth, height: 56, text: "Información", fontSize: 13, color: "#475569" }),
+    newElement("text", el("date"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 128, width: innerWidth, height: 18, text: "Fecha", fontSize: 12, color: "#64748b" }),
+    newElement("rect", el("btn"), { role: "button", parentId: rootId, control: { kind: "button", name: "abrir-pdf" }, x: nextX + pad, y: nextY + 156, width: innerWidth, height: 38, fill: "#0284c7", radius: 8, text: "Abrir PDF", color: "#ffffff", bold: true, fontSize: 13, align: "center" }),
+  ];
+
+  const updatedHeight = Math.max(def.height, nextY + cardHeight + 40);
+
+  return {
+    component: {
+      ...def,
+      height: updatedHeight,
+      elements: [...def.elements, ...newElements],
+    },
+    newCardId: rootId,
+  };
+}
+
+/** Duplica una tarjeta dentro de su misma opción. */
+export function duplicateCardInOption(
+  def: ComponentDef,
+  cardId: string,
+): { component: ComponentDef; newCardId: string } {
+  const prefix = getCardPrefix(cardId);
+  if (!prefix) return { component: def, newCardId: cardId };
+
+  const optMatch = prefix.match(/opt\d+/);
+  const optionKey = optMatch ? optMatch[0] : "opt1";
+  const cardElements = def.elements.filter((e) => e.id.includes(prefix));
+  if (cardElements.length === 0) return { component: def, newCardId: cardId };
+
+  const rootEl = cardElements.find((e) => e.id.endsWith("-card")) || cardElements[0];
+  const newPrefix = freshCardPrefix(def, optionKey);
+  const newRootId = rootEl.id.replace(prefix, newPrefix);
+
+  // Posicionar según el índice de la nueva tarjeta (columna/fila en grilla de 3)
+  const optionCards = def.elements.filter(
+    (e) => e.id.includes(`-${optionKey}-`) && (e.id.endsWith("-card") || e.role === "container"),
+  );
+  const cardIndex = optionCards.length;
+  const col = cardIndex % 3;
+  const row = Math.floor(cardIndex / 3);
+  const cardWidth = rootEl.width || 304;
+  const cardHeight = rootEl.height || 220;
+  const nextX = 40 + col * (cardWidth + 16);
+  const nextY = 176 + row * (cardHeight + 16);
+
+  const deltaX = nextX - rootEl.x;
+  const deltaY = nextY - rootEl.y;
+
+  const categoryText = getCategoryForOption(def, optionKey);
+
+  const clonedElements: CanvasElement[] = cardElements.map((el) => ({
+    ...el,
+    id: el.id.replace(prefix, newPrefix),
+    parentId: el.parentId ? el.parentId.replace(prefix, newPrefix) : undefined,
+    x: el.x + deltaX,
+    y: el.y + deltaY,
+    text: el.id.endsWith("-title")
+      ? `${el.text} (Copia)`
+      : el.id.endsWith("-kind")
+        ? categoryText
+        : el.text,
+    control: el.id.endsWith("-btn")
+      ? { kind: "button", name: "abrir-pdf" }
+      : el.control,
+  }));
+
+  const updatedHeight = Math.max(def.height, nextY + cardHeight + 40);
+
+  return {
+    component: {
+      ...def,
+      height: updatedHeight,
+      elements: [...def.elements, ...clonedElements],
+    },
+    newCardId: newRootId,
+  };
+}
+
+/** Elimina una tarjeta y todos sus elementos subordinados de una opción, reacomodando las restantes. */
+export function deleteCardFromOption(def: ComponentDef, cardId: string): ComponentDef {
+  const prefix = getCardPrefix(cardId);
+  if (!prefix) {
+    return {
+      ...def,
+      elements: def.elements.filter((e) => e.id !== cardId),
+    };
+  }
+
+  const optMatch = prefix.match(/opt\d+/);
+  const optionKey = optMatch ? optMatch[0] : null;
+
+  // Filtrar los elementos eliminados
+  const remainingElements = def.elements.filter((e) => !e.id.includes(prefix) && e.id !== cardId);
+
+  // Si pertenece a una opción con cards, reacomodar las coordenadas en grilla de 3 columnas para no dejar huecos
+  if (optionKey) {
+    const optionCardRoots = remainingElements
+      .filter((e) => e.id.includes(`-${optionKey}-`) && (e.id.endsWith("-card") || e.role === "container"))
+      .sort((a, b) => (Math.abs(a.y - b.y) > 10 ? a.y - b.y : a.x - b.x));
+
+    const repositionedElements = [...remainingElements];
+    optionCardRoots.forEach((cardRoot, idx) => {
+      const col = idx % 3;
+      const row = Math.floor(idx / 3);
+      const cardWidth = cardRoot.width || 304;
+      const cardHeight = cardRoot.height || 220;
+      const targetX = 40 + col * (cardWidth + 16);
+      const targetY = 176 + row * (cardHeight + 16);
+      const diffX = targetX - cardRoot.x;
+      const diffY = targetY - cardRoot.y;
+      if (diffX !== 0 || diffY !== 0) {
+        const cPrefix = getCardPrefix(cardRoot.id);
+        if (cPrefix) {
+          for (let i = 0; i < repositionedElements.length; i++) {
+            if (repositionedElements[i].id.includes(cPrefix)) {
+              repositionedElements[i] = {
+                ...repositionedElements[i],
+                x: repositionedElements[i].x + diffX,
+                y: repositionedElements[i].y + diffY,
+              };
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      ...def,
+      elements: repositionedElements,
+    };
+  }
+
+  return {
+    ...def,
+    elements: remainingElements,
+  };
+}
+
+/** Mueve una tarjeta de una opción a otra, actualizando automáticamente su categoría. */
+export function moveCardToOption(
+  def: ComponentDef,
+  cardId: string,
+  targetOptionKey: string,
+): { component: ComponentDef; newCardId: string } {
+  const prefix = getCardPrefix(cardId);
+  if (!prefix) return { component: def, newCardId: cardId };
+
+  const currentOptMatch = prefix.match(/opt\d+/);
+  const currentOptKey = currentOptMatch ? currentOptMatch[0] : "opt1";
+  if (currentOptKey === targetOptionKey) return { component: def, newCardId: cardId };
+
+  const cardElements = def.elements.filter((e) => e.id.includes(prefix));
+  const remainingElements = def.elements.filter((e) => !e.id.includes(prefix));
+
+  // Posicionar al final de la opción destino (col/row modulo 3)
+  const rootEl = cardElements.find((e) => e.id.endsWith("-card")) || cardElements[0];
+  const cardWidth = rootEl.width || 304;
+  const cardHeight = rootEl.height || 220;
+  const targetCards = remainingElements.filter(
+    (e) => e.id.includes(`-${targetOptionKey}-`) && (e.id.endsWith("-card") || e.role === "container"),
+  );
+  const cardIndex = targetCards.length;
+  const col = cardIndex % 3;
+  const row = Math.floor(cardIndex / 3);
+  const nextX = 40 + col * (cardWidth + 16);
+  const nextY = 176 + row * (cardHeight + 16);
+  const deltaX = nextX - rootEl.x;
+  const deltaY = nextY - rootEl.y;
+
+  const preferredTag = prefix.replace(/^opt\d+-/, "");
+  const newPrefix = freshCardPrefix(def, targetOptionKey, preferredTag);
+  const newRootId = rootEl.id.replace(prefix, newPrefix);
+
+  const targetCategory = getCategoryForOption(def, targetOptionKey);
+
+  const movedElements: CanvasElement[] = cardElements.map((el) => ({
+    ...el,
+    id: el.id.replace(prefix, newPrefix),
+    parentId: el.parentId ? el.parentId.replace(prefix, newPrefix) : undefined,
+    x: el.x + deltaX,
+    y: el.y + deltaY,
+    text: el.id.endsWith("-kind") ? targetCategory : el.text,
+    control: el.id.endsWith("-btn")
+      ? { kind: "button", name: "abrir-pdf" }
+      : el.control,
+  }));
+
+  const updatedHeight = Math.max(def.height, nextY + cardHeight + 40);
+
+  return {
+    component: {
+      ...def,
+      height: updatedHeight,
+      elements: [...remainingElements, ...movedElements],
+    },
+    newCardId: newRootId,
+  };
+}
+
+/** Actualiza la etiqueta de una opción seleccionable y sincroniza automáticamente las cards de esa categoría. */
+export function updateOptionLabel(
+  def: ComponentDef,
+  optionIndex: number,
+  newLabel: string,
+): ComponentDef {
+  const optionsIndex = def.elements.findIndex(
+    (e) => e.control?.name === "opcion" || (e.control?.kind === "input" && e.control?.inputType === "radio"),
+  );
+  if (optionsIndex < 0) return def;
+
+  const optionsEl = def.elements[optionsIndex];
+  const currentOptions = [...(optionsEl.control?.options ?? [])];
+  if (optionIndex < 0 || optionIndex >= currentOptions.length) return def;
+
+  currentOptions[optionIndex] = newLabel;
+
+  const updatedElement: CanvasElement = {
+    ...optionsEl,
+    control: {
+      ...optionsEl.control!,
+      options: currentOptions,
+    },
+  };
+
+  const optionKey = `opt${optionIndex + 1}`;
+  const updatedElements = def.elements.map((el, i) => {
+    if (i === optionsIndex) return updatedElement;
+    // Sincronizar automáticamente el texto de categoría para las cards de esta opción
+    if (el.id.includes(`-${optionKey}-`) && el.id.endsWith("-kind")) {
+      return { ...el, text: newLabel };
+    }
+    return el;
+  });
+
+  return {
+    ...def,
+    elements: updatedElements,
+  };
+}
+
 

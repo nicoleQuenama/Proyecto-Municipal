@@ -10,13 +10,15 @@ interface LinkHandleProps {
   element: ElementRef;
   link: LinkTarget | undefined;
   label: string;
+  /** Permite colocarlo dentro de una barra de iconos en vez de suelto sobre el elemento. */
+  className?: string;
 }
 
 /**
  * El ícono de enlace de un elemento. Arrastrarlo hasta una página la enlaza; un clic abre el editor
  * (página, URL externa, transición). Sirve igual en una barra, en el contenido o en un pie.
  */
-export function LinkHandle({ element, link, label }: LinkHandleProps) {
+export function LinkHandle({ element, link, label, className = "absolute -top-2 -right-2" }: LinkHandleProps) {
   const { startConnect } = useNavigation();
   const size = useHandleSize();
 
@@ -32,7 +34,7 @@ export function LinkHandle({ element, link, label }: LinkHandleProps) {
         startConnect(element, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
       }}
       onClick={(e) => e.stopPropagation()}
-      className={`absolute -top-2 -right-2 z-20 flex cursor-crosshair touch-none items-center justify-center rounded-full border text-[10px] font-bold shadow ${
+      className={`${className} z-20 flex cursor-crosshair touch-none items-center justify-center rounded-full border text-[10px] font-bold shadow ${
         link
           ? "border-sky-500 bg-sky-500 text-white"
           : "hidden border-sky-500 bg-white text-sky-600 group-hover/element:flex focus:flex"

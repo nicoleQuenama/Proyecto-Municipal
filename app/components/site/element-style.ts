@@ -119,10 +119,10 @@ export function elementBaseCss(
     rule(section, [
       "position: relative",
       "flex-shrink: 0",
-      ...(flow || navWide || def.width >= 1000
+      ...(flow || navWide || def.width >= 600 || !def.drawn
         ? ["min-width: 0", "width: 100%"]
         : [`width: ${def.width}px`, `height: ${def.height}px`]),
-      ...(navWide || def.width >= 1000 ? [`min-height: ${def.height}px`] : []),
+      ...(navWide || def.width >= 600 || !def.drawn ? [`min-height: ${def.height}px`] : []),
     ]),
     ...(cols !== null
       ? [
@@ -136,7 +136,7 @@ export function elementBaseCss(
       // Solo una figura rectangular sin texto ni contenedor padre que cubra toda la sección es un backdrop.
       const isBackdropElement =
         !flow &&
-        navWide &&
+        (navWide || !def.drawn || def.width >= 600) &&
         element.kind === "rect" &&
         !element.text &&
         !element.parentId &&

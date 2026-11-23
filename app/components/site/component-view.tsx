@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { optimizedSrc } from "../media/optimize-src";
 import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
@@ -12,7 +12,7 @@ import { useDataDrop } from "../data-sources/use-data-drop";
 import type { DataRef } from "../data-sources/types";
 import { useBehaviors } from "../behaviors/use-behaviors";
 import { LinkHandle } from "../navigation/link-handle";
-import { elementLabel, isLinkable, linkLabel } from "../navigation/links";
+import { elementLabel, isCurrentPageLink, isLinkable, linkLabel } from "../navigation/links";
 import type { ElementRef, LinkTarget, NavMode, Point } from "../navigation/types";
 import type { Device } from "../responsive/devices";
 import { IconGlyph } from "../icons/icon-glyph";
@@ -21,7 +21,9 @@ import { CodeButton } from "./code-button";
 import { elementBaseCss } from "./element-style";
 import { InlineTextEditor } from "./inline-text-editor";
 import { targetKey } from "./custom-code";
+import { useCurrentPage } from "./site-context";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind, type Page } from "./types";
+import { uniqueElements } from "./unique-elements";
 import type { BlockGestures } from "./use-block-gestures";
 import type { HandleId } from "../canvas-editing/resize-handles";
 import { LineShape, TriangleShape } from "./vector-shapes";
@@ -263,6 +265,8 @@ function PositionedElement({
   // Indicador de "soltar antes/después" al reordenar en flujo. Va aquí arriba porque este componente
   // tiene returns tempranos (oculto, probar, editar) y los hooks no pueden quedar detrás de ellos.
   const [dropIndicator, setDropIndicator] = useState<"before" | "after" | null>(null);
+  const currentPage = useCurrentPage();
+  const activeLink = isCurrentPageLink(interaction?.links[element.id], currentPage?.id);
 
   const box: CSSProperties = { left: element.x, top: element.y, width: shown.width, height: shown.height };
   // Un dato que cambia el ancho, el alto o el color se pinta en el contenedor (ahí está el CSS base).
@@ -291,11 +295,21 @@ function PositionedElement({
     const isSearchTrigger =
       element.control?.name === "search-trigger" ||
       element.id.toLowerCase().includes("search") ||
+      element.text?.trim() === "⌕" ||
       (element.text && element.text.toLowerCase().includes("buscar") && (element.role === "button" || link === undefined));
 
     const follow = () => {
       if (isSearchTrigger) {
-        window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query: "" } }));
+        const root = ref.current?.closest("[data-block-id]") || ref.current?.closest("form") || document;
+        const searchInput = root?.querySelector<HTMLInputElement>("input[type='search'], input[name='search-query']");
+        const isGeneric = (element.text || "").toLowerCase().includes("buscar") || element.text?.trim() === "⌕";
+        const query = (!isGeneric && element.text && element.text.trim().length > 0)
+          ? element.text.trim()
+          : (searchInput?.value ?? "");
+        if (!isGeneric && searchInput && element.text) {
+          searchInput.value = element.text.trim();
+        }
+        window.dispatchEvent(new CustomEvent("cms:open-search", { detail: { query } }));
         return;
       }
       if (link) interaction.onFollow(link, element.id);
@@ -319,8 +333,20 @@ function PositionedElement({
               onKeyDown: (e: KeyboardEvent) => e.key === "Enter" && follow(),
             }
           : {})}
+        {...(activeLink ? { "aria-current": "page", "data-active": "" } : {})}
         onClick={interactive ? follow : undefined}
-        style={boundStyle}
+        style={
+          activeLink
+            ? {
+                ...boundStyle,
+                color: "var(--color-primario, #1b1550)",
+                fontWeight: 700,
+                textDecoration: "underline",
+                textDecorationThickness: 2,
+                textUnderlineOffset: 4,
+              }
+            : boundStyle
+        }
         className={`${interactive ? "cursor-pointer" : ""} ${
           link ? "transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-sky-500" : ""
         } ${custom}`}
@@ -448,8 +474,23 @@ function PositionedElement({
             className="absolute -top-2 -left-2 hidden group-hover/element:flex focus:flex"
           />
         )}
-        {isLinkable(element) && (!interaction.isHeaderOrFooter || selected) && (
-          <LinkHandle element={ref} link={link} label={elementLabel(element)} />
+        {/* Enlace y código comparten una sola barrita: antes los dos se clavaban en la misma esquina y se tapaban. */}
+        {((isLinkable(element) && (!interaction.isHeaderOrFooter || selected)) || selected) && (
+          <div
+            className="absolute -top-3 -right-3 z-20 flex items-center gap-1.5"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {isLinkable(element) && (!interaction.isHeaderOrFooter || selected) && (
+              <LinkHandle element={ref} link={link} label={elementLabel(element)} className="" />
+            )}
+            {selected && (
+              <CodeButton
+                label="Abrir el código del elemento en el editor"
+                onOpen={() => interaction.onOpenCode(element.id)}
+                className=""
+              />
+            )}
+          </div>
         )}
         {selected && gestures && (
           <ElementHandles
@@ -459,13 +500,6 @@ function PositionedElement({
         )}
         {selected && gestures && element.kind === "rect" && (
           <RadiusHandles radius={element.radius} size={{ width: element.width, height: element.height }} onChange={(radius) => gestures.setRadius(element.id, radius)} />
-        )}
-        {selected && (
-          <CodeButton
-            label="Abrir el código del elemento en el editor"
-            onOpen={() => interaction.onOpenCode(element.id)}
-            className="absolute -top-3 -right-3"
-          />
         )}
         {selected && (interaction.flow || interaction.onDuplicateCard) && !interaction.isHeaderOrFooter && (
           <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-md border border-line bg-canvas/95 px-1.5 py-0.5 shadow-lg backdrop-blur-xs">
@@ -591,12 +625,59 @@ export function ComponentView({
   // En una sección en flujo no se mueven elementos, pero su lienzo sí tiene manijas: los gestos de sección bastan.
   const layer = interaction?.gestures ?? interaction?.sectionGestures;
 
+  const hasOptionElements = useMemo(() => {
+    return def.elements.some((e) => /-opt\d+-/.test(e.id));
+  }, [def.elements]);
+
+  const [activeOptionKey, setActiveOptionKey] = useState<string>("opt1");
+
+  // Si se selecciona un elemento de una opción en el lienzo, cambiar a esa opción
+  useEffect(() => {
+    if (!hasOptionElements || !interaction?.selectedElementId) return;
+    const match = interaction.selectedElementId.match(/-opt(\d+)-/);
+    if (match) {
+      setActiveOptionKey(`opt${match[1]}`);
+    }
+  }, [hasOptionElements, interaction?.selectedElementId]);
+
+  // Escuchar cuando el usuario cambia de opción desde el radio del lienzo o el inspector
+  useEffect(() => {
+    if (!hasOptionElements) return;
+    const handleOptionSelected = (e: Event) => {
+      const detail = (e as CustomEvent<{ optionKey?: string }>).detail;
+      if (detail?.optionKey) {
+        setActiveOptionKey(detail.optionKey);
+      }
+    };
+    window.addEventListener("cms:option-selected", handleOptionSelected);
+    return () => window.removeEventListener("cms:option-selected", handleOptionSelected);
+  }, [hasOptionElements]);
+
+  // Filtrar elementos para renderizar de forma ligera y reactiva solo las tarjetas de la opción activa.
+  // También se deduplica: los ids repetidos llegaron a guardarse al mover tarjetas a una opción que ya tenía ese tag.
+  const visibleElements = useMemo(() => {
+    const filtered = hasOptionElements
+      ? def.elements.filter((el) => {
+          const match = el.id.match(/-opt(\d+)-/);
+          if (!match) return true;
+          return `opt${match[1]}` === activeOptionKey;
+        })
+      : def.elements;
+    return uniqueElements(filtered);
+  }, [def.elements, hasOptionElements, activeOptionKey]);
+
+  const viewDef = useMemo(() => {
+    if (!hasOptionElements) return def;
+    return { ...def, elements: visibleElements };
+  }, [def, hasOptionElements, visibleElements]);
+
   return (
     <div
       ref={interaction?.gestures?.canvasRef}
       onPointerMove={interaction?.gestures?.onPointerMove}
       onPointerUp={interaction?.gestures?.endDrag}
       onPointerCancel={interaction?.gestures?.endDrag}
+      {...(hasOptionElements ? { "data-active-option": activeOptionKey } : {})}
       {...(interaction ? { "data-canvas": "", "data-target": targetKey(interaction.blockId, SECTION_KEY) } : {})}
       className={`${interaction ? "" : "relative shrink-0"} ${interaction?.classes[SECTION_KEY] ?? ""}`}
       style={interaction ? undefined : { width: def.width, height: def.height }}
@@ -606,7 +687,7 @@ export function ComponentView({
         <style>
           {elementBaseCss(
             interaction.blockId,
-            def,
+            viewDef,
             interaction.flow,
             interaction.device,
             interaction.classes[SECTION_KEY],
@@ -614,7 +695,7 @@ export function ComponentView({
           )}
         </style>
       )}
-      {cardsOf(def.elements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
+      {cardsOf(visibleElements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
       {interaction?.overlay}
       {layer && (
         <EditingLayer

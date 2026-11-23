@@ -1,7 +1,7 @@
 "use client";
 
 import { currentPlacement } from "../placement/current-placement";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
 import { ExportButton } from "../export/export-button";
@@ -10,6 +10,7 @@ import { useCanvasSettings } from "../canvas-editing/settings-context";
 import { elementLabel } from "../navigation/links";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import { SECTION_KEY, TITLE_SELECTION, type BlockInstance, type ComponentDef, type CustomStyle } from "../site/types";
+import { uniqueElements } from "../site/unique-elements";
 import { Collapsible } from "../ui/collapsible";
 import { CodeIcon } from "../viewport/icons";
 import { useWorkbench } from "../workbench/workbench-context";
@@ -35,6 +36,14 @@ import {
   addLinkToHeader,
   addSearchButtonToHeader,
   moveElementOrderInComponent,
+  getComponentOptions,
+  getCardsForOption,
+  addCardToOption,
+  duplicateCardInOption,
+  deleteCardFromOption,
+  moveCardToOption,
+  updateOptionLabel,
+  getCardPrefix,
 } from "../site/container-card-rules";
 import { getBlockSlot } from "../site/rules";
 import { useFlag } from "../responsive/flag-store";
@@ -43,7 +52,7 @@ import { defaultMenu, toggleItem } from "../responsive/menu-model";
 import { GroupControls } from "./group-controls";
 import { DockablePanel } from "./dockable-panel";
 import { SectionColorPalette } from "../section-colors/section-color-palette";
-import { LayoutControls } from "./layout-controls";
+import { LayoutControls, type ContainerCardItem } from "./layout-controls";
 import { ControlControls } from "../forms/control-controls";
 import { MediaPerformanceControls } from "../media/media-performance-controls";
 import { FluidControls } from "../responsive/fluid-controls";
@@ -158,6 +167,129 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
 
   const containerCards = getContainerCards(def);
   const rootCardId = element ? findRootCardId(def.elements, element.id) : null;
+
+  const componentOptions = useMemo(() => getComponentOptions(def), [def]);
+  const hasComponentOptions = componentOptions.length > 0;
+
+  const [activeOptionKey, setActiveOptionKey] = useState<string>(() => {
+    return componentOptions[0]?.key ?? "opt1";
+  });
+
+  useEffect(() => {
+    if (hasComponentOptions && !componentOptions.some((o) => o.key === activeOptionKey)) {
+      setActiveOptionKey(componentOptions[0]?.key ?? "opt1");
+    }
+  }, [hasComponentOptions, componentOptions, activeOptionKey]);
+
+  useEffect(() => {
+    if (element && hasComponentOptions) {
+      const prefix = getCardPrefix(element.id);
+      if (prefix) {
+        const match = prefix.match(/opt\d+/);
+        if (match && componentOptions.some((o) => o.key === match[0])) {
+          setActiveOptionKey(match[0]);
+        }
+      }
+    }
+  }, [element?.id, hasComponentOptions, componentOptions]);
+
+  const syncCanvasOption = useCallback((optKey: string) => {
+    const blockEl =
+      document.querySelector(`[data-block-id="${block.id}"]`) ||
+      document.querySelector(`[data-component="${def.id}"]`);
+    if (blockEl) {
+      blockEl.setAttribute("data-active-option", optKey);
+      const canvasEl = blockEl.querySelector("[data-canvas]");
+      if (canvasEl) canvasEl.setAttribute("data-active-option", optKey);
+
+      const optNum = parseInt(optKey.replace("opt", ""), 10);
+      const radios = blockEl.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+      if (radios.length >= optNum && optNum >= 1) {
+        radios[optNum - 1].checked = true;
+      }
+    }
+  }, [block.id, def.id]);
+
+  useEffect(() => {
+    const handleOptEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.optionKey) {
+        setActiveOptionKey(detail.optionKey);
+      }
+    };
+    window.addEventListener("cms:option-selected", handleOptEvent);
+    return () => window.removeEventListener("cms:option-selected", handleOptEvent);
+  }, []);
+
+  const handleSelectOptionKey = (optKey: string) => {
+    setActiveOptionKey(optKey);
+    syncCanvasOption(optKey);
+  };
+
+  const optionCardCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const opt of componentOptions) {
+      counts[opt.key] = getCardsForOption(def, opt.key).length;
+    }
+    return counts;
+  }, [def, componentOptions]);
+
+  const currentOptionCards: ContainerCardItem[] = useMemo(() => {
+    if (!hasComponentOptions) return [];
+    return getCardsForOption(def, activeOptionKey).map((c) => ({
+      id: c.id,
+      title: c.title,
+      elementCount: c.elementCount,
+      fill: c.fill,
+    }));
+  }, [def, hasComponentOptions, activeOptionKey]);
+
+  const layersElements = useMemo(() => {
+    const filtered = hasComponentOptions
+      ? def.elements.filter((el) => {
+          const match = el.id.match(/-opt(\d+)-/);
+          if (!match) return true;
+          return `opt${match[1]}` === activeOptionKey;
+        })
+      : def.elements;
+    return uniqueElements(filtered);
+  }, [def.elements, hasComponentOptions, activeOptionKey]);
+
+  const handleAddCardToOption = (optKey: string) => {
+    if (!canEditContent) return;
+    const { component: updated, newCardId } = addCardToOption(def, optKey);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newCardId });
+    syncCanvasOption(optKey);
+  };
+
+  const handleDuplicateCardInOption = (cardId: string) => {
+    if (!canEditContent) return;
+    const { component: updated, newCardId } = duplicateCardInOption(def, cardId);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newCardId });
+  };
+
+  const handleDeleteCardFromOption = (cardId: string) => {
+    if (!canEditContent) return;
+    const updated = deleteCardFromOption(def, cardId);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: null });
+  };
+
+  const handleMoveCardToOption = (cardId: string, targetOptionKey: string) => {
+    if (!canEditContent) return;
+    const { component: updated, newCardId } = moveCardToOption(def, cardId, targetOptionKey);
+    dispatch({ type: "component/save", component: updated });
+    dispatch({ type: "element/select", id: newCardId });
+    handleSelectOptionKey(targetOptionKey);
+  };
+
+  const handleUpdateOptionLabel = (optionIndex: number, newLabel: string) => {
+    if (!canEditContent) return;
+    const updated = updateOptionLabel(def, optionIndex, newLabel);
+    dispatch({ type: "component/save", component: updated });
+  };
 
   const handleAddCard = () => {
     if (!canEditContent) return;
@@ -456,7 +588,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
             <span className="text-[10px] text-ink-dim font-medium">Solo esta tarjeta/elemento</span>
           </div>
 
-          {rootCardId && rootCardId !== element.id && (
+          {rootCardId && rootCardId !== element.id && containerCards.some((c) => c.id === rootCardId) && (
             <div className="flex items-center justify-between gap-2 rounded bg-canvas/80 px-2 py-1 text-[11px] text-ink-dim border border-line">
               <span className="truncate">Elemento dentro de tarjeta</span>
               <button
@@ -705,9 +837,12 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
         </Collapsible>
       )}
       {canEditContent && def.elements.length > 0 && (
-        <Collapsible title={`Capas (${def.elements.length})`} defaultOpen={!element}>
+        <Collapsible
+          title={hasComponentOptions ? `Capas · ${activeOptionKey} (${layersElements.length})` : `Capas (${def.elements.length})`}
+          defaultOpen={!element}
+        >
           <LayersPanel
-            elements={def.elements}
+            elements={layersElements}
             selectedId={element?.id ?? null}
             onSelect={(id) => dispatch({ type: "element/select", id })}
             onPatch={(id, patch) =>
@@ -721,9 +856,16 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               })
             }
             onReorder={(ids) => {
-              const idMap = new Map(def.elements.map((e) => [e.id, e]));
-              const reordered = ids.map((id) => idMap.get(id)!).filter(Boolean);
-              dispatch({ type: "component/save", component: { ...def, elements: reordered } });
+              if (hasComponentOptions) {
+                const idMap = new Map(def.elements.map((e) => [e.id, e]));
+                const otherElements = def.elements.filter((e) => !ids.includes(e.id));
+                const reorderedActive = ids.map((id) => idMap.get(id)!).filter(Boolean);
+                dispatch({ type: "component/save", component: { ...def, elements: [...otherElements, ...reorderedActive] } });
+              } else {
+                const idMap = new Map(def.elements.map((e) => [e.id, e]));
+                const reordered = ids.map((id) => idMap.get(id)!).filter(Boolean);
+                dispatch({ type: "component/save", component: { ...def, elements: reordered } });
+              }
             }}
           />
         </Collapsible>
@@ -849,8 +991,8 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                     disabled={block.locked}
                     aria-pressed={block.placementMode !== "overlay"}
                     onClick={() => {
+                      // El propio cambio a «flow» ya quita `placement`: no hace falta volver a colocarlo con null.
                       dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" });
-                      if (block.placement) dispatch({ type: "block/place", pageId, blockId: block.id, placement: null as any });
                     }}
                     className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
                       block.locked
@@ -1123,6 +1265,16 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
               }
             }
           }}
+          componentOptions={componentOptions}
+          activeOptionKey={activeOptionKey}
+          optionCardCounts={optionCardCounts}
+          currentOptionCards={currentOptionCards}
+          onSelectOptionKey={handleSelectOptionKey}
+          onAddCardToOption={canEditContent ? handleAddCardToOption : undefined}
+          onDuplicateCardInOption={canEditContent ? handleDuplicateCardInOption : undefined}
+          onDeleteCardFromOption={canEditContent ? handleDeleteCardFromOption : undefined}
+          onMoveCardToOption={canEditContent ? handleMoveCardToOption : undefined}
+          onUpdateOptionLabel={canEditContent ? handleUpdateOptionLabel : undefined}
         />
       )}
 

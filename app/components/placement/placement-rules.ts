@@ -11,13 +11,16 @@ const updatePage = (state: SiteState, pageId: string, update: (page: Page) => Pa
 });
 
 /** Mover o cambiar el tamaño no quita lo de «fija»; solo se cambia pidiéndolo (`fixed` explícito). */
-export const placeBlock = (state: SiteState, pageId: string, blockId: string, placement: Placement): SiteState =>
-  updateBlock(state, pageId, blockId, (block) => {
+export const placeBlock = (state: SiteState, pageId: string, blockId: string, placement: Placement): SiteState => {
+  // Una llamada vieja (o un dato corrupto) podría traer null: no hay nada que colocar, mejor no tocar el estado.
+  if (!placement) return state;
+  return updateBlock(state, pageId, blockId, (block) => {
     if (block.locked) return block;
     const { fixed: asked, ...rest } = placement;
     const fixed = asked ?? block.placement?.fixed;
     return { ...block, placement: fixed ? { ...rest, fixed: true } : rest };
   });
+};
 
 export const placeTitle = (state: SiteState, pageId: string, placement: Placement): SiteState =>
   updatePage(state, pageId, (page) => ({ ...page, titlePlacement: placement }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useViewport } from "../viewport/viewport-context";
 import { DesktopIcon, TabletIcon, MobileIcon } from "../viewport/icons";
 import { colorInputValue } from "../format/format-options";
@@ -153,6 +153,279 @@ interface LayoutControlsProps {
   }[];
   /** Callback para seleccionar un elemento desde la lista */
   onSelectElement?: (elementId: string) => void;
+  /** Opciones si el componente maneja cards por opciones/pestañas */
+  componentOptions?: { key: string; label: string; index: number }[];
+  /** Clave de la opción activa (ej: "opt1", "opt2") */
+  activeOptionKey?: string;
+  /** Cantidad de tarjetas por cada opción */
+  optionCardCounts?: Record<string, number>;
+  /** Tarjetas de la opción actualmente seleccionada */
+  currentOptionCards?: ContainerCardItem[];
+  /** Seleccionar opción activa */
+  onSelectOptionKey?: (key: string) => void;
+  /** Agregar tarjeta a la opción activa */
+  onAddCardToOption?: (optionKey: string) => void;
+  /** Duplicar tarjeta dentro de la opción */
+  onDuplicateCardInOption?: (cardId: string) => void;
+  /** Eliminar tarjeta de la opción */
+  onDeleteCardFromOption?: (cardId: string) => void;
+  /** Mover tarjeta a otra opción */
+  onMoveCardToOption?: (cardId: string, targetOptionKey: string) => void;
+  /** Actualizar etiqueta de una opción */
+  onUpdateOptionLabel?: (optionIndex: number, newLabel: string) => void;
+}
+
+interface OptionCardsManagerProps {
+  componentOptions: { key: string; label: string; index: number }[];
+  activeOptionKey?: string;
+  optionCardCounts?: Record<string, number>;
+  currentOptionCards?: ContainerCardItem[];
+  selectedCardId?: string | null;
+  onSelectOptionKey?: (key: string) => void;
+  onAddCardToOption?: (optionKey: string) => void;
+  onDuplicateCardInOption?: (cardId: string) => void;
+  onDeleteCardFromOption?: (cardId: string) => void;
+  onMoveCardToOption?: (cardId: string, targetOptionKey: string) => void;
+  onUpdateOptionLabel?: (optionIndex: number, newLabel: string) => void;
+  onSelectCard?: (cardId: string) => void;
+  onCardColorChange?: (cardId: string, color: string) => void;
+}
+
+function OptionCardsManager({
+  componentOptions,
+  activeOptionKey,
+  optionCardCounts = {},
+  currentOptionCards = [],
+  selectedCardId,
+  onSelectOptionKey,
+  onAddCardToOption,
+  onDuplicateCardInOption,
+  onDeleteCardFromOption,
+  onMoveCardToOption,
+  onUpdateOptionLabel,
+  onSelectCard,
+  onCardColorChange,
+}: OptionCardsManagerProps) {
+  const currentKey = activeOptionKey || componentOptions[0]?.key || "opt1";
+  const activeOpt = componentOptions.find((o) => o.key === currentKey) || componentOptions[0];
+  const [labelInput, setLabelInput] = useState(activeOpt?.label || "");
+
+  useEffect(() => {
+    if (activeOpt) {
+      setLabelInput(activeOpt.label);
+    }
+  }, [activeOpt?.label, currentKey]);
+
+  const commitLabel = () => {
+    if (activeOpt && labelInput.trim() && labelInput.trim() !== activeOpt.label) {
+      onUpdateOptionLabel?.(activeOpt.index, labelInput.trim());
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs mb-1">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-ink">Opciones & Tarjetas</span>
+        <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+          {componentOptions.length} opciones
+        </span>
+      </div>
+
+      <p className="text-[11px] text-ink-dim leading-snug">
+        Elige una opción para ver y editar sus tarjetas en el lienzo. Cada opción tiene tarjetas independientes.
+      </p>
+
+      {/* Pestañas de opciones */}
+      <div className="flex flex-col gap-1 pt-0.5">
+        <span className="text-[10px] font-semibold text-ink-dim uppercase">
+          Seleccionar opción:
+        </span>
+        <div className="grid grid-cols-3 gap-1">
+          {componentOptions.map((opt) => {
+            const active = opt.key === currentKey;
+            const count = optionCardCounts[opt.key] ?? 0;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => onSelectOptionKey?.(opt.key)}
+                className={`flex flex-col items-center justify-center rounded-md p-1.5 text-center transition-colors cursor-pointer border ${
+                  active
+                    ? "border-accent bg-accent text-white shadow-xs font-semibold"
+                    : "border-line bg-canvas text-ink hover:bg-hover"
+                }`}
+              >
+                <span className="text-[11px] truncate max-w-full leading-tight">{opt.label}</span>
+                <span
+                  className={`mt-0.5 text-[9px] font-bold px-1 rounded-full ${
+                    active ? "bg-white/25 text-white" : "bg-accent/15 text-accent"
+                  }`}
+                >
+                  {count} {count === 1 ? "tarjeta" : "tarjetas"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Editor de nombre de la opción activa */}
+      {onUpdateOptionLabel && activeOpt && (
+        <div className="flex flex-col gap-1 rounded-md bg-canvas/90 p-2 border border-line">
+          <label htmlFor={`opt-label-input-${activeOpt.key}`} className="text-[10px] font-semibold text-ink-dim uppercase">
+            Editar nombre de {activeOpt.label}:
+          </label>
+          <div className="flex items-center gap-1.5">
+            <input
+              id={`opt-label-input-${activeOpt.key}`}
+              type="text"
+              value={labelInput}
+              onChange={(e) => setLabelInput(e.target.value)}
+              onBlur={commitLabel}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitLabel();
+                }
+              }}
+              placeholder="Nombre de la opción..."
+              className="flex-1 h-7 rounded border border-line bg-canvas px-2 text-xs text-ink focus:border-accent focus:outline-hidden"
+            />
+            {labelInput.trim() && labelInput.trim() !== activeOpt.label && (
+              <button
+                type="button"
+                onClick={commitLabel}
+                className="h-7 rounded bg-accent px-2 text-[11px] font-semibold text-white shadow-xs hover:bg-accent/90 cursor-pointer"
+              >
+                Guardar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Botón para agregar tarjeta a esta opción */}
+      {onAddCardToOption && (
+        <button
+          type="button"
+          onClick={() => onAddCardToOption(currentKey)}
+          className="flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 transition-all cursor-pointer"
+        >
+          <span>+</span> Agregar tarjeta a {activeOpt?.label || "esta opción"}
+        </button>
+      )}
+
+      {/* Lista de tarjetas de la opción activa */}
+      <div className="flex flex-col gap-1 pt-1.5 border-t border-accent/20">
+        <span className="text-[10px] font-semibold text-ink-dim uppercase">
+          Tarjetas en {activeOpt?.label || "esta opción"} ({currentOptionCards.length}):
+        </span>
+
+        {currentOptionCards.length === 0 ? (
+          <p className="py-2 text-center text-[11px] text-ink-dim italic">
+            No hay tarjetas en esta opción. Haz clic en "Agregar tarjeta" arriba para crear una.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-0.5">
+            {currentOptionCards.map((card, idx) => {
+              const isSelected = selectedCardId === card.id;
+              return (
+                <div
+                  key={card.id}
+                  className={`flex flex-col gap-1 rounded-md p-1.5 text-xs transition-colors border ${
+                    isSelected
+                      ? "bg-accent/15 border-accent text-ink font-medium ring-1 ring-accent/30"
+                      : "bg-canvas border-line text-ink-dim hover:text-ink hover:bg-hover"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onSelectCard?.(card.id)}
+                      className="min-w-0 flex-1 truncate text-left cursor-pointer"
+                      title="Hacer clic para seleccionar en el lienzo"
+                    >
+                      <span className="font-semibold text-ink">{idx + 1}.</span> {card.title}
+                    </button>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Selector de color */}
+                      {onCardColorChange && (
+                        <label
+                          title={`Color de fondo de ${card.title}`}
+                          className="relative flex size-4.5 shrink-0 items-center justify-center rounded border border-line shadow-2xs hover:scale-110 transition-transform cursor-pointer"
+                          style={{ background: card.fill && card.fill !== "transparent" ? card.fill : "#ffffff" }}
+                        >
+                          <input
+                            type="color"
+                            aria-label={`Color de fondo de ${card.title}`}
+                            value={colorInputValue(card.fill || "#ffffff")}
+                            onChange={(e) => onCardColorChange(card.id, e.target.value)}
+                            className="absolute inset-0 size-full cursor-pointer opacity-0"
+                          />
+                        </label>
+                      )}
+
+                      {/* Duplicar */}
+                      {onDuplicateCardInOption && (
+                        <button
+                          type="button"
+                          title="Duplicar en esta opción"
+                          onClick={() => onDuplicateCardInOption(card.id)}
+                          className="flex h-5 w-5 items-center justify-center rounded text-accent hover:bg-accent/20 cursor-pointer"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="5" y="5" width="9" height="9" rx="1.5" />
+                            <path d="M11 2H3.5A1.5 1.5 0 002 3.5V11" />
+                          </svg>
+                        </button>
+                      )}
+
+                      {/* Eliminar */}
+                      {onDeleteCardFromOption && (
+                        <button
+                          type="button"
+                          title="Eliminar de esta opción"
+                          onClick={() => onDeleteCardFromOption(card.id)}
+                          className="flex h-5 w-5 items-center justify-center rounded text-red-500 hover:bg-red-500/20 cursor-pointer"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M3 3l10 10M13 3L3 13" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mover a otra opción */}
+                  {onMoveCardToOption && componentOptions.length > 1 && (
+                    <div className="flex items-center gap-1 pt-1 border-t border-line/50 text-[10px]">
+                      <span className="text-ink-dim shrink-0">Mover a:</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {componentOptions
+                          .filter((o) => o.key !== currentKey)
+                          .map((targetOpt) => (
+                            <button
+                              key={targetOpt.key}
+                              type="button"
+                              onClick={() => onMoveCardToOption(card.id, targetOpt.key)}
+                              className="rounded border border-line bg-canvas/80 px-1.5 py-0.5 text-accent hover:bg-accent/10 hover:border-accent/40 active:scale-95 transition-colors cursor-pointer"
+                              title={`Mover tarjeta a ${targetOpt.label}`}
+                            >
+                              → {targetOpt.label}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** Controles intuitivos y compactos de distribución automática, cuadrícula responsiva, separación y relleno. */
@@ -206,12 +479,23 @@ export function LayoutControls({
   onSetScopeMode,
   footerColumnsList,
   onSelectElement,
+  componentOptions,
+  activeOptionKey,
+  optionCardCounts,
+  currentOptionCards,
+  onSelectOptionKey,
+  onAddCardToOption,
+  onDuplicateCardInOption,
+  onDeleteCardFromOption,
+  onMoveCardToOption,
+  onUpdateOptionLabel,
 }: LayoutControlsProps) {
   const viewport = useSafeViewport();
   const [showColumns, setShowColumns] = useState(false);
   const [activeBreakpoint, setActiveBreakpoint] = useState<DeviceBreakpoint>(
     viewport?.device === "mobile" ? "mobile" : viewport?.device === "tablet" ? "tablet" : "desktop",
   );
+  const hasOptions = Boolean(componentOptions && componentOptions.length > 0);
 
   if (isSection) {
     const currentPreset = quickPresetOf(classes);
@@ -440,7 +724,7 @@ export function LayoutControls({
                   onClick={onResetMunicipalHeader}
                   className="w-full flex items-center justify-center gap-1 rounded-md border border-accent/30 bg-canvas px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 cursor-pointer"
                 >
-                  Restablecer a Cabecera Municipal Oficial
+                  Restablecer Encabezado del Portal
                 </button>
               </div>
             )}
@@ -583,7 +867,7 @@ export function LayoutControls({
                             title="Haz clic para seleccionar y editar su texto"
                           >
                             <span className="truncate max-w-[170px]">{item.text}</span>
-                            <span className="text-[10px] text-accent font-medium opacity-80 group-hover:opacity-100 shrink-0 ml-1">Editar ✎</span>
+                            <span className="text-[10px] text-accent font-medium opacity-80 group-hover:opacity-100 shrink-0 ml-1">Editar</span>
                           </button>
                         ))}
                       </div>
@@ -627,8 +911,27 @@ export function LayoutControls({
           </p>
         </div>
 
-        {/* Gestión del Contenedor (Horizontal / Cuadrícula / Columna / Botones / Tarjetas) */}
-        {(currentPreset !== "free" || (containerCards && containerCards.length > 0)) && (
+        {/* Gestión de Opciones & Tarjetas Seleccionables */}
+        {!isHeader && !isFooter && hasOptions && componentOptions && (
+          <OptionCardsManager
+            componentOptions={componentOptions}
+            activeOptionKey={activeOptionKey}
+            optionCardCounts={optionCardCounts}
+            currentOptionCards={currentOptionCards}
+            selectedCardId={selectedCardId}
+            onSelectOptionKey={onSelectOptionKey}
+            onAddCardToOption={onAddCardToOption}
+            onDuplicateCardInOption={onDuplicateCardInOption}
+            onDeleteCardFromOption={onDeleteCardFromOption}
+            onMoveCardToOption={onMoveCardToOption}
+            onUpdateOptionLabel={onUpdateOptionLabel}
+            onSelectCard={onSelectCard}
+            onCardColorChange={onCardColorChange}
+          />
+        )}
+
+        {/* Gestión del Contenedor (Solo cuando realmente es un set de botones o una colección de tarjetas estándar) */}
+        {!isHeader && !isFooter && !hasOptions && (isButtons || category === "cards" || (currentPreset !== "free" && Boolean(containerCards && containerCards.length > 0 && containerCards.some((c) => c.elementCount > 1)))) && (
           <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-ink">
@@ -1194,102 +1497,6 @@ export function LayoutControls({
             </Collapsible>
           </div>
         </Collapsible>
-
-        {/* Dimensionamiento y Alineación del Contenedor (Plegado por defecto) */}
-        <Collapsible title="Dimensiones & Ancho del contenedor" defaultOpen={false}>
-          <div className="flex flex-col gap-2 rounded-lg border border-line bg-canvas/40 p-2.5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-line pb-1.5">
-              <span className="text-[11px] font-semibold text-ink">Ancho & Márgenes exteriores</span>
-              <span className="text-[10px] text-ink-dim">{wrapperConfig.widthMode === "fit" ? "Ajustado (fit)" : "Ancho completo"}</span>
-            </div>
-
-            {/* Ancho del Wrapper */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-medium text-ink-dim">Modo de ancho:</span>
-              <div className="grid grid-cols-2 gap-1 text-[11px]">
-                <button
-                  type="button"
-                  aria-pressed={wrapperConfig.widthMode === "fit"}
-                  onClick={() => onChange(applyWrapperConfig(classes, { widthMode: "fit" }))}
-                  className={`h-6 rounded border font-medium transition-colors ${
-                    wrapperConfig.widthMode === "fit"
-                      ? "border-accent bg-accent/20 text-accent font-semibold"
-                      : "border-line text-ink hover:bg-hover"
-                  } cursor-pointer`}
-                >
-                  Ajustar contenido (w-fit)
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={wrapperConfig.widthMode === "full"}
-                  onClick={() => onChange(applyWrapperConfig(classes, { widthMode: "full" }))}
-                  className={`h-6 rounded border font-medium transition-colors ${
-                    wrapperConfig.widthMode === "full"
-                      ? "border-accent bg-accent/20 text-accent font-semibold"
-                      : "border-line text-ink hover:bg-hover"
-                  } cursor-pointer`}
-                >
-                  Ancho completo (w-full)
-                </button>
-              </div>
-            </div>
-
-            {/* Alineación Interna */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-medium text-ink-dim">Alineación interna:</span>
-              <div className="grid grid-cols-4 gap-1 text-[10px]">
-                {[
-                  { val: "start", label: "Izquierda" },
-                  { val: "center", label: "Centro" },
-                  { val: "end", label: "Derecha" },
-                  { val: "between", label: "Justificado" },
-                ].map((al) => (
-                  <button
-                    key={al.val}
-                    type="button"
-                    aria-pressed={wrapperConfig.align === al.val}
-                    onClick={() => onChange(applyWrapperConfig(classes, { align: al.val as any }))}
-                    className={`h-6 rounded border font-medium transition-colors ${
-                      wrapperConfig.align === al.val
-                        ? "border-accent bg-accent text-white"
-                        : "border-line text-ink hover:bg-hover"
-                    } cursor-pointer`}
-                  >
-                    {al.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Márgenes del Bloque */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-medium text-ink-dim">Margen exterior del bloque:</span>
-              <div className="grid grid-cols-5 gap-1 text-[10px]">
-                {[
-                  { val: "none", label: "0" },
-                  { val: "center", label: "Centrado" },
-                  { val: "sm", label: "Pequeño" },
-                  { val: "md", label: "Medio" },
-                  { val: "lg", label: "Grande" },
-                ].map((m) => (
-                  <button
-                    key={m.val}
-                    type="button"
-                    aria-pressed={wrapperConfig.margin === m.val}
-                    onClick={() => onChange(applyWrapperConfig(classes, { margin: m.val as any }))}
-                    className={`h-5 rounded border font-medium transition-colors ${
-                      wrapperConfig.margin === m.val
-                        ? "border-accent bg-accent text-white"
-                        : "border-line text-ink hover:bg-hover"
-                    } cursor-pointer`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Collapsible>
         </>
       )}
     </Collapsible>
@@ -1304,6 +1511,25 @@ export function LayoutControls({
 
   return (
     <Collapsible title="Disposición & Celda">
+      {/* Gestión de Opciones & Tarjetas Seleccionables */}
+      {!isHeader && !isFooter && hasOptions && componentOptions && (
+        <OptionCardsManager
+          componentOptions={componentOptions}
+          activeOptionKey={activeOptionKey}
+          optionCardCounts={optionCardCounts}
+          currentOptionCards={currentOptionCards}
+          selectedCardId={selectedCardId}
+          onSelectOptionKey={onSelectOptionKey}
+          onAddCardToOption={onAddCardToOption}
+          onDuplicateCardInOption={onDuplicateCardInOption}
+          onDeleteCardFromOption={onDeleteCardFromOption}
+          onMoveCardToOption={onMoveCardToOption}
+          onUpdateOptionLabel={onUpdateOptionLabel}
+          onSelectCard={onSelectCard}
+          onCardColorChange={onCardColorChange}
+        />
+      )}
+
       {/* Controles de elemento dentro de la Cabecera (Header) */}
       {isHeader && (
         <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs mb-2">

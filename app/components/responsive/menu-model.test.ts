@@ -44,6 +44,15 @@ describe("menú responsive", () => {
     expect(setup?.items.map((e) => e.id)).toEqual(["contacto"]);
   });
 
+  it("un menú guardado a medias hereda los valores que faltan (sin top NaN)", () => {
+    const partial = { panel: "drop", icon: "menu", itemIds: ["contacto"] } as never;
+    const setup = menuSetup(header, block({ menu: partial }), "mobile");
+    expect(setup?.config.iconSize).toBe(28);
+    const frame = menuButtonFrame({ ...header, elements: [logo] }, setup!.config);
+    expect(frame.top).toBe(Math.round(40 - frame.size / 2));
+    expect(Number.isFinite(frame.top)).toBe(true);
+  });
+
   it("pone el botón a la derecha, centrado con la fila de arriba", () => {
     const frame = menuButtonFrame({ ...header, elements: [logo] }, defaultMenu(header));
     expect(frame.size).toBe(28 + 24);

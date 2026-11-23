@@ -18,6 +18,10 @@ export const BLOCK_PADDING = 16;
 
 export const isAdaptive = (device: Device): device is AdaptiveDevice => device !== "desktop";
 
+/** El ancho útil de la hoja en ese dispositivo: lo que queda entre los dos márgenes laterales. */
+export const contentWidth = (device: Device, margin: number = DEFAULT_MARGIN): number =>
+  DEVICE_WIDTH[device] - 2 * margin;
+
 /** El ancho que tiene una sección para dibujarse en ese dispositivo, dado el margen lateral de la página. */
 export const availableWidth = (device: Device, margin: number = DEFAULT_MARGIN): number =>
-  DEVICE_WIDTH[device] - 2 * margin - BLOCK_PADDING;
+  contentWidth(device, margin) - BLOCK_PADDING;

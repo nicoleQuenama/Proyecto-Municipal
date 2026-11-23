@@ -29,6 +29,7 @@ import { EXAMPLE_COMPONENTS } from "./component-templates";
 import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
 import { EMPTY_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
+import { uniqueSiteElements } from "./unique-elements";
 import { placeBlock, placeMedia, placeTitle, transferBlock, transferMedia } from "../placement/placement-rules";
 import { mergePatch, moveBlock, resetFormat, resizeSection, styleBox, styleElements, updateBlock } from "./overrides";
 import {
@@ -89,8 +90,8 @@ type Handlers = {
 
 const HANDLERS: Handlers = {
   // Reemplaza todo el sitio por el que se guardó la última vez.
-  "project/load": (_state, action) => action.state,
-  "remote/patch": (state, action) => applyPatchToSite(state, action.patch),
+  "project/load": (_state, action) => uniqueSiteElements(action.state),
+  "remote/patch": (state, action) => uniqueSiteElements(applyPatchToSite(state, action.patch)),
   ...SOURCE_HANDLERS,
   ...SEO_HANDLERS,
   ...DRAW_HANDLERS,

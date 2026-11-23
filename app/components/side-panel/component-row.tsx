@@ -79,9 +79,17 @@ export function ComponentRow({
         <p className="truncate text-xs text-ink-dim">{def.description}</p>
       </div>
 
-      {!def.codeKind && <button type="button" aria-label={`Editar ${def.name}`} title="Editar en el constructor" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>✎</button>}
-      <button type="button" aria-label={`Duplicar ${def.name}`} title="Duplicar componente" onClick={onDuplicate} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>⧉</button>
-      <button type="button" aria-label={`Eliminar ${def.name}`} title="Eliminar" onClick={() => setConfirming(true)} className={`${rowButton} hidden hover:text-red-400 group-hover:flex focus:flex cursor-pointer`}>×</button>
+      {!def.codeKind && (
+        <button type="button" aria-label={`Editar ${def.name}`} title="Editar en el constructor" onClick={onEdit} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>
+          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+        </button>
+      )}
+      <button type="button" aria-label={`Duplicar ${def.name}`} title="Duplicar componente" onClick={onDuplicate} className={`${rowButton} hidden group-hover:flex focus:flex cursor-pointer`}>
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="13" height="13" x="9" y="9" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+      </button>
+      <button type="button" aria-label={`Eliminar ${def.name}`} title="Eliminar" onClick={() => setConfirming(true)} className={`${rowButton} hidden hover:text-red-400 group-hover:flex focus:flex cursor-pointer`}>
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+      </button>
 
       <button
         type="button"

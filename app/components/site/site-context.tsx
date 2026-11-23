@@ -19,6 +19,7 @@ import type { SitePatch } from "../../server/site/site-patch";
 import { useSiteSync } from "../persistence/use-site-sync";
 import { useBranch } from "../versioning/branch-context";
 import { siteReducer } from "./site-reducer";
+import { uniqueSiteElements } from "./unique-elements";
 import { HistoryContext } from "./history-context";
 import { UndoToast } from "./undo-toast";
 import { useHistory } from "./use-history";
@@ -44,7 +45,7 @@ function useNotice() {
 
 /** `initial` + `persist: false`: el visor del sitio publicado, que parte de un sitio dado y no guarda nada. */
 export function SiteProvider({ children, initial = INITIAL_SITE, persist = true }: { children: ReactNode; initial?: SiteState; persist?: boolean }) {
-  const [state, rawDispatch] = useReducer(siteReducer, initial);
+  const [state, rawDispatch] = useReducer(siteReducer, initial, uniqueSiteElements);
   const { message, say } = useNotice();
   const branches = useBranch();
   const remote = useCallback((patch: SitePatch) => rawDispatch({ type: "remote/patch", patch }), []);

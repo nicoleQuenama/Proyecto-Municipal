@@ -4,7 +4,7 @@ import { useState } from "react";
 import { describeSuggestions, suggestAll } from "../responsive/adapt-suggest";
 import { describeSummary, summarizeAdaptation } from "../responsive/adapt-summary";
 import { availableWidth, DEVICE_NAME, isAdaptive } from "../responsive/devices";
-import { MARGIN_LIMITS, sideMargin } from "../responsive/page-margin";
+import { sideMargin } from "../responsive/page-margin";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import { AdaptHelp } from "./adapt-help";
 import { copiesFrom } from "./suggest-copies";
@@ -100,19 +100,6 @@ export function AdaptAssistant() {
       >
         {explaining ? "Ocultar ayuda" : "¿Cómo se adapta?"}
       </button>
-      <label className="flex items-center gap-1.5 text-ink-dim">
-        Margen lateral
-        <input
-          type="number"
-          min={MARGIN_LIMITS.min}
-          max={MARGIN_LIMITS.max}
-          aria-label={`Margen lateral en ${name}`}
-          value={sideMargin(device, page.sideMargin)}
-          onChange={(e) => dispatch({ type: "responsive/margin", pageId: page.id, device, margin: e.target.value === "" ? null : Number(e.target.value) })}
-          className="h-7 w-14 rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent"
-        />
-        px
-      </label>
       {explaining && <AdaptHelp device={name} suggestions={suggestions} />}
     </div>
   );

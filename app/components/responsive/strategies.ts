@@ -10,8 +10,10 @@ export function navbarMenuLayout(def: ComponentDef, available: number): Componen
     def.category === "navigation" ||
     def.id.toLowerCase().includes("navbar") ||
     def.id.toLowerCase().includes("nav") ||
+    def.id.toLowerCase().includes("encabezado") ||
     def.name.toLowerCase().includes("navegaci") ||
-    def.name.toLowerCase().includes("header");
+    def.name.toLowerCase().includes("header") ||
+    def.name.toLowerCase().includes("encabezado");
 
   if (!isNav) {
     return stackLayout(def, available);
@@ -74,7 +76,9 @@ export function smartStrategy(def: ComponentDef, available: number): AutoStrateg
       def.id.toLowerCase().includes("navbar") ||
       def.id.toLowerCase().includes("nav") ||
       def.id.toLowerCase().includes("header") ||
+      def.id.toLowerCase().includes("encabezado") ||
       def.name.toLowerCase().includes("cabecera") ||
+      def.name.toLowerCase().includes("encabezado") ||
       def.name.toLowerCase().includes("navegaci")) &&
     !def.id.toLowerCase().includes("footer") &&
     !def.name.toLowerCase().includes("pie");

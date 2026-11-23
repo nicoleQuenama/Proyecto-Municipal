@@ -61,6 +61,10 @@ export function normalizeExternalUrl(input: string): string | null {
 /** ¿Apunta a una página (para ir a ella o abrirla en una ventana modal)? */
 export const targetsPage = (link: LinkTarget): link is PageLink => link.kind === "page" || link.kind === "modal";
 
+/** ¿Este enlace lleva a la página que se está viendo? Así el menú puede marcar la sección activa. */
+export const isCurrentPageLink = (link: LinkTarget | undefined, currentPageId: string | undefined): boolean =>
+  link?.kind === "page" && !!currentPageId && link.pageId === currentPageId;
+
 /** La flecha que acompaña a cada tipo de enlace. */
 const ARROWS: Record<LinkTarget["kind"], string> = { page: "→", modal: "▣", "close-modal": "✕", external: "↗" };
 export const linkArrow = (link: LinkTarget): string => ARROWS[link.kind];

@@ -249,7 +249,8 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
 
   const { pages, components } = useSite();
   const pageBlocksSlot = splitBlocks(page, components, pages);
-  const hasTopHeader = !page.hideHeader && (shellPage ? true : pageBlocksSlot.top.length > 0);
+  const shellBlocksSlot = shellPage ? splitBlocks(shellPage, components, pages) : null;
+  const hasTopHeader = !page.hideHeader && (shellBlocksSlot && shellBlocksSlot.top.length > 0 ? true : pageBlocksSlot.top.length > 0);
   const hasBottomFooter = !page.hideFooter && pageBlocksSlot.bottom.length > 0;
   const pagePt = hasTopHeader ? "0rem" : "3rem";
   const pagePb = hasBottomFooter ? "0rem" : "3rem";
@@ -501,7 +502,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
           <FullBleedContext value={fullWidth}>
           <PageGuidesProvider>
           {/* La cabecera del sitio no lleva `key`: al navegar sigue siendo el mismo elemento del DOM. */}
-          {shellPage && !page.hideHeader && <PageBlocks page={shellPage} slot="top" interactive={false} />}
+          {shellPage && shellBlocksSlot && shellBlocksSlot.top.length > 0 && !page.hideHeader && (
+            <PageBlocks page={shellPage} slot="top" interactive={false} />
+          )}
 
           {/* Lo que cambia de una página a otra: la clave lo vuelve a montar y reproduce la transición. */}
           <div
@@ -512,7 +515,9 @@ export function PageArtboard({ page, active, tiled, production = false, shellPag
               ...(animation ? { animationDuration: `${animation.seconds}s` } : {}),
             }}
           >
-            {!shellPage && <PageBlocks page={page} slot="top" interactive={active} />}
+            {(!shellPage || !shellBlocksSlot || shellBlocksSlot.top.length === 0) && (
+              <PageBlocks page={page} slot="top" interactive={active} />
+            )}
             <TitleCanvas page={page} interactive={active} />
             <div className="flex-1 flex flex-col relative" style={placedExtent > 0 ? { minHeight: `${placedExtent}px` } : undefined}>
               <PageBlocks page={page} slot="body" interactive={active} />

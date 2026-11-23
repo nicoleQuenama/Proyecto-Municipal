@@ -21,8 +21,10 @@ export function defaultMenu(def: ComponentDef): MenuConfig {
     def.category === "navigation" ||
     def.id.toLowerCase().includes("navbar") ||
     def.id.toLowerCase().includes("nav") ||
+    def.id.toLowerCase().includes("encabezado") ||
     def.name.toLowerCase().includes("navegaci") ||
-    def.name.toLowerCase().includes("header");
+    def.name.toLowerCase().includes("header") ||
+    def.name.toLowerCase().includes("encabezado");
 
   const items = def.elements.filter((element) => {
     if (!fitsInMenu(element)) return false;
@@ -34,7 +36,9 @@ export function defaultMenu(def: ComponentDef): MenuConfig {
         element.role === "button" ||
         element.control?.name === "search-trigger" ||
         element.text?.toLowerCase().includes("buscar") ||
-        def.links?.[element.id] !== undefined
+        element.text?.includes("⌕") ||
+        def.links?.[element.id] !== undefined ||
+        (element.kind === "text" && element.text.trim().length > 0 && element.x > 140)
       );
     }
     return def.links?.[element.id] !== undefined || element.role === "link";
@@ -66,15 +70,20 @@ export function menuSetup(formatted: ComponentDef, block: BlockInstance, device:
   if (isAdaptive(device) && block.responsive?.[device]) return null;
   if (block.adapt?.[device] !== "menu") return null;
   const shown = { ...formatted, elements: visibleOn(formatted.elements, device) };
-  const config = block.menu ?? defaultMenu(shown);
+  // Un menú guardado antes de que existieran todas las opciones puede venir incompleto: sin este merge,
+  // `iconSize` falta y el botón acaba con `top: NaN`. Los valores guardados mandan, los demás son los de fábrica.
+  const config: MenuConfig = { ...defaultMenu(shown), ...block.menu };
   return { config, items: menuSplit(shown, config).items };
 }
 
 /** Dónde queda el botón: a la derecha, centrado con el elemento más alto de la fila superior de la sección ya adaptada. */
 export function menuButtonFrame(view: ComponentDef, config: MenuConfig): { top: number; right: number; size: number } {
-  const size = config.iconSize + 2 * BUTTON_PADDING;
+  const iconSize = Number.isFinite(config.iconSize) ? config.iconSize : 28;
+  const size = iconSize + 2 * BUTTON_PADDING;
   const first = view.elements.filter((element) => !element.hidden).sort(readingOrder)[0];
-  const center = first ? first.y + first.height / 2 : BUTTON_EDGE + size / 2;
+  const center = first && Number.isFinite(first.y) && Number.isFinite(first.height)
+    ? first.y + first.height / 2
+    : BUTTON_EDGE + size / 2;
   return { top: Math.max(0, Math.round(center - size / 2)), right: BUTTON_EDGE, size };
 }
 

@@ -228,7 +228,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                 }}
                 className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ink hover:bg-hover hover:text-accent transition-colors cursor-pointer"
               >
-                <span className="text-xs">✎</span>
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
                 <span>Renombrar página</span>
               </button>
 
@@ -242,7 +242,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                   layoutOpen || page.hideHeader || page.hideFooter ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
                 } cursor-pointer`}
               >
-                <span className="text-xs">☷</span>
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M3 15h18" /></svg>
                 <span>Estructura (Header / Footer)</span>
               </button>
 
@@ -256,7 +256,7 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                   styling || page.backdrop ? "bg-accent/15 text-accent font-medium" : "text-ink hover:bg-hover"
                 } cursor-pointer`}
               >
-                <span className="text-xs">▨</span>
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 3l18 18" /></svg>
                 <span>Fondo de página</span>
               </button>
 
@@ -404,11 +404,12 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                       if (!ownHeader) {
                         const homePage = pages.find((p) => p.isHome || p.slug === "inicio" || p.name.toLowerCase() === "inicio");
                         const homeHeaderId = homePage?.blocks.find((b) => b.slot === "header")?.componentId;
+                        const officialHeaderId = "5a3aa5a6-ed26-464c-bdef-023f492cf471";
                         const headerComp =
                           (homeHeaderId ? components.find((c) => c.id === homeHeaderId) : null) ??
-                          components.find((c) => c.id === "header-oficial") ??
-                          components.find((c) => c.name.toLowerCase().includes("cabecera municipal oficial") || c.name.toLowerCase().includes("header oficial")) ??
-                          components.find((c) => c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("pie"));
+                          components.find((c) => c.id === officialHeaderId) ??
+                          components.find((c) => c.name.toLowerCase().includes("encabezado")) ??
+                          components.find((c) => c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("cierre"));
                         if (headerComp) {
                           dispatch({
                             type: "block/add",
@@ -461,11 +462,12 @@ function PageRow({ page, pages, isCurrent }: PageRowProps) {
                       if (!ownFooter) {
                         const homePage = pages.find((p) => p.isHome || p.slug === "inicio" || p.name.toLowerCase() === "inicio");
                         const homeFooterId = homePage?.blocks.find((b) => b.slot === "footer")?.componentId;
+                        const officialFooterId = "992e86c1-192a-4cb9-ac8e-28982ba109f4";
                         const footerComp =
                           (homeFooterId ? components.find((c) => c.id === homeFooterId) : null) ??
-                          components.find((c) => c.id === "footer-oficial") ??
-                          components.find((c) => c.name.toLowerCase().includes("pie de página municipal oficial") || c.name.toLowerCase().includes("footer oficial")) ??
-                          components.find((c) => c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie")));
+                          components.find((c) => c.id === officialFooterId) ??
+                          components.find((c) => c.name.toLowerCase().includes("cierre institucional") || c.name.toLowerCase().includes("footer")) ??
+                          components.find((c) => c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("cierre")));
                         if (footerComp) {
                           dispatch({
                             type: "block/add",
@@ -523,25 +525,28 @@ export function PagesTab() {
     const homeHeaderBlock = homePage?.blocks.find((b) => b.slot === "header");
     const homeFooterBlock = homePage?.blocks.find((b) => b.slot === "footer");
 
+    const officialHeaderId = "5a3aa5a6-ed26-464c-bdef-023f492cf471";
+    const officialFooterId = "992e86c1-192a-4cb9-ac8e-28982ba109f4";
+
     let headerComp =
       (homeHeaderBlock ? components.find((c) => c.id === homeHeaderBlock.componentId) : null) ??
-      components.find((c) => c.id === "header-oficial") ??
-      components.find((c) => c.name.toLowerCase().includes("cabecera municipal oficial") || c.name.toLowerCase().includes("header oficial")) ??
-      components.find((c) => c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("pie"));
+      components.find((c) => c.id === officialHeaderId) ??
+      components.find((c) => c.name.toLowerCase().includes("encabezado")) ??
+      components.find((c) => c.category === "navigation" && !c.name.toLowerCase().includes("footer") && !c.name.toLowerCase().includes("cierre"));
 
     if (!headerComp) {
-      headerComp = createDefaultMunicipalHeader("header-oficial");
+      headerComp = createDefaultMunicipalHeader(officialHeaderId);
       dispatch({ type: "component/save", component: headerComp });
     }
 
     let footerComp =
       (homeFooterBlock ? components.find((c) => c.id === homeFooterBlock.componentId) : null) ??
-      components.find((c) => c.id === "footer-oficial") ??
-      components.find((c) => c.name.toLowerCase().includes("pie de página municipal oficial") || c.name.toLowerCase().includes("footer oficial")) ??
-      components.find((c) => c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("pie")));
+      components.find((c) => c.id === officialFooterId) ??
+      components.find((c) => c.name.toLowerCase().includes("cierre institucional") || c.name.toLowerCase().includes("footer")) ??
+      components.find((c) => c.category === "navigation" && (c.name.toLowerCase().includes("footer") || c.name.toLowerCase().includes("cierre")));
 
     if (!footerComp) {
-      footerComp = createDefaultMunicipalFooter("footer-oficial");
+      footerComp = createDefaultMunicipalFooter(officialFooterId);
       dispatch({ type: "component/save", component: footerComp });
     }
 

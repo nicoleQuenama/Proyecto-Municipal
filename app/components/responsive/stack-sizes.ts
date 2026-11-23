@@ -30,10 +30,19 @@ const fillWidth = (el: CanvasElement, width: number): Fit => ({
 
 /** Cómo se dimensiona cada tipo de elemento al apilarse en el ancho disponible. */
 export const FIT: Record<ElementKind, (el: CanvasElement, width: number) => Fit> = {
-  rect: (el, width) =>
-    el.width <= 64 && el.height <= 64 && !el.text?.trim()
+  rect: (el, width) => {
+    // Barras decorativas verticales delgadas (ancho <= 12px sin texto): no expandir a 100% ni crear bloques gigantes
+    if (el.width <= 12 && !el.text?.trim()) {
+      return { width: Math.min(el.width, width), height: 0 };
+    }
+    // Divisores horizontales delgados (alto <= 12px sin texto)
+    if (el.height <= 12 && !el.text?.trim()) {
+      return { width, height: el.height };
+    }
+    return el.width <= 64 && el.height <= 64 && !el.text?.trim()
       ? keepAspect(el, width)
-      : fillWidth(el, width),
+      : fillWidth(el, width);
+  },
   text: fillWidth,
   image: keepAspect,
   video: keepAspect,

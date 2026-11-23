@@ -5,7 +5,9 @@ import { useBehaviors } from "../behaviors/use-behaviors";
 import type { Behavior } from "../behaviors/types";
 import { IconGlyph } from "../icons/icon-glyph";
 import { panelText } from "./menu-colors";
+import { isCurrentPageLink } from "../navigation/links";
 import type { LinkTarget } from "../navigation/types";
+import { useCurrentPage } from "../site/site-context";
 import type { CanvasElement, ElementKind } from "../site/types";
 
 /** Qué se muestra de cada tipo de elemento dentro del menú. Un tipo nuevo es una entrada nueva. */
@@ -38,7 +40,13 @@ interface MenuItemProps {
 export function MenuItem({ element, blockId, link, behaviors, live, background, color, onFollow, onDone }: MenuItemProps) {
   const mine = behaviors.filter((b) => b.scope === element.id);
   const { ref, props } = useBehaviors(blockId, mine, live);
-  const isSearch = element.control?.name === "search-trigger" || element.text?.toLowerCase().includes("buscar");
+  const currentPage = useCurrentPage();
+  const active = isCurrentPageLink(link, currentPage?.id);
+  const isSearch =
+    element.control?.name === "search-trigger" ||
+    element.text?.toLowerCase().includes("buscar") ||
+    element.text?.trim() === "⌕" ||
+    element.id.toLowerCase().includes("search");
   const isButton = element.role === "button" && !isSearch;
   const interactive = (live && (link !== undefined || props.onClick !== undefined)) || isSearch;
 
@@ -52,6 +60,10 @@ export function MenuItem({ element, blockId, link, behaviors, live, background, 
   };
 
   if (isSearch) {
+    const searchText =
+      element.text?.trim() === "⌕" || !element.text?.trim()
+        ? "Buscar trámites y servicios..."
+        : element.text.trim();
     return (
       <li className="py-2 border-b border-current/15" ref={ref as never}>
         <button
@@ -65,7 +77,7 @@ export function MenuItem({ element, blockId, link, behaviors, live, background, 
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <span className="flex-1 opacity-90">{element.text?.trim() || "Buscar trámites..."}</span>
+          <span className="flex-1 opacity-90">{searchText}</span>
         </button>
       </li>
     );
@@ -98,9 +110,12 @@ export function MenuItem({ element, blockId, link, behaviors, live, background, 
         data-menu-item=""
         disabled={!interactive}
         onClick={activate}
+        {...(active ? { "aria-current": "page", "data-active": "" } : {})}
         {...(live ? { onPointerEnter: props.onPointerEnter } : {})}
-        className="flex w-full items-center px-1 py-3 text-left text-base transition-opacity disabled:cursor-default enabled:hover:opacity-70 focus-visible:outline-2 focus-visible:outline-accent cursor-pointer"
-        style={{ color: panelText(background, element.color, color), fontFamily: element.fontFamily || undefined, fontWeight: element.bold ? 700 : 400 }}
+        className={`flex w-full items-center px-1 py-3 text-left text-base transition-opacity disabled:cursor-default enabled:hover:opacity-70 focus-visible:outline-2 focus-visible:outline-accent cursor-pointer ${
+          active ? "underline decoration-2 underline-offset-4" : ""
+        }`}
+        style={{ color: panelText(background, element.color, color), fontFamily: element.fontFamily || undefined, fontWeight: active ? 700 : element.bold ? 700 : 400 }}
       >
         {CONTENT[element.kind](element)}
       </button>

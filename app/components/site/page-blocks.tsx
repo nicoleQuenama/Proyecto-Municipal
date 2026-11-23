@@ -19,7 +19,8 @@ import { useNavigation } from "../navigation/navigation-context";
 import { boxStyle, pixelsOf } from "../styles/apply";
 import { adaptToDevice } from "../responsive/adapt";
 import { CellWidth } from "../responsive/available-context";
-import { availableWidth, DEVICE_NAME, isAdaptive } from "../responsive/devices";
+import { availableWidth, contentWidth, DEVICE_NAME, isAdaptive } from "../responsive/devices";
+import { fitDesktopWidth } from "../responsive/desktop-fit";
 import { isHiddenOn } from "../responsive/hidden-on";
 import { sideMargin } from "../responsive/page-margin";
 import { foldOf } from "../responsive/fold-model";
@@ -101,20 +102,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   const resolve = def && styles.resolver(def.id);
   const flow = isFlowLayout(def?.styles?.[SECTION_KEY], block.custom?.[SECTION_KEY]);
 
-  // En tablet y móvil la sección se adapta sola o usa el diseño que la persona definió para ese dispositivo.
   const { device } = useViewport();
   const adaptive = isAdaptive(device);
-  const formatted = def && resolve && applyOverrides(styles.component(def), block, resolve);
-  const cell = useContext(CellWidth);
-  const available = cell ?? availableWidth(device, sideMargin(device, page.sideMargin));
-  const view = formatted && adaptToDevice(formatted, block, device, flow, available);
-  const wideEnough = (view?.width ?? 0) >= MIN_BLEED_WIDTH;
-  useLayoutEffect(() => {
-    const canvas = fullPage && wideEnough ? ref.current?.querySelector<HTMLElement>("[data-canvas]") : null;
-    setPainted(canvas ? visiblePaint(canvas) : null);
-  }, [ref, fullPage, wideEnough, block.custom, def?.styles, view]);
-  const manual = adaptive && block.responsive?.[device] !== undefined;
-  const menu = formatted ? menuSetup(formatted, block, device) : null;
 
   const isHeaderOrFooter =
     slot === "top" ||
@@ -133,6 +122,24 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
   // Encabezados y pies de página siempre se mantienen en el flujo de la página (arriba y abajo), nunca sobreponen.
   // Fuera del escritorio las secciones se apilan en el flujo: la posición libre es solo de secciones del cuerpo en escritorio.
   const placement = adaptive || isHeaderOrFooter || block.placementMode === "flow" ? undefined : block.placement;
+
+  // En tablet y móvil la sección se adapta sola o usa el diseño que la persona definió para ese dispositivo.
+  // En escritorio el margen lateral reduce el ancho útil y la sección se escala a él, sin tocar su definición.
+  const formatted = def && resolve && applyOverrides(styles.component(def), block, resolve);
+  const cell = useContext(CellWidth);
+  const margin = sideMargin(device, page.sideMargin);
+  const available = cell ?? availableWidth(device, margin);
+  const fitted = formatted
+    ? fitDesktopWidth(formatted, device, cell ?? contentWidth(device, margin), { flow, locked: widthLocked, placed: !!placement })
+    : formatted;
+  const view = fitted && adaptToDevice(fitted, block, device, flow, available);
+  const wideEnough = (view?.width ?? 0) >= MIN_BLEED_WIDTH;
+  useLayoutEffect(() => {
+    const canvas = fullPage && wideEnough ? ref.current?.querySelector<HTMLElement>("[data-canvas]") : null;
+    setPainted(canvas ? visiblePaint(canvas) : null);
+  }, [ref, fullPage, wideEnough, block.custom, def?.styles, view]);
+  const manual = adaptive && block.responsive?.[device] !== undefined;
+  const menu = formatted ? menuSetup(formatted, block, device) : null;
 
   // Una cuenta con acceso limitado solo edita las secciones que se le asignaron; el resto se ve pero no se toca.
   const { currentUser } = useAuth();
@@ -232,7 +239,6 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         stretches: stretches(block.box?.span),
         autoFill: autoFill !== null,
         isHeaderOrFooter,
-        defWidth: def.width,
         hasExplicitContentSpan: block.box?.span === "content",
       });
 
@@ -401,7 +407,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       className={`group ${placement ? "absolute" : "relative"} ${move.dragging ? "z-50" : ""} ${limited && permissionLocked ? "opacity-40 saturate-50" : ""} ${limited && !permissionLocked ? "outline-2 outline-dashed outline-accent/70 outline-offset-2" : ""} ${
         customClasses(block, SECTION_KEY, def).includes("w-fit")
           ? "w-fit"
-          : flow || pureCode || stretches(block.box?.span) || autoFill || isHeaderOrFooter || bleeds
+          : flow || pureCode || stretches(block.box?.span) || autoFill || isHeaderOrFooter || bleeds || !placement
             ? "w-full"
             : "w-fit"
       } ${customClasses(block, SECTION_KEY, def).includes("mx-auto") ? "mx-auto" : ""} max-w-full ${
@@ -416,7 +422,9 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
             : ""
       } ${pureCode ? customClasses(block, SECTION_KEY) : ""}`}
       style={{
-        margin: box.margin,
+        margin: block.box?.marginY !== undefined ? `${block.box.marginY}px 0` : box.margin,
+        paddingTop: block.box?.paddingY !== undefined ? `${block.box.paddingY}px` : undefined,
+        paddingBottom: block.box?.paddingY !== undefined ? `${block.box.paddingY}px` : undefined,
         ...(block.box?.blend ? { mixBlendMode: block.box.blend } : {}),
         ...placementStyle(placement),
         // Una sección colocada de ancho completo (o pantalla completa) llega a los bordes de la página, no al ancho del diseño.
@@ -447,15 +455,15 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
         // la sección no hace aparecer barras de desplazamiento.
         // Un bloque de código va sin relleno: lo que se mide (y lo que redimensionan las manijas) es la caja del iframe.
-        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
+        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds || !placement ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
         style={{
           // Un componente que ya ocupa todo el ancho de la hoja va sin relleno: con él se correría y se saldría por la derecha.
-          padding: isHeaderOrFooter || bleeds || pureCode || (view?.width ?? 0) >= available ? 0 : box.padding,
+          padding: isHeaderOrFooter || bleeds || pureCode || !placement || (view?.width ?? 0) >= available ? 0 : box.padding,
           background: background ?? autoFill ?? undefined,
           borderRadius: isHeaderOrFooter || bleeds || stretches(block.box?.span) ? 0 : (boxRadius(block.box?.radius, resolve) ?? box.borderRadius),
           ...(customClasses(block, SECTION_KEY, def).includes("w-fit")
             ? { width: "fit-content" }
-            : isHeaderOrFooter || bleeds
+            : isHeaderOrFooter || bleeds || !placement
               ? { width: "100%", display: "block" }
               : spanStyle(autoFill ? "width" : block.box?.span, placement !== undefined && !placement.fixed, fullPage)),
           ...(hasBackground(backdrop) ? { position: "relative", isolation: "isolate" } : {}),

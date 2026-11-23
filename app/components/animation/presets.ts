@@ -75,7 +75,7 @@ export const PRESETS = {
   reveal: { label: "Revelar", icon: "▤", parts: () => [{ prop: "reveal", from: "0 100% 0 0", to: "0 0 0 0" }] },
   pulse: {
     label: "Latido",
-    icon: "♥",
+    icon: "◈",
     parts: ({ distance }) => [
       { prop: "scale", from: 1, to: 1 + distance / 300, start: 0, span: 0.5 },
       { prop: "scale", from: 1 + distance / 300, to: 1, start: 0.5, span: 0.5 },

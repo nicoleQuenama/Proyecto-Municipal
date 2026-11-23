@@ -217,19 +217,19 @@ function generateFooterHtml(def: ComponentDef, block?: BlockInstance): string {
       <h4 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Atención y Contacto</h4>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 text-xs sm:text-sm text-slate-400">
         <p class="flex items-start gap-2">
-          <span class="text-slate-500 shrink-0">📍</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 shrink-0 mt-0.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
           <span>Plaza 14 de Septiembre, GAMC</span>
         </p>
         <p class="flex items-start gap-2">
-          <span class="text-slate-500 shrink-0">⏰</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           <span>Lun a Vie: 08:00 - 16:00</span>
         </p>
         <p class="flex items-start gap-2">
-          <span class="text-slate-500 shrink-0">📞</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 shrink-0 mt-0.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
           <span class="font-semibold text-slate-200">800-14-0200 (Gratuito)</span>
         </p>
         <p class="flex items-start gap-2">
-          <span class="text-slate-500 shrink-0">✉️</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500 shrink-0 mt-0.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
           <a href="mailto:contacto@gamc.gob.bo" class="text-blue-400 hover:underline">contacto@gamc.gob.bo</a>
         </p>
       </div>
