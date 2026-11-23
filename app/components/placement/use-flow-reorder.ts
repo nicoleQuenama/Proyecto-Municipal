@@ -2,7 +2,7 @@
 
 import { useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { dropTarget } from "./drop-target";
-import { PAGE_SELECTOR } from "./page-geometry";
+import { PAGE_SELECTOR, scaleOf } from "./page-geometry";
 
 /** Píxeles de pantalla que hay que arrastrar antes de que un clic cuente como arrastre. */
 const THRESHOLD = 4;
@@ -27,11 +27,20 @@ function flowSiblings(page: HTMLElement, dragged: string) {
  * más abajo, o al final. Así, al pasarla a «flujo» se queda donde se ve en lugar de saltar al sitio que tiene en la lista.
  * `undefined` si la sección no está en pantalla.
  */
-export function flowSlotOf(blockId: string): string | null | undefined {
+export function flowSlotOf(blockId: string): { beforeId: string | null; gap: number } | undefined {
   const el = [...document.querySelectorAll<HTMLElement>("[data-block-id]")].find((node) => node.dataset.blockId === blockId);
   const page = el?.closest<HTMLElement>(PAGE_SELECTOR);
   if (!el || !page) return undefined;
-  return dropTarget(flowSiblings(page, blockId), el.getBoundingClientRect().top).beforeId;
+
+  const top = el.getBoundingClientRect().top;
+  const siblings = flowSiblings(page, blockId);
+  const { beforeId } = dropTarget(siblings, top);
+  // `gap`: lo que la sección estaba por debajo de la última de arriba, en píxeles de la página. Las secciones libres no
+  // ocupan lugar en el flujo: sin este margen la sección caería justo bajo la de arriba, encima de ellas.
+  const above = siblings.filter((s) => (beforeId === null ? true : s.id !== beforeId) && s.bottom <= top + 1).at(-1);
+  const scale = scaleOf(page);
+  const gap = above ? Math.max(0, Math.round((top - above.bottom) / scale)) : 0;
+  return { beforeId, gap };
 }
 
 /**

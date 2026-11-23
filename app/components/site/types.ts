@@ -180,6 +180,11 @@ export interface BlockBox {
   blend?: BlendMode;
   /** Margen vertical a lo alto (px) aplicado arriba y abajo de la sección. */
   marginY?: number;
+  /**
+   * Margen solo arriba (px) de una sección en flujo. Al pasar una sección de «libre» a «flujo» guarda lo que la separaba de lo de
+   * arriba: las secciones libres no ocupan lugar en el flujo y sin esto la sección caería encima de ellas.
+   */
+  marginTop?: number;
   /** Relleno vertical a lo alto (px) aplicado arriba y abajo del interior de la sección. */
   paddingY?: number;
 }

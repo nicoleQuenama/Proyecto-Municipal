@@ -434,6 +434,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       style={{
         // Siempre los cuatro lados por separado: alternar `margin` con `marginLeft` al sangrar hace que React avise.
         ...marginSides(block.box?.marginY !== undefined ? `${block.box.marginY}px 0` : box.margin),
+        // Una sección que pasó de «libre» a «flujo» conserva su separación de lo de arriba (solo en flujo: colocada, movería su posición).
+        ...(!placement && block.box?.marginTop !== undefined ? { marginTop: `${block.box.marginTop}px` } : {}),
         paddingTop: block.box?.paddingY !== undefined ? `${block.box.paddingY}px` : undefined,
         paddingBottom: block.box?.paddingY !== undefined ? `${block.box.paddingY}px` : undefined,
         ...(block.box?.blend ? { mixBlendMode: block.box.blend } : {}),
