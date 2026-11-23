@@ -23,6 +23,18 @@ function flowSiblings(page: HTMLElement, dragged: string) {
 }
 
 /**
+ * Dónde cae, en el flujo, una sección que hoy está colocada libremente: antes de la primera sección en flujo que queda
+ * más abajo, o al final. Así, al pasarla a «flujo» se queda donde se ve en lugar de saltar al sitio que tiene en la lista.
+ * `undefined` si la sección no está en pantalla.
+ */
+export function flowSlotOf(blockId: string): string | null | undefined {
+  const el = [...document.querySelectorAll<HTMLElement>("[data-block-id]")].find((node) => node.dataset.blockId === blockId);
+  const page = el?.closest<HTMLElement>(PAGE_SELECTOR);
+  if (!el || !page) return undefined;
+  return dropTarget(flowSiblings(page, blockId), el.getBoundingClientRect().top).beforeId;
+}
+
+/**
  * ¿Reordenar es lo que tiene sentido al arrastrarla? Solo si la sección ocupa el ancho de la página (no hay hacia dónde
  * moverla de lado) y hay otras en flujo. Una pieza más angosta se mueve libremente: de lado, arriba o abajo.
  */

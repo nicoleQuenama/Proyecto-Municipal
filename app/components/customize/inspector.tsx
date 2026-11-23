@@ -1,6 +1,7 @@
 "use client";
 
 import { currentPlacement } from "../placement/current-placement";
+import { flowSlotOf } from "../placement/use-flow-reorder";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
@@ -991,8 +992,12 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                     disabled={block.locked}
                     aria-pressed={block.placementMode !== "overlay"}
                     onClick={() => {
+                      // Una sección colocada libremente se queda en el flujo donde se ve, no donde está en la lista:
+                      // se anota su sitio antes de que el cambio le quite la posición.
+                      const beforeId = block.placement ? flowSlotOf(block.id) : undefined;
                       // El propio cambio a «flow» ya quita `placement`: no hace falta volver a colocarlo con null.
                       dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" });
+                      if (beforeId !== undefined) dispatch({ type: "block/reorder", pageId, blockId: block.id, beforeId });
                     }}
                     className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
                       block.locked
