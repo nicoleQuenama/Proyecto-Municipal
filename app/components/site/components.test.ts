@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { siteReducer } from "./site-reducer";
 import { INITIAL_SITE } from "./initial-site";
-import { EXAMPLE_COMPONENTS } from "./component-templates";
+import { EXAMPLE_COMPONENTS, newElement } from "./component-templates";
 
 // Creates base state with empty components
 const base = () => ({ ...INITIAL_SITE, components: [] });
@@ -43,5 +43,34 @@ describe("component actions", () => {
     const s = siteReducer({ ...INITIAL_SITE, components: [comp("x")] }, { type: "components/restore" });
     expect(s.components.find((c) => c.id === "x")).toBeDefined();
     for (const ex of EXAMPLE_COMPONENTS) expect(s.components.filter((c) => c.id === ex.id)).toHaveLength(1);
+  });
+
+  // Updates element properties (fill, color) on component definition
+  it("updates element fill and color with component/element", () => {
+    const componentWithElement = {
+      ...comp("c1"),
+      elements: [
+        newElement("rect", "el-rect", {
+          x: 0,
+          y: 0,
+          width: 800,
+          height: 100,
+          fill: "#ffffff",
+          color: "#000000",
+        }),
+      ],
+    };
+    let s = siteReducer(base(), { type: "component/save", component: componentWithElement });
+    s = siteReducer(s, {
+      type: "component/element",
+      componentId: "c1",
+      pageId: "inicio",
+      blockId: "b1",
+      elementId: "el-rect",
+      patch: { fill: "#00A7D6", color: "#F8FAFC" },
+    });
+    const updated = s.components[0].elements.find((e) => e.id === "el-rect");
+    expect(updated?.fill).toBe("#00A7D6");
+    expect(updated?.color).toBe("#F8FAFC");
   });
 });

@@ -99,7 +99,53 @@ const orgId =
 
 const [project] = await sql<{ id: string }[]>`select id from app.projects where organization_id = ${orgId} and deleted_at is null limit 1`;
 const projectId = project?.id ?? (await sql<{ id: string }[]>`
-  insert into app.projects (organization_id, slug, name) values (${orgId}, 'proyecto-municipal', 'Proyecto Municipal') returning id`)[0].id;
+  insert into app.projects (organization_id, slug, name, settings) values (${orgId}, 'proyecto-municipal', 'Proyecto Municipal', '{"brandRequired": true}'::jsonb) returning id`)[0].id;
+
+// Asegurar que el proyecto tiene configurado el uso obligatorio de marca
+await sql`
+  update app.projects
+  set settings = coalesce(settings, '{}'::jsonb) || '{"brandRequired": true}'::jsonb
+  where id = ${projectId} and organization_id = ${orgId}
+`;
+
+// Variables oficiales del Manual de Marca GAMC
+const brandVariables = [
+  { name: "color-primario", value: "#00A7D6", kind: "color" },
+  { name: "color-primario-hover", value: "#008BB3", kind: "color" },
+  { name: "color-primario-light", value: "#34C3E8", kind: "color" },
+  { name: "color-primario-soft", value: "#8AD4E7", kind: "color" },
+  { name: "color-primario-tint", value: "#E6F6FB", kind: "color" },
+  { name: "color-secundario", value: "#462D81", kind: "color" },
+  { name: "color-secundario-light", value: "#695CA8", kind: "color" },
+  { name: "color-acento-calido", value: "#F47B38", kind: "color" },
+  { name: "color-acento-rosa", value: "#F05D80", kind: "color" },
+  { name: "color-acento-teal", value: "#0DA593", kind: "color" },
+  { name: "color-exito", value: "#0DA593", kind: "color" },
+  { name: "color-exito-bg", value: "#ABDBCB", kind: "color" },
+  { name: "color-alerta", value: "#F47B38", kind: "color" },
+  { name: "color-alerta-bg", value: "#FFE6C2", kind: "color" },
+  { name: "color-alerta-amarillo", value: "#FFDA18", kind: "color" },
+  { name: "color-error", value: "#A91E5D", kind: "color" },
+  { name: "color-error-bg", value: "#F5C3C0", kind: "color" },
+  { name: "color-fondo", value: "#FFFFFF", kind: "color" },
+  { name: "color-superficie", value: "#F8FAFC", kind: "color" },
+  { name: "color-borde", value: "#E2E8F0", kind: "color" },
+  { name: "color-texto", value: "#0F172A", kind: "color" },
+  { name: "color-texto-secundario", value: "#475569", kind: "color" },
+  { name: "color-texto-suave", value: "#94A3B8", kind: "color" },
+  { name: "fuente-interfaz", value: "Roboto, sans-serif", kind: "font" },
+  { name: "fuente-editorial", value: "'Roboto Serif', serif", kind: "font" },
+];
+
+for (let i = 0; i < brandVariables.length; i++) {
+  const v = brandVariables[i];
+  await sql`
+    INSERT INTO app.style_variables (organization_id, project_id, scope, name, kind, value, position)
+    VALUES (${orgId}, ${projectId}, 'global', ${v.name}, ${v.kind}, ${v.value}, ${i})
+    ON CONFLICT (organization_id, project_id, scope, page_id, component_id, name)
+    DO UPDATE SET value = EXCLUDED.value, kind = EXCLUDED.kind, position = EXCLUDED.position
+  `;
+}
 
 let created = 0;
 for (const account of accounts) {

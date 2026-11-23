@@ -41,10 +41,19 @@ export function resolveOverride(element: CanvasElement, override: ElementOverrid
   for (const prop of Object.keys(VARIABLE_PROPS) as VariableProp[]) {
     const raw = override[prop];
     if (typeof raw !== "string") continue;
-    next[prop] = (VARIABLE_PROPS[prop] as (resolved: string | undefined, fallback: unknown) => unknown)(
-      resolve(raw),
-      element[prop],
-    );
+    const isVar = raw.startsWith("var(");
+    if (isVar) {
+      const resolved = resolve(raw);
+      next[prop] =
+        prop === "fontSize" || prop === "radius"
+          ? pixelsOf(resolved, element[prop] as number)
+          : (resolved ?? element[prop]);
+    } else {
+      next[prop] =
+        prop === "fontSize" || prop === "radius"
+          ? pixelsOf(raw, element[prop] as number)
+          : raw;
+    }
   }
   return next as unknown as CanvasElement;
 }
