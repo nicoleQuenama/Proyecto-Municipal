@@ -13,8 +13,15 @@ type Frame = Pick<CanvasElement, "x" | "y" | "width" | "height">;
 /** Cada elemento acoplado va justo después de su contenedor, para dibujarse encima de él. */
 function orderByTree(elements: CanvasElement[]): CanvasElement[] {
   const ids = new Set(elements.map((e) => e.id));
-  const childrenOf = (id: string) => elements.filter((e) => e.parentId === id);
-  const place = (element: CanvasElement): CanvasElement[] => [element, ...childrenOf(element.id).flatMap(place)];
+  // Una sola pasada agrupa los hijos por contenedor (antes se filtraba toda la lista por cada elemento).
+  const children = new Map<string, CanvasElement[]>();
+  for (const element of elements) {
+    if (element.parentId === undefined) continue;
+    const siblings = children.get(element.parentId);
+    if (siblings) siblings.push(element);
+    else children.set(element.parentId, [element]);
+  }
+  const place = (element: CanvasElement): CanvasElement[] => [element, ...(children.get(element.id) ?? []).flatMap(place)];
 
   // Un elemento cuyo contenedor ya no existe cuenta como suelto.
   return elements.filter((e) => e.parentId === undefined || !ids.has(e.parentId)).flatMap(place);
@@ -35,10 +42,16 @@ const offsetPosition = (parent: CanvasElement, offset: Point): Point => ({
 
 /** Cómo se coloca un elemento acoplado, de lo más específico a lo más general. */
 function placedIn(parent: CanvasElement, element: CanvasElement): CanvasElement {
-  if (element.fitToParent) return { ...element, ...filledFrame(parent) };
-  if (element.slot) return { ...element, ...dockedPosition(parent, element, element.slot) };
-  if (element.offset) return { ...element, ...offsetPosition(parent, element.offset) };
+  if (element.fitToParent) return withFrame(element, filledFrame(parent));
+  if (element.slot) return withFrame(element, dockedPosition(parent, element, element.slot));
+  if (element.offset) return withFrame(element, offsetPosition(parent, element.offset));
   return element;
+}
+
+/** El elemento con esa caja; si ya la tenía devuelve el mismo objeto, para que lo que no se movió no se vuelva a dibujar. */
+function withFrame(element: CanvasElement, frame: Partial<Frame>): CanvasElement {
+  const same = (Object.keys(frame) as (keyof Frame)[]).every((key) => element[key] === frame[key]);
+  return same ? element : { ...element, ...frame };
 }
 
 /** Un elemento al que le falta su contenedor queda suelto, donde está. */

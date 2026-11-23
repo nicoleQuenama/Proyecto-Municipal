@@ -1,4 +1,5 @@
-import { SECTION_KEY, type CanvasElement, type ComponentDef, type BlockInstance } from "./types";
+import { componentHtml } from "./component-html";
+import type { ComponentDef, BlockInstance } from "./types";
 
 function escapeHtml(text: string): string {
   return text
@@ -247,33 +248,7 @@ function generateFooterHtml(def: ComponentDef, block?: BlockInstance): string {
 </footer>`;
 }
 
-function generateGenericComponentHtml(def: ComponentDef, block?: BlockInstance): string {
-  const sectionClasses = def.styles?.[SECTION_KEY]?.classes || "w-full max-w-7xl mx-auto px-6 py-8 flex flex-col gap-4";
-  const elements = def.elements.filter((e) => !e.hidden);
-
-  const elementsHtml = elements
-    .map((el) => {
-      const text = escapeHtml(el.text || "");
-      if (el.role === "heading" || el.fontSize >= 22) {
-        return `    <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">${text}</h2>`;
-      }
-      if (el.role === "link") {
-        return `    <a href="#" class="text-accent hover:underline font-medium">${text}</a>`;
-      }
-      if (el.role === "button" || el.kind === "rect" && text) {
-        return `    <button type="button" class="px-4 py-2 rounded-lg bg-accent text-white font-semibold shadow-xs hover:bg-accent/90 transition-colors">${text}</button>`;
-      }
-      if (el.kind === "image" || el.kind === "ellipse" && el.src) {
-        return `    <img src="${escapeHtml(el.src)}" alt="${escapeHtml(el.alt || "Imagen")}" class="rounded-lg max-w-full h-auto object-cover" />`;
-      }
-      if (el.kind === "text") {
-        return `    <p class="text-base text-slate-700 leading-relaxed">${text}</p>`;
-      }
-      return `    <div class="w-full p-4 rounded-lg bg-slate-50 border border-slate-200">${text}</div>`;
-    })
-    .join("\n");
-
-  return `<section class="${escapeHtml(sectionClasses)}">
-${elementsHtml}
-</section>`;
+/** Un componente que no es cabecera ni pie: su HTML es su diseño real, no una plantilla inventada. */
+function generateGenericComponentHtml(def: ComponentDef, _block?: BlockInstance): string {
+  return componentHtml(def);
 }

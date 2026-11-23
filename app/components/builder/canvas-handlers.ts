@@ -4,6 +4,7 @@ import { clampCanvasSize } from "../canvas-editing/limits";
 import { templateById } from "../site/component-templates";
 import { targetsPage } from "../navigation/links";
 import type { Handlers } from "./builder-types";
+import { selectIn } from "./selection";
 
 export const CANVAS_HANDLERS: Handlers<"meta" | "template" | "link" | "select"> = {
   meta: (state, action) => {
@@ -23,7 +24,7 @@ export const CANVAS_HANDLERS: Handlers<"meta" | "template" | "link" | "select"> 
         ([, link]) => !targetsPage(link) || action.pageIds.includes(link.pageId),
       ),
     );
-    return { ...state, width: template.width, height: template.height, elements, links, styles: template.styles, selectedId: null };
+    return { ...state, width: template.width, height: template.height, elements, links, styles: template.styles, selectedId: null, alsoSelectedIds: [] };
   },
 
   link: (state, action) => {
@@ -33,5 +34,5 @@ export const CANVAS_HANDLERS: Handlers<"meta" | "template" | "link" | "select"> 
     return { ...state, links };
   },
 
-  select: (state, action) => ({ ...state, selectedId: action.id }),
+  select: (state, action) => selectIn(state, action.id, action.additive),
 };

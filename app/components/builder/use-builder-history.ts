@@ -26,7 +26,8 @@ export function useBuilderHistory(initial?: ComponentDef) {
   const dispatch = useCallback((action: BuilderAction) => {
     setHistory((current) => {
       if (action.type === "select") {
-        return { ...current, present: { ...current.present, selectedId: action.id } };
+        // Seleccionar no es un cambio del diseño: no entra en el historial.
+        return { ...current, present: builderReducer(current.present, action) };
       }
 
       const next = builderReducer(current.present, action);

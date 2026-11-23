@@ -23,6 +23,17 @@ function flowSiblings(page: HTMLElement, dragged: string) {
 }
 
 /**
+ * ¿Reordenar es lo que tiene sentido al arrastrarla? Solo si la sección ocupa el ancho de la página (no hay hacia dónde
+ * moverla de lado) y hay otras en flujo. Una pieza más angosta se mueve libremente: de lado, arriba o abajo.
+ */
+export function reordersOnDrag(from: HTMLElement, dragged: string): boolean {
+  const page = from.closest<HTMLElement>(PAGE_SELECTOR);
+  if (!page) return true;
+  const slack = page.getBoundingClientRect().width - from.getBoundingClientRect().width;
+  return slack < 24 && flowSiblings(page, dragged).length > 0;
+}
+
+/**
  * Arrastrar una sección que sigue el flujo de la página: se reordena entre las demás, con una línea guía que marca
  * dónde va a caer. Es lo que se espera de «mover una sección»: no flota encima de otras.
  */

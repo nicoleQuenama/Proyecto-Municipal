@@ -5,6 +5,8 @@ import { sortByOrder } from "../layers/layer-order";
 import type { CanvasElement } from "../site/types";
 import type { Handlers } from "./builder-types";
 import { detach, editElement, fitToCanvas } from "./element-rules";
+import { pasteElements } from "./paste-element";
+import { selectedIdsOf, selectOnly } from "./selection";
 
 /** Dónde queda un elemento al reordenarlo. */
 const REORDER: Record<"front" | "back", (others: CanvasElement[], target: CanvasElement) => CanvasElement[]> = {
@@ -20,12 +22,14 @@ function applyPatch(element: CanvasElement, patch: Partial<CanvasElement>): Canv
   return changed;
 }
 
-export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "reorder" | "order" | "remove"> = {
-  add: (state, action) => ({
-    ...state,
-    elements: [...state.elements, fitToCanvas(action.element, state.width, state.height)],
-    selectedId: action.element.id,
-  }),
+export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "paste" | "reorder" | "order" | "remove"> = {
+  paste: (state, action) => pasteElements(state, action.clip, action.ids),
+
+  add: (state, action) =>
+    selectOnly(
+      { ...state, elements: [...state.elements, fitToCanvas(action.element, state.width, state.height)] },
+      [action.element.id],
+    ),
 
   update: (state, action) => editElement(state, action.id, (element) => applyPatch(element, action.patch)),
 
@@ -34,7 +38,7 @@ export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "reorde
     if (!source) return state;
 
     const copy = fitToCanvas({ ...detach(source), id: action.newId, x: source.x + 12, y: source.y + 12 }, state.width, state.height);
-    return { ...state, elements: [...state.elements, copy], selectedId: copy.id };
+    return selectOnly({ ...state, elements: [...state.elements, copy] }, [copy.id]);
   },
 
   reorder: (state, action) => {
@@ -50,11 +54,14 @@ export const ELEMENT_HANDLERS: Handlers<"add" | "update" | "duplicate" | "reorde
   // Quitar un contenedor suelta lo que llevaba dentro, que se queda donde se veía.
   remove: (state, action) => {
     const removed = new Set([action.id]);
-    return {
-      ...state,
-      elements: withoutElements(state.elements, removed),
-      links: Object.fromEntries(Object.entries(state.links).filter(([id]) => id !== action.id)),
-      selectedId: state.selectedId === action.id ? null : state.selectedId,
-    };
+    const remaining = selectedIdsOf(state).filter((id) => id !== action.id);
+    return selectOnly(
+      {
+        ...state,
+        elements: withoutElements(state.elements, removed),
+        links: Object.fromEntries(Object.entries(state.links).filter(([id]) => id !== action.id)),
+      },
+      remaining,
+    );
   },
 };
