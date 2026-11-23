@@ -12,6 +12,8 @@ export interface BuilderState {
   elements: CanvasElement[];
   links: Record<string, LinkTarget>;
   selectedId: string | null;
+  /** Elementos sumados a la selección con Ctrl/⌘-clic (el principal es `selectedId`). */
+  alsoSelectedIds: string[];
 }
 
 export type BuilderAction =
@@ -32,15 +34,18 @@ export type BuilderAction =
   /** Acopla un elemento a un contenedor (en una casilla o en posición libre) o lo suelta (`parentId` null). */
   | { type: "dock"; id: string; parentId: string | null; anchor?: DockAnchor }
   | { type: "duplicate"; id: string; newId: string }
+  /** Pega un elemento copiado y su contenido; `ids` son los ids nuevos, uno por pieza y en el orden de `clip`. */
+  | { type: "paste"; clip: CanvasElement[]; ids: string[] }
   | { type: "reorder"; id: string; to: "front" | "back" }
   /** Reordena todas las capas: los ids van de atrás hacia delante. */
   | { type: "order"; ids: string[] }
   | { type: "remove"; id: string }
-  | { type: "select"; id: string | null };
+  /** `additive`: suma o quita `id` de la selección en vez de reemplazarla. */
+  | { type: "select"; id: string | null; additive?: boolean };
 
 export function initialBuilderState(def?: ComponentDef): BuilderState {
   if (!def) {
-    return { name: "", category: "cards", width: 320, height: 200, elements: [], links: {}, selectedId: null };
+    return { name: "", category: "cards", width: 320, height: 200, elements: [], links: {}, selectedId: null, alsoSelectedIds: [] };
   }
   return {
     name: def.name,
@@ -50,6 +55,7 @@ export function initialBuilderState(def?: ComponentDef): BuilderState {
     elements: def.elements,
     links: def.links,
     selectedId: null,
+    alsoSelectedIds: [],
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useContext, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { FullBleedContext } from "../viewport/page-width";
 import { MIN_BLEED_WIDTH, visiblePaint } from "./full-bleed";
 import { canEditBlock } from "../auth/access";
@@ -23,6 +23,7 @@ import { availableWidth, contentWidth, DEVICE_NAME, isAdaptive } from "../respon
 import { fitDesktopWidth } from "../responsive/desktop-fit";
 import { isHiddenOn } from "../responsive/hidden-on";
 import { sideMargin } from "../responsive/page-margin";
+import { marginSides } from "./margin-sides";
 import { foldOf } from "../responsive/fold-model";
 import { FoldedView } from "../responsive/folded-view";
 import { MenuLayer } from "../responsive/menu-layer";
@@ -56,7 +57,7 @@ import type { Size } from "../canvas-editing/limits";
 import { placementAttributes, placementStyle } from "../placement/placement-style";
 import { PlacementGrip } from "../placement/placement-grip";
 import { LockClosedIcon, LockOpenIcon } from "../icons/lock-icons";
-import { useFlowReorder } from "../placement/use-flow-reorder";
+import { reordersOnDrag, useFlowReorder } from "../placement/use-flow-reorder";
 import { usePlacementDrag } from "../placement/use-placement-drag";
 import { PLACE_KEY, SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
 import { VisibilityEye } from "./visibility-eye";
@@ -221,7 +222,16 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
       dispatch({ type: "block/reorder", pageId: page.id, blockId: block.id, alsoIds: group.length > 1 && group.includes(block.id) ? group : undefined, beforeId });
     },
   });
-  const startMove = placement ? move.startDrag : reorder.startDrag;
+  // Una sección más angosta que la página (o sin otras en flujo) no se reordena: se coloca donde está y se mueve libre.
+  const startMove = placement
+    ? move.startDrag
+    : (e: ReactPointerEvent<HTMLElement>) => {
+        if (canDragPlacement && ref.current && !reordersOnDrag(ref.current, block.id)) {
+          placeWhereItIs({ top: true });
+          return move.startDrag(e);
+        }
+        reorder.startDrag(e);
+      };
   const dropData = useDropData(page.id, block, view?.elements ?? []);
   const sectionDrop = useDataDrop((ref) => dropData(ref, null), editing && !pureCode);
   if (!def || !view || !resolve) return null;
@@ -422,7 +432,8 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
             : ""
       } ${pureCode ? customClasses(block, SECTION_KEY) : ""}`}
       style={{
-        margin: block.box?.marginY !== undefined ? `${block.box.marginY}px 0` : box.margin,
+        // Siempre los cuatro lados por separado: alternar `margin` con `marginLeft` al sangrar hace que React avise.
+        ...marginSides(block.box?.marginY !== undefined ? `${block.box.marginY}px 0` : box.margin),
         paddingTop: block.box?.paddingY !== undefined ? `${block.box.paddingY}px` : undefined,
         paddingBottom: block.box?.paddingY !== undefined ? `${block.box.paddingY}px` : undefined,
         ...(block.box?.blend ? { mixBlendMode: block.box.blend } : {}),

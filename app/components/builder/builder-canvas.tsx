@@ -1,15 +1,19 @@
 "use client";
 
-import { useRef, type Dispatch } from "react";
+import { memo, useRef, type Dispatch } from "react";
 import { ElementHandles } from "../canvas-editing/element-handles";
 import { EditingLayer } from "../canvas-editing/editing-layer";
 import { useCanvasSettings } from "../canvas-editing/settings-context";
-import { useCanvasGestures } from "../canvas-editing/use-canvas-gestures";
+import { useCanvasGestures, type CanvasCommands } from "../canvas-editing/use-canvas-gestures";
+import { selectedIdsOf, withoutNested } from "./selection";
 import { ElementContent } from "../site/component-view";
 import { builderCommands } from "./builder-commands";
 import type { BuilderAction, BuilderState } from "./builder-reducer";
 import { handleCanvasKey } from "./canvas-keys";
 import { useCanvasMedia } from "./use-canvas-media";
+
+/** Al arrastrar solo cambia un elemento: los demás conservan su objeto y no se vuelven a dibujar. */
+const StaticContent = memo(ElementContent);
 
 interface BuilderCanvasProps {
   state: BuilderState;
@@ -24,13 +28,29 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
   const media = useCanvasMedia(dispatch, canvasRef);
   // Un clic (sin arrastrar) sobre una imagen vacía que ya estaba seleccionada abre el selector de archivos.
   const press = useRef<{ x: number; y: number; wasSelected: boolean } | null>(null);
-  const { guides, drop, startDrag, onPointerMove, endDrag } = useCanvasGestures({
-    size,
-    elements: state.elements,
-    settings,
-    commands: builderCommands(dispatch),
-    canvasRef,
-  });
+  const selected = selectedIdsOf(state);
+  // Dónde dejó el gesto al elemento arrastrado la última vez: de ahí sale cuánto mover a los demás seleccionados.
+  const lastDragged = useRef<{ id: string; x: number; y: number } | null>(null);
+  const base = builderCommands(dispatch);
+  const commands: CanvasCommands = {
+    ...base,
+    // Arrastrar uno de varios seleccionados no rompe la selección.
+    select: (id) => (selected.length > 1 && selected.includes(id) ? undefined : base.select(id)),
+    move: (id, x, y) => {
+      const from = lastDragged.current?.id === id ? lastDragged.current : state.elements.find((e) => e.id === id);
+      lastDragged.current = { id, x, y };
+      base.move(id, x, y);
+      if (!from || !selected.includes(id)) return;
+      const others = withoutNested(state.elements, selected).filter((other) => other !== id);
+      others.forEach((other) => dispatch({ type: "nudge", id: other, dx: x - from.x, dy: y - from.y }));
+    },
+  };
+  const gestures = useCanvasGestures({ size, elements: state.elements, settings, commands, canvasRef });
+  const { guides, drop, startDrag, onPointerMove } = gestures;
+  const endDrag = () => {
+    lastDragged.current = null;
+    gestures.endDrag();
+  };
 
   return (
     <div
@@ -38,7 +58,7 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
       role="group"
       aria-label={`Lienzo del componente, ${state.width} por ${state.height} píxeles`}
       tabIndex={0}
-      onKeyDown={(e) => handleCanvasKey(e, state.selectedId, dispatch)}
+      onKeyDown={(e) => handleCanvasKey(e, state, dispatch)}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
@@ -48,14 +68,21 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
       style={size}
     >
       {state.elements.map((element) => {
-        const selected = element.id === state.selectedId;
+        const isSelected = selected.includes(element.id);
+        const isPrimary = element.id === state.selectedId;
 
         return (
           <div
             key={element.id}
             onPointerDown={(e) => {
               canvasRef.current?.focus(); // para que las flechas y Supr actúen sobre el lienzo
-              press.current = { x: e.clientX, y: e.clientY, wasSelected: selected };
+              press.current = { x: e.clientX, y: e.clientY, wasSelected: isPrimary };
+              // Ctrl/⌘/Mayús-clic suma o quita el elemento de la selección, sin arrastrar.
+              if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                e.stopPropagation();
+                dispatch({ type: "select", id: element.id, additive: true });
+                return;
+              }
               startDrag(e, element);
             }}
             onClick={(e) => {
@@ -67,15 +94,15 @@ export function BuilderCanvas({ state, dispatch }: BuilderCanvasProps) {
             }}
             {...media.drop(element)}
             className={`absolute cursor-move touch-none select-none ${
-              selected ? "outline-2 outline-accent" : "hover:outline-1 hover:outline-accent/60"
+              isSelected ? "outline-2 outline-accent" : "hover:outline-1 hover:outline-accent/60"
             } ${media.overId === element.id ? "bg-accent/20 outline-2 outline-accent" : ""}`}
             style={{ left: element.x, top: element.y, width: element.width, height: element.height }}
           >
             <div className="pointer-events-none h-full w-full">
-              <ElementContent element={element} />
+              <StaticContent element={element} />
             </div>
 
-            {selected && <ElementHandles onStart={(e, handle) => startDrag(e, element, handle)} />}
+            {isPrimary && selected.length === 1 && <ElementHandles onStart={(e, handle) => startDrag(e, element, handle)} />}
           </div>
         );
       })}
