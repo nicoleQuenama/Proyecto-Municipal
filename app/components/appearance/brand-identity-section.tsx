@@ -5,6 +5,7 @@ import { Badge } from "../ui/badge";
 import { Collapsible } from "../ui/collapsible";
 import { Modal } from "../ui/modal";
 import { optimizedSrc } from "../media/optimize-src";
+import { BRAND_BORDER_PRESETS, type BorderPresetId } from "../auth/brand-manual";
 import type { BrandLogoConfig, ProjectMediaAsset, SiteState } from "../site/types";
 
 interface BrandIdentitySectionProps {
@@ -86,9 +87,55 @@ export function BrandIdentitySection({ site, dispatch, canEdit = false }: BrandI
     });
   };
 
+  // Estados para gobernanza de tarjetas
+  const [cardPreset, setCardPreset] = useState<Exclude<BorderPresetId, "custom">>("primary");
+  const [cardFill, setCardFill] = useState<string>("#FFFFFF");
+  const [cardRadius, setCardRadius] = useState<number>(8);
+  const [cardMandatory, setCardMandatory] = useState<boolean>(true);
+  const [cardHarmonized, setCardHarmonized] = useState<boolean>(false);
+
+  // Estados para gobernanza de botones
+  const [buttonStyle, setButtonStyle] = useState<"primary" | "secondary" | "outline">("primary");
+  const [buttonRadius, setButtonRadius] = useState<number>(6);
+  const [buttonMandatory, setButtonMandatory] = useState<boolean>(true);
+  const [buttonHarmonized, setButtonHarmonized] = useState<boolean>(false);
+
+  const handleHarmonizeCards = () => {
+    dispatch({
+      type: "brand/harmonize-cards",
+      preset: cardPreset,
+      fill: cardFill,
+      radius: cardRadius,
+      mandatory: cardMandatory,
+    });
+    setCardHarmonized(true);
+    setTimeout(() => setCardHarmonized(false), 3000);
+  };
+
+  const handleHarmonizeButtons = () => {
+    const config =
+      buttonStyle === "primary"
+        ? { fill: "#00A7D6", color: "#FFFFFF", borderWidth: 0, borderColor: "transparent" }
+        : buttonStyle === "secondary"
+          ? { fill: "#0DA593", color: "#FFFFFF", borderWidth: 0, borderColor: "transparent" }
+          : { fill: "transparent", color: "#00A7D6", borderWidth: 1.5, borderColor: "#00A7D6" };
+
+    dispatch({
+      type: "brand/harmonize-buttons",
+      fill: config.fill,
+      color: config.color,
+      radius: buttonRadius,
+      borderWidth: config.borderWidth,
+      borderColor: config.borderColor,
+      mandatory: buttonMandatory,
+    });
+    setButtonHarmonized(true);
+    setTimeout(() => setButtonHarmonized(false), 3000);
+  };
+
   return (
     <Collapsible
-      title="Identidad Institucional · Logos y Favicon"
+      title="Identidad y Gobernanza Institucional (GAMC)"
       defaultOpen={true}
       badge={<Badge tone="accent">Oficial</Badge>}
     >
@@ -263,6 +310,270 @@ export function BrandIdentitySection({ site, dispatch, canEdit = false }: BrandI
               </button>
             )}
           </div>
+        </div>
+
+        {/* 4. Gobernanza de Tarjetas y Bordes Institucionales */}
+        <div className="flex flex-col gap-3 border-t border-line/80 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink">Gobernanza de Tarjetas y Bordes</span>
+            <span className="text-[10px] text-ink-dim">Manual GAMC</span>
+          </div>
+
+          <p className="text-[11px] text-ink-dim leading-relaxed">
+            Alinea todas las tarjetas y contenedores de la plataforma con la identidad visual oficial, eliminando estilos locales inconsistentes o degradados no autorizados.
+          </p>
+
+          {/* Selector de Presets de Borde */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-medium text-ink">Estilo de Borde Institucional:</span>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCardPreset("primary")}
+                disabled={!canEdit}
+                className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-all cursor-pointer ${
+                  cardPreset === "primary"
+                    ? "border-accent bg-accent/10 shadow-xs text-ink font-semibold"
+                    : "border-line bg-panel text-ink-dim hover:bg-hover"
+                }`}
+              >
+                <div className="h-4 w-full rounded border-2 border-[#00A7D6] bg-white" />
+                <span className="text-[10px] leading-tight">Primario (2px Azul)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCardPreset("secondary")}
+                disabled={!canEdit}
+                className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-all cursor-pointer ${
+                  cardPreset === "secondary"
+                    ? "border-accent bg-accent/10 shadow-xs text-ink font-semibold"
+                    : "border-line bg-panel text-ink-dim hover:bg-hover"
+                }`}
+              >
+                <div className="h-4 w-full rounded border border-[#E2E8F0] bg-white" />
+                <span className="text-[10px] leading-tight">Secundario (1px Gris)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCardPreset("none")}
+                disabled={!canEdit}
+                className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-all cursor-pointer ${
+                  cardPreset === "none"
+                    ? "border-accent bg-accent/10 shadow-xs text-ink font-semibold"
+                    : "border-line bg-panel text-ink-dim hover:bg-hover"
+                }`}
+              >
+                <div className="h-4 w-full rounded border border-dashed border-line bg-white" />
+                <span className="text-[10px] leading-tight">Sin Borde</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Opciones de Fondo y Esquinas */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-medium text-ink">Color de Fondo:</span>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCardFill("#FFFFFF")}
+                  disabled={!canEdit}
+                  className={`flex-1 rounded-md border py-1 text-[10px] font-medium transition-all cursor-pointer ${
+                    cardFill === "#FFFFFF"
+                      ? "border-accent bg-accent/10 text-ink font-semibold"
+                      : "border-line bg-panel text-ink-dim hover:bg-hover"
+                  }`}
+                >
+                  Blanco (#FFF)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCardFill("#F8FAFC")}
+                  disabled={!canEdit}
+                  className={`flex-1 rounded-md border py-1 text-[10px] font-medium transition-all cursor-pointer ${
+                    cardFill === "#F8FAFC"
+                      ? "border-accent bg-accent/10 text-ink font-semibold"
+                      : "border-line bg-panel text-ink-dim hover:bg-hover"
+                  }`}
+                >
+                  Superficie
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-medium text-ink">Radio de Esquinas:</span>
+              <div className="flex gap-1">
+                {[0, 8, 12, 16].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setCardRadius(r)}
+                    disabled={!canEdit}
+                    className={`flex-1 rounded-md border py-1 text-[10px] font-medium transition-all cursor-pointer ${
+                      cardRadius === r
+                        ? "border-accent bg-accent text-white"
+                        : "border-line bg-panel text-ink-dim hover:bg-hover"
+                    }`}
+                  >
+                    {r}px
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Checkbox Obligatorio */}
+          {canEdit && (
+            <label className="flex items-start gap-2 rounded-md bg-hover/40 p-2 text-[11px] text-ink-dim border border-line/40 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cardMandatory}
+                onChange={(e) => setCardMandatory(e.target.checked)}
+                className="mt-0.5 accent-accent cursor-pointer"
+              />
+              <span>
+                <strong className="text-ink">Gobernanza estricta:</strong> Bloquear tarjetas para que ningún editor local pueda aplicar degradados ni bordes no autorizados.
+              </span>
+            </label>
+          )}
+
+          {/* Botón Armonizar */}
+          {canEdit && (
+            <div className="flex flex-col gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={handleHarmonizeCards}
+                className="flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-white shadow-xs hover:opacity-90 cursor-pointer transition-opacity"
+              >
+                Aplicar y armonizar todas las tarjetas del portal
+              </button>
+              {cardHarmonized && (
+                <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                  Todas las tarjetas del portal han sido armonizadas con éxito.
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 5. Gobernanza de Botones Institucionales */}
+        <div className="flex flex-col gap-3 border-t border-line/80 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink">Gobernanza de Botones</span>
+            <span className="text-[10px] text-ink-dim">Manual GAMC</span>
+          </div>
+
+          <p className="text-[11px] text-ink-dim leading-relaxed">
+            Estandariza los botones y llamados a la acción en toda la plataforma según los roles de color del manual institucional.
+          </p>
+
+          {/* Presets de Botón */}
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onClick={() => setButtonStyle("primary")}
+              disabled={!canEdit}
+              className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-all cursor-pointer ${
+                buttonStyle === "primary"
+                  ? "border-accent bg-accent/10 shadow-xs text-ink font-semibold"
+                  : "border-line bg-panel text-ink-dim hover:bg-hover"
+              }`}
+            >
+              <div className="h-4 w-full rounded bg-[#00A7D6]" />
+              <span className="text-[10px] leading-tight">Primario (Celeste)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setButtonStyle("secondary")}
+              disabled={!canEdit}
+              className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-all cursor-pointer ${
+                buttonStyle === "secondary"
+                  ? "border-accent bg-accent/10 shadow-xs text-ink font-semibold"
+                  : "border-line bg-panel text-ink-dim hover:bg-hover"
+              }`}
+            >
+              <div className="h-4 w-full rounded bg-[#0DA593]" />
+              <span className="text-[10px] leading-tight">Teal (Ciudad Jardín)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setButtonStyle("outline")}
+              disabled={!canEdit}
+              className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-all cursor-pointer ${
+                buttonStyle === "outline"
+                  ? "border-accent bg-accent/10 shadow-xs text-ink font-semibold"
+                  : "border-line bg-panel text-ink-dim hover:bg-hover"
+              }`}
+            >
+              <div className="h-4 w-full rounded border border-[#00A7D6] bg-transparent" />
+              <span className="text-[10px] leading-tight">Contorno (Outline)</span>
+            </button>
+          </div>
+
+          {/* Radio de Botón */}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[11px] font-medium text-ink">Radio de Esquinas:</span>
+            <div className="flex gap-1.5">
+              {[
+                { r: 4, label: "4px" },
+                { r: 6, label: "6px (GAMC)" },
+                { r: 8, label: "8px" },
+                { r: 24, label: "Píldora" },
+              ].map(({ r, label }) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setButtonRadius(r)}
+                  disabled={!canEdit}
+                  className={`rounded-md border px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer ${
+                    buttonRadius === r
+                      ? "border-accent bg-accent text-white"
+                      : "border-line bg-panel text-ink-dim hover:bg-hover"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Checkbox Obligatorio */}
+          {canEdit && (
+            <label className="flex items-start gap-2 rounded-md bg-hover/40 p-2 text-[11px] text-ink-dim border border-line/40 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={buttonMandatory}
+                onChange={(e) => setButtonMandatory(e.target.checked)}
+                className="mt-0.5 accent-accent cursor-pointer"
+              />
+              <span>
+                <strong className="text-ink">Gobernanza estricta:</strong> Bloquear botones para que mantengan la paleta institucional en todos los módulos.
+              </span>
+            </label>
+          )}
+
+          {/* Botón Armonizar */}
+          {canEdit && (
+            <div className="flex flex-col gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={handleHarmonizeButtons}
+                className="flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-white shadow-xs hover:opacity-90 cursor-pointer transition-opacity"
+              >
+                Aplicar y armonizar todos los botones del portal
+              </button>
+              {buttonHarmonized && (
+                <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                  Todos los botones del portal han sido armonizados con éxito.
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

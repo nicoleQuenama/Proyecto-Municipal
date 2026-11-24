@@ -24,6 +24,7 @@ interface TargetCardProps {
   styles: StyleState;
   onSet: (prop: StyleProp, value: string | null) => void;
   onClear: () => void;
+  onGovernance?: (patch: { mandatory?: boolean; lockedProps?: StyleProp[] }) => void;
   /** Sin permiso (estilos globales de otro) se lista en solo lectura: se ve, no se toca. */
   canEdit?: boolean;
   restrictColorsToPalette?: boolean;
@@ -39,6 +40,7 @@ export function TargetCard({
   styles,
   onSet,
   onClear,
+  onGovernance,
   canEdit = true,
   restrictColorsToPalette = false,
 }: TargetCardProps) {
@@ -67,6 +69,52 @@ export function TargetCard({
         <div className="flex flex-col gap-3 border-t border-line p-3">
           {canEdit ? (
             <>
+              {def.props.includes("borderWidth") && (
+                <div className="flex flex-col gap-1.5 rounded-md bg-hover/30 p-2 border border-line/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-ink">Presets de Borde (Manual GAMC)</span>
+                    <span className="text-[10px] text-ink-dim">1 clic</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSet("borderWidth", "2px");
+                        onSet("borderColor", "#00A7D6");
+                        onSet("borderStyle", "solid");
+                        onSet("radius", "8px");
+                      }}
+                      className="rounded border border-line bg-panel px-1.5 py-1 text-[10px] font-medium text-ink hover:border-accent hover:bg-hover cursor-pointer text-center"
+                    >
+                      Primario (2px Azul)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSet("borderWidth", "1px");
+                        onSet("borderColor", "#E2E8F0");
+                        onSet("borderStyle", "solid");
+                        onSet("radius", "8px");
+                      }}
+                      className="rounded border border-line bg-panel px-1.5 py-1 text-[10px] font-medium text-ink hover:border-accent hover:bg-hover cursor-pointer text-center"
+                    >
+                      Secundario (1px Gris)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSet("borderWidth", "0px");
+                        onSet("borderColor", "transparent");
+                        onSet("borderStyle", "none");
+                      }}
+                      className="rounded border border-line bg-panel px-1.5 py-1 text-[10px] font-medium text-ink hover:border-accent hover:bg-hover cursor-pointer text-center"
+                    >
+                      Sin Borde
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {def.props.map((prop) => (
                 <StyleField
                   key={prop}
@@ -79,6 +127,18 @@ export function TargetCard({
                   restrictToPalette={restrictColorsToPalette}
                 />
               ))}
+
+              {scope.kind === "global" && onGovernance && (
+                <label className="flex items-center gap-2 pt-2 border-t border-line/40 text-[11px] text-ink-dim cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rule?.mandatory ?? false}
+                    onChange={(e) => onGovernance({ mandatory: e.target.checked })}
+                    className="accent-accent cursor-pointer"
+                  />
+                  <span>Regla obligatoria para todo el portal (bloquea cambios locales)</span>
+                </label>
+              )}
 
               {count > 0 && (
                 <button

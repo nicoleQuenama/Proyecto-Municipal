@@ -542,5 +542,21 @@ export type SiteAction =
   | { type: "project-media/add"; asset: ProjectMediaAsset }
   | { type: "project-media/remove"; id: string }
   | { type: "project-media/replace"; oldSrc: string; newSrc: string; newAlt?: string }
-  | { type: "project-media/update-tags"; id: string; tag: string; tags: string[] }
-  | { type: "brand/identity"; brandLogo?: BrandLogoConfig; brandFavicon?: string; brandEscudo?: { src: string; alt?: string } };
+  | { type: "project-media/update-tags"; id: string; tag?: string; tags?: string[] }
+  | { type: "brand/identity"; brandLogo?: BrandLogoConfig; brandFavicon?: string; brandEscudo?: { src: string; alt?: string } }
+  | {
+      type: "brand/harmonize-cards";
+      preset: "primary" | "secondary" | "none" | "custom";
+      fill: string;
+      radius: number;
+      mandatory?: boolean;
+    }
+  | {
+      type: "brand/harmonize-buttons";
+      fill: string;
+      color: string;
+      radius: number;
+      borderWidth?: number;
+      borderColor?: string;
+      mandatory?: boolean;
+    };

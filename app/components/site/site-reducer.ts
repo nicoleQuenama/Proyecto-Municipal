@@ -40,6 +40,8 @@ import {
 } from "./rules";
 import { replaceMediaInSite } from "../media/media-usage";
 import { clearRule, saveRule, saveVariable, setRuleGovernance, setRuleProp, withoutScope } from "../styles/mutations";
+import { BRAND_BORDER_PRESETS } from "../auth/brand-manual";
+import type { StyleRule } from "../styles/types";
 import { insertAfterSelected } from "./insert-after-selected";
 import { dropBlocks } from "./reorder-block";
 import {
@@ -594,6 +596,166 @@ const HANDLERS: Handlers = {
       brandLogo: nextBrandLogo,
       brandFavicon: nextBrandFavicon,
       brandEscudo: nextBrandEscudo,
+      components: nextComponents,
+    };
+  },
+
+  "brand/harmonize-cards": (state, action) => {
+    const presetDef =
+      action.preset !== "custom"
+        ? BRAND_BORDER_PRESETS[action.preset]
+        : { widthPx: 1, style: "solid" as const, color: "#E2E8F0" };
+
+    const cardRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "cards",
+      props: {
+        fill: action.fill,
+        background: action.fill,
+        radius: String(action.radius),
+        borderWidth: String(presetDef.widthPx),
+        borderColor: presetDef.color,
+        borderStyle: presetDef.style,
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory
+        ? ["fill", "background", "radius", "borderWidth", "borderColor", "borderStyle"]
+        : undefined,
+    };
+
+    const containerRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "container",
+      props: {
+        fill: action.fill,
+        radius: String(action.radius),
+        borderWidth: String(presetDef.widthPx),
+        borderColor: presetDef.color,
+        borderStyle: presetDef.style,
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory
+        ? ["fill", "radius", "borderWidth", "borderColor", "borderStyle"]
+        : undefined,
+    };
+
+    const nextRules = saveRule(saveRule(state.rules, cardRule), containerRule);
+
+    const nextComponents = state.components.map((c) => {
+      let changed = false;
+      const elements = c.elements.map((el) => {
+        const isCardRect =
+          el.role === "container" ||
+          el.id.includes("card") ||
+          (el.kind === "rect" && el.width >= 160 && el.height >= 120 && el.role === "none");
+
+        if (isCardRect) {
+          changed = true;
+          return {
+            ...el,
+            role: "container" as const,
+            fill: action.fill,
+            radius: action.radius,
+            borderWidth: presetDef.widthPx,
+            borderColor: presetDef.color,
+            borderStyle: presetDef.style,
+          };
+        }
+        return el;
+      });
+      return changed ? { ...c, elements } : c;
+    });
+
+    const nextPages = state.pages.map((p) => {
+      const blocks = p.blocks.map((b) => {
+        if (!b.elements) return b;
+        const nextElements = { ...b.elements };
+        let blockChanged = false;
+        for (const [elId, override] of Object.entries(nextElements)) {
+          if (
+            elId.includes("card") ||
+            (override as any)?.fill?.includes("gradient") ||
+            (override as any)?.fill?.startsWith("#")
+          ) {
+            delete nextElements[elId];
+            blockChanged = true;
+          }
+        }
+        return blockChanged ? { ...b, elements: nextElements } : b;
+      });
+      return { ...p, blocks };
+    });
+
+    return {
+      ...state,
+      rules: nextRules,
+      components: nextComponents,
+      pages: nextPages,
+    };
+  },
+
+  "brand/harmonize-buttons": (state, action) => {
+    const buttonRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "buttons",
+      props: {
+        fill: action.fill,
+        color: action.color,
+        radius: String(action.radius),
+        borderWidth: String(action.borderWidth ?? 0),
+        borderColor: action.borderColor || "transparent",
+        borderStyle: (action.borderWidth ?? 0) > 0 ? "solid" : "none",
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory ? ["fill", "color", "radius"] : undefined,
+    };
+
+    const buttonElemRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "button",
+      props: {
+        fill: action.fill,
+        color: action.color,
+        radius: String(action.radius),
+        borderWidth: String(action.borderWidth ?? 0),
+        borderColor: action.borderColor || "transparent",
+        borderStyle: (action.borderWidth ?? 0) > 0 ? "solid" : "none",
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory ? ["fill", "color", "radius"] : undefined,
+    };
+
+    const nextRules = saveRule(saveRule(state.rules, buttonRule), buttonElemRule);
+
+    const nextComponents = state.components.map((c) => {
+      let changed = false;
+      const elements = c.elements.map((el) => {
+        const isButton =
+          el.role === "button" ||
+          el.id.includes("btn") ||
+          el.control?.kind === "button";
+
+        if (isButton && el.kind === "rect") {
+          changed = true;
+          return {
+            ...el,
+            role: "button" as const,
+            fill: action.fill,
+            color: action.color,
+            radius: action.radius,
+            borderWidth: action.borderWidth ?? 0,
+            borderColor: action.borderColor || "transparent",
+            borderStyle: ((action.borderWidth ?? 0) > 0 ? "solid" : "none") as "solid" | "none",
+          };
+        }
+        return el;
+      });
+      return changed ? { ...c, elements } : c;
+    });
+
+    return {
+      ...state,
+      rules: nextRules,
       components: nextComponents,
     };
   },

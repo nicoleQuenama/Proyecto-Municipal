@@ -135,6 +135,7 @@ export function AppearanceTab() {
                 styles={site}
                 onSet={(prop, value) => dispatch({ type: "rule/set", scope, target, prop, value })}
                 onClear={() => dispatch({ type: "rule/clear", scope, target })}
+                onGovernance={(patch) => dispatch({ type: "rule/governance", scope, target, patch })}
                 canEdit={canManageGlobals || scope.kind !== "global"}
                 restrictColorsToPalette={!canManageGlobals && !!site.brandRequired}
               />

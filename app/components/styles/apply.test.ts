@@ -68,6 +68,15 @@ describe("apply / styleElement", () => {
       y: 0,
       width: 100,
       height: 100,
+      fill: "#FFFFFF",
+      radius: 0,
+      text: "",
+      fontSize: 14,
+      color: "#000000",
+      bold: false,
+      align: "left",
+      fontFamily: "",
+      src: "",
     };
 
     const styled = styleElement(element, {
