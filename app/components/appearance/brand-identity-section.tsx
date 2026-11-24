@@ -269,14 +269,13 @@ export function BrandIdentitySection({ site, dispatch, canEdit = false }: BrandI
       {/* Modal para seleccionar imagen de la biblioteca */}
       {pickerTarget && (
         <Modal
-          title={
+          label={
             pickerTarget === "logo"
               ? "Seleccionar Logo Oficial"
               : pickerTarget === "favicon"
                 ? "Seleccionar Favicon"
                 : "Seleccionar Escudo Oficial"
           }
-          open={true}
           onClose={() => setPickerTarget(null)}
         >
           <div className="flex flex-col gap-3 min-w-[320px] max-w-md">

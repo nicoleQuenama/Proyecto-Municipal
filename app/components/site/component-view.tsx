@@ -67,13 +67,25 @@ type Renderer = (element: CanvasElement, text: CSSProperties, inherit: boolean) 
 const shape =
   (corner: (element: CanvasElement) => number | string): Renderer =>
   function renderShape(element, text, inherit) {
+    const borderCss: CSSProperties =
+      element.borderWidth && element.borderWidth > 0
+        ? {
+            borderWidth: `${element.borderWidth}px`,
+            borderStyle: element.borderStyle || "solid",
+            borderColor: element.borderColor || "#E2E8F0",
+            boxSizing: "border-box",
+          }
+        : {};
+
     if (element.src) {
       return (
         <div
           className="flex h-full w-full items-center justify-center overflow-hidden"
           style={{
             ...text,
-            ...(inherit ? { borderRadius: "inherit" } : { background: element.fill, borderRadius: corner(element) }),
+            ...(inherit
+              ? { borderRadius: "inherit" }
+              : { background: element.fill, borderRadius: corner(element), ...borderCss }),
           }}
         >
           <img
@@ -91,7 +103,9 @@ const shape =
         className="flex h-full w-full items-center overflow-hidden px-2"
         style={{
           ...text,
-          ...(inherit ? { borderRadius: "inherit" } : { background: element.fill, borderRadius: corner(element) }),
+          ...(inherit
+            ? { borderRadius: "inherit" }
+            : { background: element.fill, borderRadius: corner(element), ...borderCss }),
           justifyContent: JUSTIFY[element.align],
         }}
       >

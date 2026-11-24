@@ -64,6 +64,8 @@ const NORMALIZERS: Record<PropKind, (value: string) => string | null> = {
   weight: (value) => (WEIGHTS.includes(value) ? value : null),
   align: (value) => (ALIGNMENTS.includes(value) ? value : null),
   font: (value) => value,
+  borderStyle: (value) => (["solid", "dashed", "dotted", "none"].includes(value.toLowerCase()) ? value.toLowerCase() : null),
+  border: (value) => value,
 };
 
 /** Devuelve el valor ya normalizado ("10" → "10px"), o null si no es válido para ese tipo. */
@@ -146,7 +148,8 @@ export function validateVariable(variables: Variable[], candidate: VariableCandi
 
 /**
  * Valores finales de un tipo de elemento: junta las reglas de los ámbitos que cuentan
- * (global, luego página, luego componente: el último gana) y resuelve las variables.
+ * (global, luego categoría si aplica, luego página, luego componente) y resuelve las variables.
+ * Las reglas obligatorias del Super Admin tienen la máxima prioridad.
  * `maxLevel` permite preguntar qué se heredaría sin los ámbitos más específicos.
  */
 export function computeStyle(
@@ -155,12 +158,45 @@ export function computeStyle(
   target: StyleTarget,
   maxLevel = 2,
 ): ResolvedStyle {
-  const rules = styles.rules
+  // Si target es container y el contexto define componentCategory (ej: cards), heredar primero de la categoría
+  const categoryRules =
+    target === "container" && ctx.componentCategory
+      ? styles.rules.filter((rule) => rule.target === ctx.componentCategory && applies(rule.scope, ctx))
+      : [];
+
+  const targetRules = styles.rules
     .filter((rule) => rule.target === target && levelOf(rule.scope) <= maxLevel && applies(rule.scope, ctx))
     .sort((a, b) => levelOf(a.scope) - levelOf(b.scope));
 
   const merged: Partial<Record<StyleProp, string>> = {};
-  for (const rule of rules) Object.assign(merged, rule.props);
+
+  // 1. Reglas base de categoría
+  for (const catRule of categoryRules) {
+    if (catRule.props.background && !catRule.props.fill) merged.fill = catRule.props.background;
+    Object.assign(merged, catRule.props);
+  }
+
+  // 2. Reglas del target en orden de ámbito (global -> página -> componente)
+  for (const rule of targetRules) {
+    Object.assign(merged, rule.props);
+  }
+
+  // 3. Reglas obligatorias de Super Admin (máxima prioridad)
+  const allRelevantRules = [...categoryRules, ...targetRules];
+  for (const rule of allRelevantRules) {
+    if (rule.scope.kind === "global" && (rule.mandatory || (rule.lockedProps && rule.lockedProps.length > 0))) {
+      if (rule.mandatory) {
+        if (rule.props.background && !rule.props.fill) merged.fill = rule.props.background;
+        Object.assign(merged, rule.props);
+      } else if (rule.lockedProps) {
+        for (const lockedProp of rule.lockedProps) {
+          if (rule.props[lockedProp] !== undefined) {
+            merged[lockedProp] = rule.props[lockedProp];
+          }
+        }
+      }
+    }
+  }
 
   const resolved: ResolvedStyle = {};
   for (const [prop, raw] of Object.entries(merged) as [StyleProp, string][]) {
@@ -168,6 +204,44 @@ export function computeStyle(
     if (value !== undefined) resolved[prop] = value;
   }
   return resolved;
+}
+
+/** Comprueba si una propiedad está bloqueada por una regla obligatoria del Super Admin */
+export function isPropLockedBySuperAdmin(
+  styles: StyleState,
+  target: StyleTarget,
+  prop: StyleProp,
+): boolean {
+  return styles.rules.some(
+    (rule) =>
+      rule.target === target &&
+      rule.scope.kind === "global" &&
+      (rule.mandatory || (rule.lockedProps && rule.lockedProps.includes(prop))) &&
+      rule.props[prop] !== undefined,
+  );
+}
+
+/** Devuelve la lista de propiedades bloqueadas por el Super Admin para un objetivo */
+export function getLockedPropsForTarget(
+  styles: StyleState,
+  target: StyleTarget,
+): StyleProp[] {
+  const locked = new Set<StyleProp>();
+  for (const rule of styles.rules) {
+    if (rule.target === target && rule.scope.kind === "global") {
+      if (rule.mandatory) {
+        for (const prop of Object.keys(rule.props) as StyleProp[]) {
+          locked.add(prop);
+        }
+      }
+      if (rule.lockedProps) {
+        for (const prop of rule.lockedProps) {
+          locked.add(prop);
+        }
+      }
+    }
+  }
+  return [...locked];
 }
 
 /** Lo que heredaría una propiedad si el ámbito indicado no la definiera. */

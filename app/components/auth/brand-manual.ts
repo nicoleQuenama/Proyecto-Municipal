@@ -250,3 +250,59 @@ export function getBrandFonts(variables: Variable[] = []): { value: string; labe
 
   return BRAND_FONT_OPTIONS;
 }
+
+/** Presets de bordes centralizados según el Manual de Marca GAMC */
+export type BorderPresetId = "primary" | "secondary" | "none" | "custom";
+
+export interface BorderPreset {
+  id: BorderPresetId;
+  name: string;
+  label: string;
+  width: string;
+  widthPx: number;
+  style: "solid" | "dashed" | "dotted" | "none";
+  color: string;
+  radius: string;
+  radiusPx: number;
+  description: string;
+}
+
+export const BRAND_BORDER_PRESETS: Record<Exclude<BorderPresetId, "custom">, BorderPreset> = {
+  primary: {
+    id: "primary",
+    name: "Borde Primario (Celeste Institucional)",
+    label: "Borde primario",
+    width: "2px",
+    widthPx: 2,
+    style: "solid",
+    color: "#00A7D6",
+    radius: "12px",
+    radiusPx: 12,
+    description: "2px sólido celeste institucional (#00A7D6)",
+  },
+  secondary: {
+    id: "secondary",
+    name: "Borde Secundario (Sutil)",
+    label: "Borde secundario",
+    width: "1px",
+    widthPx: 1,
+    style: "solid",
+    color: "#E2E8F0",
+    radius: "12px",
+    radiusPx: 12,
+    description: "1px sólido gris sutil (#E2E8F0)",
+  },
+  none: {
+    id: "none",
+    name: "Sin Borde",
+    label: "Sin borde",
+    width: "0px",
+    widthPx: 0,
+    style: "none",
+    color: "transparent",
+    radius: "0px",
+    radiusPx: 0,
+    description: "Sin borde visible",
+  },
+};
+

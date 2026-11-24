@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Align, TitleState } from "../title-editor/types";
 import type { CanvasElement, ComponentDef } from "../site/types";
+import { styleTarget } from "../site/categories";
 import { computeStyle } from "./resolve";
 import type { ResolvedStyle, StyleContext, StyleState } from "./types";
 
@@ -26,12 +27,25 @@ export function styleElement(element: CanvasElement, style: ResolvedStyle): Canv
   if (style.textAlign === "left" || style.textAlign === "center" || style.textAlign === "right") {
     next.align = style.textAlign;
   }
+  if (style.borderWidth !== undefined) {
+    next.borderWidth = pixelsOf(style.borderWidth, next.borderWidth ?? 0);
+  }
+  if (style.borderColor !== undefined) {
+    next.borderColor = style.borderColor;
+  }
+  if (style.borderStyle !== undefined) {
+    next.borderStyle = style.borderStyle as any;
+  }
   return next;
 }
 
 /** Un componente con las reglas de cada rol ya aplicadas a sus elementos. */
 export function styleComponent(def: ComponentDef, styles: StyleState, pageId: string): ComponentDef {
-  const ctx: StyleContext = { pageId, componentId: def.id };
+  const ctx: StyleContext = {
+    pageId,
+    componentId: def.id,
+    componentCategory: styleTarget(def.category),
+  };
   const byRole = new Map<string, ResolvedStyle>();
 
   const elements = def.elements.map((element) => {
@@ -51,6 +65,13 @@ export function boxStyle(style: ResolvedStyle): CSSProperties {
   if (style.radius) css.borderRadius = style.radius;
   if (style.color) css.color = style.color;
   if (style.fontFamily) css.fontFamily = style.fontFamily;
+  if (style.borderWidth && Number(style.borderWidth.replace("px", "")) > 0) {
+    css.borderWidth = style.borderWidth;
+    css.borderStyle = (style.borderStyle as CSSProperties["borderStyle"]) || "solid";
+    css.borderColor = style.borderColor || "#E2E8F0";
+  } else if (style.border) {
+    css.border = style.border;
+  }
   return css;
 }
 

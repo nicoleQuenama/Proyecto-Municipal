@@ -29,6 +29,13 @@ function textCss(element: CanvasElement): string[] {
 const box = (radius: string) => (element: CanvasElement) => [
   `background: ${element.fill}`,
   `border-radius: ${radius === "own" ? `${element.radius}px` : radius}`,
+  ...(element.borderWidth && element.borderWidth > 0
+    ? [
+        `border-width: ${element.borderWidth}px`,
+        `border-style: ${element.borderStyle || "solid"}`,
+        `border-color: ${element.borderColor || "#E2E8F0"}`,
+      ]
+    : []),
   ...textCss(element),
 ];
 

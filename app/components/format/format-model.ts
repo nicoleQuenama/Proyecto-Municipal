@@ -108,6 +108,10 @@ const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden" | "removed
   strike: undefined,
   align: undefined,
   list: undefined,
+  borderWidth: undefined,
+  borderColor: undefined,
+  borderStyle: undefined,
+  borderPreset: undefined,
 };
 
 type ElementField = "color" | "fontFamily" | "fontSize" | "fill" | "radius";

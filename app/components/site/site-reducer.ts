@@ -39,7 +39,7 @@ import {
   uniqueSlug,
 } from "./rules";
 import { replaceMediaInSite } from "../media/media-usage";
-import { clearRule, saveVariable, setRuleProp, withoutScope } from "../styles/mutations";
+import { clearRule, saveRule, saveVariable, setRuleGovernance, setRuleProp, withoutScope } from "../styles/mutations";
 import { insertAfterSelected } from "./insert-after-selected";
 import { dropBlocks } from "./reorder-block";
 import {
@@ -573,7 +573,7 @@ const HANDLERS: Handlers = {
           if (isLogoEl) {
             return {
               ...el,
-              role: "image",
+              role: "image" as const,
               kind: "image" as const,
               src: nextBrandLogo.src,
               alt: nextBrandLogo.alt || "Logo Oficial Cochabamba",
@@ -608,6 +608,14 @@ const HANDLERS: Handlers = {
   }),
 
   "rule/clear": (state, action) => ({ ...state, rules: clearRule(state.rules, action.scope, action.target) }),
+  "rule/governance": (state, action) => ({
+    ...state,
+    rules: setRuleGovernance(state.rules, action.scope, action.target, action.patch),
+  }),
+  "rule/save": (state, action) => ({
+    ...state,
+    rules: saveRule(state.rules, action.rule),
+  }),
   "block/slot": (state, action) =>
     updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, slot: action.slot })),
   "block/scope": (state, action) =>

@@ -71,6 +71,7 @@ import { RemoveButton } from "./remove-button";
 import { HideOnControls } from "./hide-on-controls";
 import { colorInputValue } from "../format/format-options";
 import { LayersPanel } from "../layers/layers-panel";
+import { BrandGovernanceControls } from "./brand-governance-controls";
 
 const fieldClass =
   "h-8 w-full rounded-md border border-line bg-canvas px-2 text-xs text-ink outline-none focus:border-accent";
@@ -665,173 +666,31 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     <div className="flex flex-col gap-4">
       <HideOnControls pageId={pageId} block={block} def={def} elementId={element?.id} />
 
-      {/* Control de Color según Manual de Marca para el elemento o tarjeta seleccionada */}
-      {canEditContent && element && (
-        <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-ink">Estilos y Colores (Manual de Marca)</span>
-            <span className="text-[10px] text-accent font-medium">Paleta Institucional</span>
-          </div>
-
-          {rootCardId && rootCardId !== element.id && containerCards.some((c) => c.id === rootCardId) && (
-            <div className="flex items-center justify-between gap-2 rounded bg-canvas/80 px-2 py-1 text-[11px] text-ink-dim border border-line">
+      {/* Sistema Centralizado de Identidad Visual y Gobernanza de Estilos */}
+      {canEditContent && (
+        <>
+          {rootCardId && rootCardId !== element?.id && containerCards.some((c) => c.id === rootCardId) && (
+            <div className="flex items-center justify-between gap-2 rounded bg-canvas/80 px-2.5 py-1.5 text-[11px] text-ink-dim border border-line">
               <span className="truncate">Elemento dentro de tarjeta</span>
               <button
                 type="button"
                 onClick={() => dispatch({ type: "element/select", id: rootCardId })}
                 className="shrink-0 text-accent font-semibold hover:underline cursor-pointer"
-                title="Seleccionar la tarjeta contenedora para cambiar su fondo"
+                title="Seleccionar la tarjeta contenedora para cambiar sus bordes o fondo"
               >
                 Editar tarjeta entera
               </button>
             </div>
           )}
 
-          {/* Preset rápido de Rol de Botón (si es un botón) */}
-          {(element.role === "button" || element.control?.kind === "button") && (
-            <div className="flex flex-col gap-1.5 pt-0.5">
-              <label className="text-[10px] font-medium text-ink-dim">Rol de Botón (Manual de Marca)</label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {BRAND_BUTTON_PRESETS.map((preset) => {
-                  const isActive = (effectiveElement?.fill || "").toLowerCase() === preset.fill.toLowerCase();
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      title={preset.description}
-                      onClick={() => handleApplyElementColor({ fill: preset.fill, color: preset.color })}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-left text-[11px] font-medium transition-all cursor-pointer ${
-                        isActive
-                          ? "border-accent ring-1 ring-accent bg-hover shadow-xs"
-                          : "border-line bg-canvas hover:bg-hover"
-                      }`}
-                    >
-                      <span
-                        className="size-3.5 rounded-full shrink-0 border border-black/20"
-                        style={{ backgroundColor: preset.fill }}
-                      />
-                      <span className="truncate text-ink">{preset.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-2 pt-0.5">
-            {/* Fondo / Relleno */}
-            {effectiveElement && effectiveElement.kind !== "icon" && (
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-medium text-ink-dim">Fondo / Superficie</label>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="size-7 shrink-0 rounded-md border border-line shadow-2xs"
-                    style={{ background: effectiveElement.fill && effectiveElement.fill !== "transparent" ? effectiveElement.fill : "#ffffff" }}
-                    title={`Color actual: ${effectiveElement.fill || "#ffffff"}`}
-                  />
-                  <select
-                    aria-label="Color de fondo según manual de marca"
-                    value={
-                      BRAND_SURFACE_COLORS.find(
-                        (c) => c.value.toLowerCase() === (effectiveElement.fill || "").toLowerCase()
-                      )?.value ?? ""
-                    }
-                    onChange={(e) => {
-                      const newFill = e.target.value;
-                      if (!newFill) return;
-                      handleApplyElementColor({ fill: newFill });
-                    }}
-                    className="w-full h-7 rounded border border-line bg-canvas px-1.5 text-[11px] text-ink focus:border-accent focus:outline-hidden [&>option]:bg-panel"
-                  >
-                    {!BRAND_SURFACE_COLORS.some(
-                      (c) => c.value.toLowerCase() === (effectiveElement.fill || "").toLowerCase()
-                    ) && (
-                      <option value="" disabled>
-                        Seleccionar color institucional...
-                      </option>
-                    )}
-                    {BRAND_SURFACE_COLORS.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* Texto / Ícono */}
-            {effectiveElement && (effectiveElement.kind === "text" || Boolean(effectiveElement.text) || effectiveElement.kind === "icon" || effectiveElement.role === "button" || effectiveElement.role === "link") && (
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-medium text-ink-dim">Color de Texto</label>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="size-7 shrink-0 rounded-md border border-line shadow-2xs"
-                    style={{ background: effectiveElement.color && effectiveElement.color !== "transparent" ? effectiveElement.color : "#0f172a" }}
-                    title={`Color actual: ${effectiveElement.color || "#0f172a"}`}
-                  />
-                  <select
-                    aria-label="Color de texto según manual de marca"
-                    value={
-                      BRAND_TEXT_COLORS.find(
-                        (c) => c.value.toLowerCase() === (effectiveElement.color || "").toLowerCase()
-                      )?.value ?? ""
-                    }
-                    onChange={(e) => {
-                      const newColor = e.target.value;
-                      if (!newColor) return;
-                      handleApplyElementColor({ color: newColor });
-                    }}
-                    className="w-full h-7 rounded border border-line bg-canvas px-1.5 text-[11px] text-ink focus:border-accent focus:outline-hidden [&>option]:bg-panel"
-                  >
-                    {!BRAND_TEXT_COLORS.some(
-                      (c) => c.value.toLowerCase() === (effectiveElement.color || "").toLowerCase()
-                    ) && (
-                      <option value="" disabled>
-                        Seleccionar color institucional...
-                      </option>
-                    )}
-                    {BRAND_TEXT_COLORS.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Paleta rápida de 1-clic según Manual de Marca */}
-          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-            <span className="text-[9px] text-ink-dim font-medium mr-0.5">Marca GAMC:</span>
-            {[
-              { val: "#00A7D6", name: "Celeste Primario (#00A7D6)" },
-              { val: "#34C3E8", name: "Celeste Medio (#34C3E8)" },
-              { val: "#E6F6FB", name: "Celeste Tint (#E6F6FB)" },
-              { val: "#462D81", name: "Morado Secundario (#462D81)" },
-              { val: "#695CA8", name: "Lila Secundario (#695CA8)" },
-              { val: "#F47B38", name: "Naranja Acento (#F47B38)" },
-              { val: "#0DA593", name: "Verde Azulado / Teal (#0DA593)" },
-              { val: "#F05D80", name: "Rosa Acento (#F05D80)" },
-              { val: "#FFFFFF", name: "Blanco Puro (#FFFFFF)" },
-              { val: "#F8FAFC", name: "Superficie (#F8FAFC)" },
-              { val: "#0F172A", name: "Texto Oscuro (#0F172A)" },
-            ].map((c) => (
-              <button
-                key={c.val}
-                type="button"
-                title={c.name}
-                onClick={() => {
-                  const isText = (effectiveElement?.kind === "text" || Boolean(effectiveElement?.text)) && !effectiveElement?.fill;
-                  handleApplyElementColor(isText ? { color: c.val } : { fill: c.val });
-                }}
-                style={{ backgroundColor: c.val }}
-                className="size-4.5 rounded-full border border-line shadow-2xs hover:scale-125 transition-transform cursor-pointer"
-              />
-            ))}
-          </div>
-        </div>
+          <BrandGovernanceControls
+            pageId={pageId}
+            block={block}
+            def={def}
+            element={effectiveElement}
+            onApplyElementColor={handleApplyElementColor}
+          />
+        </>
       )}
       {canEditContent && element && (element.kind === "text" || typeof element.text === "string" || element.role === "button" || element.role === "link") && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">

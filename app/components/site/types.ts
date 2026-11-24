@@ -34,7 +34,7 @@ import type { Device } from "../responsive/devices";
 import type { FluidText } from "../responsive/fluid-text";
 import type { SideMargins } from "../responsive/page-margin";
 import type { AdaptChoices, FoldChoices, MenuConfig, ResponsiveLayouts } from "../responsive/types";
-import type { ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
+import type { ElementRole, StyleScope, StyleProp, StyleRule, StyleState, StyleTarget, Variable } from "../styles/types";
 import type { TitleState } from "../title-editor/types";
 
 /** Un componente es un conjunto de elementos posicionados sobre un lienzo de tamaño fijo. */
@@ -74,6 +74,11 @@ export interface CanvasElement {
   flipped?: boolean;
   /** Radio de las esquinas (rectángulos e imágenes). */
   radius: number;
+  /** Borde del elemento (sistema centralizado de bordes) */
+  borderWidth?: number;
+  borderColor?: string;
+  borderStyle?: "solid" | "dashed" | "dotted" | "none";
+  borderPreset?: "primary" | "secondary" | "none" | "custom";
   /** Contenido de un texto, o etiqueta centrada de una forma. */
   text: string;
   fontSize: number;
@@ -158,6 +163,10 @@ export type ElementOverride = Partial<
     | "removed"
     | "alt"
     | "src"
+    | "borderWidth"
+    | "borderColor"
+    | "borderStyle"
+    | "borderPreset"
   > & {
     radius: SizeValue;
     fontSize: SizeValue;
@@ -176,6 +185,11 @@ export interface BlockBox {
   /** Cuánto ocupa la sección: su contenido, todo el ancho o toda la pantalla (banner). */
   span?: BoxSpan;
   radius?: SizeValue;
+  /** Sistema centralizado de bordes para la caja de la sección */
+  borderWidth?: number;
+  borderColor?: string;
+  borderStyle?: "solid" | "dashed" | "dotted" | "none";
+  borderPreset?: "primary" | "secondary" | "none" | "custom";
   /** Cómo se mezcla la sección con lo que tiene detrás (multiplicar, pantalla…): deja ver el fondo a través de ella. */
   blend?: BlendMode;
   /** Margen vertical a lo alto (px) aplicado arriba y abajo de la sección. */
@@ -514,6 +528,8 @@ export type SiteAction =
   | { type: "variable/delete"; id: string }
   | { type: "rule/set"; scope: StyleScope; target: StyleTarget; prop: StyleProp; value: string | null }
   | { type: "rule/clear"; scope: StyleScope; target: StyleTarget }
+  | { type: "rule/governance"; scope: StyleScope; target: StyleTarget; patch: { mandatory?: boolean; lockedProps?: StyleProp[] } }
+  | { type: "rule/save"; rule: StyleRule }
   | { type: "animation/finish"; pageId: string; baseline: RecordingBaseline; animation?: RecordedAnimation }
   | { type: "animation/add"; pageId: string; animation: RecordedAnimation; trigger?: { blockId: string; behavior: Behavior } }
   | { type: "animation/steps"; pageId: string; id: string; steps: AnimationStep[] }
