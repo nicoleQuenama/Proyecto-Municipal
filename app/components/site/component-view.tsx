@@ -331,6 +331,8 @@ function PositionedElement({
     };
     const interactive = isSearchTrigger || link !== undefined || behaviorProps.onClick !== undefined;
 
+    const isFlow = Boolean(interaction?.flow);
+    const isTopChild = !element.parentId;
     const isBackdropEl = Boolean(
       (interaction?.gestures && isBackdrop(element, interaction.gestures.size)) ||
       (element.kind === "rect" && !element.parentId && (
@@ -345,6 +347,7 @@ function PositionedElement({
         ref={ref}
         data-target={target}
         data-el={element.id}
+        data-kind={element.kind}
         {...(isBackdropEl ? { "data-backdrop": "" } : {})}
         {...(interactive ? { "data-interactive": "" } : {})}
         {...behaviorProps}
@@ -359,18 +362,30 @@ function PositionedElement({
           : {})}
         {...(activeLink ? { "aria-current": "page", "data-active": "" } : {})}
         onClick={interactive ? follow : undefined}
-        style={
-          activeLink
+        style={{
+          ...boundStyle,
+          ...(isFlow && isTopChild && !isBackdropEl
             ? {
-                ...boundStyle,
+                width: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? undefined : "100%",
+                minWidth: 0,
+                maxWidth: "100%",
+              }
+            : {}),
+          ...(element.kind === "image" && isFlow
+            ? {
+                minHeight: element.height > 0 ? element.height : 120,
+              }
+            : {}),
+          ...(activeLink
+            ? {
                 color: "var(--color-primario, #00A7D6)",
                 fontWeight: 700,
                 textDecoration: "underline",
                 textDecorationThickness: 2,
                 textUnderlineOffset: 4,
               }
-            : boundStyle
-        }
+            : {}),
+        }}
         className={`${interactive ? "cursor-pointer" : ""} ${
           link ? "transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-sky-500" : ""
         } ${custom}`}
@@ -403,6 +418,7 @@ function PositionedElement({
       <div
         data-target={target}
         data-el={element.id}
+        data-kind={element.kind}
         draggable={canReorder}
         onDragStart={canReorder ? (e) => {
           e.dataTransfer.setData("application/x-flow-element-id", element.id);
@@ -433,6 +449,18 @@ function PositionedElement({
         style={{
           ...boundStyle,
           ...(element.fill && element.fill !== "transparent" ? { background: element.fill } : {}),
+          ...(isFlow && isTopChild && !isBackdropEl
+            ? {
+                width: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? undefined : "100%",
+                minWidth: 0,
+                maxWidth: "100%",
+              }
+            : {}),
+          ...(element.kind === "image" && isFlow
+            ? {
+                minHeight: element.height > 0 ? element.height : 120,
+              }
+            : {}),
         }}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${
           canReorder ? "cursor-grab active:cursor-grabbing" : gestures && !isFlow ? "cursor-move touch-none select-none" : ""

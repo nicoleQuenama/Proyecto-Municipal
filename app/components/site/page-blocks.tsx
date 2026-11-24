@@ -471,10 +471,10 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
 
       <div
         {...(editing ? editProps : {})}
-        // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
+        // Fuera de la edición (vista previa) lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
         // la sección no hace aparecer barras de desplazamiento.
         // Un bloque de código va sin relleno: lo que se mide (y lo que redimensionan las manijas) es la caja del iframe.
-        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds || !placement ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
+        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds || !placement ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${mode === "preview" ? "overflow-x-clip" : ""}`}
         style={{
           // Un componente que ya ocupa todo el ancho de la hoja va sin relleno: con él se correría y se saldría por la derecha.
           padding: isHeaderOrFooter || bleeds || pureCode || !placement || (view?.width ?? 0) >= available ? 0 : box.padding,

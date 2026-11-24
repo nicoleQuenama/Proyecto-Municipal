@@ -202,6 +202,7 @@ export function elementBaseCss(
             "position: relative !important",
             "left: auto !important",
             "top: auto !important",
+            "width: 100% !important",
             "min-width: 0 !important",
             "max-width: 100% !important",
             "box-sizing: border-box !important",
@@ -211,7 +212,8 @@ export function elementBaseCss(
           ]),
           rule(`${section}[class*="flex-row"] > [data-el]`, [
             device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
-            device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
+            device === "mobile" ? "width: 100% !important" : "width: auto !important",
+            "min-width: 0 !important",
           ]),
           rule(`${section} > [data-el] > [data-el]`, [
             "max-width: 100% !important",
@@ -250,6 +252,7 @@ export function elementBaseCss(
         "top: auto !important",
         "display: flex !important",
         "flex-direction: column !important",
+        "width: 100% !important",
         "height: auto !important",
         "min-height: fit-content !important",
         "min-width: 0 !important",
@@ -279,12 +282,16 @@ export function elementBaseCss(
         "min-width: 0 !important",
         "box-sizing: border-box !important",
       ]),
+      rule(`${section} > [data-el]:not([data-backdrop]) > [data-el]:is([data-target*="image"], [data-kind="image"])`, [
+        "min-height: 120px !important",
+      ]),
       rule(`${section}[class*="grid"] > [data-el]:not([data-backdrop])`, [
         "width: 100% !important",
       ]),
       rule(`${section}[class*="flex-row"] > [data-el]:not([data-backdrop])`, [
         device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
-        device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
+        device === "mobile" ? "width: 100% !important" : "width: auto !important",
+        "min-width: 0 !important",
       ]),
     );
   }
