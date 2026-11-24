@@ -168,7 +168,7 @@ export function resetFormat(state: SiteState, pageId: string, blockId: string): 
     const elements = Object.fromEntries(
       kept.map(([id, o]) => [id, { ...(o.hidden ? { hidden: true } : {}), ...(o.removed ? { removed: true } : {}), ...(o.alt !== undefined ? { alt: o.alt } : {}) }]),
     );
-    return { ...block, box: undefined, elements: kept.length > 0 ? elements : undefined };
+    return { ...block, box: undefined, size: undefined, elements: kept.length > 0 ? elements : undefined };
   });
 }
 
