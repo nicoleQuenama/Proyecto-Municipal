@@ -98,7 +98,7 @@ export function ControlContent({ element, live, hasClick }: { element: CanvasEle
     );
   }
   if (spec.inputType === "radio") {
-    return <RadioGroupControl spec={spec} wrapper={wrapper} idle={idle} />;
+    return <RadioGroupControl element={element} spec={spec} wrapper={wrapper} idle={idle} />;
   }
   if (spec.inputType === "search" || spec.name === "search-query" || (spec.placeholder && spec.placeholder.toLowerCase().includes("buscar"))) {
     return <SearchInputControl element={element} spec={spec} live={live} wrapper={wrapper} />;
@@ -292,10 +292,12 @@ function SearchInputControl({
 }
 
 function RadioGroupControl({
+  element,
   spec,
   wrapper,
   idle,
 }: {
+  element: CanvasElement;
   spec: NonNullable<CanvasElement["control"]>;
   wrapper: Record<string, unknown>;
   idle: CSSProperties;
@@ -304,7 +306,15 @@ function RadioGroupControl({
 
   useEffect(() => {
     const handleOptionSelected = (e: Event) => {
-      const detail = (e as CustomEvent<{ index?: number; optionKey?: string }>).detail;
+      const detail = (e as CustomEvent<{
+        elementId?: string;
+        blockId?: string;
+        componentId?: string;
+        index?: number;
+        optionKey?: string;
+      }>).detail;
+      // Solo responder si el evento está dirigido a este elemento específico
+      if (detail?.elementId && detail.elementId !== element.id) return;
       if (typeof detail?.index === "number" && detail.index >= 0 && detail.index < (spec.options?.length ?? 0)) {
         setSelectedIndex(detail.index);
       } else if (detail?.optionKey) {
@@ -319,7 +329,7 @@ function RadioGroupControl({
     };
     window.addEventListener("cms:option-selected", handleOptionSelected);
     return () => window.removeEventListener("cms:option-selected", handleOptionSelected);
-  }, [spec.options?.length]);
+  }, [element.id, spec.options?.length]);
 
   return (
     <div
@@ -342,7 +352,7 @@ function RadioGroupControl({
           <label key={option} className="cursor-pointer max-w-full">
             <input
               type="radio"
-              name={spec.name}
+              name={`opt-group-${element.id}`}
               value={option}
               checked={isChecked}
               tabIndex={0}
@@ -350,7 +360,12 @@ function RadioGroupControl({
               onChange={(e) => {
                 setSelectedIndex(index);
                 const optKey = `opt${index + 1}`;
-                const section = e.currentTarget.closest("section") || e.currentTarget.closest("[data-block-id]") || e.currentTarget.closest("[data-component]");
+                const section =
+                  e.currentTarget.closest("[data-block-id]") ||
+                  e.currentTarget.closest("section") ||
+                  e.currentTarget.closest("[data-component]");
+                const blockId = section?.getAttribute("data-block-id") ?? undefined;
+                const componentId = section?.getAttribute("data-component") ?? undefined;
                 if (section) {
                   section.setAttribute("data-active-option", optKey);
                   const canvasEl = section.querySelector("[data-canvas]");
@@ -358,7 +373,14 @@ function RadioGroupControl({
                 }
                 window.dispatchEvent(
                   new CustomEvent("cms:option-selected", {
-                    detail: { optionKey: optKey, index, option },
+                    detail: {
+                      elementId: element.id,
+                      blockId,
+                      componentId,
+                      optionKey: optKey,
+                      index,
+                      option,
+                    },
                   }),
                 );
               }}

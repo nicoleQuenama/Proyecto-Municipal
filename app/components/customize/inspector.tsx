@@ -207,33 +207,83 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     }
   }, [element?.id, hasComponentOptions, componentOptions]);
 
-  const syncCanvasOption = useCallback((optKey: string) => {
-    const blockEl =
-      document.querySelector(`[data-block-id="${block.id}"]`) ||
-      document.querySelector(`[data-component="${def.id}"]`);
-    if (blockEl) {
-      blockEl.setAttribute("data-active-option", optKey);
-      const canvasEl = blockEl.querySelector("[data-canvas]");
-      if (canvasEl) canvasEl.setAttribute("data-active-option", optKey);
+  const isSharedComponent = useMemo(() => {
+    return pages.flatMap((p) => p.blocks).filter((b) => b.componentId === def.id).length > 1;
+  }, [pages, def.id]);
 
-      const optNum = parseInt(optKey.replace("opt", ""), 10);
-      const radios = blockEl.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-      if (radios.length >= optNum && optNum >= 1) {
-        radios[optNum - 1].checked = true;
+  const saveComponentDef = useCallback(
+    (updated: ComponentDef): ComponentDef => {
+      if (isSharedComponent && currentScope !== "global") {
+        const newComponentId = crypto.randomUUID();
+        const pageName = pages.find((p) => p.id === pageId)?.name || "Página";
+        const forked: ComponentDef = {
+          ...updated,
+          id: newComponentId,
+          name: `${def.name} (${pageName})`,
+          styles: updated.styles ? { ...updated.styles } : undefined,
+        };
+        dispatch({ type: "component/save", component: forked });
+        dispatch({
+          type: "block/replace-component",
+          pageId,
+          blockId: block.id,
+          componentId: newComponentId,
+        });
+        return forked;
+      } else {
+        dispatch({ type: "component/save", component: updated });
+        return updated;
       }
-    }
-  }, [block.id, def.id]);
+    },
+    [isSharedComponent, currentScope, def, pageId, block.id, pages, dispatch],
+  );
+
+  const syncCanvasOption = useCallback(
+    (optKey: string) => {
+      const blockEl =
+        document.querySelector(`[data-block-id="${block.id}"]`) ||
+        document.querySelector(`[data-component="${def.id}"]`);
+      if (blockEl) {
+        blockEl.setAttribute("data-active-option", optKey);
+        const canvasEl = blockEl.querySelector("[data-canvas]");
+        if (canvasEl) canvasEl.setAttribute("data-active-option", optKey);
+
+        const optNum = parseInt(optKey.replace("opt", ""), 10);
+        const radios = blockEl.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+        if (radios.length >= optNum && optNum >= 1) {
+          radios[optNum - 1].checked = true;
+        }
+      }
+      window.dispatchEvent(
+        new CustomEvent("cms:option-selected", {
+          detail: {
+            blockId: block.id,
+            componentId: def.id,
+            optionKey: optKey,
+          },
+        }),
+      );
+    },
+    [block.id, def.id],
+  );
 
   useEffect(() => {
     const handleOptEvent = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
+      const detail = (e as CustomEvent<{
+        elementId?: string;
+        blockId?: string;
+        componentId?: string;
+        optionKey?: string;
+      }>).detail;
+      if (detail?.blockId && detail.blockId !== block.id) return;
+      if (detail?.componentId && detail.componentId !== def.id) return;
       if (detail?.optionKey) {
         setActiveOptionKey(detail.optionKey);
       }
     };
     window.addEventListener("cms:option-selected", handleOptEvent);
     return () => window.removeEventListener("cms:option-selected", handleOptEvent);
-  }, []);
+  }, [block.id, def.id]);
 
   const handleSelectOptionKey = (optKey: string) => {
     setActiveOptionKey(optKey);
@@ -272,7 +322,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleAddCardToOption = (optKey: string) => {
     if (!canEditContent) return;
     const { component: updated, newCardId } = addCardToOption(def, optKey);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newCardId });
     syncCanvasOption(optKey);
   };
@@ -280,21 +330,21 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleDuplicateCardInOption = (cardId: string) => {
     if (!canEditContent) return;
     const { component: updated, newCardId } = duplicateCardInOption(def, cardId);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newCardId });
   };
 
   const handleDeleteCardFromOption = (cardId: string) => {
     if (!canEditContent) return;
     const updated = deleteCardFromOption(def, cardId);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: null });
   };
 
   const handleMoveCardToOption = (cardId: string, targetOptionKey: string) => {
     if (!canEditContent) return;
     const { component: updated, newCardId } = moveCardToOption(def, cardId, targetOptionKey);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newCardId });
     handleSelectOptionKey(targetOptionKey);
   };
@@ -302,20 +352,20 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleUpdateOptionLabel = (optionIndex: number, newLabel: string) => {
     if (!canEditContent) return;
     const updated = updateOptionLabel(def, optionIndex, newLabel);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   const handleAddOption = () => {
     if (!canEditContent) return;
     const added = addOption(def);
     if (!added) return;
-    dispatch({ type: "component/save", component: added.component });
+    saveComponentDef(added.component);
     handleSelectOptionKey(added.optionKey);
   };
 
   const handleRemoveOption = (optionIndex: number) => {
     if (!canEditContent) return;
-    dispatch({ type: "component/save", component: removeOption(def, optionIndex) });
+    saveComponentDef(removeOption(def, optionIndex));
     // La opción activa pudo ser la quitada (o renumerada): se vuelve a la primera.
     dispatch({ type: "element/select", id: null });
     handleSelectOptionKey("opt1");
@@ -324,40 +374,40 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleAddCard = () => {
     if (!canEditContent) return;
     const { component: updated, newCardId } = addCardToComponent(def);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newCardId });
   };
 
   const handleDuplicateCard = (cardId: string) => {
     if (!canEditContent) return;
     const { component: updated, newCardId } = duplicateCardInComponent(def, cardId);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newCardId });
   };
 
   const handleDeleteCard = (cardId: string) => {
     if (!canEditContent) return;
     const updated = deleteCardFromComponent(def, cardId);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: null });
   };
 
   const handleFillThreeCards = () => {
     if (!canEditContent) return;
     const updated = fillComponentWithThreeCards(def);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   const handleFillCards = (count: number) => {
     if (!canEditContent) return;
     const updated = fillComponentWithCards(def, count);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   const handleAddButton = () => {
     if (!canEditContent) return;
     const { component: updated, newButtonId } = addButtonToComponent(def);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newButtonId });
   };
 
@@ -622,25 +672,25 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleOrganizeFooter = (cols: 1 | 2 | 3 | 4) => {
     if (!canEditContent) return;
     const updated = organizeFooterIntoColumns(def, cols);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   const handleResetMunicipalFooter = () => {
     if (!canEditContent) return;
     const updated = createDefaultMunicipalFooter(def.id);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   const handleMoveElementToFooterCol = (colIdx: number) => {
     if (!canEditContent || !element) return;
     const updated = moveElementToFooterColumn(def, element.id, colIdx);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   const handleAddFooterLink = (colIdx: number) => {
     if (!canEditContent) return;
     const { component: updated, newLinkId } = addLinkToFooterColumn(def, colIdx);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
     dispatch({ type: "element/select", id: newLinkId });
   };
 
@@ -659,7 +709,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
   const handleMoveElementOrder = (direction: -1 | 1) => {
     if (!canEditContent || !element) return;
     const updated = moveElementOrderInComponent(def, element.id, direction);
-    dispatch({ type: "component/save", component: updated });
+    saveComponentDef(updated);
   };
 
   return (
@@ -806,11 +856,11 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 const idMap = new Map(def.elements.map((e) => [e.id, e]));
                 const otherElements = def.elements.filter((e) => !ids.includes(e.id));
                 const reorderedActive = ids.map((id) => idMap.get(id)!).filter(Boolean);
-                dispatch({ type: "component/save", component: { ...def, elements: [...otherElements, ...reorderedActive] } });
+                saveComponentDef({ ...def, elements: [...otherElements, ...reorderedActive] });
               } else {
                 const idMap = new Map(def.elements.map((e) => [e.id, e]));
                 const reordered = ids.map((id) => idMap.get(id)!).filter(Boolean);
-                dispatch({ type: "component/save", component: { ...def, elements: reordered } });
+                saveComponentDef({ ...def, elements: reordered });
               }
             }}
           />

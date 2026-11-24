@@ -735,14 +735,22 @@ export function ComponentView({
   useEffect(() => {
     if (!hasOptionElements) return;
     const handleOptionSelected = (e: Event) => {
-      const detail = (e as CustomEvent<{ optionKey?: string }>).detail;
+      const detail = (e as CustomEvent<{
+        elementId?: string;
+        blockId?: string;
+        componentId?: string;
+        optionKey?: string;
+      }>).detail;
+      // Si el evento trae blockId o componentId, solo procesar si corresponde a esta sección
+      if (detail?.blockId && interaction?.blockId && detail.blockId !== interaction.blockId) return;
+      if (detail?.componentId && detail.componentId !== def.id) return;
       if (detail?.optionKey) {
         setActiveOptionKey(detail.optionKey);
       }
     };
     window.addEventListener("cms:option-selected", handleOptionSelected);
     return () => window.removeEventListener("cms:option-selected", handleOptionSelected);
-  }, [hasOptionElements]);
+  }, [hasOptionElements, interaction?.blockId, def.id]);
 
   // Filtrar elementos para renderizar de forma ligera y reactiva solo las tarjetas de la opción activa.
   // También se deduplica: los ids repetidos llegaron a guardarse al mover tarjetas a una opción que ya tenía ese tag.
