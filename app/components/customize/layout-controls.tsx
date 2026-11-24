@@ -174,6 +174,10 @@ interface LayoutControlsProps {
   onMoveCardToOption?: (cardId: string, targetOptionKey: string) => void;
   /** Actualizar etiqueta de una opción */
   onUpdateOptionLabel?: (optionIndex: number, newLabel: string) => void;
+  /** Agregar una opción nueva (vacía) al final */
+  onAddOption?: () => void;
+  /** Quitar una opción con todas sus tarjetas */
+  onRemoveOption?: (optionIndex: number) => void;
 }
 
 interface OptionCardsManagerProps {
@@ -188,6 +192,8 @@ interface OptionCardsManagerProps {
   onDeleteCardFromOption?: (cardId: string) => void;
   onMoveCardToOption?: (cardId: string, targetOptionKey: string) => void;
   onUpdateOptionLabel?: (optionIndex: number, newLabel: string) => void;
+  onAddOption?: () => void;
+  onRemoveOption?: (optionIndex: number) => void;
   onSelectCard?: (cardId: string) => void;
   onCardColorChange?: (cardId: string, color: string) => void;
 }
@@ -204,12 +210,17 @@ function OptionCardsManager({
   onDeleteCardFromOption,
   onMoveCardToOption,
   onUpdateOptionLabel,
+  onAddOption,
+  onRemoveOption,
   onSelectCard,
   onCardColorChange,
 }: OptionCardsManagerProps) {
   const currentKey = activeOptionKey || componentOptions[0]?.key || "opt1";
   const activeOpt = componentOptions.find((o) => o.key === currentKey) || componentOptions[0];
   const [labelInput, setLabelInput] = useState(activeOpt?.label || "");
+  // La confirmación pertenece a una opción: al elegir otra deja de valer, sin reiniciarla en un efecto.
+  const [confirmKey, setConfirmKey] = useState<string | null>(null);
+  const confirmRemove = confirmKey === currentKey;
 
   useEffect(() => {
     if (activeOpt) {
@@ -268,6 +279,15 @@ function OptionCardsManager({
             );
           })}
         </div>
+        {onAddOption && (
+          <button
+            type="button"
+            onClick={onAddOption}
+            className="mt-0.5 flex items-center justify-center gap-1 rounded-md border border-dashed border-accent/50 px-2 py-1 text-[11px] font-semibold text-accent hover:bg-accent/10 active:scale-95 transition-all cursor-pointer"
+          >
+            <span>+</span> Agregar opción
+          </button>
+        )}
       </div>
 
       {/* Editor de nombre de la opción activa */}
@@ -302,6 +322,42 @@ function OptionCardsManager({
               </button>
             )}
           </div>
+          {onRemoveOption && activeOpt && componentOptions.length > 1 && (
+            confirmRemove ? (
+              <div className="flex flex-col gap-1 rounded border border-red-500/40 bg-red-500/10 p-1.5">
+                <span className="text-[11px] text-ink leading-snug">
+                  ¿Eliminar «{activeOpt.label}» y sus {optionCardCounts[activeOpt.key] ?? 0} tarjetas? Se puede deshacer con Ctrl+Z.
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onRemoveOption(activeOpt.index);
+                      setConfirmKey(null);
+                    }}
+                    className="h-6 flex-1 rounded bg-red-500 text-[11px] font-semibold text-white hover:bg-red-600 cursor-pointer"
+                  >
+                    Sí, eliminar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmKey(null)}
+                    className="h-6 flex-1 rounded border border-line text-[11px] text-ink hover:bg-hover cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmKey(currentKey)}
+                className="h-6 rounded border border-red-500/40 text-[11px] font-semibold text-red-500 hover:bg-red-500/10 cursor-pointer"
+              >
+                Eliminar opción
+              </button>
+            )
+          )}
         </div>
       )}
 
@@ -503,6 +559,8 @@ export function LayoutControls({
   onDeleteCardFromOption,
   onMoveCardToOption,
   onUpdateOptionLabel,
+  onAddOption,
+  onRemoveOption,
 }: LayoutControlsProps) {
   const viewport = useSafeViewport();
   const [showColumns, setShowColumns] = useState(false);
@@ -939,6 +997,8 @@ export function LayoutControls({
             onDeleteCardFromOption={onDeleteCardFromOption}
             onMoveCardToOption={onMoveCardToOption}
             onUpdateOptionLabel={onUpdateOptionLabel}
+            onAddOption={onAddOption}
+            onRemoveOption={onRemoveOption}
             onSelectCard={onSelectCard}
             onCardColorChange={onCardColorChange}
           />
@@ -1552,6 +1612,8 @@ export function LayoutControls({
           onDeleteCardFromOption={onDeleteCardFromOption}
           onMoveCardToOption={onMoveCardToOption}
           onUpdateOptionLabel={onUpdateOptionLabel}
+          onAddOption={onAddOption}
+          onRemoveOption={onRemoveOption}
           onSelectCard={onSelectCard}
           onCardColorChange={onCardColorChange}
         />

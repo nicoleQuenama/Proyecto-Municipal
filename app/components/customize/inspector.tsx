@@ -2,6 +2,7 @@
 
 import { currentPlacement } from "../placement/current-placement";
 import { flowSlotOf } from "../placement/use-flow-reorder";
+import { addOption, removeOption } from "../site/option-rules";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ACTIONS } from "../behaviors/actions";
 import { hasPermission, useAuth } from "../auth/auth-context";
@@ -301,6 +302,22 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     if (!canEditContent) return;
     const updated = updateOptionLabel(def, optionIndex, newLabel);
     dispatch({ type: "component/save", component: updated });
+  };
+
+  const handleAddOption = () => {
+    if (!canEditContent) return;
+    const added = addOption(def);
+    if (!added) return;
+    dispatch({ type: "component/save", component: added.component });
+    handleSelectOptionKey(added.optionKey);
+  };
+
+  const handleRemoveOption = (optionIndex: number) => {
+    if (!canEditContent) return;
+    dispatch({ type: "component/save", component: removeOption(def, optionIndex) });
+    // La opción activa pudo ser la quitada (o renumerada): se vuelve a la primera.
+    dispatch({ type: "element/select", id: null });
+    handleSelectOptionKey("opt1");
   };
 
   const handleAddCard = () => {
@@ -1063,10 +1080,14 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                     onClick={() => {
                       // Una sección colocada libremente se queda en el flujo donde se ve, no donde está en la lista:
                       // se anota su sitio antes de que el cambio le quite la posición.
-                      const beforeId = block.placement ? flowSlotOf(block.id) : undefined;
+                      const slot = block.placement || block.placementMode === "overlay" ? flowSlotOf(block.id) : undefined;
                       // El propio cambio a «flow» ya quita `placement`: no hace falta volver a colocarlo con null.
                       dispatch({ type: "block/placement-mode", pageId, blockId: block.id, mode: "flow" });
-                      if (beforeId !== undefined) dispatch({ type: "block/reorder", pageId, blockId: block.id, beforeId });
+                      if (slot) {
+                        dispatch({ type: "block/reorder", pageId, blockId: block.id, beforeId: slot.beforeId });
+                        // Sin esto caería justo bajo la sección de arriba, encima de lo que está sobrepuesto.
+                        dispatch({ type: "block/box", pageId, blockId: block.id, patch: { marginTop: slot.gap } });
+                      }
                     }}
                     className={`h-7 rounded font-medium transition-colors flex items-center justify-center gap-1 ${
                       block.locked
@@ -1349,6 +1370,8 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           onDeleteCardFromOption={canEditContent ? handleDeleteCardFromOption : undefined}
           onMoveCardToOption={canEditContent ? handleMoveCardToOption : undefined}
           onUpdateOptionLabel={canEditContent ? handleUpdateOptionLabel : undefined}
+          onAddOption={canEditContent ? handleAddOption : undefined}
+          onRemoveOption={canEditContent ? handleRemoveOption : undefined}
         />
       )}
 
