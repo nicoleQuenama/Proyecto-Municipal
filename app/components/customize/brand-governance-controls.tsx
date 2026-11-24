@@ -87,10 +87,10 @@ export function BrandGovernanceControls({
   const isButtonElement = element?.role === "button" || element?.control?.kind === "button";
 
   // Identificar el preset de borde actual
-  const currentBorderWidth = element?.borderWidth ?? (categoryStyle.borderWidth ? parseInt(categoryStyle.borderWidth, 10) : 0);
-  const currentBorderColor = (element?.borderColor ?? categoryStyle.borderColor ?? "#E2E8F0").toLowerCase();
+  const currentBorderWidth = element?.borderWidth ?? (categoryStyle.borderWidth ? parseInt(String(categoryStyle.borderWidth), 10) : 0);
+  const currentBorderColor = String(element?.borderColor ?? categoryStyle.borderColor ?? "#E2E8F0").toLowerCase();
   const currentBorderStyle = element?.borderStyle ?? (categoryStyle.borderStyle as any) ?? "solid";
-  const currentRadius = element?.radius ?? (categoryStyle.radius ? parseInt(categoryStyle.radius, 10) : 12);
+  const currentRadius = element?.radius ?? (categoryStyle.radius ? parseInt(String(categoryStyle.radius), 10) : 12);
 
   const activeBorderPreset: BorderPresetId = useMemo(() => {
     if (element?.borderPreset) return element.borderPreset;

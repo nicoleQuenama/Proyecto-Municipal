@@ -45,7 +45,8 @@ const applies = (scope: StyleScope, ctx: StyleContext): boolean =>
 const VARIABLE_REF = /^var\(--([a-z][a-z0-9-]*)\)$/;
 
 export const asVariableRef = (name: string): string => `var(--${name})`;
-export const variableNameOf = (value: string): string | null => VARIABLE_REF.exec(value)?.[1] ?? null;
+export const variableNameOf = (value: string | unknown): string | null =>
+  typeof value === "string" ? (VARIABLE_REF.exec(value)?.[1] ?? null) : null;
 
 const NUMBER = /^-?\d+(\.\d+)?$/;
 const SIZE = /^-?\d+(\.\d+)?px$/;
@@ -58,19 +59,25 @@ const ALIGNMENTS = ["left", "center", "right"];
 
 /** Cómo se valida y normaliza cada tipo de valor; `null` si no es válido. */
 const NORMALIZERS: Record<PropKind, (value: string) => string | null> = {
-  size: (value) => (NUMBER.test(value) ? `${value}px` : SIZE.test(value) ? value : null),
+  size: (value) => {
+    const str = String(value);
+    return NUMBER.test(str) ? `${str}px` : SIZE.test(str) ? str : null;
+  },
   color: (value) =>
     HEX_COLOR.test(value) ? value.toLowerCase() : CSS_COLOR.test(value) || CSS_GRADIENT.test(value) ? value : null,
   weight: (value) => (WEIGHTS.includes(value) ? value : null),
   align: (value) => (ALIGNMENTS.includes(value) ? value : null),
   font: (value) => value,
-  borderStyle: (value) => (["solid", "dashed", "dotted", "none"].includes(value.toLowerCase()) ? value.toLowerCase() : null),
+  borderStyle: (value) => {
+    const str = String(value).toLowerCase();
+    return ["solid", "dashed", "dotted", "none"].includes(str) ? str : null;
+  },
   border: (value) => value,
 };
 
 /** Devuelve el valor ya normalizado ("10" → "10px"), o null si no es válido para ese tipo. */
-export function normalizeValue(kind: PropKind, input: string): string | null {
-  const value = input.trim();
+export function normalizeValue(kind: PropKind, input: string | unknown): string | null {
+  const value = String(input ?? "").trim();
   return value ? NORMALIZERS[kind](value) : null;
 }
 
@@ -85,11 +92,13 @@ const MAX_DEPTH = 5;
 
 /** Sustituye `var(--x)` por su valor (una variable puede apuntar a otra). Sin definir → undefined. */
 export function resolveValue(
-  value: string,
+  value: string | unknown,
   variables: Variable[],
   ctx: StyleContext,
   depth = 0,
 ): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string") return String(value);
   const name = variableNameOf(value);
   if (name === null) return value;
   if (depth >= MAX_DEPTH) return undefined;

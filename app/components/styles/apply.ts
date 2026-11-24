@@ -6,8 +6,9 @@ import { computeStyle } from "./resolve";
 import type { ResolvedStyle, StyleContext, StyleState } from "./types";
 
 /** "12px" → 12; si no es un número usa el valor de respaldo. */
-export const pixelsOf = (value: string | undefined, fallback: number): number => {
-  const parsed = parseFloat(value ?? "");
+export const pixelsOf = (value: string | number | undefined, fallback: number): number => {
+  if (typeof value === "number") return Number.isNaN(value) ? fallback : value;
+  const parsed = parseFloat(String(value ?? ""));
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
@@ -62,13 +63,18 @@ export function boxStyle(style: ResolvedStyle): CSSProperties {
   if (style.padding) css.padding = style.padding;
   if (style.margin) css.margin = style.margin;
   if (style.background) css.background = style.background;
-  if (style.radius) css.borderRadius = style.radius;
+  if (style.radius) {
+    css.borderRadius = typeof style.radius === "number" ? `${style.radius}px` : style.radius;
+  }
   if (style.color) css.color = style.color;
   if (style.fontFamily) css.fontFamily = style.fontFamily;
-  if (style.borderWidth && Number(style.borderWidth.replace("px", "")) > 0) {
-    css.borderWidth = style.borderWidth;
-    css.borderStyle = (style.borderStyle as CSSProperties["borderStyle"]) || "solid";
-    css.borderColor = style.borderColor || "#E2E8F0";
+  if (style.borderWidth !== undefined && style.borderWidth !== null) {
+    const widthNum = pixelsOf(style.borderWidth, 0);
+    if (widthNum > 0) {
+      css.borderWidth = `${widthNum}px`;
+      css.borderStyle = (style.borderStyle as CSSProperties["borderStyle"]) || "solid";
+      css.borderColor = style.borderColor || "#E2E8F0";
+    }
   } else if (style.border) {
     css.border = style.border;
   }
