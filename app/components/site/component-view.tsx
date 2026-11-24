@@ -331,11 +331,21 @@ function PositionedElement({
     };
     const interactive = isSearchTrigger || link !== undefined || behaviorProps.onClick !== undefined;
 
+    const isBackdropEl = Boolean(
+      (interaction?.gestures && isBackdrop(element, interaction.gestures.size)) ||
+      (element.kind === "rect" && !element.parentId && (
+        (element.role as string) === "background" ||
+        element.id.endsWith("-bg") ||
+        (element.x === 0 && element.y === 0 && element.width >= 600 && element.height >= 200)
+      ))
+    );
+
     return (
       <div
         ref={ref}
         data-target={target}
         data-el={element.id}
+        {...(isBackdropEl ? { "data-backdrop": "" } : {})}
         {...(interactive ? { "data-interactive": "" } : {})}
         {...behaviorProps}
         {...(link
@@ -379,7 +389,14 @@ function PositionedElement({
     const { gestures } = interaction;
     const isFlow = Boolean(interaction.flow);
     const isTopChild = !element.parentId;
-    const isBackdropEl = Boolean(gestures && isBackdrop(element, gestures.size));
+    const isBackdropEl = Boolean(
+      (gestures && isBackdrop(element, gestures.size)) ||
+      (element.kind === "rect" && !element.parentId && (
+        (element.role as string) === "background" ||
+        element.id.endsWith("-bg") ||
+        (element.x === 0 && element.y === 0 && element.width >= 600 && element.height >= 200)
+      ))
+    );
     const canReorder = isFlow && isTopChild && !isBackdropEl && Boolean(interaction.onReorderElement);
 
     return (
@@ -411,7 +428,7 @@ function PositionedElement({
           }
           setDropIndicator(null);
         } : undefined}
-        {...(gestures && isBackdrop(element, gestures.size) ? { "data-backdrop": "" } : {})}
+        {...(isBackdropEl ? { "data-backdrop": "" } : {})}
         {...drop.handlers}
         style={{
           ...boundStyle,
@@ -426,7 +443,7 @@ function PositionedElement({
           // Si se pulsa Shift/Ctrl/Cmd, no iniciar arrastre para permitir selección múltiple sin reiniciar la selección
           if (e.shiftKey || e.ctrlKey || e.metaKey) return;
           // El fondo de una tarjeta (una pieza que ocupa toda la sección) arrastra el bloque entero.
-          if (gestures && isBackdrop(element, gestures.size)) return interaction.onMoveBlock?.(e);
+          if (isBackdropEl) return interaction.onMoveBlock?.(e);
           // Si el contenedor está en flujo (flex/grid), NO se mueve libremente por coordenadas absolutas x/y
           if (!isFlow) {
             gestures?.startDrag(e, element);
@@ -612,10 +629,70 @@ interface Card {
  * Las piezas de la sección. En flujo (flex, grid, carrusel), lo acoplado a un elemento va dentro de él: la tarjeta
  * es una sola pieza que se acomoda y se desliza entera. Fuera de flujo todo va suelto, cada uno en su posición.
  */
-function cardsOf(elements: CanvasElement[], flow: boolean): Card[] {
+function cardsOf(elements: CanvasElement[], flow: boolean, def?: ComponentDef): Card[] {
   if (!flow) return elements.map((element) => ({ element, children: [] }));
   const ids = new Set(elements.map((e) => e.id));
-  const build = (element: CanvasElement): Card => ({ element, children: elements.filter((e) => e.parentId === element.id).map(build) });
+
+  // Si ya existen relaciones parentId explícitas
+  const hasParents = elements.some((e) => e.parentId !== undefined && ids.has(e.parentId));
+  if (hasParents) {
+    const build = (element: CanvasElement): Card => ({
+      element,
+      children: elements.filter((e) => e.parentId === element.id).map(build),
+    });
+    return elements.filter((e) => e.parentId === undefined || !ids.has(e.parentId)).map(build);
+  }
+
+  // Agrupamiento geométrico inteligente: si hay tarjetas rectangulares y elementos dentro
+  const isBackdropEl = (e: CanvasElement) =>
+    e.kind === "rect" &&
+    ((e.role as string) === "background" ||
+      e.id.endsWith("-bg") ||
+      (def && e.x === 0 && e.y === 0 && e.width >= def.width * 0.85 && e.height >= def.height * 0.85));
+
+  const cardContainers = elements.filter(
+    (e) => !isBackdropEl(e) && e.kind === "rect" && e.width >= 80 && e.height >= 50 && (def ? e.width < def.width * 0.85 : true)
+  );
+
+  if (cardContainers.length > 0) {
+    const claimedChildIds = new Set<string>();
+    const cardChildrenMap = new Map<string, CanvasElement[]>();
+
+    for (const card of cardContainers) {
+      const kids = elements.filter((e) => {
+        if (e.id === card.id || isBackdropEl(e) || cardContainers.some((c) => c.id === e.id)) return false;
+        const cx = e.x + e.width / 2;
+        const cy = e.y + e.height / 2;
+        return (
+          cx >= card.x - 4 &&
+          cx <= card.x + card.width + 4 &&
+          cy >= card.y - 4 &&
+          cy <= card.y + card.height + 4
+        );
+      });
+      if (kids.length > 0) {
+        cardChildrenMap.set(card.id, kids);
+        kids.forEach((k) => claimedChildIds.add(k.id));
+      }
+    }
+
+    if (claimedChildIds.size > 0) {
+      return elements
+        .filter((e) => !claimedChildIds.has(e.id))
+        .map((element) => {
+          const kids = cardChildrenMap.get(element.id) ?? [];
+          return {
+            element,
+            children: kids.map((k) => ({ element: k, children: [] })),
+          };
+        });
+    }
+  }
+
+  const build = (element: CanvasElement): Card => ({
+    element,
+    children: elements.filter((e) => e.parentId === element.id).map(build),
+  });
   return elements.filter((e) => e.parentId === undefined || !ids.has(e.parentId)).map(build);
 }
 
@@ -709,7 +786,7 @@ export function ComponentView({
           )}
         </style>
       )}
-      {cardsOf(visibleElements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
+      {cardsOf(visibleElements, interaction?.flow ?? false, viewDef).map((card) => renderCard(card, interaction))}
       {interaction?.overlay}
       {layer && (
         <EditingLayer

@@ -10,6 +10,7 @@ import { Collapsible } from "../ui/collapsible";
 import {
   applyCell,
   applyGap,
+  applyLayout,
   applyPadding,
   applyQuickPreset,
   applyResponsiveGrid,
@@ -572,11 +573,13 @@ export function LayoutControls({
   if (isSection) {
     const currentPreset = quickPresetOf(classes);
     const inGrid = classes.split(/\s+/).includes("grid") || isGridLayout(currentPreset);
+    const isRow = classes.split(/\s+/).includes("flex-row") || currentPreset === "row";
+    const isCol = (classes.split(/\s+/).includes("flex-col") || currentPreset === "column") && !inGrid;
     const gridConfig = parseResponsiveGridConfig(classes) ?? {
-      desktopCols: 4,
+      desktopCols: 3,
       tabletCols: 2,
-      mobileCols: 2,
-      gap: 16,
+      mobileCols: 1,
+      gap: 24,
       padding: 0,
     };
     const currentGap = gapOf(classes);
@@ -954,34 +957,223 @@ export function LayoutControls({
         {/* Los controles genéricos de cuadrícula, bento, carrusel y tarjetas solo aplican a secciones regulares */}
         {!isHeader && !isFooter && (
           <>
-            {/* Presets Rápidos */}
+            {/* Modo de Disposición Principal */}
             <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-medium text-ink">Presets rápidos</span>
-          <div className="flex flex-wrap gap-1">
-            {(Object.keys(QUICK_PRESETS) as QuickPresetKey[]).map((key) => {
-              const active = key === currentPreset;
-              return (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-ink">Disposición de la sección</span>
+                <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                  {inGrid ? "Cuadrícula" : isRow ? "Fila flexible" : isCol ? "Columna vertical" : "Libre (Canvas)"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1 text-[11px]">
                 <button
-                  key={key}
                   type="button"
-                  aria-pressed={active}
-                  title={QUICK_PRESETS[key].help}
-                  onClick={() => onChange(applyQuickPreset(classes, key))}
-                  className={`h-7 rounded-md border px-2 text-[11px] font-medium transition-colors ${
-                    active
-                      ? "border-accent bg-accent/20 text-accent shadow-xs"
-                      : "border-line text-ink hover:bg-hover hover:border-ink/20"
+                  aria-pressed={!inGrid && !isRow && !isCol}
+                  onClick={() => onChange(applyLayout(classes, "free"))}
+                  className={`h-7 rounded border font-medium transition-colors ${
+                    !inGrid && !isRow && !isCol
+                      ? "border-accent bg-accent/20 text-accent font-semibold shadow-xs"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
                   } cursor-pointer`}
+                  title="Posición libre y manual en el lienzo (coordenadas x/y directas)"
                 >
-                  {QUICK_PRESETS[key].label}
+                  Libre
                 </button>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-ink-dim">
-            {QUICK_PRESETS[currentPreset]?.help ?? "Organiza los elementos automáticamente."}
-          </p>
-        </div>
+                <button
+                  type="button"
+                  aria-pressed={inGrid}
+                  onClick={() => onChange(applyResponsiveGrid(classes, gridConfig ?? { desktopCols: 3, tabletCols: 2, mobileCols: 1, gap: 24, padding: 0 }))}
+                  className={`h-7 rounded border font-medium transition-colors ${
+                    inGrid
+                      ? "border-accent bg-accent/20 text-accent font-semibold shadow-xs"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  } cursor-pointer`}
+                  title="Organiza tarjetas o elementos en columnas ordenadas y adaptables"
+                >
+                  Cuadrícula
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isRow && !inGrid}
+                  onClick={() => onChange(applyLayout(classes, "row"))}
+                  className={`h-7 rounded border font-medium transition-colors ${
+                    isRow && !inGrid
+                      ? "border-accent bg-accent/20 text-accent font-semibold shadow-xs"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  } cursor-pointer`}
+                  title="Alinea los elementos horizontalmente en fila"
+                >
+                  Fila
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isCol && !inGrid}
+                  onClick={() => onChange(applyLayout(classes, "column"))}
+                  className={`h-7 rounded border font-medium transition-colors ${
+                    isCol && !inGrid
+                      ? "border-accent bg-accent/20 text-accent font-semibold shadow-xs"
+                      : "border-line bg-canvas text-ink hover:bg-hover"
+                  } cursor-pointer`}
+                  title="Apila los elementos verticalmente uno debajo del otro"
+                >
+                  Columna
+                </button>
+              </div>
+              <p className="text-[10px] text-ink-dim">
+                {inGrid
+                  ? "Las tarjetas se distribuyen automáticamente en columnas limpias según la pantalla."
+                  : isRow
+                    ? "Elementos ordenados en fila horizontal; pasan a la línea inferior si no caben."
+                    : isCol
+                      ? "Elementos colocados en una sola columna vertical ordenada."
+                      : "Posición libre y manual para cada elemento directamente en el lienzo."}
+              </p>
+            </div>
+
+            {/* Configuración Integrada de Columnas y Adaptación Móvil */}
+            {inGrid && (
+              <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
+                <div className="flex items-center justify-between border-b border-accent/20 pb-1.5">
+                  <span className="text-[11px] font-semibold text-ink">Columnas por pantalla</span>
+                  <div className="flex items-center gap-1">
+                    {(["desktop", "tablet", "mobile"] as DeviceBreakpoint[]).map((bp) => {
+                      const isCurrent = activeBreakpoint === bp;
+                      return (
+                        <button
+                          key={bp}
+                          type="button"
+                          aria-pressed={isCurrent}
+                          onClick={() => {
+                            setActiveBreakpoint(bp);
+                            viewport?.setDevice(bp === "desktop" ? "desktop" : bp === "tablet" ? "tablet" : "mobile");
+                          }}
+                          className={`flex items-center justify-center gap-1 h-5 px-1.5 rounded text-[10px] font-medium transition-colors ${
+                            isCurrent ? "bg-accent text-white shadow-xs font-semibold" : "border border-line bg-canvas text-ink-dim hover:text-ink"
+                          } cursor-pointer`}
+                          title={`Previsualizar en ${bp === "desktop" ? "PC" : bp === "tablet" ? "Tablet" : "Móvil"}`}
+                        >
+                          {bp === "desktop" ? "PC" : bp === "tablet" ? "Tab" : "Móv"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Columnas en PC */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-medium text-ink">En PC (Escritorio):</span>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[2, 3, 4].map((num) => {
+                      const selected = gridConfig.desktopCols === num;
+                      return (
+                        <button
+                          key={num}
+                          type="button"
+                          aria-label={`${num} columnas en PC`}
+                          onClick={() => onChange(applyResponsiveGrid(classes, { ...gridConfig, desktopCols: num, tabletCols: Math.min(gridConfig.tabletCols, num) }))}
+                          className={`h-6 px-2.5 rounded text-[10px] font-semibold transition-colors ${
+                            selected
+                              ? "bg-accent text-white shadow-xs"
+                              : "border border-line bg-canvas text-ink hover:bg-hover"
+                          } cursor-pointer`}
+                        >
+                          {num} cols
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Columnas en Celular (Móvil) */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-medium text-ink">En Celular (Móvil):</span>
+                  <div className="grid grid-cols-2 gap-1">
+                    {[1, 2].map((num) => {
+                      const selected = gridConfig.mobileCols === num;
+                      return (
+                        <button
+                          key={num}
+                          type="button"
+                          aria-label={`${num} columna${num > 1 ? "s" : ""} en móvil`}
+                          onClick={() => onChange(applyResponsiveGrid(classes, { ...gridConfig, mobileCols: num }))}
+                          className={`h-6 px-2.5 rounded text-[10px] font-semibold transition-colors ${
+                            selected
+                              ? "bg-accent text-white shadow-xs"
+                              : "border border-line bg-canvas text-ink hover:bg-hover"
+                          } cursor-pointer`}
+                        >
+                          {num} {num === 1 ? "col (Recomendado)" : "cols"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Adaptación móvil si está en Fila o Columna */}
+            {!inGrid && (isRow || isCol) && (
+              <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
+                <div className="flex items-center justify-between border-b border-accent/20 pb-1.5">
+                  <span className="text-[11px] font-semibold text-ink">Adaptación en Celular</span>
+                  <div className="flex items-center gap-1">
+                    {(["desktop", "tablet", "mobile"] as DeviceBreakpoint[]).map((bp) => {
+                      const isCurrent = activeBreakpoint === bp;
+                      return (
+                        <button
+                          key={bp}
+                          type="button"
+                          aria-pressed={isCurrent}
+                          onClick={() => {
+                            setActiveBreakpoint(bp);
+                            viewport?.setDevice(bp === "desktop" ? "desktop" : bp === "tablet" ? "tablet" : "mobile");
+                          }}
+                          className={`flex items-center justify-center gap-1 h-5 px-1.5 rounded text-[10px] font-medium transition-colors ${
+                            isCurrent ? "bg-accent text-white shadow-xs font-semibold" : "border border-line bg-canvas text-ink-dim hover:text-ink"
+                          } cursor-pointer`}
+                          title={`Previsualizar en ${bp === "desktop" ? "PC" : bp === "tablet" ? "Tablet" : "Móvil"}`}
+                        >
+                          {bp === "desktop" ? "PC" : bp === "tablet" ? "Tab" : "Móv"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1 text-[11px]">
+                  <button
+                    type="button"
+                    aria-pressed={overrides.mobile.direction === "col"}
+                    onClick={() => onChange(applyBreakpointOverride(classes, "mobile", { direction: "col" }))}
+                    className={`h-7 rounded border px-2 font-medium transition-colors flex items-center justify-center ${
+                      overrides.mobile.direction === "col"
+                        ? "border-accent bg-accent/20 text-accent font-semibold"
+                        : "border-line text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Apilar vertical
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={overrides.mobile.direction === "row"}
+                    onClick={() => onChange(applyBreakpointOverride(classes, "mobile", { direction: "row" }))}
+                    className={`h-7 rounded border px-2 font-medium transition-colors flex items-center justify-center ${
+                      overrides.mobile.direction === "row"
+                        ? "border-accent bg-accent/20 text-accent font-semibold"
+                        : "border-line text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Mantener fila
+                  </button>
+                </div>
+                <p className="text-[10px] text-ink-dim">
+                  {overrides.mobile.direction === "col"
+                    ? "Recomendado: coloca los elementos uno debajo de otro para lectura cómoda en teléfonos."
+                    : "Mantiene los elementos en fila horizontal."}
+                </p>
+              </div>
+            )}
 
         {/* Gestión de Opciones & Tarjetas Seleccionables */}
         {!isHeader && !isFooter && hasOptions && componentOptions && (
@@ -1155,9 +1347,9 @@ export function LayoutControls({
           </div>
         )}
 
-        {/* Separación entre elementos (Gap) - Visible y prominente */}
-        {currentPreset !== "free" && (
-          <div className="flex flex-col gap-1.5">
+        {/* Separación entre elementos (Gap) - Solo cuando hay auto-layout activo */}
+        {(inGrid || isRow || isCol) && (
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-line/60">
             <span className="text-[11px] font-medium text-ink">Separación general (Gap)</span>
             <div className="flex flex-wrap gap-1">
               {GAP_PRESETS.map((p) => {
@@ -1183,7 +1375,7 @@ export function LayoutControls({
         )}
 
         {/* Relleno del contenedor (Padding) */}
-        {currentPreset !== "free" && (
+        {(inGrid || isRow || isCol) && (
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-medium text-ink">Relleno del contenedor (Padding)</span>
             <div className="flex flex-wrap gap-1">
@@ -1209,381 +1401,108 @@ export function LayoutControls({
           </div>
         )}
 
-        {/* Adaptación Responsive por pantalla (Clara, intuitiva y amigable) */}
-        <Collapsible title="Adaptación a Celular y Tablet" defaultOpen={inGrid}>
-          <div className="flex flex-col gap-2.5 rounded-lg border border-line bg-canvas/60 p-2.5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-line pb-1.5">
-              <span className="text-[11px] font-semibold text-ink">Vista previa por dispositivo</span>
-            </div>
+        {/* Opciones avanzadas de alineación y formato (plegado para no saturar) */}
+        {(inGrid || isRow || isCol) && (
+          <Collapsible title="Alineación y formato avanzado" defaultOpen={false}>
+            <div className="flex flex-col gap-2 pt-1 border-t border-line/60">
+              {/* Alineación transversal */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-medium text-ink-dim">Alineación vertical:</span>
+                <div className="grid grid-cols-4 gap-1 text-[10px]">
+                  {[
+                    { val: "start", label: "Inicio" },
+                    { val: "center", label: "Centro" },
+                    { val: "end", label: "Final" },
+                    { val: "stretch", label: "Estirar" },
+                  ].map((al) => (
+                    <button
+                      key={al.val}
+                      type="button"
+                      aria-pressed={currentOverride.align === al.val}
+                      onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { align: al.val as any }))}
+                      className={`h-6 rounded border font-medium transition-colors ${
+                        currentOverride.align === al.val
+                          ? "border-accent bg-accent text-white"
+                          : "border-line text-ink hover:bg-hover"
+                      } cursor-pointer`}
+                    >
+                      {al.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Selector rápido de pantalla con preview interactivo */}
-            <div className="grid grid-cols-3 gap-1 rounded-md bg-canvas p-1 text-[11px]">
-              {(["desktop", "tablet", "mobile"] as DeviceBreakpoint[]).map((bp) => {
-                const isCurrent = activeBreakpoint === bp;
-                return (
+              {/* Distribución horizontal */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-medium text-ink-dim">Distribución horizontal:</span>
+                <div className="grid grid-cols-4 gap-1 text-[10px]">
+                  {[
+                    { val: "start", label: "Inicio" },
+                    { val: "center", label: "Centro" },
+                    { val: "between", label: "Espaciado" },
+                    { val: "end", label: "Final" },
+                  ].map((ju) => (
+                    <button
+                      key={ju.val}
+                      type="button"
+                      aria-pressed={currentOverride.justify === ju.val}
+                      onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { justify: ju.val as any }))}
+                      className={`h-6 rounded border font-medium transition-colors ${
+                        currentOverride.justify === ju.val
+                          ? "border-accent bg-accent text-white"
+                          : "border-line text-ink hover:bg-hover"
+                      } cursor-pointer`}
+                    >
+                      {ju.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ancho del contenedor */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-medium text-ink-dim">Ancho del contenedor:</span>
+                <div className="grid grid-cols-2 gap-1 text-[11px]">
                   <button
-                    key={bp}
                     type="button"
-                    aria-pressed={isCurrent}
-                    onClick={() => {
-                      setActiveBreakpoint(bp);
-                      viewport?.setDevice(bp === "desktop" ? "desktop" : bp === "tablet" ? "tablet" : "mobile");
-                    }}
-                    className={`flex items-center justify-center gap-1 h-7 rounded font-medium transition-colors ${
-                      isCurrent ? "bg-accent text-white shadow-xs" : "text-ink-dim hover:text-ink hover:bg-hover"
+                    aria-pressed={wrapperConfig.widthMode !== "fit"}
+                    onClick={() => onChange(applyWrapperConfig(classes, { widthMode: "full" }))}
+                    className={`h-6 rounded border font-medium transition-colors ${
+                      wrapperConfig.widthMode !== "fit"
+                        ? "border-accent bg-accent/20 text-accent font-semibold"
+                        : "border-line text-ink hover:bg-hover"
                     } cursor-pointer`}
                   >
-                    {bp === "desktop" && <DesktopIcon />}
-                    {bp === "tablet" && <TabletIcon />}
-                    {bp === "mobile" && <MobileIcon />}
-                    <span>{bp === "desktop" ? "PC" : bp === "tablet" ? "Tablet" : "Móvil"}</span>
+                    Ancho completo (100%)
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    aria-pressed={wrapperConfig.widthMode === "fit"}
+                    onClick={() => onChange(applyWrapperConfig(classes, { widthMode: "fit" }))}
+                    className={`h-6 rounded border font-medium transition-colors ${
+                      wrapperConfig.widthMode === "fit"
+                        ? "border-accent bg-accent/20 text-accent font-semibold"
+                        : "border-line text-ink hover:bg-hover"
+                    } cursor-pointer`}
+                  >
+                    Ajustar a contenido
+                  </button>
+                </div>
+              </div>
+
+              {/* Centrar en página */}
+              <label className="flex items-center justify-between gap-1.5 rounded bg-canvas p-1.5 text-[10px] text-ink border border-line cursor-pointer hover:bg-hover">
+                <span>Centrar horizontalmente (mx-auto)</span>
+                <input
+                  type="checkbox"
+                  checked={wrapperConfig.margin === "center"}
+                  onChange={(e) => onChange(applyWrapperConfig(classes, { margin: e.target.checked ? "center" : "none" }))}
+                  className="rounded accent-accent cursor-pointer"
+                />
+              </label>
             </div>
-
-            {/* Si está en Cuadrícula (Grid): Columnas personalizadas por pantalla */}
-            {inGrid ? (
-              <div className="flex flex-col gap-2 pt-1">
-                <span className="text-[11px] font-semibold text-ink">Columnas personalizadas por pantalla:</span>
-
-                {/* PC / Desktop */}
-                <div
-                  className={`flex items-center justify-between gap-2 rounded-md p-1.5 transition-colors ${
-                    activeBreakpoint === "desktop" ? "bg-accent/10 ring-1 ring-accent/30" : "bg-canvas"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveBreakpoint("desktop");
-                      viewport?.setDevice("desktop");
-                    }}
-                    title="Previsualizar en escritorio (PC)"
-                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent cursor-pointer"
-                  >
-                    <DesktopIcon />
-                    <span>PC</span>
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5, 6].map((num) => {
-                      const selected = gridConfig.desktopCols === num;
-                      return (
-                        <button
-                          key={num}
-                          type="button"
-                          aria-label={`${num} columnas en PC`}
-                          onClick={() => onChange(applyResponsiveGrid(classes, { ...gridConfig, desktopCols: num }))}
-                          className={`h-6 w-6 rounded text-[11px] font-semibold transition-colors ${
-                            selected
-                              ? "bg-accent text-white shadow-xs"
-                              : "border border-line bg-canvas text-ink hover:bg-hover"
-                          } cursor-pointer`}
-                        >
-                          {num}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Tablet */}
-                <div
-                  className={`flex items-center justify-between gap-2 rounded-md p-1.5 transition-colors ${
-                    activeBreakpoint === "tablet" ? "bg-accent/10 ring-1 ring-accent/30" : "bg-canvas"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveBreakpoint("tablet");
-                      viewport?.setDevice("tablet");
-                    }}
-                    title="Previsualizar en tablet"
-                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent cursor-pointer"
-                  >
-                    <TabletIcon />
-                    <span>Tablet</span>
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4].map((num) => {
-                      const selected = gridConfig.tabletCols === num;
-                      return (
-                        <button
-                          key={num}
-                          type="button"
-                          aria-label={`${num} columnas en tablet`}
-                          onClick={() => onChange(applyResponsiveGrid(classes, { ...gridConfig, tabletCols: num }))}
-                          className={`h-6 w-6 rounded text-[11px] font-semibold transition-colors ${
-                            selected
-                              ? "bg-accent text-white shadow-xs"
-                              : "border border-line bg-canvas text-ink hover:bg-hover"
-                          } cursor-pointer`}
-                        >
-                          {num}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Móvil */}
-                <div
-                  className={`flex items-center justify-between gap-2 rounded-md p-1.5 transition-colors ${
-                    activeBreakpoint === "mobile" ? "bg-accent/10 ring-1 ring-accent/30" : "bg-canvas"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveBreakpoint("mobile");
-                      viewport?.setDevice("mobile");
-                    }}
-                    title="Previsualizar en celular (móvil)"
-                    className="flex items-center gap-1.5 text-xs font-medium text-ink hover:text-accent cursor-pointer"
-                  >
-                    <MobileIcon />
-                    <span>Móvil</span>
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3].map((num) => {
-                      const selected = gridConfig.mobileCols === num;
-                      return (
-                        <button
-                          key={num}
-                          type="button"
-                          aria-label={`${num} columnas en móvil`}
-                          onClick={() => onChange(applyResponsiveGrid(classes, { ...gridConfig, mobileCols: num }))}
-                          className={`h-6 w-6 rounded text-[11px] font-semibold transition-colors ${
-                            selected
-                              ? "bg-accent text-white shadow-xs"
-                              : "border border-line bg-canvas text-ink hover:bg-hover"
-                          } cursor-pointer`}
-                        >
-                          {num}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Si es Flex / Fila / Botones / Footer: Apilado vs Fila simple */
-              <div className="flex flex-col gap-2 pt-1">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold text-ink">
-                    En Celular (Móvil):
-                  </span>
-                  <div className="grid grid-cols-2 gap-1 text-[11px]">
-                    <button
-                      type="button"
-                      aria-pressed={overrides.mobile.direction === "col"}
-                      onClick={() => onChange(applyBreakpointOverride(classes, "mobile", { direction: "col" }))}
-                      className={`h-7 rounded border px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
-                        overrides.mobile.direction === "col"
-                          ? "border-accent bg-accent/20 text-accent font-semibold"
-                          : "border-line text-ink hover:bg-hover"
-                      } cursor-pointer`}
-                    >
-                      Apilar vertical
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={overrides.mobile.direction === "row"}
-                      onClick={() => onChange(applyBreakpointOverride(classes, "mobile", { direction: "row" }))}
-                      className={`h-7 rounded border px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
-                        overrides.mobile.direction === "row"
-                          ? "border-accent bg-accent/20 text-accent font-semibold"
-                          : "border-line text-ink hover:bg-hover"
-                      } cursor-pointer`}
-                    >
-                      Mantener fila
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-ink-dim">
-                    {overrides.mobile.direction === "col"
-                      ? "Recomendado: coloca los elementos uno debajo de otro para que se lean bien en teléfonos."
-                      : "Mantiene los elementos en fila horizontal."}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-1 pt-1 border-t border-line/60">
-                  <span className="text-[10px] font-semibold text-ink">
-                    En Tablet:
-                  </span>
-                  <div className="grid grid-cols-2 gap-1 text-[11px]">
-                    <button
-                      type="button"
-                      aria-pressed={overrides.tablet.direction === "col"}
-                      onClick={() => onChange(applyBreakpointOverride(classes, "tablet", { direction: "col" }))}
-                      className={`h-7 rounded border px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
-                        overrides.tablet.direction === "col"
-                          ? "border-accent bg-accent/20 text-accent font-semibold"
-                          : "border-line text-ink hover:bg-hover"
-                      } cursor-pointer`}
-                    >
-                      Apilar vertical
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={overrides.tablet.direction === "row"}
-                      onClick={() => onChange(applyBreakpointOverride(classes, "tablet", { direction: "row" }))}
-                      className={`h-7 rounded border px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
-                        overrides.tablet.direction === "row"
-                          ? "border-accent bg-accent/20 text-accent font-semibold"
-                          : "border-line text-ink hover:bg-hover"
-                      } cursor-pointer`}
-                    >
-                      Mantener fila
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Opciones avanzadas de alineación y espaciado (plegado para no saturar) */}
-            <Collapsible title="Alineación y espaciado avanzado" defaultOpen={false}>
-              <div className="flex flex-col gap-2 pt-1 border-t border-line/60">
-                {/* Dirección de flujo en el breakpoint activo */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-medium text-ink-dim">
-                    Dirección en {activeBreakpoint === "desktop" ? "PC" : activeBreakpoint === "tablet" ? "Tablet" : "Móvil"}:
-                  </span>
-                  <div className="grid grid-cols-2 gap-1 text-[11px]">
-                    <button
-                      type="button"
-                      aria-pressed={currentOverride.direction === "row"}
-                      onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { direction: "row" }))}
-                      className={`h-6 rounded border px-2 font-medium transition-colors ${
-                        currentOverride.direction === "row"
-                          ? "border-accent bg-accent/20 text-accent font-semibold"
-                          : "border-line text-ink hover:bg-hover"
-                      } cursor-pointer`}
-                    >
-                      En fila
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={currentOverride.direction === "col"}
-                      onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { direction: "col" }))}
-                      className={`h-6 rounded border px-2 font-medium transition-colors ${
-                        currentOverride.direction === "col"
-                          ? "border-accent bg-accent/20 text-accent font-semibold"
-                          : "border-line text-ink hover:bg-hover"
-                      } cursor-pointer`}
-                    >
-                      Apilado
-                    </button>
-                  </div>
-                </div>
-
-                {/* Alineación transversal */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-medium text-ink-dim">Alineación:</span>
-                  <div className="grid grid-cols-4 gap-1 text-[10px]">
-                    {[
-                      { val: "start", label: "Inicio" },
-                      { val: "center", label: "Centro" },
-                      { val: "end", label: "Final" },
-                      { val: "stretch", label: "Estirar" },
-                    ].map((al) => (
-                      <button
-                        key={al.val}
-                        type="button"
-                        aria-pressed={currentOverride.align === al.val}
-                        onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { align: al.val as any }))}
-                        className={`h-6 rounded border font-medium transition-colors ${
-                          currentOverride.align === al.val
-                            ? "border-accent bg-accent text-white"
-                            : "border-line text-ink hover:bg-hover"
-                        } cursor-pointer`}
-                      >
-                        {al.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Distribución horizontal */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-medium text-ink-dim">Distribución:</span>
-                  <div className="grid grid-cols-4 gap-1 text-[10px]">
-                    {[
-                      { val: "start", label: "Inicio" },
-                      { val: "center", label: "Centro" },
-                      { val: "between", label: "Espaciado" },
-                      { val: "end", label: "Final" },
-                    ].map((ju) => (
-                      <button
-                        key={ju.val}
-                        type="button"
-                        aria-pressed={currentOverride.justify === ju.val}
-                        onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { justify: ju.val as any }))}
-                        className={`h-6 rounded border font-medium transition-colors ${
-                          currentOverride.justify === ju.val
-                            ? "border-accent bg-accent text-white"
-                            : "border-line text-ink hover:bg-hover"
-                        } cursor-pointer`}
-                      >
-                        {ju.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Separación (Gap) por breakpoint */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-medium text-ink-dim">Separación ({activeBreakpoint}):</span>
-                  <div className="flex flex-wrap gap-1">
-                    {[0, 8, 12, 16, 24, 32].map((g) => {
-                      const active = currentOverride.gap === g;
-                      return (
-                        <button
-                          key={g}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { gap: g }))}
-                          className={`h-5 rounded border px-2 text-[10px] font-medium transition-colors ${
-                            active ? "border-accent bg-accent text-white" : "border-line text-ink hover:bg-hover"
-                          } cursor-pointer`}
-                        >
-                          {g}px
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Escala de texto por breakpoint */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-medium text-ink-dim">Tamaño de texto:</span>
-                  <div className="grid grid-cols-4 gap-1 text-[10px]">
-                    {[
-                      { val: "xs", label: "XS (12px)" },
-                      { val: "sm", label: "SM (14px)" },
-                      { val: "base", label: "MD (16px)" },
-                      { val: "lg", label: "LG (18px)" },
-                    ].map((t) => (
-                      <button
-                        key={t.val}
-                        type="button"
-                        aria-pressed={currentOverride.textSize === t.val}
-                        onClick={() => onChange(applyBreakpointOverride(classes, activeBreakpoint, { textSize: t.val as any }))}
-                        className={`h-5 rounded border font-medium transition-colors ${
-                          currentOverride.textSize === t.val
-                            ? "border-accent bg-accent text-white"
-                            : "border-line text-ink hover:bg-hover"
-                        } cursor-pointer`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Collapsible>
-          </div>
-        </Collapsible>
+          </Collapsible>
+        )}
         </>
       )}
     </Collapsible>
