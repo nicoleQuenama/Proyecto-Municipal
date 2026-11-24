@@ -447,7 +447,13 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
         // Un bloque de código con tamaño propio dibuja su anillo a ese ancho, no a todo lo disponible.
         // Un encabezado o pie de código conserva el ancho de la página: solo su alto es propio.
-        ...(pureCode && block.size?.width && !widthLocked ? { width: block.size.width, maxWidth: "100%" } : {}),
+        ...(pureCode && (block.size?.width ?? (def.category === "Código" && def.width ? def.width : undefined)) && !widthLocked
+          ? {
+              width: block.size?.width ?? def.width,
+              maxWidth: "100%",
+              marginInline: "auto",
+            }
+          : {}),
         // Un bloque de código colocado sin tamaño propio conserva el ancho que tenía al colocarlo: con «w-full» abarcaría toda la página y moverlo no se notaría.
         ...(pureCode && placement && !placement.fixed && !block.size?.width ? { width: placement.width, maxWidth: "none" } : {}),
       }}

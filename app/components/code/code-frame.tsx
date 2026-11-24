@@ -73,7 +73,10 @@ export function CodeFrame({
       if (!data || typeof data !== "object") return;
 
       if (data.type === SIZE_MESSAGE) {
-        if (typeof data.height === "number") setAutoHeight(Math.max(minHeight, Math.ceil(data.height)));
+        if (typeof data.height === "number") {
+          const next = Math.max(minHeight, Math.ceil(data.height));
+          setAutoHeight((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+        }
         return;
       }
       if (data.type === LOG_MESSAGE) {

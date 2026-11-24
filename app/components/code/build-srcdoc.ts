@@ -21,10 +21,31 @@ export interface SharedAssets {
 
 /** Avisa a la página de cuánto mide el contenido para que el iframe se ajuste. */
 const SIZE_REPORTER = `
-  const report = () => parent.postMessage({ type: "${SIZE_MESSAGE}", height: document.documentElement.scrollHeight }, "*");
-  new ResizeObserver(report).observe(document.documentElement);
+(() => {
+  const report = () => {
+    const body = document.body;
+    if (!body) return;
+    let maxBottom = 0;
+    for (let i = 0; i < body.children.length; i++) {
+      const child = body.children[i];
+      if (child.tagName === "SCRIPT" || child.tagName === "STYLE") continue;
+      const b = child.offsetTop + child.offsetHeight;
+      if (b > maxBottom) maxBottom = b;
+    }
+    const style = window.getComputedStyle(body);
+    const pb = parseFloat(style.paddingBottom) || 0;
+    const mb = parseFloat(style.marginBottom) || 0;
+    const contentHeight = Math.ceil(Math.max(maxBottom + pb + mb, body.offsetHeight));
+    if (contentHeight > 0) {
+      parent.postMessage({ type: "${SIZE_MESSAGE}", height: contentHeight }, "*");
+    }
+  };
+  if (document.body) {
+    new ResizeObserver(report).observe(document.body);
+  }
   addEventListener("load", report);
   report();
+})();
 `;
 
 /** Todo lo que el codigo escribe en la consola (y sus errores) vuelve al editor. */
@@ -197,7 +218,7 @@ export function buildSrcDoc(code: CodeSource, libraries: Library[], origin: stri
 ${code.tailwind ? `<script src="${origin}/api/vendor/tailwind"></script>` : ""}
 ${libraries.length > 0 ? `<script type="importmap">${inside("script", importMap)}</script>` : ""}
 <style${code.tailwind ? ' type="text/tailwindcss"' : ""}>
-html, body { margin: 0; }
+html, body { margin: 0; height: auto !important; min-height: 0 !important; }
 ${variables}
 ${inside("style", shared.globalCss)}
 ${inside("style", code.css)}
