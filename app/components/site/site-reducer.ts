@@ -541,6 +541,63 @@ const HANDLERS: Handlers = {
 
   "brand/require": (state, action) => ({ ...state, brandRequired: action.value }),
 
+  "brand/identity": (state, action) => {
+    const nextBrandLogo = action.brandLogo !== undefined ? action.brandLogo : state.brandLogo;
+    const nextBrandFavicon = action.brandFavicon !== undefined ? action.brandFavicon : state.brandFavicon;
+    const nextBrandEscudo = action.brandEscudo !== undefined ? action.brandEscudo : state.brandEscudo;
+
+    let nextComponents = state.components;
+    if (nextBrandLogo) {
+      nextComponents = state.components.map((c) => {
+        const isHeaderOrFooter =
+          c.category === "navigation" ||
+          c.id === "5a3aa5a6-ed26-464c-bdef-023f492cf471" ||
+          c.id === "992e86c1-192a-4cb9-ac8e-28982ba109f4" ||
+          c.id === "footer-oficial" ||
+          c.name.toLowerCase().includes("encabezado") ||
+          c.name.toLowerCase().includes("header") ||
+          c.name.toLowerCase().includes("footer") ||
+          c.name.toLowerCase().includes("pie de página");
+
+        if (!isHeaderOrFooter) return c;
+
+        const updatedElements = c.elements.map((el) => {
+          const isLogoEl =
+            el.id === "header-logo-oficial" ||
+            el.id === "footer-logo-oficial" ||
+            el.id === "d219d71d-1f5c-4ca2-abd0-f5bf9e872819" ||
+            el.id === "8110ad5b-0ef8-45f6-aecd-b03a53f44849" ||
+            el.id === "footer-oficial-e7" ||
+            (el.role === "image" && (el.alt?.toLowerCase().includes("logo") || el.alt?.toLowerCase().includes("escudo")));
+
+          if (isLogoEl) {
+            return {
+              ...el,
+              role: "image",
+              kind: "image" as const,
+              src: nextBrandLogo.src,
+              alt: nextBrandLogo.alt || "Logo Oficial Cochabamba",
+              width: nextBrandLogo.width || el.width,
+              height: nextBrandLogo.height || el.height,
+              fit: nextBrandLogo.fit || "contain",
+            };
+          }
+          return el;
+        });
+
+        return { ...c, elements: updatedElements };
+      });
+    }
+
+    return {
+      ...state,
+      brandLogo: nextBrandLogo,
+      brandFavicon: nextBrandFavicon,
+      brandEscudo: nextBrandEscudo,
+      components: nextComponents,
+    };
+  },
+
   "variable/save": (state, action) => ({ ...state, variables: saveVariable(state.variables, action.variable) }),
 
   "variable/delete": (state, action) => ({ ...state, variables: state.variables.filter((v) => v.id !== action.id) }),

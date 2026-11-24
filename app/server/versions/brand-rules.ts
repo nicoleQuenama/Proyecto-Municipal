@@ -26,7 +26,13 @@ export function changesBrand(patch: SitePatch, current: SiteState): boolean {
     const sorted = (rules: StyleRule[]) => rules.filter(isGlobal).sort((a, b) => ruleKey(a).localeCompare(ruleKey(b)));
     if (!deepEqual(sorted(patch.rules), sorted(current.rules))) return true;
   }
-  return patch.settings !== undefined && !!patch.settings.brandRequired !== !!current.brandRequired;
+  if (patch.settings !== undefined) {
+    if (!!patch.settings.brandRequired !== !!current.brandRequired) return true;
+    if (patch.settings.brandLogo !== undefined && !deepEqual(patch.settings.brandLogo, current.brandLogo)) return true;
+    if (patch.settings.brandFavicon !== undefined && patch.settings.brandFavicon !== current.brandFavicon) return true;
+    if (patch.settings.brandEscudo !== undefined && !deepEqual(patch.settings.brandEscudo, current.brandEscudo)) return true;
+  }
+  return false;
 }
 
 /** Reglas nuevas o cambiadas (fuera de lo global) que ponen un color o una tipografía suelta en vez de una variable. */

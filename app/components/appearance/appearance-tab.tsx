@@ -12,6 +12,7 @@ import type { StyleContext, StyleRule, StyleScope, StyleTarget } from "../styles
 import { ScopePicker, type ScopeChoice } from "./scope-picker";
 import { TargetCard } from "./target-card";
 import { VariablesSection } from "./variables-section";
+import { BrandIdentitySection } from "./brand-identity-section";
 import { styleTarget } from "../site/categories";
 
 const GROUP_ORDER: TargetGroup[] = ["page", "block", "element"];
@@ -99,6 +100,10 @@ export function AppearanceTab() {
           <input type="checkbox" checked={!!site.brandRequired} onChange={(e) => dispatch({ type: "brand/require", value: e.target.checked })} className="mt-0.5" />
           <span><b className="text-ink">Uso obligatorio de la marca.</b> El resto del equipo solo podrá poner colores y tipografías tomándolos de variables (la paleta de la marca o las suyas). Si no, es una guía opcional.</span>
         </label>
+      )}
+
+      {scope.kind === "global" && (
+        <BrandIdentitySection site={site} dispatch={dispatch} canEdit={canManageGlobals} />
       )}
 
       <VariablesSection

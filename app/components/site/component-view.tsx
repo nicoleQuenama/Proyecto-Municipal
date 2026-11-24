@@ -339,7 +339,7 @@ function PositionedElement({
           activeLink
             ? {
                 ...boundStyle,
-                color: "var(--color-primario, #1b1550)",
+                color: "var(--color-primario, #00A7D6)",
                 fontWeight: 700,
                 textDecoration: "underline",
                 textDecorationThickness: 2,

@@ -388,6 +388,18 @@ export interface SiteState extends StyleState {
   projectMedia?: ProjectMediaAsset[];
   /** Manual de marca obligatorio: quien no es superadministrador debe usar las variables de la marca, no valores sueltos. */
   brandRequired?: boolean;
+  /** Identidad institucional de marca (logo oficial, favicon y escudo). */
+  brandLogo?: BrandLogoConfig;
+  brandFavicon?: string;
+  brandEscudo?: { src: string; alt?: string };
+}
+
+export interface BrandLogoConfig {
+  src: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  fit?: "contain" | "cover";
 }
 
 export interface ProjectMediaAsset {
@@ -509,4 +521,5 @@ export type SiteAction =
   | { type: "project-media/add"; asset: ProjectMediaAsset }
   | { type: "project-media/remove"; id: string }
   | { type: "project-media/replace"; oldSrc: string; newSrc: string; newAlt?: string }
-  | { type: "project-media/update-tags"; id: string; tag: string; tags: string[] };
+  | { type: "project-media/update-tags"; id: string; tag: string; tags: string[] }
+  | { type: "brand/identity"; brandLogo?: BrandLogoConfig; brandFavicon?: string; brandEscudo?: { src: string; alt?: string } };
