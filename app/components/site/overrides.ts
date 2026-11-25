@@ -29,6 +29,8 @@ const VARIABLE_PROPS = {
   fontFamily: (resolved: string | undefined, fallback: string) => resolved ?? fallback,
   fontSize: (resolved: string | undefined, fallback: number) => pixelsOf(resolved, fallback),
   radius: (resolved: string | undefined, fallback: number) => pixelsOf(resolved, fallback),
+  borderWidth: (resolved: string | undefined, fallback: number) => pixelsOf(resolved, fallback),
+  borderColor: (resolved: string | undefined, fallback: string) => resolved ?? fallback,
 } as const;
 
 type VariableProp = keyof typeof VARIABLE_PROPS;
@@ -45,13 +47,13 @@ export function resolveOverride(element: CanvasElement, override: ElementOverrid
     if (isVar) {
       const resolved = resolve(raw);
       next[prop] =
-        prop === "fontSize" || prop === "radius"
-          ? pixelsOf(resolved, element[prop] as number)
+        prop === "fontSize" || prop === "radius" || prop === "borderWidth"
+          ? pixelsOf(resolved, (element[prop] as number) ?? 0)
           : (resolved ?? element[prop]);
     } else {
       next[prop] =
-        prop === "fontSize" || prop === "radius"
-          ? pixelsOf(raw, element[prop] as number)
+        prop === "fontSize" || prop === "radius" || prop === "borderWidth"
+          ? pixelsOf(raw, (element[prop] as number) ?? 0)
           : raw;
     }
   }
@@ -166,7 +168,7 @@ export function resetFormat(state: SiteState, pageId: string, blockId: string): 
     const elements = Object.fromEntries(
       kept.map(([id, o]) => [id, { ...(o.hidden ? { hidden: true } : {}), ...(o.removed ? { removed: true } : {}), ...(o.alt !== undefined ? { alt: o.alt } : {}) }]),
     );
-    return { ...block, box: undefined, elements: kept.length > 0 ? elements : undefined };
+    return { ...block, box: undefined, size: undefined, elements: kept.length > 0 ? elements : undefined };
   });
 }
 

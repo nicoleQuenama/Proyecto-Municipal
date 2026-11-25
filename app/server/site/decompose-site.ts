@@ -21,7 +21,14 @@ export const decomposeVariable = (variable: Variable, position: number): Variabl
   position,
 });
 
-export const decomposeRule = (rule: StyleRule, position: number): RuleRow => ({ ...scopeColumns(rule.scope), target: rule.target, props: rule.props, position });
+export const decomposeRule = (rule: StyleRule, position: number): RuleRow => {
+  const props = {
+    ...rule.props,
+    ...(rule.mandatory ? { _mandatory: "true" } : {}),
+    ...(rule.lockedProps && rule.lockedProps.length > 0 ? { _lockedProps: rule.lockedProps.join(",") } : {}),
+  };
+  return { ...scopeColumns(rule.scope), target: rule.target, props, position };
+};
 
 export function decomposeComponent(def: ComponentDef, position: number): { row: ComponentRow; code: CodeDraft[] } {
   const { id, name, description, category, width, height, elements, links, drawn, custom, styles, ...settings } = def;

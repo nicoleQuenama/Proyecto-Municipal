@@ -11,9 +11,17 @@ const LIBRARY_URLS: Record<Library["source"], (library: Library, origin: string)
 /** La dirección desde la que se carga una librería como módulo ES. */
 export const libraryUrl = (library: Library, origin: string): string => LIBRARY_URLS[library.source](library, origin);
 
+const DEFAULT_LIBRARIES: Record<string, string> = {
+  "d3-org-chart": "https://esm.sh/d3-org-chart@3.1.1?bundle",
+  d3: "https://esm.sh/d3@7",
+};
+
 /** El «import map» del navegador: permite escribir `import gsap from "gsap"` en el código del usuario. */
 export function importMapOf(libraries: Library[], origin: string): { imports: Record<string, string> } {
   return {
-    imports: Object.fromEntries(libraries.map((library) => [library.name, libraryUrl(library, origin)])),
+    imports: {
+      ...DEFAULT_LIBRARIES,
+      ...Object.fromEntries(libraries.map((library) => [library.name, libraryUrl(library, origin)])),
+    },
   };
 }

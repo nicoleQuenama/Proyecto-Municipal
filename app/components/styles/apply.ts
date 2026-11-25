@@ -1,12 +1,14 @@
 import type { CSSProperties } from "react";
 import type { Align, TitleState } from "../title-editor/types";
 import type { CanvasElement, ComponentDef } from "../site/types";
+import { styleTarget } from "../site/categories";
 import { computeStyle } from "./resolve";
 import type { ResolvedStyle, StyleContext, StyleState } from "./types";
 
 /** "12px" → 12; si no es un número usa el valor de respaldo. */
-export const pixelsOf = (value: string | undefined, fallback: number): number => {
-  const parsed = parseFloat(value ?? "");
+export const pixelsOf = (value: string | number | undefined, fallback: number): number => {
+  if (typeof value === "number") return Number.isNaN(value) ? fallback : value;
+  const parsed = parseFloat(String(value ?? ""));
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
@@ -26,12 +28,25 @@ export function styleElement(element: CanvasElement, style: ResolvedStyle): Canv
   if (style.textAlign === "left" || style.textAlign === "center" || style.textAlign === "right") {
     next.align = style.textAlign;
   }
+  if (style.borderWidth !== undefined) {
+    next.borderWidth = pixelsOf(style.borderWidth, next.borderWidth ?? 0);
+  }
+  if (style.borderColor !== undefined) {
+    next.borderColor = style.borderColor;
+  }
+  if (style.borderStyle !== undefined) {
+    next.borderStyle = style.borderStyle as any;
+  }
   return next;
 }
 
 /** Un componente con las reglas de cada rol ya aplicadas a sus elementos. */
 export function styleComponent(def: ComponentDef, styles: StyleState, pageId: string): ComponentDef {
-  const ctx: StyleContext = { pageId, componentId: def.id };
+  const ctx: StyleContext = {
+    pageId,
+    componentId: def.id,
+    componentCategory: styleTarget(def.category),
+  };
   const byRole = new Map<string, ResolvedStyle>();
 
   const elements = def.elements.map((element) => {
@@ -48,9 +63,21 @@ export function boxStyle(style: ResolvedStyle): CSSProperties {
   if (style.padding) css.padding = style.padding;
   if (style.margin) css.margin = style.margin;
   if (style.background) css.background = style.background;
-  if (style.radius) css.borderRadius = style.radius;
+  if (style.radius) {
+    css.borderRadius = typeof style.radius === "number" ? `${style.radius}px` : style.radius;
+  }
   if (style.color) css.color = style.color;
   if (style.fontFamily) css.fontFamily = style.fontFamily;
+  if (style.borderWidth !== undefined && style.borderWidth !== null) {
+    const widthNum = pixelsOf(style.borderWidth, 0);
+    if (widthNum > 0) {
+      css.borderWidth = `${widthNum}px`;
+      css.borderStyle = (style.borderStyle as CSSProperties["borderStyle"]) || "solid";
+      css.borderColor = style.borderColor || "#E2E8F0";
+    }
+  } else if (style.border) {
+    css.border = style.border;
+  }
   return css;
 }
 

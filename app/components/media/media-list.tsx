@@ -198,6 +198,29 @@ function MediaCard({
         </button>
       )}
 
+      {editing && !placement && (
+        <div className="absolute bottom-2 left-2 hidden items-center gap-1 group-hover:flex focus:flex">
+          <button
+            type="button"
+            title="Subir en el flujo de la pagina"
+            aria-label="Subir imagen"
+            onClick={() => dispatch({ type: "media/reorder", id: item.id, direction: "up" })}
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-black/70 text-sm font-bold text-white hover:bg-accent cursor-pointer"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            title="Bajar en el flujo de la pagina"
+            aria-label="Bajar imagen"
+            onClick={() => dispatch({ type: "media/reorder", id: item.id, direction: "down" })}
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-black/70 text-sm font-bold text-white hover:bg-accent cursor-pointer"
+          >
+            ↓
+          </button>
+        </div>
+      )}
+
       {posterMenu && <PosterMenu item={item} pageId={pageId} point={posterMenu} onClose={() => setPosterMenu(null)} />}
     </figure>
   );

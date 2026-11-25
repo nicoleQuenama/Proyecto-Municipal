@@ -45,7 +45,8 @@ const applies = (scope: StyleScope, ctx: StyleContext): boolean =>
 const VARIABLE_REF = /^var\(--([a-z][a-z0-9-]*)\)$/;
 
 export const asVariableRef = (name: string): string => `var(--${name})`;
-export const variableNameOf = (value: string): string | null => VARIABLE_REF.exec(value)?.[1] ?? null;
+export const variableNameOf = (value: string | unknown): string | null =>
+  typeof value === "string" ? (VARIABLE_REF.exec(value)?.[1] ?? null) : null;
 
 const NUMBER = /^-?\d+(\.\d+)?$/;
 const SIZE = /^-?\d+(\.\d+)?px$/;
@@ -58,17 +59,25 @@ const ALIGNMENTS = ["left", "center", "right"];
 
 /** Cómo se valida y normaliza cada tipo de valor; `null` si no es válido. */
 const NORMALIZERS: Record<PropKind, (value: string) => string | null> = {
-  size: (value) => (NUMBER.test(value) ? `${value}px` : SIZE.test(value) ? value : null),
+  size: (value) => {
+    const str = String(value);
+    return NUMBER.test(str) ? `${str}px` : SIZE.test(str) ? str : null;
+  },
   color: (value) =>
     HEX_COLOR.test(value) ? value.toLowerCase() : CSS_COLOR.test(value) || CSS_GRADIENT.test(value) ? value : null,
   weight: (value) => (WEIGHTS.includes(value) ? value : null),
   align: (value) => (ALIGNMENTS.includes(value) ? value : null),
   font: (value) => value,
+  borderStyle: (value) => {
+    const str = String(value).toLowerCase();
+    return ["solid", "dashed", "dotted", "none"].includes(str) ? str : null;
+  },
+  border: (value) => value,
 };
 
 /** Devuelve el valor ya normalizado ("10" → "10px"), o null si no es válido para ese tipo. */
-export function normalizeValue(kind: PropKind, input: string): string | null {
-  const value = input.trim();
+export function normalizeValue(kind: PropKind, input: string | unknown): string | null {
+  const value = String(input ?? "").trim();
   return value ? NORMALIZERS[kind](value) : null;
 }
 
@@ -83,11 +92,13 @@ const MAX_DEPTH = 5;
 
 /** Sustituye `var(--x)` por su valor (una variable puede apuntar a otra). Sin definir → undefined. */
 export function resolveValue(
-  value: string,
+  value: string | unknown,
   variables: Variable[],
   ctx: StyleContext,
   depth = 0,
 ): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string") return String(value);
   const name = variableNameOf(value);
   if (name === null) return value;
   if (depth >= MAX_DEPTH) return undefined;
@@ -146,7 +157,8 @@ export function validateVariable(variables: Variable[], candidate: VariableCandi
 
 /**
  * Valores finales de un tipo de elemento: junta las reglas de los ámbitos que cuentan
- * (global, luego página, luego componente: el último gana) y resuelve las variables.
+ * (global, luego categoría si aplica, luego página, luego componente) y resuelve las variables.
+ * Las reglas obligatorias del Super Admin tienen la máxima prioridad.
  * `maxLevel` permite preguntar qué se heredaría sin los ámbitos más específicos.
  */
 export function computeStyle(
@@ -155,12 +167,45 @@ export function computeStyle(
   target: StyleTarget,
   maxLevel = 2,
 ): ResolvedStyle {
-  const rules = styles.rules
+  // Si target es container y el contexto define componentCategory (ej: cards), heredar primero de la categoría
+  const categoryRules =
+    target === "container" && ctx.componentCategory
+      ? styles.rules.filter((rule) => rule.target === ctx.componentCategory && applies(rule.scope, ctx))
+      : [];
+
+  const targetRules = styles.rules
     .filter((rule) => rule.target === target && levelOf(rule.scope) <= maxLevel && applies(rule.scope, ctx))
     .sort((a, b) => levelOf(a.scope) - levelOf(b.scope));
 
   const merged: Partial<Record<StyleProp, string>> = {};
-  for (const rule of rules) Object.assign(merged, rule.props);
+
+  // 1. Reglas base de categoría
+  for (const catRule of categoryRules) {
+    if (catRule.props.background && !catRule.props.fill) merged.fill = catRule.props.background;
+    Object.assign(merged, catRule.props);
+  }
+
+  // 2. Reglas del target en orden de ámbito (global -> página -> componente)
+  for (const rule of targetRules) {
+    Object.assign(merged, rule.props);
+  }
+
+  // 3. Reglas obligatorias de Super Admin (máxima prioridad)
+  const allRelevantRules = [...categoryRules, ...targetRules];
+  for (const rule of allRelevantRules) {
+    if (rule.scope.kind === "global" && (rule.mandatory || (rule.lockedProps && rule.lockedProps.length > 0))) {
+      if (rule.mandatory) {
+        if (rule.props.background && !rule.props.fill) merged.fill = rule.props.background;
+        Object.assign(merged, rule.props);
+      } else if (rule.lockedProps) {
+        for (const lockedProp of rule.lockedProps) {
+          if (rule.props[lockedProp] !== undefined) {
+            merged[lockedProp] = rule.props[lockedProp];
+          }
+        }
+      }
+    }
+  }
 
   const resolved: ResolvedStyle = {};
   for (const [prop, raw] of Object.entries(merged) as [StyleProp, string][]) {
@@ -168,6 +213,44 @@ export function computeStyle(
     if (value !== undefined) resolved[prop] = value;
   }
   return resolved;
+}
+
+/** Comprueba si una propiedad está bloqueada por una regla obligatoria del Super Admin */
+export function isPropLockedBySuperAdmin(
+  styles: StyleState,
+  target: StyleTarget,
+  prop: StyleProp,
+): boolean {
+  return styles.rules.some(
+    (rule) =>
+      rule.target === target &&
+      rule.scope.kind === "global" &&
+      (rule.mandatory || (rule.lockedProps && rule.lockedProps.includes(prop))) &&
+      rule.props[prop] !== undefined,
+  );
+}
+
+/** Devuelve la lista de propiedades bloqueadas por el Super Admin para un objetivo */
+export function getLockedPropsForTarget(
+  styles: StyleState,
+  target: StyleTarget,
+): StyleProp[] {
+  const locked = new Set<StyleProp>();
+  for (const rule of styles.rules) {
+    if (rule.target === target && rule.scope.kind === "global") {
+      if (rule.mandatory) {
+        for (const prop of Object.keys(rule.props) as StyleProp[]) {
+          locked.add(prop);
+        }
+      }
+      if (rule.lockedProps) {
+        for (const prop of rule.lockedProps) {
+          locked.add(prop);
+        }
+      }
+    }
+  }
+  return [...locked];
 }
 
 /** Lo que heredaría una propiedad si el ámbito indicado no la definiera. */

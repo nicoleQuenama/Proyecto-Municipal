@@ -11,6 +11,8 @@ const VALUE_HINTS: Record<PropKind, string> = {
   font: "el nombre de la tipografía",
   weight: "400, 500, 600 o 700",
   align: "left, center o right",
+  borderStyle: "solid, dashed, dotted o none",
+  border: "1px solid #E2E8F0",
 };
 
 /** /regla: fija (o quita) una propiedad de estilo para un tipo de elemento, en todo el sitio o en la página. */

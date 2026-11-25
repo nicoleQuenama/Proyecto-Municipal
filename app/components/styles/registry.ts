@@ -13,6 +13,10 @@ export const PROP_DEFS: Record<StyleProp, { label: string; kind: PropKind }> = {
   fontSize: { label: "Tamaño de letra", kind: "size" },
   fontWeight: { label: "Peso de letra", kind: "weight" },
   textAlign: { label: "Alineación", kind: "align" },
+  borderWidth: { label: "Grosor de borde", kind: "size" },
+  borderStyle: { label: "Estilo de borde", kind: "borderStyle" },
+  borderColor: { label: "Color de borde", kind: "color" },
+  border: { label: "Borde", kind: "border" },
 };
 
 export type TargetGroup = "page" | "block" | "element";
@@ -32,31 +36,31 @@ export const TARGET_DEFS: Record<
     label: "Navegación",
     hint: "La caja de cada barra de navegación.",
     group: "block",
-    props: ["padding", "margin", "background", "radius"],
+    props: ["padding", "margin", "background", "radius", "borderWidth", "borderStyle", "borderColor"],
   },
   sections: {
     label: "Secciones",
     hint: "La caja de cada componente de tipo sección.",
     group: "block",
-    props: ["padding", "margin", "background", "radius"],
+    props: ["padding", "margin", "background", "radius", "borderWidth", "borderStyle", "borderColor"],
   },
   cards: {
     label: "Cards",
     hint: "La caja de cada componente de tipo card.",
     group: "block",
-    props: ["padding", "margin", "background", "radius"],
+    props: ["padding", "margin", "background", "radius", "borderWidth", "borderStyle", "borderColor"],
   },
   hero: {
     label: "Hero / CTA",
     hint: "La caja de cada componente hero o banner.",
     group: "block",
-    props: ["padding", "margin", "background", "radius"],
+    props: ["padding", "margin", "background", "radius", "borderWidth", "borderStyle", "borderColor"],
   },
   buttons: {
     label: "Grupos de botones",
     hint: "La caja de cada componente de botones.",
     group: "block",
-    props: ["padding", "margin", "background", "radius"],
+    props: ["padding", "margin", "background", "radius", "borderWidth", "borderStyle", "borderColor"],
   },
   heading: {
     label: "Títulos",
@@ -74,7 +78,7 @@ export const TARGET_DEFS: Record<
     label: "Botones",
     hint: "Cada botón de cualquier componente.",
     group: "element",
-    props: ["fill", "color", "radius", "fontFamily", "fontSize", "fontWeight"],
+    props: ["fill", "color", "radius", "fontFamily", "fontSize", "fontWeight", "borderWidth", "borderStyle", "borderColor"],
   },
   link: {
     label: "Enlaces",
@@ -92,7 +96,7 @@ export const TARGET_DEFS: Record<
     label: "Fondos de tarjeta o sección",
     hint: "El panel de fondo de un componente.",
     group: "element",
-    props: ["fill", "radius"],
+    props: ["fill", "radius", "borderWidth", "borderStyle", "borderColor"],
   },
 };
 

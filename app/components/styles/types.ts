@@ -24,10 +24,14 @@ export type StyleProp =
   | "fontFamily"
   | "fontSize"
   | "fontWeight"
-  | "textAlign";
+  | "textAlign"
+  | "border"
+  | "borderWidth"
+  | "borderStyle"
+  | "borderColor";
 
 /** Cómo se edita y valida el valor de una propiedad. */
-export type PropKind = "size" | "color" | "font" | "weight" | "align";
+export type PropKind = "size" | "color" | "font" | "weight" | "align" | "borderStyle" | "border";
 
 /** Las variables solo existen para los tipos de valor que tiene sentido reutilizar. */
 export type VariableKind = "color" | "size" | "font";
@@ -51,6 +55,10 @@ export interface StyleRule {
   scope: StyleScope;
   target: StyleTarget;
   props: Partial<Record<StyleProp, string>>;
+  /** Si el Super Admin impone esta regla como obligatoria sobre personalizaciones de menor nivel */
+  mandatory?: boolean;
+  /** Propiedades específicas bloqueadas contra modificaciones individuales */
+  lockedProps?: StyleProp[];
 }
 
 export interface StyleState {
@@ -65,4 +73,5 @@ export type ResolvedStyle = Partial<Record<StyleProp, string>>;
 export interface StyleContext {
   pageId: string;
   componentId?: string;
+  componentCategory?: BlockTarget;
 }

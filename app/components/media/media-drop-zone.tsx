@@ -3,9 +3,18 @@
 import { useEffect, useState } from "react";
 import { useMedia } from "./media-context";
 
-/** Un arrastre nos interesa solo si trae archivos o un enlace (no texto suelto). */
-const carriesMedia = (e: DragEvent) =>
-  e.dataTransfer?.types.some((type) => type === "Files" || type === "text/uri-list") ?? false;
+/** Un arrastre externo de ventana nos interesa solo si viene de fuera (archivos o enlace web externo), no de la galería interna. */
+const carriesMedia = (e: DragEvent) => {
+  if (!e.dataTransfer) return false;
+  // Si es un arrastre interno de la galería de medios o reordenación de elementos, no activar la zona global de ventana
+  if (
+    e.dataTransfer.types.includes("application/x-cms-media") ||
+    e.dataTransfer.types.includes("application/x-flow-element-id")
+  ) {
+    return false;
+  }
+  return e.dataTransfer.types.some((type) => type === "Files" || type === "text/uri-list");
+};
 
 /** Zona de soltado sobre toda la ventana, con un aviso visual mientras se arrastra. */
 export function MediaDropZone() {
@@ -23,6 +32,7 @@ export function MediaDropZone() {
       if (!e.relatedTarget) setDragging(false); // salió de la ventana
     };
     const onDrop = (e: DragEvent) => {
+      if (e.defaultPrevented) return;
       if (!carriesMedia(e) || !e.dataTransfer) return;
       e.preventDefault();
       setDragging(false);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { optimizedSrc } from "../media/optimize-src";
 import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
@@ -63,17 +63,43 @@ function ElementText({ element }: { element: CanvasElement }) {
  */
 type Renderer = (element: CanvasElement, text: CSSProperties, inherit: boolean) => ReactNode;
 
+function imageTransform(element: CanvasElement): string | undefined {
+  const parts: string[] = [];
+  if (element.imageZoom && element.imageZoom !== 1) {
+    parts.push(`scale(${element.imageZoom})`);
+  }
+  if (element.flipH) {
+    parts.push("scaleX(-1)");
+  }
+  if (element.flipV) {
+    parts.push("scaleY(-1)");
+  }
+  return parts.length > 0 ? parts.join(" ") : undefined;
+}
+
 /** Un rectángulo o una elipse: la forma con su texto centrado; solo cambia el radio de las esquinas. */
 const shape =
   (corner: (element: CanvasElement) => number | string): Renderer =>
   function renderShape(element, text, inherit) {
+    const borderCss: CSSProperties =
+      element.borderWidth && element.borderWidth > 0
+        ? {
+            borderWidth: `${element.borderWidth}px`,
+            borderStyle: element.borderStyle || "solid",
+            borderColor: element.borderColor || "#E2E8F0",
+            boxSizing: "border-box",
+          }
+        : {};
+
     if (element.src) {
       return (
         <div
           className="flex h-full w-full items-center justify-center overflow-hidden"
           style={{
             ...text,
-            ...(inherit ? { borderRadius: "inherit" } : { background: element.fill, borderRadius: corner(element) }),
+            ...(inherit
+              ? { borderRadius: "inherit" }
+              : { background: element.fill, borderRadius: corner(element), ...borderCss }),
           }}
         >
           <img
@@ -81,7 +107,12 @@ const shape =
             alt={element.alt ?? ""}
             draggable={false}
             className="h-full w-full"
-            style={{ borderRadius: inherit ? "inherit" : corner(element), objectFit: element.fit ?? "cover" }}
+            style={{
+              borderRadius: inherit ? "inherit" : corner(element),
+              objectFit: element.fit ?? "cover",
+              objectPosition: element.objectPosition ?? "center center",
+              transform: imageTransform(element),
+            }}
           />
         </div>
       );
@@ -91,7 +122,9 @@ const shape =
         className="flex h-full w-full items-center overflow-hidden px-2"
         style={{
           ...text,
-          ...(inherit ? { borderRadius: "inherit" } : { background: element.fill, borderRadius: corner(element) }),
+          ...(inherit
+            ? { borderRadius: "inherit" }
+            : { background: element.fill, borderRadius: corner(element), ...borderCss }),
           justifyContent: JUSTIFY[element.align],
         }}
       >
@@ -132,19 +165,26 @@ const RENDERERS: Record<ElementKind, Renderer> = {
     element.src ? (
       // <img> en lugar de next/image: las URLs vienen de dominios arbitrarios.
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={optimizedSrc(element.src)}
-        alt={element.alt ?? ""}
-        draggable={false}
-        loading={element.eager ? "eager" : "lazy"}
-        decoding="async"
-        fetchPriority={element.eager ? "high" : undefined}
-        className="h-full w-full"
-        style={{ borderRadius: inherit ? "inherit" : element.radius, objectFit: element.fit ?? "cover" }}
-      />
+      <div className="h-full w-full overflow-hidden" style={{ borderRadius: inherit ? "inherit" : element.radius }}>
+        <img
+          src={optimizedSrc(element.src)}
+          alt={element.alt ?? ""}
+          draggable={false}
+          loading={element.eager ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={element.eager ? "high" : undefined}
+          className="h-full w-full"
+          style={{
+            borderRadius: inherit ? "inherit" : element.radius,
+            objectFit: element.fit ?? "cover",
+            objectPosition: element.objectPosition ?? "center center",
+            transform: imageTransform(element),
+          }}
+        />
+      </div>
     ) : (
       <div
-        className="flex h-full w-full items-center justify-center border border-dashed border-slate-400 bg-slate-200 p-2 text-center text-xs text-slate-500"
+        className="flex h-full w-full min-h-[120px] min-w-full items-center justify-center border border-dashed border-slate-400 bg-slate-200 p-2 text-center text-xs text-slate-500"
         style={{ borderRadius: inherit ? "inherit" : element.radius }}
       >
         Haz clic o suelta una imagen
@@ -239,6 +279,8 @@ export interface ElementInteraction {
   addCardLabel?: string;
   /** Al editar: reordena elementos hijos mediante drag-and-drop dentro del contenedor en flujo. */
   onReorderElement?: (sourceId: string, targetId: string, position: "before" | "after") => void;
+  /** Al editar: actualiza propiedades de un elemento específico (ej: src al soltar una imagen). */
+  onUpdateElement?: (elementId: string, patch: Partial<CanvasElement>) => void;
   /** Algo que se dibuja encima de la sección (el botón de un menú, el título de un acordeón). */
   overlay?: ReactNode;
 }
@@ -265,6 +307,7 @@ function PositionedElement({
   // Indicador de "soltar antes/después" al reordenar en flujo. Va aquí arriba porque este componente
   // tiene returns tempranos (oculto, probar, editar) y los hooks no pueden quedar detrás de ellos.
   const [dropIndicator, setDropIndicator] = useState<"before" | "after" | null>(null);
+  const [mediaOver, setMediaOver] = useState(false);
   const currentPage = useCurrentPage();
   const activeLink = isCurrentPageLink(interaction?.links[element.id], currentPage?.id);
 
@@ -317,11 +360,24 @@ function PositionedElement({
     };
     const interactive = isSearchTrigger || link !== undefined || behaviorProps.onClick !== undefined;
 
+    const isFlow = Boolean(interaction?.flow);
+    const isTopChild = !element.parentId;
+    const isBackdropEl = Boolean(
+      (interaction?.gestures && isBackdrop(element, interaction.gestures.size)) ||
+      (element.kind === "rect" && !element.parentId && (
+        (element.role as string) === "background" ||
+        element.id.endsWith("-bg") ||
+        (element.x === 0 && element.y === 0 && element.width >= 600 && element.height >= 200)
+      ))
+    );
+
     return (
       <div
         ref={ref}
         data-target={target}
         data-el={element.id}
+        data-kind={element.kind}
+        {...(isBackdropEl ? { "data-backdrop": "" } : {})}
         {...(interactive ? { "data-interactive": "" } : {})}
         {...behaviorProps}
         {...(link
@@ -335,18 +391,39 @@ function PositionedElement({
           : {})}
         {...(activeLink ? { "aria-current": "page", "data-active": "" } : {})}
         onClick={interactive ? follow : undefined}
-        style={
-          activeLink
+        style={{
+          ...boundStyle,
+          ...(!isFlow
             ? {
-                ...boundStyle,
-                color: "var(--color-primario, #1b1550)",
+                position: "absolute",
+                left: element.x,
+                top: element.y,
+                width: shown.width,
+                height: shown.height,
+              }
+            : isTopChild
+              ? {
+                  flex: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? "1 1 240px" : undefined,
+                  minWidth: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? 200 : 0,
+                  maxWidth: "100%",
+                  width: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? undefined : "100%",
+                }
+              : {
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  ...(element.kind === "image" ? { minHeight: element.height > 0 ? element.height : 120, width: "100%" } : {}),
+                }),
+          ...(activeLink
+            ? {
+                color: "var(--color-primario, #00A7D6)",
                 fontWeight: 700,
                 textDecoration: "underline",
                 textDecorationThickness: 2,
                 textUnderlineOffset: 4,
               }
-            : boundStyle
-        }
+            : {}),
+        }}
         className={`${interactive ? "cursor-pointer" : ""} ${
           link ? "transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-sky-500" : ""
         } ${custom}`}
@@ -365,43 +442,156 @@ function PositionedElement({
     const { gestures } = interaction;
     const isFlow = Boolean(interaction.flow);
     const isTopChild = !element.parentId;
-    const isBackdropEl = Boolean(gestures && isBackdrop(element, gestures.size));
+    const isBackdropEl = Boolean(
+      (gestures && isBackdrop(element, gestures.size)) ||
+      (element.kind === "rect" && !element.parentId && (
+        (element.role as string) === "background" ||
+        element.id.endsWith("-bg") ||
+        (element.x === 0 && element.y === 0 && element.width >= 600 && element.height >= 200)
+      ))
+    );
     const canReorder = isFlow && isTopChild && !isBackdropEl && Boolean(interaction.onReorderElement);
+
+    const carriesMediaDrag = (e: DragEvent) => {
+      if (!e.dataTransfer) return false;
+      const types = Array.from(e.dataTransfer.types);
+      return (
+        types.includes("application/x-cms-media") ||
+        types.includes("text/uri-list") ||
+        types.includes("Files")
+      );
+    };
 
     return (
       <div
         data-target={target}
         data-el={element.id}
+        data-kind={element.kind}
         draggable={canReorder}
         onDragStart={canReorder ? (e) => {
           e.dataTransfer.setData("application/x-flow-element-id", element.id);
           e.dataTransfer.effectAllowed = "move";
         } : undefined}
-        onDragOver={canReorder ? (e) => {
-          if (!e.dataTransfer.types.includes("application/x-flow-element-id")) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-          const rect = e.currentTarget.getBoundingClientRect();
-          const sectionClass = interaction.classes[SECTION_KEY] || "";
-          const isCol = sectionClass.includes("flex-col");
-          const ratio = isCol ? (e.clientY - rect.top) / rect.height : (e.clientX - rect.left) / rect.width;
-          setDropIndicator(ratio < 0.5 ? "before" : "after");
-        } : undefined}
-        onDragLeave={canReorder ? () => setDropIndicator(null) : undefined}
-        onDrop={canReorder ? (e) => {
-          const sourceId = e.dataTransfer.getData("application/x-flow-element-id");
-          if (sourceId && sourceId !== element.id) {
+        {...drop.handlers}
+        onDragOver={(e) => {
+          if (carriesMediaDrag(e)) {
             e.preventDefault();
             e.stopPropagation();
-            interaction.onReorderElement?.(sourceId, element.id, dropIndicator ?? "after");
+            e.dataTransfer.dropEffect = "copy";
+            if (!mediaOver) setMediaOver(true);
+            return;
           }
+          if (canReorder && e.dataTransfer.types.includes("application/x-flow-element-id")) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "move";
+            const rect = e.currentTarget.getBoundingClientRect();
+            const sectionClass = interaction.classes[SECTION_KEY] || "";
+            const isCol = sectionClass.includes("flex-col");
+            const ratio = isCol ? (e.clientY - rect.top) / rect.height : (e.clientX - rect.left) / rect.width;
+            setDropIndicator(ratio < 0.5 ? "before" : "after");
+            return;
+          }
+          drop.handlers.onDragOver?.(e);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setMediaOver(false);
+            setDropIndicator(null);
+          }
+          drop.handlers.onDragLeave?.();
+        }}
+        onDrop={async (e) => {
+          setMediaOver(false);
           setDropIndicator(null);
-        } : undefined}
-        {...(gestures && isBackdrop(element, gestures.size) ? { "data-backdrop": "" } : {})}
-        {...drop.handlers}
+
+          if (carriesMediaDrag(e)) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const mediaUri =
+              e.dataTransfer.getData("application/x-cms-media") ||
+              e.dataTransfer.getData("text/uri-list") ||
+              e.dataTransfer.getData("text/plain");
+
+            if (
+              mediaUri &&
+              (mediaUri.startsWith("http://") ||
+                mediaUri.startsWith("https://") ||
+                mediaUri.startsWith("/") ||
+                mediaUri.startsWith("data:"))
+            ) {
+              interaction.onUpdateElement?.(element.id, {
+                src: mediaUri.trim(),
+                ...(element.kind === "rect" || element.kind === "ellipse" ? { role: "image" } : {}),
+              });
+              interaction.onSelect(element.id, false);
+              return;
+            }
+
+            const file = e.dataTransfer.files?.[0];
+            if (file) {
+              try {
+                const { uploadMedia } = await import("../media/upload-media");
+                const uploadedUrl = await uploadMedia(file);
+                interaction.onUpdateElement?.(element.id, {
+                  src: uploadedUrl,
+                  ...(element.kind === "rect" || element.kind === "ellipse" ? { role: "image" } : {}),
+                });
+                interaction.onSelect(element.id, false);
+              } catch {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const dataUrl = String(reader.result);
+                  interaction.onUpdateElement?.(element.id, {
+                    src: dataUrl,
+                    ...(element.kind === "rect" || element.kind === "ellipse" ? { role: "image" } : {}),
+                  });
+                  interaction.onSelect(element.id, false);
+                };
+                reader.readAsDataURL(file);
+              }
+              return;
+            }
+          }
+
+          if (canReorder) {
+            const sourceId = e.dataTransfer.getData("application/x-flow-element-id");
+            if (sourceId && sourceId !== element.id) {
+              e.preventDefault();
+              e.stopPropagation();
+              interaction.onReorderElement?.(sourceId, element.id, dropIndicator ?? "after");
+              return;
+            }
+          }
+
+          drop.handlers.onDrop?.(e);
+        }}
+        {...(isBackdropEl ? { "data-backdrop": "" } : {})}
         style={{
           ...boundStyle,
           ...(element.fill && element.fill !== "transparent" ? { background: element.fill } : {}),
+          ...(!isFlow
+            ? {
+                position: "absolute",
+                left: element.x,
+                top: element.y,
+                width: shown.width,
+                height: shown.height,
+              }
+            : isTopChild
+              ? {
+                  flex: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? "none" : "1 1 240px",
+                  minWidth: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? 0 : 200,
+                  maxWidth: "100%",
+                  width: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? "100%" : undefined,
+                }
+              : {
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  ...(element.kind === "image" ? { minHeight: element.height > 0 ? element.height : 120, width: "100%" } : {}),
+                }),
         }}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${
           canReorder ? "cursor-grab active:cursor-grabbing" : gestures && !isFlow ? "cursor-move touch-none select-none" : ""
@@ -412,7 +602,7 @@ function PositionedElement({
           // Si se pulsa Shift/Ctrl/Cmd, no iniciar arrastre para permitir selección múltiple sin reiniciar la selección
           if (e.shiftKey || e.ctrlKey || e.metaKey) return;
           // El fondo de una tarjeta (una pieza que ocupa toda la sección) arrastra el bloque entero.
-          if (gestures && isBackdrop(element, gestures.size)) return interaction.onMoveBlock?.(e);
+          if (isBackdropEl) return interaction.onMoveBlock?.(e);
           // Si el contenedor está en flujo (flex/grid), NO se mueve libremente por coordenadas absolutas x/y
           if (!isFlow) {
             gestures?.startDrag(e, element);
@@ -450,6 +640,16 @@ function PositionedElement({
           />
         )}
         {drop.over && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-emerald-500 bg-emerald-500/10" />}
+        {mediaOver && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -inset-1 z-40 flex items-center justify-center rounded-lg border-2 border-dashed border-accent bg-accent/25 text-center shadow-md backdrop-blur-xs animate-pulse"
+          >
+            <span className="rounded bg-accent px-2 py-0.5 text-[10px] font-bold text-white shadow">
+              Soltar imagen en este recuadro
+            </span>
+          </span>
+        )}
         {alsoSelected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-dashed border-sky-500" />}
         {dropIndicator && (
           <span
@@ -598,10 +798,70 @@ interface Card {
  * Las piezas de la sección. En flujo (flex, grid, carrusel), lo acoplado a un elemento va dentro de él: la tarjeta
  * es una sola pieza que se acomoda y se desliza entera. Fuera de flujo todo va suelto, cada uno en su posición.
  */
-function cardsOf(elements: CanvasElement[], flow: boolean): Card[] {
+function cardsOf(elements: CanvasElement[], flow: boolean, def?: ComponentDef): Card[] {
   if (!flow) return elements.map((element) => ({ element, children: [] }));
   const ids = new Set(elements.map((e) => e.id));
-  const build = (element: CanvasElement): Card => ({ element, children: elements.filter((e) => e.parentId === element.id).map(build) });
+
+  // Si ya existen relaciones parentId explícitas
+  const hasParents = elements.some((e) => e.parentId !== undefined && ids.has(e.parentId));
+  if (hasParents) {
+    const build = (element: CanvasElement): Card => ({
+      element,
+      children: elements.filter((e) => e.parentId === element.id).map(build),
+    });
+    return elements.filter((e) => e.parentId === undefined || !ids.has(e.parentId)).map(build);
+  }
+
+  // Agrupamiento geométrico inteligente: si hay tarjetas rectangulares y elementos dentro
+  const isBackdropEl = (e: CanvasElement) =>
+    e.kind === "rect" &&
+    ((e.role as string) === "background" ||
+      e.id.endsWith("-bg") ||
+      (def && e.x === 0 && e.y === 0 && e.width >= def.width * 0.85 && e.height >= def.height * 0.85));
+
+  const cardContainers = elements.filter(
+    (e) => !isBackdropEl(e) && e.kind === "rect" && e.width >= 80 && e.height >= 50 && (def ? e.width < def.width * 0.85 : true)
+  );
+
+  if (cardContainers.length > 0) {
+    const claimedChildIds = new Set<string>();
+    const cardChildrenMap = new Map<string, CanvasElement[]>();
+
+    for (const card of cardContainers) {
+      const kids = elements.filter((e) => {
+        if (e.id === card.id || isBackdropEl(e) || cardContainers.some((c) => c.id === e.id)) return false;
+        const cx = e.x + e.width / 2;
+        const cy = e.y + e.height / 2;
+        return (
+          cx >= card.x - 4 &&
+          cx <= card.x + card.width + 4 &&
+          cy >= card.y - 4 &&
+          cy <= card.y + card.height + 4
+        );
+      });
+      if (kids.length > 0) {
+        cardChildrenMap.set(card.id, kids);
+        kids.forEach((k) => claimedChildIds.add(k.id));
+      }
+    }
+
+    if (claimedChildIds.size > 0) {
+      return elements
+        .filter((e) => !claimedChildIds.has(e.id))
+        .map((element) => {
+          const kids = cardChildrenMap.get(element.id) ?? [];
+          return {
+            element,
+            children: kids.map((k) => ({ element: k, children: [] })),
+          };
+        });
+    }
+  }
+
+  const build = (element: CanvasElement): Card => ({
+    element,
+    children: elements.filter((e) => e.parentId === element.id).map(build),
+  });
   return elements.filter((e) => e.parentId === undefined || !ids.has(e.parentId)).map(build);
 }
 
@@ -629,7 +889,22 @@ export function ComponentView({
     return def.elements.some((e) => /-opt\d+-/.test(e.id));
   }, [def.elements]);
 
-  const [activeOptionKey, setActiveOptionKey] = useState<string>("opt1");
+  const initialOptionKey = useMemo(() => {
+    for (const el of def.elements) {
+      const match = el.id.match(/-opt(\d+)-/);
+      if (match) return `opt${match[1]}`;
+    }
+    return "opt1";
+  }, [def.elements]);
+
+  const [activeOptionKey, setActiveOptionKey] = useState<string>(initialOptionKey);
+
+  useEffect(() => {
+    setActiveOptionKey((prev) => {
+      const exists = def.elements.some((el) => el.id.includes(`-${prev}-`));
+      return exists ? prev : initialOptionKey;
+    });
+  }, [def.elements, initialOptionKey]);
 
   // Si se selecciona un elemento de una opción en el lienzo, cambiar a esa opción
   useEffect(() => {
@@ -644,14 +919,22 @@ export function ComponentView({
   useEffect(() => {
     if (!hasOptionElements) return;
     const handleOptionSelected = (e: Event) => {
-      const detail = (e as CustomEvent<{ optionKey?: string }>).detail;
+      const detail = (e as CustomEvent<{
+        elementId?: string;
+        blockId?: string;
+        componentId?: string;
+        optionKey?: string;
+      }>).detail;
+      // Si el evento trae blockId o componentId, solo procesar si corresponde a esta sección
+      if (detail?.blockId && interaction?.blockId && detail.blockId !== interaction.blockId) return;
+      if (detail?.componentId && detail.componentId !== def.id) return;
       if (detail?.optionKey) {
         setActiveOptionKey(detail.optionKey);
       }
     };
     window.addEventListener("cms:option-selected", handleOptionSelected);
     return () => window.removeEventListener("cms:option-selected", handleOptionSelected);
-  }, [hasOptionElements]);
+  }, [hasOptionElements, interaction?.blockId, def.id]);
 
   // Filtrar elementos para renderizar de forma ligera y reactiva solo las tarjetas de la opción activa.
   // También se deduplica: los ids repetidos llegaron a guardarse al mover tarjetas a una opción que ya tenía ese tag.
@@ -679,8 +962,11 @@ export function ComponentView({
       onPointerCancel={interaction?.gestures?.endDrag}
       {...(hasOptionElements ? { "data-active-option": activeOptionKey } : {})}
       {...(interaction ? { "data-canvas": "", "data-target": targetKey(interaction.blockId, SECTION_KEY) } : {})}
-      className={`${interaction ? "" : "relative shrink-0"} ${interaction?.classes[SECTION_KEY] ?? ""}`}
-      style={interaction ? undefined : { width: def.width, height: def.height }}
+      className={`w-full relative ${interaction ? "" : "shrink-0"} ${interaction?.classes[SECTION_KEY] ?? ""}`}
+      style={{
+        ...(interaction ? {} : { width: def.width }),
+        minHeight: def.height > 0 ? def.height : undefined,
+      }}
     >
       {/* En la página, la posición, el tamaño y los estilos base van en CSS (capa de menor prioridad); en miniaturas, en línea. */}
       {interaction && (
@@ -695,7 +981,7 @@ export function ComponentView({
           )}
         </style>
       )}
-      {cardsOf(visibleElements, interaction?.flow ?? false).map((card) => renderCard(card, interaction))}
+      {cardsOf(visibleElements, interaction?.flow ?? false, viewDef).map((card) => renderCard(card, interaction))}
       {interaction?.overlay}
       {layer && (
         <EditingLayer

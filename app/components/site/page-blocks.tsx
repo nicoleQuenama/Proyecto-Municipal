@@ -359,6 +359,28 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     repeat: block.repeat,
     onDropData: dropData,
     onBind: (elementId, ref) => dispatch({ type: "binding/set", pageId: page.id, blockId: block.id, elementId, ref }),
+    onUpdateElement: editing && !isBlockLocked
+      ? (elementId, patch) => {
+          dispatch(
+            scope === "component"
+              ? {
+                  type: "component/element",
+                  componentId: def.id,
+                  pageId: page.id,
+                  blockId: block.id,
+                  elementId,
+                  patch,
+                }
+              : {
+                  type: "block/style",
+                  pageId: page.id,
+                  blockId: block.id,
+                  elementIds: [elementId],
+                  patch,
+                }
+          );
+        }
+      : undefined,
     onSelect: (elementId, add) => {
       if (!interactive) return;
       // Con otra sección ya seleccionada, Ctrl+clic en esta suma la sección entera (no solo uno de sus elementos).
@@ -447,7 +469,13 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
         ...(bleeds ? { marginLeft: "calc(var(--cms-side) * -1)", marginRight: "calc(var(--cms-side) * -1)", width: "calc(100% + 2 * var(--cms-side))", maxWidth: "none" } : {}),
         // Un bloque de código con tamaño propio dibuja su anillo a ese ancho, no a todo lo disponible.
         // Un encabezado o pie de código conserva el ancho de la página: solo su alto es propio.
-        ...(pureCode && block.size?.width && !widthLocked ? { width: block.size.width, maxWidth: "100%" } : {}),
+        ...(pureCode && (block.size?.width ?? (def.category === "Código" && def.width ? def.width : undefined)) && !widthLocked
+          ? {
+              width: block.size?.width ?? def.width,
+              maxWidth: "100%",
+              marginInline: "auto",
+            }
+          : {}),
         // Un bloque de código colocado sin tamaño propio conserva el ancho que tenía al colocarlo: con «w-full» abarcaría toda la página y moverlo no se notaría.
         ...(pureCode && placement && !placement.fixed && !block.size?.width ? { width: placement.width, maxWidth: "none" } : {}),
       }}
@@ -465,10 +493,10 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
 
       <div
         {...(editing ? editProps : {})}
-        // Fuera de la edición lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
+        // Fuera de la edición (vista previa) lo que sobresale por los lados se recorta (no se desplaza): así un efecto que mueve o agranda
         // la sección no hace aparecer barras de desplazamiento.
         // Un bloque de código va sin relleno: lo que se mide (y lo que redimensionan las manijas) es la caja del iframe.
-        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds || !placement ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${editing ? "" : "overflow-x-clip"}`}
+        className={`max-w-full ${pureCode ? "p-0" : isHeaderOrFooter || bleeds || !placement ? "p-0 w-full" : customClasses(block, SECTION_KEY, def).includes("w-fit") ? "p-1 w-fit" : "p-1"} ${mode === "preview" ? "overflow-x-clip" : ""}`}
         style={{
           // Un componente que ya ocupa todo el ancho de la hoja va sin relleno: con él se correría y se saldría por la derecha.
           padding: isHeaderOrFooter || bleeds || pureCode || !placement || (view?.width ?? 0) >= available ? 0 : box.padding,

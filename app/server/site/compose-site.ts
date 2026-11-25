@@ -1,7 +1,7 @@
 import type { ComponentDef, SharedFunction, SiteState } from "../../components/site/types.ts";
 import type { DataSource } from "../../components/data-sources/types.ts";
 import type { DesignComment } from "../../components/comments/comment-rules.ts";
-import type { StyleRule, StyleScope, Variable } from "../../components/styles/types.ts";
+import type { StyleProp, StyleRule, StyleScope, Variable } from "../../components/styles/types.ts";
 import { composePage, textOf } from "./compose-page.ts";
 import type { CodeTexts, CommentRow, ComponentRow, FunctionRow, Owner, RuleRow, SiteRows, SourceRow, VariableRow } from "./rows.ts";
 
@@ -15,7 +15,16 @@ const SCOPES: Record<string, (row: { pageId: string | null; componentId: string 
 };
 
 const composeVariable = (row: VariableRow): Variable => ({ id: row.id, scope: SCOPES[row.scope](row), name: row.name, kind: row.kind as Variable["kind"], value: row.value });
-const composeRule = (row: RuleRow): StyleRule => ({ scope: SCOPES[row.scope](row), target: row.target as StyleRule["target"], props: row.props as StyleRule["props"] });
+const composeRule = (row: RuleRow): StyleRule => {
+  const { _mandatory, _lockedProps, ...props } = (row.props ?? {}) as Record<string, string>;
+  return {
+    scope: SCOPES[row.scope](row),
+    target: row.target as StyleRule["target"],
+    props: props as StyleRule["props"],
+    ...(_mandatory === "true" || (_mandatory as unknown) === true ? { mandatory: true } : {}),
+    ...(_lockedProps ? { lockedProps: (typeof _lockedProps === "string" ? _lockedProps.split(",") : _lockedProps) as StyleProp[] } : {}),
+  };
+};
 
 function composeComponent(row: ComponentRow, texts: CodeTexts): ComponentDef {
   const owner: Owner = { kind: "component", id: row.id };

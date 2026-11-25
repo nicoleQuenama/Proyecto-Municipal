@@ -108,6 +108,10 @@ const CLEARED_FORMAT: { [K in Exclude<keyof ElementOverride, "hidden" | "removed
   strike: undefined,
   align: undefined,
   list: undefined,
+  borderWidth: undefined,
+  borderColor: undefined,
+  borderStyle: undefined,
+  borderPreset: undefined,
 };
 
 type ElementField = "color" | "fontFamily" | "fontSize" | "fill" | "radius";
@@ -233,6 +237,7 @@ const MODEL_BUILDERS: { [K in FormatTarget["kind"]]: ModelBuilder<Extract<Format
           label: "Ocultar sección",
           run: () => dispatch({ type: "hidden/set", target: { kind: "block", pageId, blockId: block.id }, hidden: true }),
         },
+        ...(block.size ? [{ label: "Restablecer tamaño original", run: () => dispatch({ type: "block/reset", pageId, blockId: block.id }) }] : []),
         { label: "Quitar formato", run: () => dispatch({ type: "block/reset", pageId, blockId: block.id }) },
         { label: "Eliminar sección", danger: true, run: () => dispatch({ type: "block/remove", id: block.id }) },
       ],

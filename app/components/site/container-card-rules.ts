@@ -381,12 +381,12 @@ export function deleteCardFromComponent(def: ComponentDef, cardElementId: string
 /** Rellena el componente con N tarjetas pre-diseñadas (3, 4, 5 o más). */
 export function fillComponentWithCards(def: ComponentDef, count = 3): ComponentDef {
   const items = [
-    { title: "Atención Vecinal", desc: "Consultas y trámites digitales en línea.", color: "#0d99ff" },
-    { title: "Pagos y Tributos", desc: "Pago seguro y al día de contribuciones.", color: "#10b981" },
-    { title: "Seguridad y Apoyo", desc: "Canales de contacto y asistencia 24/7.", color: "#8b5cf6" },
-    { title: "Gaceta y Normas", desc: "Leyes, decretos y resoluciones municipales.", color: "#f59e0b" },
-    { title: "Plataformas Digitales", desc: "Sistemas en línea para trámites ciudadanos.", color: "#06b6d4" },
-    { title: "Transparencia", desc: "Rendición de cuentas e información pública.", color: "#ec4899" },
+    { title: "Atención Vecinal", desc: "Consultas y trámites digitales en línea.", color: "#00A7D6" },
+    { title: "Pagos y Tributos", desc: "Pago seguro y al día de contribuciones.", color: "#0DA593" },
+    { title: "Seguridad y Apoyo", desc: "Canales de contacto y asistencia 24/7.", color: "#462D81" },
+    { title: "Gaceta y Normas", desc: "Leyes, decretos y resoluciones municipales.", color: "#34C3E8" },
+    { title: "Plataformas Digitales", desc: "Sistemas en línea para trámites ciudadanos.", color: "#F47B38" },
+    { title: "Transparencia", desc: "Rendición de cuentas e información pública.", color: "#00A7D6" },
   ];
 
   const takeItems = items.slice(0, Math.min(count, items.length));
@@ -553,7 +553,7 @@ export function addButtonToComponent(
     y: 0,
     width: 144,
     height: 48,
-    fill: isSecondary ? "#e2e8f0" : "#0d99ff",
+    fill: isSecondary ? "#f8fafc" : "#00A7D6",
     radius: 10,
     text: label,
     color: isSecondary ? "#0f172a" : "#ffffff",
@@ -632,7 +632,7 @@ export function createDefaultMunicipalFooter(id?: string): ComponentDef {
       newElement("text", nextId(), { parentId: col4, role: "text", x: 0, y: 28, width: 215, height: 20, text: "Lun a Vie: 08:00 - 16:00", fontSize: 12, color: "#cbd5e1" }),
       newElement("text", nextId(), { parentId: col4, role: "text", x: 0, y: 52, width: 215, height: 20, text: "Línea Gratuita: 800-14-0200", fontSize: 12, bold: true, color: "#f8fafc" }),
       newElement("text", nextId(), { parentId: col4, role: "text", x: 0, y: 76, width: 215, height: 20, text: "Plaza 14 de Septiembre, GAMC", fontSize: 12, color: "#94a3b8" }),
-      newElement("text", nextId(), { parentId: col4, role: "link", x: 0, y: 100, width: 215, height: 20, text: "contacto@gamc.gob.bo", fontSize: 12, color: "#38bdf8" }),
+      newElement("text", nextId(), { parentId: col4, role: "link", x: 0, y: 100, width: 215, height: 20, text: "contacto@gamc.gob.bo", fontSize: 12, color: "#34C3E8" }),
     ],
     links: {},
   };
@@ -956,7 +956,7 @@ export function createDefaultMunicipalHeader(id?: string): ComponentDef {
         height: 20,
         text: "COCHABAMBA",
         fontSize: 16,
-        color: "#1b1550",
+        color: "#ffffff",
         bold: true,
       }),
       newElement("text", nextId(), {
@@ -967,14 +967,14 @@ export function createDefaultMunicipalHeader(id?: string): ComponentDef {
         height: 14,
         text: "Gobierno de la Ciudad",
         fontSize: 10,
-        color: "#4b5563",
+        color: "#E6F6FB",
       }),
-      newElement("text", nextId(), { role: "link", x: 240, y: 29, width: 110, height: 16, text: "Trámites y Leyes", fontSize: 12, color: "#1b1550" }),
-      newElement("text", nextId(), { role: "link", x: 364, y: 29, width: 80, height: 16, text: "Cocha Unida", fontSize: 12, color: "#1b1550" }),
-      newElement("text", nextId(), { role: "link", x: 458, y: 29, width: 45, height: 16, text: "GAMC", fontSize: 12, color: "#1b1550" }),
-      newElement("text", nextId(), { role: "link", x: 518, y: 29, width: 60, height: 16, text: "Noticias", fontSize: 12, color: "#1b1550" }),
-      newElement("text", nextId(), { role: "link", x: 592, y: 29, width: 175, height: 16, text: "Gabinete de Transparencia", fontSize: 12, color: "#1b1550" }),
-      newElement("text", nextId(), { role: "link", x: 782, y: 29, width: 65, height: 16, text: "Servicios", fontSize: 12, color: "#1b1550" }),
+      newElement("text", nextId(), { role: "link", x: 240, y: 29, width: 110, height: 16, text: "Trámites y Leyes", fontSize: 12, color: "#ffffff" }),
+      newElement("text", nextId(), { role: "link", x: 364, y: 29, width: 80, height: 16, text: "Cocha Unida", fontSize: 12, color: "#ffffff" }),
+      newElement("text", nextId(), { role: "link", x: 458, y: 29, width: 45, height: 16, text: "GAMC", fontSize: 12, color: "#ffffff" }),
+      newElement("text", nextId(), { role: "link", x: 518, y: 29, width: 60, height: 16, text: "Noticias", fontSize: 12, color: "#ffffff" }),
+      newElement("text", nextId(), { role: "link", x: 592, y: 29, width: 175, height: 16, text: "Gabinete de Transparencia", fontSize: 12, color: "#ffffff" }),
+      newElement("text", nextId(), { role: "link", x: 782, y: 29, width: 65, height: 16, text: "Servicios", fontSize: 12, color: "#ffffff" }),
       newElement("rect", nextId(), {
         role: "button",
         control: { kind: "button", name: "search-trigger" },
@@ -982,11 +982,11 @@ export function createDefaultMunicipalHeader(id?: string): ComponentDef {
         y: 19,
         width: 34,
         height: 34,
-        fill: "#efe9f8",
+        fill: "rgba(255, 255, 255, 0.2)",
         radius: 8,
         text: "⌕",
         icon: "search",
-        color: "#4a1070",
+        color: "#ffffff",
         bold: true,
         align: "center",
         fontSize: 16,
@@ -1023,9 +1023,9 @@ export function addButtonToHeader(
     width: 130,
     height: 40,
     text: label,
-    fill: "#0d99ff",
+    fill: "#ffffff",
     radius: 8,
-    color: "#ffffff",
+    color: "#008BB3",
     bold: true,
     role: "button",
     align: "center",
@@ -1089,7 +1089,7 @@ export function createMunicipalSearchHero(id?: string): ComponentDef {
         height: 16,
         text: "PORTAL DE ATENCIÓN Y TRÁMITES GAMC",
         fontSize: 11,
-        color: "var(--color-acento, #ffd200)",
+        color: "#E6F6FB",
         bold: true,
       }),
       newElement("text", nextId(), {
@@ -1139,10 +1139,10 @@ export function createMunicipalSearchHero(id?: string): ComponentDef {
         y: 122,
         width: 170,
         height: 48,
-        fill: "var(--color-acento, #ffd200)",
+        fill: "#ffffff",
         radius: 8,
         text: "Buscar trámites",
-        color: "#0f172a",
+        color: "#008BB3",
         bold: true,
         fontSize: 14,
         align: "center",
@@ -1266,48 +1266,48 @@ export function createMunicipalSearchList(id?: string): ComponentDef {
   const cardsData = [
     {
       category: "Trámite",
-      badgeFill: "#e0f2fe",
-      badgeColor: "#0369a1",
+      badgeFill: "#E6F6FB",
+      badgeColor: "#00A7D6",
       title: "Ventanilla Única Digital (SITRAM)",
       desc: "Ingreso de correspondencia ciudadana, licencias y seguimiento en tiempo real con hoja de ruta municipal.",
       btnText: "Iniciar trámite →",
     },
     {
       category: "Trámite",
-      badgeFill: "#e0f2fe",
-      badgeColor: "#0369a1",
+      badgeFill: "#E6F6FB",
+      badgeColor: "#00A7D6",
       title: "Catastro y Certificación Territorial",
       desc: "Emisión de certificados catastrales, aprobación de planos de loteamiento y registro de bienes inmuebles.",
       btnText: "Consultar catastro →",
     },
     {
       category: "Trámite",
-      badgeFill: "#e0f2fe",
-      badgeColor: "#0369a1",
+      badgeFill: "#E6F6FB",
+      badgeColor: "#00A7D6",
       title: "Licencias de Funcionamiento",
       desc: "Apertura y renovación de actividades económicas comerciales, industriales y de servicios en Cochabamba.",
       btnText: "Requisitos de licencia →",
     },
     {
       category: "Trámite",
-      badgeFill: "#e0f2fe",
-      badgeColor: "#0369a1",
+      badgeFill: "#E6F6FB",
+      badgeColor: "#00A7D6",
       title: "Pago de Impuestos y Patentes (RUAT)",
       desc: "Liquidación y cobro de impuestos sobre vehículos automotores, inmuebles y patentes con descuentos oficiales.",
       btnText: "Pagar en línea →",
     },
     {
       category: "Servicio",
-      badgeFill: "#dcfce7",
-      badgeColor: "#15803d",
+      badgeFill: "#E6F7F5",
+      badgeColor: "#0DA593",
       title: "Salud Municipal y Farmacias GAMC",
       desc: "Red de centros de salud municipal, postas médicas barriales y acceso a medicamentos esenciales a costo social.",
       btnText: "Ver centros de salud →",
     },
     {
       category: "Contacto",
-      badgeFill: "#ffe4e6",
-      badgeColor: "#be123c",
+      badgeFill: "#F3F0FA",
+      badgeColor: "#462D81",
       title: "Líneas de Emergencia y Atención 24/7",
       desc: "Línea Gratuita 800-14-0200, Ambulancias SEM 151, Defensoría de la Niñez 156 y Guardia Municipal.",
       btnText: "Llamar a emergencias →",
@@ -1324,7 +1324,7 @@ export function createMunicipalSearchList(id?: string): ComponentDef {
       height: 28,
       text: "Trámites y Servicios Disponibles",
       fontSize: 22,
-      color: "var(--color-primario, #0c4a6e)",
+      color: "#0f172a",
       bold: true,
     }),
     newElement("text", nextId(), {
@@ -1387,7 +1387,7 @@ export function createMunicipalSearchList(id?: string): ComponentDef {
         height: 20,
         text: item.title,
         fontSize: 14,
-        color: "var(--color-primario, #0c4a6e)",
+        color: "#0f172a",
         bold: true,
       }),
       newElement("text", nextId(), {
@@ -1409,7 +1409,7 @@ export function createMunicipalSearchList(id?: string): ComponentDef {
         y: y + 96,
         width: 160,
         height: 28,
-        fill: "linear-gradient(100deg, var(--color-celeste-oscuro) 0%, var(--color-primario) 100%)",
+        fill: "#00A7D6",
         radius: 6,
         text: item.btnText,
         color: "#ffffff",
@@ -1475,11 +1475,11 @@ export function createTramitesLeyesDecretos(id?: string): ComponentDef {
 
     return [
       newElement("rect", cardId, { role: "container", x, y, width: cardWidth, height: cardHeight, fill: "#ffffff", radius: 12 }),
-      newElement("text", el(`${prefix}-kind`), { role: "text", parentId: cardId, x: x + pad, y: y + 16, width: innerWidth, height: 18, text: resolvedKind, fontSize: 12, bold: true, color: "#0284c7" }),
+      newElement("text", el(`${prefix}-kind`), { role: "text", parentId: cardId, x: x + pad, y: y + 16, width: innerWidth, height: 18, text: resolvedKind, fontSize: 12, bold: true, color: "#00A7D6" }),
       newElement("text", el(`${prefix}-title`), { role: "heading", parentId: cardId, x: x + pad, y: y + 38, width: innerWidth, height: 24, text: titleText, fontSize: 16, bold: true, color: "#0f172a" }),
       newElement("text", el(`${prefix}-body`), { role: "text", parentId: cardId, x: x + pad, y: y + 66, width: innerWidth, height: 56, text: bodyText, fontSize: 13, color: "#475569" }),
       newElement("text", el(`${prefix}-date`), { role: "text", parentId: cardId, x: x + pad, y: y + 128, width: innerWidth, height: 18, text: dateText, fontSize: 12, color: "#64748b" }),
-      newElement("rect", el(`${prefix}-btn`), { role: "button", parentId: cardId, control: { kind: "button", name: "abrir-pdf" }, x: x + pad, y: y + 156, width: innerWidth, height: 38, fill: "#0284c7", radius: 8, text: "Abrir PDF", color: "#ffffff", bold: true, fontSize: 13, align: "center" }),
+      newElement("rect", el(`${prefix}-btn`), { role: "button", parentId: cardId, control: { kind: "button", name: "abrir-pdf" }, x: x + pad, y: y + 156, width: innerWidth, height: 38, fill: "#00A7D6", radius: 8, text: "Abrir PDF", color: "#ffffff", bold: true, fontSize: 13, align: "center" }),
     ];
   };
 
@@ -1495,17 +1495,15 @@ export function createTramitesLeyesDecretos(id?: string): ComponentDef {
       [SECTION_KEY]: {
         classes: "w-full py-6 px-6 bg-slate-50",
         css: [
-          `& [data-el*="-opt2-"], & [data-el*="-opt3-"] { display: none !important; }`,
-          `& [data-el*="-opt1-"] { display: block !important; }`,
-          `&:has(input[name="opcion"][value="opcion 2"]:checked) [data-el*="-opt1-"], &:has(input[name="opcion"][value="Leyes"]:checked) [data-el*="-opt1-"], &:has(label:nth-child(2) input:checked) [data-el*="-opt1-"], &[data-active-option="opt2"] [data-el*="-opt1-"], :where([data-active-option="opt2"]) [data-el*="-opt1-"] { display: none !important; }`,
-          `&:has(input[name="opcion"][value="opcion 2"]:checked) [data-el*="-opt3-"], &:has(input[name="opcion"][value="Leyes"]:checked) [data-el*="-opt3-"], &:has(label:nth-child(2) input:checked) [data-el*="-opt3-"], &[data-active-option="opt2"] [data-el*="-opt3-"], :where([data-active-option="opt2"]) [data-el*="-opt3-"] { display: none !important; }`,
-          `&:has(input[name="opcion"][value="opcion 2"]:checked) [data-el*="-opt2-"], &:has(input[name="opcion"][value="Leyes"]:checked) [data-el*="-opt2-"], &:has(label:nth-child(2) input:checked) [data-el*="-opt2-"], &[data-active-option="opt2"] [data-el*="-opt2-"], :where([data-active-option="opt2"]) [data-el*="-opt2-"] { display: block !important; }`,
-          `&:has(input[name="opcion"][value="opcion 3"]:checked) [data-el*="-opt1-"], &:has(input[name="opcion"][value="Normativas"]:checked) [data-el*="-opt1-"], &:has(label:nth-child(3) input:checked) [data-el*="-opt1-"], &[data-active-option="opt3"] [data-el*="-opt1-"], :where([data-active-option="opt3"]) [data-el*="-opt1-"] { display: none !important; }`,
-          `&:has(input[name="opcion"][value="opcion 3"]:checked) [data-el*="-opt2-"], &:has(input[name="opcion"][value="Normativas"]:checked) [data-el*="-opt2-"], &:has(label:nth-child(3) input:checked) [data-el*="-opt2-"], &[data-active-option="opt3"] [data-el*="-opt2-"], :where([data-active-option="opt3"]) [data-el*="-opt2-"] { display: none !important; }`,
-          `&:has(input[name="opcion"][value="opcion 3"]:checked) [data-el*="-opt3-"], &:has(input[name="opcion"][value="Normativas"]:checked) [data-el*="-opt3-"], &:has(label:nth-child(3) input:checked) [data-el*="-opt3-"], &[data-active-option="opt3"] [data-el*="-opt3-"], :where([data-active-option="opt3"]) [data-el*="-opt3-"] { display: block !important; }`,
-          `&[data-active-option="opt1"] [data-el*="-opt2-"], :where([data-active-option="opt1"]) [data-el*="-opt2-"] { display: none !important; }`,
-          `&[data-active-option="opt1"] [data-el*="-opt3-"], :where([data-active-option="opt1"]) [data-el*="-opt3-"] { display: none !important; }`,
-          `&[data-active-option="opt1"] [data-el*="-opt1-"], :where([data-active-option="opt1"]) [data-el*="-opt1-"] { display: block !important; }`,
+          `& [data-el*="-opt"] { display: none !important; }`,
+          `&:not([data-active-option]) [data-el*="-opt1-"] { display: block !important; }`,
+          `&:has(input[value="opcion 2"]:checked) [data-el*="-opt1-"], &:has(input[value="Leyes"]:checked) [data-el*="-opt1-"], &[data-active-option="opt2"] [data-el*="-opt1-"], :where([data-active-option="opt2"]) [data-el*="-opt1-"] { display: none !important; }`,
+          `&:has(input[value="opcion 2"]:checked) [data-el*="-opt3-"], &:has(input[value="Leyes"]:checked) [data-el*="-opt3-"], &[data-active-option="opt2"] [data-el*="-opt3-"], :where([data-active-option="opt2"]) [data-el*="-opt3-"] { display: none !important; }`,
+          `&:has(input[value="opcion 2"]:checked) [data-el*="-opt2-"], &:has(input[value="Leyes"]:checked) [data-el*="-opt2-"], &[data-active-option="opt2"] [data-el*="-opt2-"], :where([data-active-option="opt2"]) [data-el*="-opt2-"] { display: block !important; }`,
+          `&:has(input[value="opcion 3"]:checked) [data-el*="-opt1-"], &:has(input[value="Normativas"]:checked) [data-el*="-opt1-"], &[data-active-option="opt3"] [data-el*="-opt1-"], :where([data-active-option="opt3"]) [data-el*="-opt1-"] { display: none !important; }`,
+          `&:has(input[value="opcion 3"]:checked) [data-el*="-opt2-"], &:has(input[value="Normativas"]:checked) [data-el*="-opt2-"], &[data-active-option="opt3"] [data-el*="-opt2-"], :where([data-active-option="opt3"]) [data-el*="-opt2-"] { display: none !important; }`,
+          `&:has(input[value="opcion 3"]:checked) [data-el*="-opt3-"], &:has(input[value="Normativas"]:checked) [data-el*="-opt3-"], &[data-active-option="opt3"] [data-el*="-opt3-"], :where([data-active-option="opt3"]) [data-el*="-opt3-"] { display: block !important; }`,
+          ...Array.from({ length: 12 }, (_, i) => `&[data-active-option="opt${i + 1}"] [data-el*="-opt${i + 1}-"], :where([data-active-option="opt${i + 1}"]) [data-el*="-opt${i + 1}-"] { display: block !important; }`),
           `& [data-el*="-bar"] { display: none !important; }`,
           `& [data-el*="-card"] { border: 1px solid #e2e8f0 !important; border-radius: 12px !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; overflow: hidden !important; max-width: 100% !important; box-sizing: border-box !important; background: #ffffff !important; }`,
           `& [data-el*="-body"] { overflow: hidden !important; text-overflow: ellipsis !important; }`,
@@ -1514,7 +1512,7 @@ export function createTramitesLeyesDecretos(id?: string): ComponentDef {
     },
     elements: [
       newElement("rect", el("bg"), { role: "none", x: 0, y: 0, width: 1024, height: 480, fill: "#f8fafc", radius: 0 }),
-      newElement("text", el("title"), { role: "heading", x: 40, y: 24, width: 600, height: 36, text: "Trámites y Leyes", fontSize: 30, bold: true, color: "#1b1550" }),
+      newElement("text", el("title"), { role: "heading", x: 40, y: 24, width: 600, height: 36, text: "Trámites y Leyes", fontSize: 30, bold: true, color: "#0f172a" }),
       newElement("text", el("subtitle"), { role: "text", x: 40, y: 64, width: 700, height: 22, text: "Consulta los decretos ejecutivos y la normativa municipal de Cochabamba.", fontSize: 14, color: "#475569" }),
       newElement("text", el("options-label"), { role: "text", x: 40, y: 96, width: 440, height: 18, text: "Selecciona una opción", fontSize: 11, bold: true, color: "#475569" }),
       newElement("rect", el("options"), {
@@ -1530,7 +1528,7 @@ export function createTramitesLeyesDecretos(id?: string): ComponentDef {
       newElement("rect", el("search-button"), {
         role: "button",
         control: { kind: "button", name: "search-trigger" },
-        x: 738, y: 118, width: 86, height: 42, fill: "#0284c7", radius: 8,
+        x: 738, y: 118, width: 86, height: 42, fill: "#00A7D6", radius: 8,
         text: "Buscar", color: "#ffffff", bold: true, fontSize: 13, align: "center",
       }),
       newElement("text", el("date-label"), { role: "text", x: 832, y: 96, width: 152, height: 18, text: "Seleccionar la fecha", fontSize: 11, bold: true, color: "#475569", hiddenOn: ["mobile", "tablet"] }),
@@ -1691,11 +1689,11 @@ export function addCardToOption(
 
   const newElements: CanvasElement[] = [
     newElement("rect", rootId, { role: "container", x: nextX, y: nextY, width: cardWidth, height: cardHeight, fill: "#ffffff", radius: 12 }),
-    newElement("text", el("kind"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 16, width: innerWidth, height: 18, text: categoryText, fontSize: 12, bold: true, color: "#0284c7" }),
+    newElement("text", el("kind"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 16, width: innerWidth, height: 18, text: categoryText, fontSize: 12, bold: true, color: "#00A7D6" }),
     newElement("text", el("title"), { role: "heading", parentId: rootId, x: nextX + pad, y: nextY + 38, width: innerWidth, height: 24, text: title, fontSize: 16, bold: true, color: "#0f172a" }),
     newElement("text", el("body"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 66, width: innerWidth, height: 56, text: "Información", fontSize: 13, color: "#475569" }),
     newElement("text", el("date"), { role: "text", parentId: rootId, x: nextX + pad, y: nextY + 128, width: innerWidth, height: 18, text: "Fecha", fontSize: 12, color: "#64748b" }),
-    newElement("rect", el("btn"), { role: "button", parentId: rootId, control: { kind: "button", name: "abrir-pdf" }, x: nextX + pad, y: nextY + 156, width: innerWidth, height: 38, fill: "#0284c7", radius: 8, text: "Abrir PDF", color: "#ffffff", bold: true, fontSize: 13, align: "center" }),
+    newElement("rect", el("btn"), { role: "button", parentId: rootId, control: { kind: "button", name: "abrir-pdf" }, x: nextX + pad, y: nextY + 156, width: innerWidth, height: 38, fill: "#00A7D6", radius: 8, text: "Abrir PDF", color: "#ffffff", bold: true, fontSize: 13, align: "center" }),
   ];
 
   const updatedHeight = Math.max(def.height, nextY + cardHeight + 40);
@@ -1933,5 +1931,179 @@ export function updateOptionLabel(
     elements: updatedElements,
   };
 }
+
+/**
+ * Unifica todos los colores de un componente al estándar oficial del Manual de Marca GAMC:
+ * - Detecta automáticamente si es cabecera, pie de página, hero, trámites o tarjetas.
+ * - Elimina amarillos, morados y azules heredados no institucionales.
+ * - Aplica Celeste GAMC (#00A7D6), Blanco, Oscuro Institucional (#0F172A) y Superficie (#F8FAFC).
+ */
+export function unifyComponentColors(def: ComponentDef): ComponentDef {
+  const isHeader =
+    def.category === "navigation" &&
+    (def.id.toLowerCase().includes("header") ||
+      def.name.toLowerCase().includes("encabezado") ||
+      def.name.toLowerCase().includes("cabecera"));
+
+  const isFooter =
+    def.category === "navigation" &&
+    (def.id.toLowerCase().includes("footer") ||
+      def.name.toLowerCase().includes("pie") ||
+      def.name.toLowerCase().includes("cierre"));
+
+  const isHero =
+    def.name.toLowerCase().includes("hero") ||
+    def.name.toLowerCase().includes("buscador hero") ||
+    def.elements.some((e) => e.control?.name === "search-query" && e.height >= 40);
+
+  const isTramitesLeyes =
+    def.elements.some((e) => e.control?.name === "opcion") ||
+    def.elements.some((e) => e.id.includes("-opt1-") || e.id.includes("-opt2-"));
+
+  const updatedElements = def.elements.map((el) => {
+    // 1. Cabecera (Header / Navbar)
+    if (isHeader) {
+      if (el.kind === "rect" && !el.parentId && el.y === 0 && el.height >= 70) {
+        return {
+          ...el,
+          fill: "linear-gradient(100deg, var(--color-celeste-oscuro, #008BB3) 0%, var(--color-primario, #00A7D6) 100%)",
+        };
+      }
+      if (el.kind === "text") {
+        if (el.role === "heading") {
+          return { ...el, color: "#ffffff" };
+        }
+        const isSubtitle = el.fontSize && el.fontSize <= 11;
+        return { ...el, color: isSubtitle ? "#E6F6FB" : "#ffffff" };
+      }
+      if (el.role === "button" || el.control?.name === "search-trigger") {
+        const isIconOnly = el.width <= 44;
+        return {
+          ...el,
+          fill: isIconOnly ? "rgba(255, 255, 255, 0.2)" : "#ffffff",
+          color: isIconOnly ? "#ffffff" : "#008BB3",
+        };
+      }
+      return el;
+    }
+
+    // 2. Pie de página (Footer)
+    if (isFooter) {
+      if (el.kind === "rect" && !el.parentId && el.y === 0) {
+        return { ...el, fill: "#0f172a" };
+      }
+      if (el.kind === "text") {
+        if (el.role === "heading") {
+          return { ...el, color: "#f8fafc" };
+        }
+        if (el.role === "link") {
+          if (el.text && (el.text.includes("@") || el.text.includes("gob.bo"))) {
+            return { ...el, color: "#34C3E8" };
+          }
+          return { ...el, color: "#cbd5e1" };
+        }
+        return { ...el, color: el.bold ? "#ffffff" : "#94a3b8" };
+      }
+      if (el.role === "button") {
+        return { ...el, fill: "#00A7D6", color: "#ffffff" };
+      }
+      return el;
+    }
+
+    // 3. Hero / Buscador Hero
+    if (isHero) {
+      if (el.kind === "rect" && !el.parentId && el.y === 0 && el.height >= 180) {
+        return {
+          ...el,
+          fill: "linear-gradient(100deg, var(--color-celeste-oscuro, #008BB3) 0%, var(--color-primario, #00A7D6) 100%)",
+        };
+      }
+      if (el.kind === "text") {
+        if (el.text && el.text.toUpperCase().includes("PORTAL DE ATENCIÓN")) {
+          return { ...el, color: "#E6F6FB" };
+        }
+        if (el.role === "heading") {
+          return { ...el, color: "#ffffff" };
+        }
+        return { ...el, color: "#e2e8f0" };
+      }
+      if (el.role === "button") {
+        const isMainSearch = el.text && el.text.toLowerCase().includes("buscar");
+        if (isMainSearch) {
+          return { ...el, fill: "#ffffff", color: "#008BB3" };
+        }
+        return { ...el, fill: "rgba(255, 255, 255, 0.18)", color: "#ffffff" };
+      }
+      if (el.control?.kind === "input") {
+        return { ...el, fill: "#ffffff", color: "#0f172a" };
+      }
+      return el;
+    }
+
+    // 4. Trámites y Leyes / Normativas
+    if (isTramitesLeyes) {
+      if (el.kind === "rect" && !el.parentId && el.y === 0) {
+        return { ...el, fill: "#f8fafc" };
+      }
+      if (el.id.endsWith("-title") && !el.parentId) {
+        return { ...el, color: "#0f172a" };
+      }
+      if (el.id.endsWith("-subtitle") || el.id.endsWith("-label")) {
+        return { ...el, color: "#475569" };
+      }
+      if (el.id.endsWith("-kind")) {
+        return { ...el, color: "#00A7D6" };
+      }
+      if (el.id.endsWith("-btn") || el.role === "button") {
+        return { ...el, fill: "#00A7D6", color: "#ffffff" };
+      }
+      if (el.id.endsWith("-card")) {
+        return { ...el, fill: "#ffffff" };
+      }
+      if (el.id.endsWith("-title") && el.parentId) {
+        return { ...el, color: "#0f172a" };
+      }
+      if (el.id.endsWith("-body")) {
+        return { ...el, color: "#475569" };
+      }
+      if (el.id.endsWith("-date")) {
+        return { ...el, color: "#64748b" };
+      }
+      return el;
+    }
+
+    // 5. Componentes generales: sustituir colores heredados
+    let nextEl = { ...el };
+    if (nextEl.fill && /#ffd200|#ffda18|#f59e0b/i.test(nextEl.fill)) {
+      nextEl.fill = "#00A7D6";
+      nextEl.color = "#ffffff";
+    }
+    if (nextEl.color && /#ffd200|#ffda18|#f59e0b/i.test(nextEl.color)) {
+      nextEl.color = "#00A7D6";
+    }
+    if (nextEl.fill && /#1b1550|#efe9f8|#8b5cf6/i.test(nextEl.fill)) {
+      nextEl.fill = nextEl.role === "button" ? "#00A7D6" : "#E6F6FB";
+      if (nextEl.role === "button") nextEl.color = "#ffffff";
+    }
+    if (nextEl.color && /#1b1550|#4a1070/i.test(nextEl.color)) {
+      nextEl.color = "#0f172a";
+    }
+    if (nextEl.fill && /#0d99ff|#0284c7/i.test(nextEl.fill)) {
+      nextEl.fill = "#00A7D6";
+      nextEl.color = "#ffffff";
+    }
+    if (nextEl.color && /#0d99ff|#0284c7/i.test(nextEl.color)) {
+      nextEl.color = "#00A7D6";
+    }
+
+    return nextEl;
+  });
+
+  return {
+    ...def,
+    elements: updatedElements,
+  };
+}
+
 
 

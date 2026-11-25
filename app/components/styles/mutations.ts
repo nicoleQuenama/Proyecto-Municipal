@@ -37,6 +37,34 @@ export function clearRule(rules: StyleRule[], scope: StyleScope, target: StyleTa
   return rules.filter((rule) => !(rule.target === target && scopeKey(rule.scope) === key));
 }
 
+/** Actualiza la gobernanza (obligatoriedad y propiedades bloqueadas) de una regla */
+export function setRuleGovernance(
+  rules: StyleRule[],
+  scope: StyleScope,
+  target: StyleTarget,
+  governance: { mandatory?: boolean; lockedProps?: StyleProp[] },
+): StyleRule[] {
+  const key = scopeKey(scope);
+  const index = rules.findIndex((rule) => rule.target === target && scopeKey(rule.scope) === key);
+  const current: StyleRule = index >= 0 ? rules[index] : { scope, target, props: {} };
+
+  const updated: StyleRule = {
+    ...current,
+    ...(governance.mandatory !== undefined ? { mandatory: governance.mandatory } : {}),
+    ...(governance.lockedProps !== undefined ? { lockedProps: governance.lockedProps } : {}),
+  };
+
+  const others = rules.filter((_, i) => i !== index);
+  return [...others, updated];
+}
+
+/** Guarda o reemplaza una regla completa */
+export function saveRule(rules: StyleRule[], nextRule: StyleRule): StyleRule[] {
+  const key = scopeKey(nextRule.scope);
+  const others = rules.filter((r) => !(r.target === nextRule.target && scopeKey(r.scope) === key));
+  return [...others, nextRule];
+}
+
 /** Crea o reemplaza una variable (mismo id). Si no es válida devuelve el arreglo sin cambios. */
 export function saveVariable(variables: Variable[], variable: Variable): Variable[] {
   if (validateVariable(variables, variable) !== null) return variables;

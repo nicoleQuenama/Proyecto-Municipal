@@ -12,6 +12,7 @@ import type { StyleContext, StyleRule, StyleScope, StyleTarget } from "../styles
 import { ScopePicker, type ScopeChoice } from "./scope-picker";
 import { TargetCard } from "./target-card";
 import { VariablesSection } from "./variables-section";
+import { BrandIdentitySection } from "./brand-identity-section";
 import { styleTarget } from "../site/categories";
 
 const GROUP_ORDER: TargetGroup[] = ["page", "block", "element"];
@@ -101,6 +102,10 @@ export function AppearanceTab() {
         </label>
       )}
 
+      {scope.kind === "global" && (
+        <BrandIdentitySection site={site} dispatch={dispatch} canEdit={canManageGlobals} />
+      )}
+
       <VariablesSection
         scope={scope}
         ctx={ctx}
@@ -130,6 +135,7 @@ export function AppearanceTab() {
                 styles={site}
                 onSet={(prop, value) => dispatch({ type: "rule/set", scope, target, prop, value })}
                 onClear={() => dispatch({ type: "rule/clear", scope, target })}
+                onGovernance={(patch) => dispatch({ type: "rule/governance", scope, target, patch })}
                 canEdit={canManageGlobals || scope.kind !== "global"}
                 restrictColorsToPalette={!canManageGlobals && !!site.brandRequired}
               />

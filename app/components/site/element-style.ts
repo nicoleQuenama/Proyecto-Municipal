@@ -29,6 +29,13 @@ function textCss(element: CanvasElement): string[] {
 const box = (radius: string) => (element: CanvasElement) => [
   `background: ${element.fill}`,
   `border-radius: ${radius === "own" ? `${element.radius}px` : radius}`,
+  ...(element.borderWidth && element.borderWidth > 0
+    ? [
+        `border-width: ${element.borderWidth}px`,
+        `border-style: ${element.borderStyle || "solid"}`,
+        `border-color: ${element.borderColor || "#E2E8F0"}`,
+      ]
+    : []),
   ...textCss(element),
 ];
 
@@ -135,15 +142,16 @@ export function elementBaseCss(
     ...def.elements.map((element) => {
       // Solo una figura rectangular sin texto ni contenedor padre que cubra toda la sección es un backdrop.
       const isBackdropElement =
-        !flow &&
         (navWide || !def.drawn || def.width >= 600) &&
         element.kind === "rect" &&
         !element.text &&
         !element.parentId &&
-        element.x === 0 &&
-        element.y === 0 &&
-        element.width >= def.width * 0.85 &&
-        element.height >= def.height * 0.85;
+        ((element.role as string) === "background" ||
+          element.id.endsWith("-bg") ||
+          (element.x === 0 &&
+            element.y === 0 &&
+            element.width >= def.width * 0.85 &&
+            element.height >= def.height * 0.85));
 
       const isNavbar =
         navWide &&
@@ -194,6 +202,7 @@ export function elementBaseCss(
             "position: relative !important",
             "left: auto !important",
             "top: auto !important",
+            "width: 100% !important",
             "min-width: 0 !important",
             "max-width: 100% !important",
             "box-sizing: border-box !important",
@@ -203,7 +212,8 @@ export function elementBaseCss(
           ]),
           rule(`${section}[class*="flex-row"] > [data-el]`, [
             device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
-            device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
+            device === "mobile" ? "width: 100% !important" : "width: auto !important",
+            "min-width: 0 !important",
           ]),
           rule(`${section} > [data-el] > [data-el]`, [
             "max-width: 100% !important",
@@ -226,6 +236,13 @@ export function elementBaseCss(
   ];
 
   const unlayeredRules: string[] = [];
+  unlayeredRules.push(
+    rule(section, [
+      "width: 100% !important",
+      "box-sizing: border-box !important",
+      ...(def.height > 0 ? [`min-height: ${def.height}px !important`] : []),
+    ])
+  );
   if (cols !== null) {
     unlayeredRules.push(
       rule(section, [
@@ -236,12 +253,13 @@ export function elementBaseCss(
   }
   if (flow && !navWide) {
     unlayeredRules.push(
-      rule(`${section} > [data-el]`, [
+      rule(`${section} > [data-el]:not([data-backdrop])`, [
         "position: relative !important",
         "left: auto !important",
         "top: auto !important",
         "display: flex !important",
         "flex-direction: column !important",
+        "width: 100% !important",
         "height: auto !important",
         "min-height: fit-content !important",
         "min-width: 0 !important",
@@ -249,7 +267,18 @@ export function elementBaseCss(
         "box-sizing: border-box !important",
         "gap: 0.5rem !important",
       ]),
-      rule(`${section} > [data-el] > [data-el]`, [
+      rule(`${section} > [data-el][data-backdrop]`, [
+        "position: absolute !important",
+        "left: 0px !important",
+        "top: 0px !important",
+        "width: 100% !important",
+        "height: 100% !important",
+        "max-width: 100% !important",
+        "box-sizing: border-box !important",
+        "z-index: 0 !important",
+        "pointer-events: none !important",
+      ]),
+      rule(`${section} > [data-el]:not([data-backdrop]) > [data-el]`, [
         "position: relative !important",
         "left: auto !important",
         "top: auto !important",
@@ -260,20 +289,19 @@ export function elementBaseCss(
         "min-width: 0 !important",
         "box-sizing: border-box !important",
       ]),
-      rule(`${section}[class*="grid"] > [data-el]`, [
+      rule(`${section} [data-el]:is([data-target*="image"], [data-kind="image"])`, [
+        "min-height: 120px !important",
+        "width: 100% !important",
+        "min-width: 0 !important",
+      ]),
+      rule(`${section}[class*="grid"] > [data-el]:not([data-backdrop])`, [
         "width: 100% !important",
       ]),
-      rule(`${section}[class*="flex-row"] > [data-el]`, [
-        device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
-        device === "mobile" ? "width: 100% !important" : "min-width: 0 !important",
+      rule(`${section}[class*="flex"]:not([class*="flex-col"]) > [data-el]:not([data-backdrop])`, [
+        device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 240px !important",
+        device === "mobile" ? "width: 100% !important" : "width: auto !important",
+        device === "mobile" ? "min-width: 0 !important" : "min-width: 200px !important",
       ]),
-      ...(device === "mobile"
-        ? [
-            rule(`${section}[class*="grid"]`, [
-              "grid-template-columns: repeat(1, minmax(0, 1fr)) !important",
-            ]),
-          ]
-        : []),
     );
   }
 

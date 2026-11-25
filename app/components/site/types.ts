@@ -34,7 +34,7 @@ import type { Device } from "../responsive/devices";
 import type { FluidText } from "../responsive/fluid-text";
 import type { SideMargins } from "../responsive/page-margin";
 import type { AdaptChoices, FoldChoices, MenuConfig, ResponsiveLayouts } from "../responsive/types";
-import type { ElementRole, StyleScope, StyleProp, StyleState, StyleTarget, Variable } from "../styles/types";
+import type { ElementRole, StyleScope, StyleProp, StyleRule, StyleState, StyleTarget, Variable } from "../styles/types";
 import type { TitleState } from "../title-editor/types";
 
 /** Un componente es un conjunto de elementos posicionados sobre un lienzo de tamaño fijo. */
@@ -74,6 +74,11 @@ export interface CanvasElement {
   flipped?: boolean;
   /** Radio de las esquinas (rectángulos e imágenes). */
   radius: number;
+  /** Borde del elemento (sistema centralizado de bordes) */
+  borderWidth?: number;
+  borderColor?: string;
+  borderStyle?: "solid" | "dashed" | "dotted" | "none";
+  borderPreset?: "primary" | "secondary" | "none" | "custom";
   /** Contenido de un texto, o etiqueta centrada de una forma. */
   text: string;
   fontSize: number;
@@ -100,6 +105,14 @@ export interface CanvasElement {
   fit?: "cover" | "contain";
   /** Si es true, la figura actúa como marco estilo Canva para recibir imágenes */
   frame?: boolean;
+  /** Posición de recorte o punto focal estilo Canva (object-position, ej. "center", "top", "bottom", "left", "right"). */
+  objectPosition?: string;
+  /** Zoom interior dentro del cuadro/marco (1 = 100%, 1.5 = 150%, etc.). */
+  imageZoom?: number;
+  /** Volteo horizontal (efecto espejo). */
+  flipH?: boolean;
+  /** Volteo vertical. */
+  flipV?: boolean;
   /** Imagen de portada de un video de archivo. */
   poster?: string;
   /** Opciones de reproducción de un video de archivo. */
@@ -158,6 +171,10 @@ export type ElementOverride = Partial<
     | "removed"
     | "alt"
     | "src"
+    | "borderWidth"
+    | "borderColor"
+    | "borderStyle"
+    | "borderPreset"
   > & {
     radius: SizeValue;
     fontSize: SizeValue;
@@ -176,6 +193,11 @@ export interface BlockBox {
   /** Cuánto ocupa la sección: su contenido, todo el ancho o toda la pantalla (banner). */
   span?: BoxSpan;
   radius?: SizeValue;
+  /** Sistema centralizado de bordes para la caja de la sección */
+  borderWidth?: number;
+  borderColor?: string;
+  borderStyle?: "solid" | "dashed" | "dotted" | "none";
+  borderPreset?: "primary" | "secondary" | "none" | "custom";
   /** Cómo se mezcla la sección con lo que tiene detrás (multiplicar, pantalla…): deja ver el fondo a través de ella. */
   blend?: BlendMode;
   /** Margen vertical a lo alto (px) aplicado arriba y abajo de la sección. */
@@ -393,6 +415,18 @@ export interface SiteState extends StyleState {
   projectMedia?: ProjectMediaAsset[];
   /** Manual de marca obligatorio: quien no es superadministrador debe usar las variables de la marca, no valores sueltos. */
   brandRequired?: boolean;
+  /** Identidad institucional de marca (logo oficial, favicon y escudo). */
+  brandLogo?: BrandLogoConfig;
+  brandFavicon?: string;
+  brandEscudo?: { src: string; alt?: string };
+}
+
+export interface BrandLogoConfig {
+  src: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  fit?: "contain" | "cover";
 }
 
 export interface ProjectMediaAsset {
@@ -429,6 +463,7 @@ export type SiteAction =
   | { type: "title/reset" }
   | { type: "media/add"; item: MediaItem }
   | { type: "media/remove"; id: string }
+  | { type: "media/reorder"; id: string; direction: "up" | "down" }
   | { type: "media/poster"; pageId: string; mediaId: string; poster: string | null; local?: boolean }
   | { type: "page/apply-template"; pageId: string; componentIds: string[]; replace?: boolean }
   | { type: "block/add"; id: string; componentId: string; pageId?: string; scope?: "page" | "global"; slot?: "header" | "body" | "footer" }
@@ -502,6 +537,8 @@ export type SiteAction =
   | { type: "variable/delete"; id: string }
   | { type: "rule/set"; scope: StyleScope; target: StyleTarget; prop: StyleProp; value: string | null }
   | { type: "rule/clear"; scope: StyleScope; target: StyleTarget }
+  | { type: "rule/governance"; scope: StyleScope; target: StyleTarget; patch: { mandatory?: boolean; lockedProps?: StyleProp[] } }
+  | { type: "rule/save"; rule: StyleRule }
   | { type: "animation/finish"; pageId: string; baseline: RecordingBaseline; animation?: RecordedAnimation }
   | { type: "animation/add"; pageId: string; animation: RecordedAnimation; trigger?: { blockId: string; behavior: Behavior } }
   | { type: "animation/steps"; pageId: string; id: string; steps: AnimationStep[] }
@@ -514,4 +551,21 @@ export type SiteAction =
   | { type: "project-media/add"; asset: ProjectMediaAsset }
   | { type: "project-media/remove"; id: string }
   | { type: "project-media/replace"; oldSrc: string; newSrc: string; newAlt?: string }
-  | { type: "project-media/update-tags"; id: string; tag: string; tags: string[] };
+  | { type: "project-media/update-tags"; id: string; tag?: string; tags?: string[] }
+  | { type: "brand/identity"; brandLogo?: BrandLogoConfig; brandFavicon?: string; brandEscudo?: { src: string; alt?: string } }
+  | {
+      type: "brand/harmonize-cards";
+      preset: "primary" | "secondary" | "none" | "custom";
+      fill: string;
+      radius: number;
+      mandatory?: boolean;
+    }
+  | {
+      type: "brand/harmonize-buttons";
+      fill: string;
+      color: string;
+      radius: number;
+      borderWidth?: number;
+      borderColor?: string;
+      mandatory?: boolean;
+    };

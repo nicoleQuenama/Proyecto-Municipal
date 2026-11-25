@@ -25,7 +25,7 @@ export const DEVICES: { value: Device; label: string; width: number }[] = [
   { value: "mobile", label: "Móvil", width: DEVICE_WIDTH.mobile },
 ];
 
-export const ZOOM_STEPS = [10, 15, 25, 50, 75, 100, 125, 150, 200, 300];
+export const ZOOM_STEPS = [5, 10, 15, 25, 50, 75, 100, 125, 150, 200, 300];
 
 interface ViewportContextValue {
   device: Device;
@@ -81,7 +81,11 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
         direction === 1
           ? ZOOM_STEPS.find((z) => z > zoom)
           : [...ZOOM_STEPS].reverse().find((z) => z < zoom);
-      if (next !== undefined) setZoom(next);
+      if (next !== undefined) {
+        setZoom(next);
+      } else if (direction === -1 && zoom > ZOOM_STEPS[0]) {
+        setZoom(ZOOM_STEPS[0]);
+      }
     },
     [zoom, setZoom],
   );

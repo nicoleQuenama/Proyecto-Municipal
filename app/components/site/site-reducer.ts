@@ -25,7 +25,7 @@ import type { LinkTarget } from "../navigation/types";
 import { INITIAL_STATE as INITIAL_TITLE } from "../title-editor/constants";
 import { setHidden } from "./hiding";
 import { purgeHidden } from "./hidden-items";
-import { EXAMPLE_COMPONENTS } from "./component-templates";
+import { BUILT_IN_COMPONENTS, EXAMPLE_COMPONENTS } from "./component-templates";
 import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
 import { EMPTY_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
@@ -39,7 +39,9 @@ import {
   uniqueSlug,
 } from "./rules";
 import { replaceMediaInSite } from "../media/media-usage";
-import { clearRule, saveVariable, setRuleProp, withoutScope } from "../styles/mutations";
+import { clearRule, saveRule, saveVariable, setRuleGovernance, setRuleProp, withoutScope } from "../styles/mutations";
+import { BRAND_BORDER_PRESETS } from "../auth/brand-manual";
+import type { StyleRule } from "../styles/types";
 import { insertAfterSelected } from "./insert-after-selected";
 import { dropBlocks } from "./reorder-block";
 import {
@@ -230,12 +232,24 @@ const HANDLERS: Handlers = {
   "media/remove": (state, action) =>
     updateCurrentPage(state, (page) => ({ ...page, media: page.media.filter((item) => item.id !== action.id) })),
 
+  "media/reorder": (state, action) =>
+    updateCurrentPage(state, (page) => {
+      const index = page.media.findIndex((item) => item.id === action.id);
+      if (index === -1) return page;
+      const targetIndex = action.direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= page.media.length) return page;
+      const next = [...page.media];
+      const [item] = next.splice(index, 1);
+      next.splice(targetIndex, 0, item);
+      return { ...page, media: next };
+    }),
+
   "block/add": (state, action) => {
     let components = state.components;
     if (!components.some((c) => c.id === action.componentId)) {
-      const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === action.componentId);
-      if (example) {
-        components = [...components, example];
+      const builtIn = BUILT_IN_COMPONENTS.find((ex) => ex.id === action.componentId) ?? EXAMPLE_COMPONENTS.find((ex) => ex.id === action.componentId);
+      if (builtIn) {
+        components = [...components, builtIn];
       } else {
         return state;
       }
@@ -274,8 +288,8 @@ const HANDLERS: Handlers = {
     const components = [...state.components];
     for (const compId of action.componentIds) {
       if (!components.some((c) => c.id === compId)) {
-        const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === compId);
-        if (example) components.push(example);
+        const builtIn = BUILT_IN_COMPONENTS.find((ex) => ex.id === compId) ?? EXAMPLE_COMPONENTS.find((ex) => ex.id === compId);
+        if (builtIn) components.push(builtIn);
       }
     }
 
@@ -541,6 +555,223 @@ const HANDLERS: Handlers = {
 
   "brand/require": (state, action) => ({ ...state, brandRequired: action.value }),
 
+  "brand/identity": (state, action) => {
+    const nextBrandLogo = action.brandLogo !== undefined ? action.brandLogo : state.brandLogo;
+    const nextBrandFavicon = action.brandFavicon !== undefined ? action.brandFavicon : state.brandFavicon;
+    const nextBrandEscudo = action.brandEscudo !== undefined ? action.brandEscudo : state.brandEscudo;
+
+    let nextComponents = state.components;
+    if (nextBrandLogo) {
+      nextComponents = state.components.map((c) => {
+        const isHeaderOrFooter =
+          c.category === "navigation" ||
+          c.id === "5a3aa5a6-ed26-464c-bdef-023f492cf471" ||
+          c.id === "992e86c1-192a-4cb9-ac8e-28982ba109f4" ||
+          c.id === "footer-oficial" ||
+          c.name.toLowerCase().includes("encabezado") ||
+          c.name.toLowerCase().includes("header") ||
+          c.name.toLowerCase().includes("footer") ||
+          c.name.toLowerCase().includes("pie de página");
+
+        if (!isHeaderOrFooter) return c;
+
+        const updatedElements = c.elements.map((el) => {
+          const isLogoEl =
+            el.id === "header-logo-oficial" ||
+            el.id === "footer-logo-oficial" ||
+            el.id === "d219d71d-1f5c-4ca2-abd0-f5bf9e872819" ||
+            el.id === "8110ad5b-0ef8-45f6-aecd-b03a53f44849" ||
+            el.id === "footer-oficial-e7" ||
+            (el.role === "image" && (el.alt?.toLowerCase().includes("logo") || el.alt?.toLowerCase().includes("escudo")));
+
+          if (isLogoEl) {
+            return {
+              ...el,
+              role: "image" as const,
+              kind: "image" as const,
+              src: nextBrandLogo.src,
+              alt: nextBrandLogo.alt || "Logo Oficial Cochabamba",
+              width: nextBrandLogo.width || el.width,
+              height: nextBrandLogo.height || el.height,
+              fit: nextBrandLogo.fit || "contain",
+            };
+          }
+          return el;
+        });
+
+        return { ...c, elements: updatedElements };
+      });
+    }
+
+    return {
+      ...state,
+      brandLogo: nextBrandLogo,
+      brandFavicon: nextBrandFavicon,
+      brandEscudo: nextBrandEscudo,
+      components: nextComponents,
+    };
+  },
+
+  "brand/harmonize-cards": (state, action) => {
+    const presetDef =
+      action.preset !== "custom"
+        ? BRAND_BORDER_PRESETS[action.preset]
+        : { widthPx: 1, style: "solid" as const, color: "#E2E8F0" };
+
+    const cardRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "cards",
+      props: {
+        fill: action.fill,
+        background: action.fill,
+        radius: String(action.radius),
+        borderWidth: String(presetDef.widthPx),
+        borderColor: presetDef.color,
+        borderStyle: presetDef.style,
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory
+        ? ["fill", "background", "radius", "borderWidth", "borderColor", "borderStyle"]
+        : undefined,
+    };
+
+    const containerRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "container",
+      props: {
+        fill: action.fill,
+        radius: String(action.radius),
+        borderWidth: String(presetDef.widthPx),
+        borderColor: presetDef.color,
+        borderStyle: presetDef.style,
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory
+        ? ["fill", "radius", "borderWidth", "borderColor", "borderStyle"]
+        : undefined,
+    };
+
+    const nextRules = saveRule(saveRule(state.rules, cardRule), containerRule);
+
+    const nextComponents = state.components.map((c) => {
+      let changed = false;
+      const elements = c.elements.map((el) => {
+        const isCardRect =
+          el.role === "container" ||
+          el.id.includes("card") ||
+          (el.kind === "rect" && el.width >= 160 && el.height >= 120 && el.role === "none");
+
+        if (isCardRect) {
+          changed = true;
+          return {
+            ...el,
+            role: "container" as const,
+            fill: action.fill,
+            radius: action.radius,
+            borderWidth: presetDef.widthPx,
+            borderColor: presetDef.color,
+            borderStyle: presetDef.style,
+          };
+        }
+        return el;
+      });
+      return changed ? { ...c, elements } : c;
+    });
+
+    const nextPages = state.pages.map((p) => {
+      const blocks = p.blocks.map((b) => {
+        if (!b.elements) return b;
+        const nextElements = { ...b.elements };
+        let blockChanged = false;
+        for (const [elId, override] of Object.entries(nextElements)) {
+          if (
+            elId.includes("card") ||
+            (override as any)?.fill?.includes("gradient") ||
+            (override as any)?.fill?.startsWith("#")
+          ) {
+            delete nextElements[elId];
+            blockChanged = true;
+          }
+        }
+        return blockChanged ? { ...b, elements: nextElements } : b;
+      });
+      return { ...p, blocks };
+    });
+
+    return {
+      ...state,
+      rules: nextRules,
+      components: nextComponents,
+      pages: nextPages,
+    };
+  },
+
+  "brand/harmonize-buttons": (state, action) => {
+    const buttonRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "buttons",
+      props: {
+        fill: action.fill,
+        color: action.color,
+        radius: String(action.radius),
+        borderWidth: String(action.borderWidth ?? 0),
+        borderColor: action.borderColor || "transparent",
+        borderStyle: (action.borderWidth ?? 0) > 0 ? "solid" : "none",
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory ? ["fill", "color", "radius"] : undefined,
+    };
+
+    const buttonElemRule: StyleRule = {
+      scope: { kind: "global" },
+      target: "button",
+      props: {
+        fill: action.fill,
+        color: action.color,
+        radius: String(action.radius),
+        borderWidth: String(action.borderWidth ?? 0),
+        borderColor: action.borderColor || "transparent",
+        borderStyle: (action.borderWidth ?? 0) > 0 ? "solid" : "none",
+      },
+      mandatory: action.mandatory,
+      lockedProps: action.mandatory ? ["fill", "color", "radius"] : undefined,
+    };
+
+    const nextRules = saveRule(saveRule(state.rules, buttonRule), buttonElemRule);
+
+    const nextComponents = state.components.map((c) => {
+      let changed = false;
+      const elements = c.elements.map((el) => {
+        const isButton =
+          el.role === "button" ||
+          el.id.includes("btn") ||
+          el.control?.kind === "button";
+
+        if (isButton && el.kind === "rect") {
+          changed = true;
+          return {
+            ...el,
+            role: "button" as const,
+            fill: action.fill,
+            color: action.color,
+            radius: action.radius,
+            borderWidth: action.borderWidth ?? 0,
+            borderColor: action.borderColor || "transparent",
+            borderStyle: ((action.borderWidth ?? 0) > 0 ? "solid" : "none") as "solid" | "none",
+          };
+        }
+        return el;
+      });
+      return changed ? { ...c, elements } : c;
+    });
+
+    return {
+      ...state,
+      rules: nextRules,
+      components: nextComponents,
+    };
+  },
+
   "variable/save": (state, action) => ({ ...state, variables: saveVariable(state.variables, action.variable) }),
 
   "variable/delete": (state, action) => ({ ...state, variables: state.variables.filter((v) => v.id !== action.id) }),
@@ -551,6 +782,14 @@ const HANDLERS: Handlers = {
   }),
 
   "rule/clear": (state, action) => ({ ...state, rules: clearRule(state.rules, action.scope, action.target) }),
+  "rule/governance": (state, action) => ({
+    ...state,
+    rules: setRuleGovernance(state.rules, action.scope, action.target, action.patch),
+  }),
+  "rule/save": (state, action) => ({
+    ...state,
+    rules: saveRule(state.rules, action.rule),
+  }),
   "block/slot": (state, action) =>
     updateBlock(state, action.pageId, action.blockId, (b) => ({ ...b, slot: action.slot })),
   "block/scope": (state, action) =>

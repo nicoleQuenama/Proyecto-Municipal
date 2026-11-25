@@ -25,16 +25,31 @@ export interface SharedAssets {
  * alto que su contenido (o que fue redimensionado) no volvería a encogerse y dejaría un hueco vacío debajo.
  */
 const SIZE_REPORTER = `
+(() => {
   const report = () => {
     const body = document.body;
-    const style = getComputedStyle(body);
-    const margins = (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
-    const height = Math.max(body.scrollHeight, body.getBoundingClientRect().height) + margins;
-    parent.postMessage({ type: "${SIZE_MESSAGE}", height }, "*");
+    if (!body) return;
+    let maxBottom = 0;
+    for (let i = 0; i < body.children.length; i++) {
+      const child = body.children[i];
+      if (child.tagName === "SCRIPT" || child.tagName === "STYLE") continue;
+      const b = child.offsetTop + child.offsetHeight;
+      if (b > maxBottom) maxBottom = b;
+    }
+    const style = window.getComputedStyle(body);
+    const pb = parseFloat(style.paddingBottom) || 0;
+    const mb = parseFloat(style.marginBottom) || 0;
+    const contentHeight = Math.ceil(Math.max(maxBottom + pb + mb, body.offsetHeight));
+    if (contentHeight > 0) {
+      parent.postMessage({ type: "${SIZE_MESSAGE}", height: contentHeight }, "*");
+    }
   };
-  new ResizeObserver(report).observe(document.body);
+  if (document.body) {
+    new ResizeObserver(report).observe(document.body);
+  }
   addEventListener("load", report);
   report();
+})();
 `;
 
 /** Todo lo que el codigo escribe en la consola (y sus errores) vuelve al editor. */
@@ -205,9 +220,9 @@ export function buildSrcDoc(code: CodeSource, libraries: Library[], origin: stri
 <script>${inside("script", CONSOLE_BRIDGE)}</script>
 <script>${API_BRIDGE}</script>
 ${code.tailwind ? `<script src="${origin}/api/vendor/tailwind"></script>` : ""}
-${libraries.length > 0 ? `<script type="importmap">${inside("script", importMap)}</script>` : ""}
+<script type="importmap">${inside("script", importMap)}</script>
 <style${code.tailwind ? ' type="text/tailwindcss"' : ""}>
-html, body { margin: 0; }
+html, body { margin: 0; height: auto !important; min-height: 0 !important; }
 ${variables}
 ${inside("style", shared.globalCss)}
 ${inside("style", code.css)}
