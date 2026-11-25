@@ -44,7 +44,13 @@ function elementHtml(element: CanvasElement, all: CanvasElement[], flow: boolean
 
   if (tag === "img") {
     const fit = `object-fit:${element.fit ?? "cover"}`;
-    return `${pad}<img src="${escapeHtml(element.src ?? "")}" alt="${escapeHtml(element.alt ?? "")}" style="${style};${fit}" />`;
+    const pos = element.objectPosition ? `;object-position:${element.objectPosition}` : "";
+    const transforms: string[] = [];
+    if (element.imageZoom && element.imageZoom !== 1) transforms.push(`scale(${element.imageZoom})`);
+    if (element.flipH) transforms.push("scaleX(-1)");
+    if (element.flipV) transforms.push("scaleY(-1)");
+    const tf = transforms.length ? `;transform:${transforms.join(" ")}` : "";
+    return `${pad}<img src="${escapeHtml(element.src ?? "")}" alt="${escapeHtml(element.alt ?? "")}" style="${style};${fit}${pos}${tf}" />`;
   }
 
   const children = flow ? all.filter((child) => child.parentId === element.id && !child.hidden) : [];

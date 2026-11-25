@@ -79,4 +79,29 @@ export const CODE_COMPONENT: ComponentDef = {
   custom: false,
 };
 
-export const BUILT_IN_COMPONENTS: ComponentDef[] = [...EXAMPLE_COMPONENTS, CODE_COMPONENT];
+/** Componente integrado para insertar una imagen como bloque de seccion en el flujo de la pagina. */
+export const IMAGE_BLOCK_COMPONENT_ID = "component-image-block";
+
+export const IMAGE_BLOCK_COMPONENT: ComponentDef = {
+  id: IMAGE_BLOCK_COMPONENT_ID,
+  name: "Bloque de Imagen",
+  description: "Imagen de seccion adaptable al flujo de la pagina",
+  category: "media",
+  width: 960,
+  height: 480,
+  elements: [
+    newElement("image", "image-content", {
+      x: 0,
+      y: 0,
+      width: 960,
+      height: 480,
+      src: "",
+      fit: "cover",
+      alt: "Imagen de seccion",
+    }),
+  ],
+  links: {},
+  custom: false,
+};
+
+export const BUILT_IN_COMPONENTS: ComponentDef[] = [...EXAMPLE_COMPONENTS, CODE_COMPONENT, IMAGE_BLOCK_COMPONENT];

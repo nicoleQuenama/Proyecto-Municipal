@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import type { CanvasElement } from "../site/types";
 import { MediaOptions } from "./media-options";
 import { isMediaKind, patchFromFile, patchFromUrl } from "./media-patch";
@@ -23,6 +23,7 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
   const fileInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [urlDropOver, setUrlDropOver] = useState(false);
   const kind = isMediaKind(element.kind) ? element.kind : "image";
   const isFrame = Boolean(element.frame || element.kind === "rect" || element.kind === "ellipse");
   const copy = isFrame
@@ -42,6 +43,53 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
     if (!result.ok) return;
     onChange(result.value);
     setDraft("");
+  };
+
+  const handleUrlDragOver = (e: DragEvent) => {
+    const types = Array.from(e.dataTransfer.types);
+    if (
+      types.includes("Files") ||
+      types.includes("application/x-cms-media") ||
+      types.includes("text/uri-list") ||
+      types.includes("text/plain")
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "copy";
+      setUrlDropOver(true);
+    }
+  };
+
+  const handleUrlDrop = async (e: DragEvent) => {
+    setUrlDropOver(false);
+    e.preventDefault();
+    e.stopPropagation();
+
+    const mediaUri =
+      e.dataTransfer.getData("application/x-cms-media") ||
+      e.dataTransfer.getData("text/uri-list") ||
+      e.dataTransfer.getData("text/plain");
+
+    if (
+      mediaUri &&
+      (mediaUri.startsWith("http://") ||
+        mediaUri.startsWith("https://") ||
+        mediaUri.startsWith("/") ||
+        mediaUri.startsWith("data:"))
+    ) {
+      const result = patchFromUrl(kind, mediaUri.trim());
+      setError(result.ok ? null : result.error);
+      if (result.ok) {
+        onChange(result.value);
+        setDraft("");
+      }
+      return;
+    }
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      await applyFile(file);
+    }
   };
 
   const drop = useFileDrop((file) => void applyFile(file));
@@ -91,16 +139,21 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
         }}
       />
 
-      <div className="flex gap-1">
+      <div
+        onDragOver={handleUrlDragOver}
+        onDragLeave={() => setUrlDropOver(false)}
+        onDrop={handleUrlDrop}
+        className={`flex gap-1 rounded transition-colors ${urlDropOver ? "ring-2 ring-accent bg-accent/10" : ""}`}
+      >
         <input
           type="url"
           aria-label={`Enlace de ${copy.title.toLowerCase()}`}
-          placeholder={copy.url}
+          placeholder={urlDropOver ? "Suelta la imagen o enlace aqui..." : copy.url}
           value={draft}
           aria-invalid={error !== null}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && applyUrl()}
-          className={inputClass}
+          className={`${inputClass} flex-1`}
         />
         <button type="button" className={`${actionButton} cursor-pointer`} onClick={applyUrl}>
           Usar

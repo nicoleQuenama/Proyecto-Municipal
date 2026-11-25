@@ -232,6 +232,18 @@ const HANDLERS: Handlers = {
   "media/remove": (state, action) =>
     updateCurrentPage(state, (page) => ({ ...page, media: page.media.filter((item) => item.id !== action.id) })),
 
+  "media/reorder": (state, action) =>
+    updateCurrentPage(state, (page) => {
+      const index = page.media.findIndex((item) => item.id === action.id);
+      if (index === -1) return page;
+      const targetIndex = action.direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= page.media.length) return page;
+      const next = [...page.media];
+      const [item] = next.splice(index, 1);
+      next.splice(targetIndex, 0, item);
+      return { ...page, media: next };
+    }),
+
   "block/add": (state, action) => {
     let components = state.components;
     if (!components.some((c) => c.id === action.componentId)) {

@@ -105,6 +105,14 @@ export interface CanvasElement {
   fit?: "cover" | "contain";
   /** Si es true, la figura actúa como marco estilo Canva para recibir imágenes */
   frame?: boolean;
+  /** Posición de recorte o punto focal estilo Canva (object-position, ej. "center", "top", "bottom", "left", "right"). */
+  objectPosition?: string;
+  /** Zoom interior dentro del cuadro/marco (1 = 100%, 1.5 = 150%, etc.). */
+  imageZoom?: number;
+  /** Volteo horizontal (efecto espejo). */
+  flipH?: boolean;
+  /** Volteo vertical. */
+  flipV?: boolean;
   /** Imagen de portada de un video de archivo. */
   poster?: string;
   /** Opciones de reproducción de un video de archivo. */
@@ -455,6 +463,7 @@ export type SiteAction =
   | { type: "title/reset" }
   | { type: "media/add"; item: MediaItem }
   | { type: "media/remove"; id: string }
+  | { type: "media/reorder"; id: string; direction: "up" | "down" }
   | { type: "media/poster"; pageId: string; mediaId: string; poster: string | null; local?: boolean }
   | { type: "page/apply-template"; pageId: string; componentIds: string[]; replace?: boolean }
   | { type: "block/add"; id: string; componentId: string; pageId?: string; scope?: "page" | "global"; slot?: "header" | "body" | "footer" }

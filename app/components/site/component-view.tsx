@@ -63,6 +63,20 @@ function ElementText({ element }: { element: CanvasElement }) {
  */
 type Renderer = (element: CanvasElement, text: CSSProperties, inherit: boolean) => ReactNode;
 
+function imageTransform(element: CanvasElement): string | undefined {
+  const parts: string[] = [];
+  if (element.imageZoom && element.imageZoom !== 1) {
+    parts.push(`scale(${element.imageZoom})`);
+  }
+  if (element.flipH) {
+    parts.push("scaleX(-1)");
+  }
+  if (element.flipV) {
+    parts.push("scaleY(-1)");
+  }
+  return parts.length > 0 ? parts.join(" ") : undefined;
+}
+
 /** Un rectángulo o una elipse: la forma con su texto centrado; solo cambia el radio de las esquinas. */
 const shape =
   (corner: (element: CanvasElement) => number | string): Renderer =>
@@ -93,7 +107,12 @@ const shape =
             alt={element.alt ?? ""}
             draggable={false}
             className="h-full w-full"
-            style={{ borderRadius: inherit ? "inherit" : corner(element), objectFit: element.fit ?? "cover" }}
+            style={{
+              borderRadius: inherit ? "inherit" : corner(element),
+              objectFit: element.fit ?? "cover",
+              objectPosition: element.objectPosition ?? "center center",
+              transform: imageTransform(element),
+            }}
           />
         </div>
       );
@@ -146,16 +165,23 @@ const RENDERERS: Record<ElementKind, Renderer> = {
     element.src ? (
       // <img> en lugar de next/image: las URLs vienen de dominios arbitrarios.
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={optimizedSrc(element.src)}
-        alt={element.alt ?? ""}
-        draggable={false}
-        loading={element.eager ? "eager" : "lazy"}
-        decoding="async"
-        fetchPriority={element.eager ? "high" : undefined}
-        className="h-full w-full"
-        style={{ borderRadius: inherit ? "inherit" : element.radius, objectFit: element.fit ?? "cover" }}
-      />
+      <div className="h-full w-full overflow-hidden" style={{ borderRadius: inherit ? "inherit" : element.radius }}>
+        <img
+          src={optimizedSrc(element.src)}
+          alt={element.alt ?? ""}
+          draggable={false}
+          loading={element.eager ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={element.eager ? "high" : undefined}
+          className="h-full w-full"
+          style={{
+            borderRadius: inherit ? "inherit" : element.radius,
+            objectFit: element.fit ?? "cover",
+            objectPosition: element.objectPosition ?? "center center",
+            transform: imageTransform(element),
+          }}
+        />
+      </div>
     ) : (
       <div
         className="flex h-full w-full min-h-[120px] min-w-full items-center justify-center border border-dashed border-slate-400 bg-slate-200 p-2 text-center text-xs text-slate-500"
