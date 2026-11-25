@@ -739,7 +739,10 @@ export function MediaTab() {
             <p className="text-[11px] text-ink-dim/70 mt-1">Usa el botón de subida para registrar nuevas fotos</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto pr-0.5">
+          <div
+            style={{ gridAutoRows: "max-content" }}
+            className="grid grid-cols-2 gap-3 auto-rows-max"
+          >
             {filtered.map((item) => {
               return (
                 <div
@@ -750,14 +753,15 @@ export function MediaTab() {
                     e.dataTransfer.setData("text/uri-list", item.src);
                     e.dataTransfer.effectAllowed = "copy";
                   }}
-                  className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-canvas transition-all hover:border-accent hover:shadow-md"
+                  style={{ minHeight: "180px" }}
+                  className="group relative flex flex-col rounded-xl border border-line bg-canvas transition-all hover:border-accent hover:shadow-md shrink-0 overflow-hidden"
                 >
                   {/* Vista previa miniatura sin capas parpadeantes */}
                   <div
                     onClick={() => handleApplyToSelection(item)}
                     title={site.selectedElementId ? "Haz clic para reemplazar en el elemento seleccionado" : "Haz clic para insertar como bloque componente"}
-                    style={{ aspectRatio: "16/10", minHeight: "95px" }}
-                    className="relative aspect-[16/10] w-full min-h-[95px] cursor-pointer overflow-hidden bg-slate-900"
+                    style={{ aspectRatio: "16/10", height: "100px", minHeight: "100px" }}
+                    className="relative w-full h-[100px] min-h-[100px] cursor-pointer overflow-hidden bg-slate-900 shrink-0"
                   >
                     {item.kind === "image" ? (
                       <>
@@ -816,7 +820,7 @@ export function MediaTab() {
                   </div>
 
                   {/* Nombre, etiqueta y botones de acción permanentemente visibles (sin parpadeos) */}
-                  <div className="p-2 flex flex-col gap-1.5 border-t border-line/40 bg-canvas">
+                  <div className="p-2 flex flex-col gap-1.5 border-t border-line/40 bg-canvas flex-1 justify-between">
                     <div className="flex items-center justify-between gap-1">
                       <p className="truncate text-[11px] font-medium text-ink" title={item.name}>
                         {item.name}
