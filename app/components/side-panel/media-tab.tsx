@@ -11,6 +11,7 @@ import {
   type MediaUsageLocation,
 } from "../media/media-usage";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
+import { IMAGE_BLOCK_COMPONENT, IMAGE_BLOCK_COMPONENT_ID } from "../site/component-templates";
 import type { ProjectMediaAsset } from "../site/types";
 import { UnitPicker } from "../units/unit-picker";
 import { useUnitNames } from "../units/use-unit-names";
@@ -276,40 +277,87 @@ export function MediaTab() {
     showFeedback(`Agregado a la biblioteca`);
   };
 
-  // Aplicar imagen/video al elemento actualmente seleccionado en el lienzo
+  // Aplicar imagen/video al elemento actualmente seleccionado en el lienzo o agregarlo como componente
   const handleApplyToSelection = (asset: ProjectMediaAsset) => {
     if (!canEdit) return;
 
-    // 1. Si hay un elemento seleccionado en el editor:
-    if (site.selectedId && site.selectedElementId) {
+    // 1. Si hay un bloque seleccionado en el editor:
+    if (site.selectedId) {
       const activeBlock = page.blocks.find((b) => b.id === site.selectedId);
       if (activeBlock) {
-        if (asset.kind === "image") {
-          dispatch({
-            type: "block/style",
-            pageId: page.id,
-            blockId: activeBlock.id,
-            elementIds: [site.selectedElementId],
-            patch: { src: asset.src, alt: asset.name },
-          });
-          showFeedback("Imagen aplicada al elemento seleccionado");
-          return;
-        }
-        if (asset.kind === "video") {
-          dispatch({
-            type: "block/style",
-            pageId: page.id,
-            blockId: activeBlock.id,
-            elementIds: [site.selectedElementId],
-            patch: { src: asset.src },
-          });
-          showFeedback("Video aplicado al elemento seleccionado");
-          return;
+        if (site.selectedElementId) {
+          if (asset.kind === "image") {
+            dispatch({
+              type: "block/style",
+              pageId: page.id,
+              blockId: activeBlock.id,
+              elementIds: [site.selectedElementId],
+              patch: { src: asset.src, alt: asset.name },
+            });
+            showFeedback("Imagen aplicada al elemento seleccionado");
+            return;
+          }
+          if (asset.kind === "video") {
+            dispatch({
+              type: "block/style",
+              pageId: page.id,
+              blockId: activeBlock.id,
+              elementIds: [site.selectedElementId],
+              patch: { src: asset.src },
+            });
+            showFeedback("Video aplicado al elemento seleccionado");
+            return;
+          }
+        } else {
+          // Si el bloque seleccionado tiene un elemento de imagen (o es bloque de imagen), aplicamos al elemento
+          const comp = site.components.find((c) => c.id === activeBlock.componentId);
+          const imgEl = comp?.elements.find((e) => e.kind === "image" || e.src);
+          if (imgEl && asset.kind === "image") {
+            dispatch({
+              type: "block/style",
+              pageId: page.id,
+              blockId: activeBlock.id,
+              elementIds: [imgEl.id],
+              patch: { src: asset.src, alt: asset.name },
+            });
+            showFeedback("Imagen aplicada al bloque seleccionado");
+            return;
+          }
         }
       }
     }
 
-    // 2. Si no hay elemento seleccionado, agregar como medio suelto de página
+    // 2. Si no hay elemento seleccionado, agregar como componente a la pagina seleccionada
+    if (asset.kind === "image") {
+      const blockId = crypto.randomUUID();
+      if (!site.components.some((c) => c.id === IMAGE_BLOCK_COMPONENT_ID)) {
+        dispatch({
+          type: "component/save",
+          component: IMAGE_BLOCK_COMPONENT,
+        });
+      }
+      dispatch({
+        type: "block/add",
+        id: blockId,
+        componentId: IMAGE_BLOCK_COMPONENT_ID,
+        pageId: page.id,
+      });
+      dispatch({
+        type: "block/style",
+        pageId: page.id,
+        blockId,
+        elementIds: ["image-content"],
+        patch: { src: asset.src, alt: asset.name },
+      });
+      dispatch({
+        type: "block/select",
+        id: blockId,
+      });
+      showFeedback("Imagen insertada como componente en la pagina seleccionada");
+      return;
+    }
+
+    // 3. Si es video o medio suelto, agregar como medio de pagina
     dispatch({
       type: "media/add",
       item: {
@@ -322,7 +370,7 @@ export function MediaTab() {
         alt: asset.name,
       },
     });
-    showFeedback("Agregado al lienzo de la página actual");
+    showFeedback("Agregado al lienzo de la pagina actual");
   };
 
   // Usar como fondo de página

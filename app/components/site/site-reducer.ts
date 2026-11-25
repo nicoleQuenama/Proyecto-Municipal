@@ -25,7 +25,7 @@ import type { LinkTarget } from "../navigation/types";
 import { INITIAL_STATE as INITIAL_TITLE } from "../title-editor/constants";
 import { setHidden } from "./hiding";
 import { purgeHidden } from "./hidden-items";
-import { EXAMPLE_COMPONENTS } from "./component-templates";
+import { BUILT_IN_COMPONENTS, EXAMPLE_COMPONENTS } from "./component-templates";
 import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
 import { EMPTY_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
@@ -247,9 +247,9 @@ const HANDLERS: Handlers = {
   "block/add": (state, action) => {
     let components = state.components;
     if (!components.some((c) => c.id === action.componentId)) {
-      const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === action.componentId);
-      if (example) {
-        components = [...components, example];
+      const builtIn = BUILT_IN_COMPONENTS.find((ex) => ex.id === action.componentId) ?? EXAMPLE_COMPONENTS.find((ex) => ex.id === action.componentId);
+      if (builtIn) {
+        components = [...components, builtIn];
       } else {
         return state;
       }
@@ -288,8 +288,8 @@ const HANDLERS: Handlers = {
     const components = [...state.components];
     for (const compId of action.componentIds) {
       if (!components.some((c) => c.id === compId)) {
-        const example = EXAMPLE_COMPONENTS.find((ex) => ex.id === compId);
-        if (example) components.push(example);
+        const builtIn = BUILT_IN_COMPONENTS.find((ex) => ex.id === compId) ?? EXAMPLE_COMPONENTS.find((ex) => ex.id === compId);
+        if (builtIn) components.push(builtIn);
       }
     }
 

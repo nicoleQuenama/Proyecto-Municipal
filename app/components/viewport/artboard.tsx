@@ -82,7 +82,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
     if (!surface) return;
 
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
+      if (e.ctrlKey || e.metaKey || e.altKey) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -93,7 +93,7 @@ export function CanvasSurface({ children }: { children: ReactNode }) {
         if (nextZoom === currentZoom) {
           nextZoom = currentZoom + (normalizedDelta < 0 ? 1 : -1);
         }
-        nextZoom = Math.min(300, Math.max(10, nextZoom));
+        nextZoom = Math.min(300, Math.max(5, nextZoom));
 
         if (nextZoom !== currentZoom) {
           const rect = surface.getBoundingClientRect();

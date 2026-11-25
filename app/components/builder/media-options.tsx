@@ -61,13 +61,31 @@ export function MediaOptions({ element, kind, onChange }: { element: CanvasEleme
 
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between text-[11px] text-ink-dim">
-              <span>Zoom interior</span>
-              <span className="font-mono text-ink-bright">{Math.round(currentZoom * 100)}%</span>
+              <span>Zoom interior (recorte)</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onChange({ imageZoom: Math.max(0.25, parseFloat((currentZoom - 0.1).toFixed(2))) })}
+                  title="Alejar imagen (zoom out)"
+                  className="h-5 w-5 rounded border border-line bg-canvas flex items-center justify-center text-xs font-bold hover:bg-hover text-ink cursor-pointer"
+                >
+                  −
+                </button>
+                <span className="font-mono text-ink-bright min-w-[3rem] text-center">{Math.round(currentZoom * 100)}%</span>
+                <button
+                  type="button"
+                  onClick={() => onChange({ imageZoom: Math.min(3, parseFloat((currentZoom + 0.1).toFixed(2))) })}
+                  title="Acercar imagen (zoom in)"
+                  className="h-5 w-5 rounded border border-line bg-canvas flex items-center justify-center text-xs font-bold hover:bg-hover text-ink cursor-pointer"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <input
               type="range"
-              min={1}
-              max={2.5}
+              min={0.25}
+              max={3}
               step={0.05}
               value={currentZoom}
               onChange={(e) => onChange({ imageZoom: parseFloat(e.target.value) })}

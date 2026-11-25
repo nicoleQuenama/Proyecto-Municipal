@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { siteReducer } from "./site-reducer";
 import { applyOverrides } from "./overrides";
+import { INITIAL_SITE } from "./initial-site";
 import type { ComponentDef, SiteState } from "./types";
 
 describe("independencia de medios y estilos entre bloques que reusan el mismo componente", () => {
@@ -54,24 +55,18 @@ describe("independencia de medios y estilos entre bloques que reusan el mismo co
   };
 
   const initialState: SiteState = {
-    navigation: { defaultTransition: "fade" },
-    variables: [],
-    rules: [],
+    ...INITIAL_SITE,
     currentPageId: "inicio",
-    selectedId: null,
+    selectedId: "block-novedades-inicio",
     selectedElementId: null,
-    libraries: [],
-    globalCss: "",
-    functions: [],
-    sources: [],
     components: [novedadesDef],
     pages: [
       {
+        ...INITIAL_SITE.pages[0],
         id: "inicio",
         name: "Inicio",
         slug: "inicio",
         isHome: true,
-        title: { text: "Inicio" },
         media: [],
         blocks: [
           {
@@ -81,11 +76,11 @@ describe("independencia de medios y estilos entre bloques que reusan el mismo co
         ],
       },
       {
+        ...INITIAL_SITE.pages[0],
         id: "prensa",
         name: "Prensa",
         slug: "prensa",
         isHome: false,
-        title: { text: "Prensa" },
         media: [],
         blocks: [
           {

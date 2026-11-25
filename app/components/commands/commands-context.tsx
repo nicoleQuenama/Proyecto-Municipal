@@ -135,6 +135,25 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.repeat) return;
 
+      // Atajos universales de zoom (Ctrl/Cmd +, -, 0) funcionan de forma nativa e intuitiva
+      if (!isTypingTarget(e.target) && !isInsideDialog(e.target) && (e.ctrlKey || e.metaKey)) {
+        if (e.key === "-" || e.key === "Subtract" || e.key === "_") {
+          e.preventDefault();
+          stepZoom(-1);
+          return;
+        }
+        if (e.key === "+" || e.key === "=" || e.key === "Add") {
+          e.preventDefault();
+          stepZoom(1);
+          return;
+        }
+        if (e.key === "0") {
+          e.preventDefault();
+          setZoom(100);
+          return;
+        }
+      }
+
       const combo = eventToCombo(e);
       if (!combo) return;
 
@@ -153,7 +172,7 @@ export function CommandsProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [commands, dialog]);
+  }, [commands, dialog, stepZoom, setZoom]);
 
   const value = useMemo<CommandsContextValue>(() => {
     const byId = (id: string) => commands.find((c) => c.id === id);
