@@ -177,6 +177,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
     const blockOverride = block.elements?.[element.id];
     return blockOverride ? resolveOverride(element, blockOverride, () => undefined) : element;
   }, [element, block.elements]);
+  const activeElement = effectiveElement ?? element;
   const currentSlot = getBlockSlot(block, def);
   const currentScope = block.scope ?? (pages.find((p) => p.id === pageId)?.isHome ? "global" : "page");
 
@@ -753,17 +754,27 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           </div>
           <textarea
             id="inspector-element-text"
-            rows={element.text && element.text.length > 50 ? 3 : 2}
-            value={element.text ?? ""}
+            rows={activeElement?.text && activeElement.text.length > 50 ? 3 : 2}
+            value={activeElement?.text ?? ""}
             onChange={(e) =>
-              dispatch({
-                type: "component/text",
-                componentId: def.id,
-                pageId,
-                blockId: block.id,
-                elementId: element.id,
-                text: e.target.value,
-              })
+              dispatch(
+                level === "block"
+                  ? {
+                      type: "block/style",
+                      pageId,
+                      blockId: block.id,
+                      elementIds: [element.id],
+                      patch: { text: e.target.value },
+                    }
+                  : {
+                      type: "component/text",
+                      componentId: def.id,
+                      pageId,
+                      blockId: block.id,
+                      elementId: element.id,
+                      text: e.target.value,
+                    }
+              )
             }
             placeholder="Escribe el texto aquí..."
             className="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-xs text-ink focus:border-accent focus:outline-hidden resize-y transition-colors font-medium"
@@ -771,19 +782,20 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
         </div>
       )}
       {canEditContent &&
-        element &&
-        (element.kind === "image" ||
-          element.kind === "video" ||
-          element.role === "image" ||
-          element.kind === "rect" ||
-          element.kind === "ellipse" ||
-          element.frame ||
-          Boolean(element.src)) && (
+        activeElement &&
+        (activeElement.kind === "image" ||
+          activeElement.kind === "video" ||
+          activeElement.role === "image" ||
+          activeElement.kind === "rect" ||
+          activeElement.kind === "ellipse" ||
+          activeElement.frame ||
+          Boolean(activeElement.src)) && (
           <InspectorMediaControls
-            element={element}
+            element={activeElement}
             componentId={def.id}
             pageId={pageId}
             blockId={block.id}
+            level={level}
           />
         )}
       {(def.id.includes("search") || element?.control?.name?.includes("search") || Boolean(element?.text?.toLowerCase().includes("buscar"))) && (
@@ -815,7 +827,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
       {element?.kind === "text" && canEditContent && <FluidControls componentId={def.id} pageId={pageId} blockId={block.id} element={element} />}
       {(element?.kind === "image" || element?.kind === "video") && canEditContent && <MediaPerformanceControls componentId={def.id} pageId={pageId} blockId={block.id} element={element} />}
       {element && canEditContent && <ControlControls componentId={def.id} element={element} />}
-      {element && <AltControl pageId={pageId} block={block} element={element} />}
+      {element && <AltControl pageId={pageId} block={block} element={effectiveElement ?? element} />}
       {element ? <BindingControls pageId={pageId} block={block} element={element} /> : <RepeatControls pageId={pageId} block={block} />}
       {element && <LinkParamsControls pageId={pageId} block={block} element={element} />}
       {!element && <SectionBackground pageId={pageId} block={block} />}

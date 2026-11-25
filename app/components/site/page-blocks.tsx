@@ -361,14 +361,24 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onBind: (elementId, ref) => dispatch({ type: "binding/set", pageId: page.id, blockId: block.id, elementId, ref }),
     onUpdateElement: editing && !isBlockLocked
       ? (elementId, patch) => {
-          dispatch({
-            type: "component/element",
-            componentId: def.id,
-            pageId: page.id,
-            blockId: block.id,
-            elementId,
-            patch,
-          });
+          dispatch(
+            scope === "component"
+              ? {
+                  type: "component/element",
+                  componentId: def.id,
+                  pageId: page.id,
+                  blockId: block.id,
+                  elementId,
+                  patch,
+                }
+              : {
+                  type: "block/style",
+                  pageId: page.id,
+                  blockId: block.id,
+                  elementIds: [elementId],
+                  patch,
+                }
+          );
         }
       : undefined,
     onSelect: (elementId, add) => {

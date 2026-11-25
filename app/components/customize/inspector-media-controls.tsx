@@ -13,6 +13,7 @@ interface InspectorMediaControlsProps {
   componentId: string;
   pageId: string;
   blockId: string;
+  level?: "block" | "component";
 }
 
 export function InspectorMediaControls({
@@ -20,6 +21,7 @@ export function InspectorMediaControls({
   componentId,
   pageId,
   blockId,
+  level = "block",
 }: InspectorMediaControlsProps) {
   const dispatch = useSiteDispatch();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -28,14 +30,24 @@ export function InspectorMediaControls({
   const [dragOver, setDragOver] = useState(false);
 
   const patchElement = (patch: Partial<CanvasElement>) => {
-    dispatch({
-      type: "component/element",
-      componentId,
-      pageId,
-      blockId,
-      elementId: element.id,
-      patch,
-    });
+    if (level === "component") {
+      dispatch({
+        type: "component/element",
+        componentId,
+        pageId,
+        blockId,
+        elementId: element.id,
+        patch,
+      });
+    } else {
+      dispatch({
+        type: "block/style",
+        pageId,
+        blockId,
+        elementIds: [element.id],
+        patch,
+      });
+    }
   };
 
   const isShape = element.kind === "rect" || element.kind === "ellipse";
