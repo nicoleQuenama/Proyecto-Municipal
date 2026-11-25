@@ -6,6 +6,7 @@ import { MediaOptions } from "./media-options";
 import { isMediaKind, patchFromFile, patchFromUrl } from "./media-patch";
 import { actionButton, inputClass } from "./panel-fields";
 import { useFileDrop } from "./use-file-drop";
+import { MediaPickerModal } from "../media/media-picker-modal";
 
 /** Textos de la sección por tipo: título, qué se sube y ejemplo de enlace. */
 const COPY = {
@@ -24,6 +25,8 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [urlDropOver, setUrlDropOver] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [showManualUrl, setShowManualUrl] = useState(false);
   const kind = isMediaKind(element.kind) ? element.kind : "image";
   const isFrame = Boolean(element.frame || element.kind === "rect" || element.kind === "ellipse");
   const copy = isFrame
@@ -122,10 +125,23 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
         ) : (
           <span>{kind === "video" && element.src ? "Video enlazado (sin portada)" : copy.empty}</span>
         )}
-        <button type="button" className={`${actionButton} w-full cursor-pointer font-medium`} onClick={() => fileInput.current?.click()}>
-          {copy.upload}
-        </button>
-        <span className="text-[10px]">o arrastra un archivo desde tu equipo o panel</span>
+        <div className="flex w-full flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="w-full rounded-md bg-accent px-2.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent/90 active:scale-95 transition-all cursor-pointer"
+          >
+            Elegir de la biblioteca municipal
+          </button>
+          <button
+            type="button"
+            className={`${actionButton} w-full cursor-pointer font-medium text-[11px]`}
+            onClick={() => fileInput.current?.click()}
+          >
+            {copy.upload}
+          </button>
+        </div>
+        <span className="text-[10px]">o arrastra un archivo sobre este cuadro</span>
       </div>
 
       <input
@@ -139,32 +155,66 @@ export function MediaSourceSection({ element, onChange }: MediaSourceSectionProp
         }}
       />
 
-      <div
-        onDragOver={handleUrlDragOver}
-        onDragLeave={() => setUrlDropOver(false)}
-        onDrop={handleUrlDrop}
-        className={`flex gap-1 rounded transition-colors ${urlDropOver ? "ring-2 ring-accent bg-accent/10" : ""}`}
-      >
-        <input
-          type="url"
-          aria-label={`Enlace de ${copy.title.toLowerCase()}`}
-          placeholder={urlDropOver ? "Suelta la imagen o enlace aqui..." : copy.url}
-          value={draft}
-          aria-invalid={error !== null}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && applyUrl()}
-          className={`${inputClass} flex-1`}
-        />
-        <button type="button" className={`${actionButton} cursor-pointer`} onClick={applyUrl}>
-          Usar
-        </button>
+      {/* Opción secundaria para URLs externas */}
+      <div className="flex flex-col gap-1 text-[11px]">
+        {!showManualUrl ? (
+          <button
+            type="button"
+            onClick={() => setShowManualUrl(true)}
+            className="text-left text-[10px] text-ink-dim hover:text-accent underline cursor-pointer"
+          >
+            Ingresar enlace URL externo (avanzado)
+          </button>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[10px] text-ink-dim">
+              <span>URL directa</span>
+              <button
+                type="button"
+                onClick={() => setShowManualUrl(false)}
+                className="hover:text-ink cursor-pointer"
+              >
+                Ocultar
+              </button>
+            </div>
+            <div
+              onDragOver={handleUrlDragOver}
+              onDragLeave={() => setUrlDropOver(false)}
+              onDrop={handleUrlDrop}
+              className={`flex gap-1 rounded transition-colors ${urlDropOver ? "ring-2 ring-accent bg-accent/10" : ""}`}
+            >
+              <input
+                type="url"
+                aria-label={`Enlace de ${copy.title.toLowerCase()}`}
+                placeholder={urlDropOver ? "Suelta la imagen o enlace aqui..." : copy.url}
+                value={draft}
+                aria-invalid={error !== null}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyUrl()}
+                className={`${inputClass} flex-1 text-xs`}
+              />
+              <button type="button" className={`${actionButton} cursor-pointer text-xs`} onClick={applyUrl}>
+                Usar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
       {element.src && !element.src.startsWith("data:") && (
-        <span className="truncate text-[11px] text-ink-dim" title={element.src}>{element.src}</span>
+        <span className="truncate text-[10px] text-ink-dim" title={element.src}>{element.src}</span>
       )}
       {error && <span role="alert" className="text-[11px] text-red-400">{error}</span>}
 
       <MediaOptions element={element} kind={kind} onChange={onChange} />
+
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(asset) => onChange({ src: asset.src, alt: asset.name })}
+        currentSrc={element.src}
+        title="Biblioteca de Medios Municipales"
+      />
     </section>
   );
 }

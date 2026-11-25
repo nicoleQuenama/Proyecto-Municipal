@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { optimizedSrc } from "../media/optimize-src";
 import { isBackdrop } from "../canvas-editing/backdrop";
 import { EditingLayer } from "../canvas-editing/editing-layer";
@@ -279,6 +279,8 @@ export interface ElementInteraction {
   addCardLabel?: string;
   /** Al editar: reordena elementos hijos mediante drag-and-drop dentro del contenedor en flujo. */
   onReorderElement?: (sourceId: string, targetId: string, position: "before" | "after") => void;
+  /** Al editar: actualiza propiedades de un elemento específico (ej: src al soltar una imagen). */
+  onUpdateElement?: (elementId: string, patch: Partial<CanvasElement>) => void;
   /** Algo que se dibuja encima de la sección (el botón de un menú, el título de un acordeón). */
   overlay?: ReactNode;
 }
@@ -305,6 +307,7 @@ function PositionedElement({
   // Indicador de "soltar antes/después" al reordenar en flujo. Va aquí arriba porque este componente
   // tiene returns tempranos (oculto, probar, editar) y los hooks no pueden quedar detrás de ellos.
   const [dropIndicator, setDropIndicator] = useState<"before" | "after" | null>(null);
+  const [mediaOver, setMediaOver] = useState(false);
   const currentPage = useCurrentPage();
   const activeLink = isCurrentPageLink(interaction?.links[element.id], currentPage?.id);
 
@@ -449,6 +452,16 @@ function PositionedElement({
     );
     const canReorder = isFlow && isTopChild && !isBackdropEl && Boolean(interaction.onReorderElement);
 
+    const carriesMediaDrag = (e: DragEvent) => {
+      if (!e.dataTransfer) return false;
+      const types = Array.from(e.dataTransfer.types);
+      return (
+        types.includes("application/x-cms-media") ||
+        types.includes("text/uri-list") ||
+        types.includes("Files")
+      );
+    };
+
     return (
       <div
         data-target={target}
@@ -459,28 +472,102 @@ function PositionedElement({
           e.dataTransfer.setData("application/x-flow-element-id", element.id);
           e.dataTransfer.effectAllowed = "move";
         } : undefined}
-        onDragOver={canReorder ? (e) => {
-          if (!e.dataTransfer.types.includes("application/x-flow-element-id")) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-          const rect = e.currentTarget.getBoundingClientRect();
-          const sectionClass = interaction.classes[SECTION_KEY] || "";
-          const isCol = sectionClass.includes("flex-col");
-          const ratio = isCol ? (e.clientY - rect.top) / rect.height : (e.clientX - rect.left) / rect.width;
-          setDropIndicator(ratio < 0.5 ? "before" : "after");
-        } : undefined}
-        onDragLeave={canReorder ? () => setDropIndicator(null) : undefined}
-        onDrop={canReorder ? (e) => {
-          const sourceId = e.dataTransfer.getData("application/x-flow-element-id");
-          if (sourceId && sourceId !== element.id) {
+        {...drop.handlers}
+        onDragOver={(e) => {
+          if (carriesMediaDrag(e)) {
             e.preventDefault();
             e.stopPropagation();
-            interaction.onReorderElement?.(sourceId, element.id, dropIndicator ?? "after");
+            e.dataTransfer.dropEffect = "copy";
+            if (!mediaOver) setMediaOver(true);
+            return;
           }
+          if (canReorder && e.dataTransfer.types.includes("application/x-flow-element-id")) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "move";
+            const rect = e.currentTarget.getBoundingClientRect();
+            const sectionClass = interaction.classes[SECTION_KEY] || "";
+            const isCol = sectionClass.includes("flex-col");
+            const ratio = isCol ? (e.clientY - rect.top) / rect.height : (e.clientX - rect.left) / rect.width;
+            setDropIndicator(ratio < 0.5 ? "before" : "after");
+            return;
+          }
+          drop.handlers.onDragOver?.(e);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setMediaOver(false);
+            setDropIndicator(null);
+          }
+          drop.handlers.onDragLeave?.();
+        }}
+        onDrop={async (e) => {
+          setMediaOver(false);
           setDropIndicator(null);
-        } : undefined}
+
+          if (carriesMediaDrag(e)) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const mediaUri =
+              e.dataTransfer.getData("application/x-cms-media") ||
+              e.dataTransfer.getData("text/uri-list") ||
+              e.dataTransfer.getData("text/plain");
+
+            if (
+              mediaUri &&
+              (mediaUri.startsWith("http://") ||
+                mediaUri.startsWith("https://") ||
+                mediaUri.startsWith("/") ||
+                mediaUri.startsWith("data:"))
+            ) {
+              interaction.onUpdateElement?.(element.id, {
+                src: mediaUri.trim(),
+                ...(element.kind === "rect" || element.kind === "ellipse" ? { role: "image" } : {}),
+              });
+              interaction.onSelect(element.id, false);
+              return;
+            }
+
+            const file = e.dataTransfer.files?.[0];
+            if (file) {
+              try {
+                const { uploadMedia } = await import("../media/upload-media");
+                const uploadedUrl = await uploadMedia(file);
+                interaction.onUpdateElement?.(element.id, {
+                  src: uploadedUrl,
+                  ...(element.kind === "rect" || element.kind === "ellipse" ? { role: "image" } : {}),
+                });
+                interaction.onSelect(element.id, false);
+              } catch {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const dataUrl = String(reader.result);
+                  interaction.onUpdateElement?.(element.id, {
+                    src: dataUrl,
+                    ...(element.kind === "rect" || element.kind === "ellipse" ? { role: "image" } : {}),
+                  });
+                  interaction.onSelect(element.id, false);
+                };
+                reader.readAsDataURL(file);
+              }
+              return;
+            }
+          }
+
+          if (canReorder) {
+            const sourceId = e.dataTransfer.getData("application/x-flow-element-id");
+            if (sourceId && sourceId !== element.id) {
+              e.preventDefault();
+              e.stopPropagation();
+              interaction.onReorderElement?.(sourceId, element.id, dropIndicator ?? "after");
+              return;
+            }
+          }
+
+          drop.handlers.onDrop?.(e);
+        }}
         {...(isBackdropEl ? { "data-backdrop": "" } : {})}
-        {...drop.handlers}
         style={{
           ...boundStyle,
           ...(element.fill && element.fill !== "transparent" ? { background: element.fill } : {}),
@@ -553,6 +640,16 @@ function PositionedElement({
           />
         )}
         {drop.over && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-emerald-500 bg-emerald-500/10" />}
+        {mediaOver && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -inset-1 z-40 flex items-center justify-center rounded-lg border-2 border-dashed border-accent bg-accent/25 text-center shadow-md backdrop-blur-xs animate-pulse"
+          >
+            <span className="rounded bg-accent px-2 py-0.5 text-[10px] font-bold text-white shadow">
+              Soltar imagen en este recuadro
+            </span>
+          </span>
+        )}
         {alsoSelected && <span aria-hidden className="pointer-events-none absolute -inset-1 rounded border-2 border-dashed border-sky-500" />}
         {dropIndicator && (
           <span

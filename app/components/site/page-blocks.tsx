@@ -359,6 +359,18 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     repeat: block.repeat,
     onDropData: dropData,
     onBind: (elementId, ref) => dispatch({ type: "binding/set", pageId: page.id, blockId: block.id, elementId, ref }),
+    onUpdateElement: editing && !isBlockLocked
+      ? (elementId, patch) => {
+          dispatch({
+            type: "component/element",
+            componentId: def.id,
+            pageId: page.id,
+            blockId: block.id,
+            elementId,
+            patch,
+          });
+        }
+      : undefined,
     onSelect: (elementId, add) => {
       if (!interactive) return;
       // Con otra sección ya seleccionada, Ctrl+clic en esta suma la sección entera (no solo uno de sus elementos).

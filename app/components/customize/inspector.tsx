@@ -61,6 +61,7 @@ import { MediaPerformanceControls } from "../media/media-performance-controls";
 import { FluidControls } from "../responsive/fluid-controls";
 import { AltControl } from "./alt-control";
 import { LayerControls } from "./layer-controls";
+import { InspectorMediaControls } from "./inspector-media-controls";
 import {
   BRAND_BUTTON_PRESETS,
   BRAND_SURFACE_COLORS,
@@ -769,30 +770,22 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
           />
         </div>
       )}
-      {canEditContent && element && (element.kind === "image" || element.role === "image") && (
-        <div className="flex flex-col gap-1.5 rounded-lg border border-accent/40 bg-accent/5 p-2.5 shadow-xs">
-          <label htmlFor="inspector-image-src" className="text-xs font-semibold text-ink">
-            Ruta o URL de la imagen
-          </label>
-          <input
-            id="inspector-image-src"
-            type="text"
-            value={element.src ?? ""}
-            onChange={(e) =>
-              dispatch({
-                type: "component/element",
-                componentId: def.id,
-                pageId,
-                blockId: block.id,
-                elementId: element.id,
-                patch: { src: e.target.value },
-              })
-            }
-            placeholder="/ruta-o-url-de-imagen.svg"
-            className="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-xs text-ink focus:border-accent focus:outline-hidden transition-colors font-mono"
+      {canEditContent &&
+        element &&
+        (element.kind === "image" ||
+          element.kind === "video" ||
+          element.role === "image" ||
+          element.kind === "rect" ||
+          element.kind === "ellipse" ||
+          element.frame ||
+          Boolean(element.src)) && (
+          <InspectorMediaControls
+            element={element}
+            componentId={def.id}
+            pageId={pageId}
+            blockId={block.id}
           />
-        </div>
-      )}
+        )}
       {(def.id.includes("search") || element?.control?.name?.includes("search") || Boolean(element?.text?.toLowerCase().includes("buscar"))) && (
         <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-3 shadow-xs">
           <div className="flex items-center justify-between">
