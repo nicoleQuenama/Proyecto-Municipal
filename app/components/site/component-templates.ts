@@ -104,4 +104,34 @@ export const IMAGE_BLOCK_COMPONENT: ComponentDef = {
   custom: false,
 };
 
-export const BUILT_IN_COMPONENTS: ComponentDef[] = [...EXAMPLE_COMPONENTS, CODE_COMPONENT, IMAGE_BLOCK_COMPONENT];
+/** Componente integrado para insertar una imagen como banner horizontal completo. */
+export const BANNER_COMPONENT_ID = "component-banner-block";
+
+export const BANNER_COMPONENT: ComponentDef = {
+  id: BANNER_COMPONENT_ID,
+  name: "Banner de Imagen",
+  description: "Banner horizontal a todo el ancho para portadas o anuncios",
+  category: "sections",
+  width: 1024,
+  height: 380,
+  elements: [
+    newElement("image", "banner-image", {
+      x: 0,
+      y: 0,
+      width: 1024,
+      height: 380,
+      src: "",
+      fit: "cover",
+      alt: "Banner de imagen",
+    }),
+  ],
+  links: {},
+  custom: false,
+};
+
+export const BUILT_IN_COMPONENTS: ComponentDef[] = [
+  ...EXAMPLE_COMPONENTS,
+  CODE_COMPONENT,
+  IMAGE_BLOCK_COMPONENT,
+  BANNER_COMPONENT,
+];

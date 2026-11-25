@@ -5,7 +5,7 @@ import { hasPermission, useAuth } from "../auth/auth-context";
 import { useCommands } from "../commands/commands-context";
 import { duplicateComponent } from "../site/rules";
 import { CODE_COMPONENT_ID } from "../site/code-defaults";
-import { EXAMPLE_COMPONENTS } from "../site/component-templates";
+import { BANNER_COMPONENT_ID, BUILT_IN_COMPONENTS, EXAMPLE_COMPONENTS } from "../site/component-templates";
 import { useSite, useSiteDispatch } from "../site/site-context";
 import type { ComponentDef } from "../site/types";
 import { categoryLabel, usedCategories } from "../site/categories";
@@ -18,7 +18,12 @@ export function ComponentsTab() {
   const site = useSite();
   const { pages, currentPageId, selectedId } = site;
   // Ni las figuras dibujadas ni el bloque de código (lo pone el editor) son componentes hechos: no se listan.
-  const components = site.components.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID && c.templateFor !== "page");
+  // Se integran los componentes esenciales disponibles de fábrica (Bloque de Imagen, Banner).
+  const allComponents = [
+    ...site.components,
+    ...BUILT_IN_COMPONENTS.filter((b) => !site.components.some((c) => c.id === b.id)),
+  ];
+  const components = allComponents.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID && c.templateFor !== "page");
   const dispatch = useSiteDispatch();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");
@@ -60,7 +65,11 @@ export function ComponentsTab() {
         return;
       }
     }
-    dispatch({ type: "block/add", id: crypto.randomUUID(), componentId: def.id });
+    const blockId = crypto.randomUUID();
+    dispatch({ type: "block/add", id: blockId, componentId: def.id });
+    if (def.id === BANNER_COMPONENT_ID) {
+      dispatch({ type: "block/box", pageId: page?.id ?? currentPageId, blockId, patch: { span: "width" } });
+    }
   };
 
   // Solo las categorías que tienen componentes; si la elegida se vació, vuelve a «Todos».

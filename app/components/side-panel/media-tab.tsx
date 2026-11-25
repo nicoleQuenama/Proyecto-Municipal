@@ -11,7 +11,12 @@ import {
   type MediaUsageLocation,
 } from "../media/media-usage";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
-import { IMAGE_BLOCK_COMPONENT, IMAGE_BLOCK_COMPONENT_ID } from "../site/component-templates";
+import {
+  BANNER_COMPONENT,
+  BANNER_COMPONENT_ID,
+  IMAGE_BLOCK_COMPONENT,
+  IMAGE_BLOCK_COMPONENT_ID,
+} from "../site/component-templates";
 import type { ProjectMediaAsset } from "../site/types";
 import { UnitPicker } from "../units/unit-picker";
 import { useUnitNames } from "../units/use-unit-names";
@@ -277,87 +282,114 @@ export function MediaTab() {
     showFeedback(`Agregado a la biblioteca`);
   };
 
-  // Aplicar imagen/video al elemento actualmente seleccionado en el lienzo o agregarlo como componente
-  const handleApplyToSelection = (asset: ProjectMediaAsset) => {
+  // 1. Insertar imagen como bloque componente normal
+  const handleInsertAsImageBlock = (asset: ProjectMediaAsset) => {
     if (!canEdit) return;
-
-    // 1. Si hay un bloque seleccionado en el editor:
-    if (site.selectedId) {
-      const activeBlock = page.blocks.find((b) => b.id === site.selectedId);
-      if (activeBlock) {
-        if (site.selectedElementId) {
-          if (asset.kind === "image") {
-            dispatch({
-              type: "block/style",
-              pageId: page.id,
-              blockId: activeBlock.id,
-              elementIds: [site.selectedElementId],
-              patch: { src: asset.src, alt: asset.name },
-            });
-            showFeedback("Imagen aplicada al elemento seleccionado");
-            return;
-          }
-          if (asset.kind === "video") {
-            dispatch({
-              type: "block/style",
-              pageId: page.id,
-              blockId: activeBlock.id,
-              elementIds: [site.selectedElementId],
-              patch: { src: asset.src },
-            });
-            showFeedback("Video aplicado al elemento seleccionado");
-            return;
-          }
-        } else {
-          // Si el bloque seleccionado tiene un elemento de imagen (o es bloque de imagen), aplicamos al elemento
-          const comp = site.components.find((c) => c.id === activeBlock.componentId);
-          const imgEl = comp?.elements.find((e) => e.kind === "image" || e.src);
-          if (imgEl && asset.kind === "image") {
-            dispatch({
-              type: "block/style",
-              pageId: page.id,
-              blockId: activeBlock.id,
-              elementIds: [imgEl.id],
-              patch: { src: asset.src, alt: asset.name },
-            });
-            showFeedback("Imagen aplicada al bloque seleccionado");
-            return;
-          }
-        }
-      }
-    }
-
-    // 2. Si no hay elemento seleccionado, agregar como componente a la pagina seleccionada
-    if (asset.kind === "image") {
-      const blockId = crypto.randomUUID();
-      if (!site.components.some((c) => c.id === IMAGE_BLOCK_COMPONENT_ID)) {
-        dispatch({
-          type: "component/save",
-          component: IMAGE_BLOCK_COMPONENT,
-        });
-      }
+    const blockId = crypto.randomUUID();
+    if (!site.components.some((c) => c.id === IMAGE_BLOCK_COMPONENT_ID)) {
       dispatch({
-        type: "block/add",
-        id: blockId,
-        componentId: IMAGE_BLOCK_COMPONENT_ID,
-        pageId: page.id,
+        type: "component/save",
+        component: IMAGE_BLOCK_COMPONENT,
       });
+    }
+    dispatch({
+      type: "block/add",
+      id: blockId,
+      componentId: IMAGE_BLOCK_COMPONENT_ID,
+      pageId: page.id,
+    });
+    dispatch({
+      type: "block/style",
+      pageId: page.id,
+      blockId,
+      elementIds: ["image-content"],
+      patch: { src: asset.src, alt: asset.name },
+    });
+    dispatch({
+      type: "block/select",
+      id: blockId,
+    });
+    showFeedback("Imagen insertada como componente en la página actual");
+  };
+
+  // 2. Insertar imagen como banner a todo el ancho (full width)
+  const handleInsertAsBanner = (asset: ProjectMediaAsset) => {
+    if (!canEdit) return;
+    const blockId = crypto.randomUUID();
+    if (!site.components.some((c) => c.id === BANNER_COMPONENT_ID)) {
+      dispatch({
+        type: "component/save",
+        component: BANNER_COMPONENT,
+      });
+    }
+    dispatch({
+      type: "block/add",
+      id: blockId,
+      componentId: BANNER_COMPONENT_ID,
+      pageId: page.id,
+    });
+    dispatch({
+      type: "block/style",
+      pageId: page.id,
+      blockId,
+      elementIds: ["banner-image"],
+      patch: { src: asset.src, alt: asset.name },
+    });
+    dispatch({
+      type: "block/box",
+      pageId: page.id,
+      blockId,
+      patch: { span: "width" },
+    });
+    dispatch({
+      type: "block/select",
+      id: blockId,
+    });
+    showFeedback("Banner a todo el ancho insertado en la página actual");
+  };
+
+  // 3. Reemplazar imagen en el elemento seleccionado
+  const handleReplaceSelectedElement = (asset: ProjectMediaAsset) => {
+    if (!canEdit || !site.selectedId || !site.selectedElementId) return;
+    const activeBlock = page.blocks.find((b) => b.id === site.selectedId);
+    if (!activeBlock) return;
+
+    if (asset.kind === "image") {
       dispatch({
         type: "block/style",
         pageId: page.id,
-        blockId,
-        elementIds: ["image-content"],
+        blockId: activeBlock.id,
+        elementIds: [site.selectedElementId],
         patch: { src: asset.src, alt: asset.name },
       });
+      showFeedback("Imagen aplicada al elemento seleccionado");
+    } else {
       dispatch({
-        type: "block/select",
-        id: blockId,
+        type: "block/style",
+        pageId: page.id,
+        blockId: activeBlock.id,
+        elementIds: [site.selectedElementId],
+        patch: { src: asset.src },
       });
-      showFeedback("Imagen insertada como componente en la pagina seleccionada");
+      showFeedback("Video aplicado al elemento seleccionado");
+    }
+  };
+
+  // 4. Clic general: si hay elemento puntual seleccionado lo reemplaza, si no, lo inserta como componente
+  const handleApplyToSelection = (asset: ProjectMediaAsset) => {
+    if (!canEdit) return;
+
+    if (site.selectedId && site.selectedElementId) {
+      handleReplaceSelectedElement(asset);
       return;
     }
 
-    // 3. Si es video o medio suelto, agregar como medio de pagina
+    if (asset.kind === "image") {
+      handleInsertAsImageBlock(asset);
+      return;
+    }
+
+    // Si es video u otro medio suelto:
     dispatch({
       type: "media/add",
       item: {
@@ -370,8 +402,10 @@ export function MediaTab() {
         alt: asset.name,
       },
     });
-    showFeedback("Agregado al lienzo de la pagina actual");
+    showFeedback("Video agregado al lienzo de la página actual");
   };
+
+
 
   // Usar como fondo de página
   const handleSetAsPageBackground = (asset: ProjectMediaAsset) => {
@@ -745,20 +779,49 @@ export function MediaTab() {
                       {item.kind === "image" ? "IMG" : "VID"}
                     </span>
 
-                    {/* Acciones en hover */}
+                    {/* Acciones en hover rápido */}
                     <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                       <div className="flex items-center justify-between gap-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApplyToSelection(item);
-                          }}
-                          title={site.selectedElementId ? "Aplicar a elemento seleccionado" : "Insertar en lienzo"}
-                          className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
-                        >
-                          {site.selectedElementId ? "Reemplazar" : "Insertar"}
-                        </button>
+                        {site.selectedId && site.selectedElementId ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReplaceSelectedElement(item);
+                            }}
+                            title="Reemplazar imagen en el elemento seleccionado"
+                            className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
+                          >
+                            Reemplazar
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleInsertAsImageBlock(item);
+                              }}
+                              title="Insertar como bloque componente"
+                              className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
+                            >
+                              + Bloque
+                            </button>
+                            {item.kind === "image" && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleInsertAsBanner(item);
+                                }}
+                                title="Insertar como banner a todo el ancho"
+                                className="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-indigo-500 cursor-pointer"
+                              >
+                                + Banner
+                              </button>
+                            )}
+                          </>
+                        )}
 
                         {item.kind === "image" && (
                           <button
@@ -791,16 +854,64 @@ export function MediaTab() {
                     </div>
                   </div>
 
-                  {/* Nombre y etiqueta del archivo */}
-                  <div className="p-1.5 flex flex-col gap-0.5">
-                    <p className="truncate text-[11px] font-medium text-ink" title={item.name}>
-                      {item.name}
-                    </p>
-                    {item.tag && (
-                      <span className="truncate text-[10px] font-semibold text-accent" title={`#${item.tag}`}>
-                        #{item.tag}
-                      </span>
-                    )}
+                  {/* Nombre, etiqueta del archivo y botones visibles de insercion */}
+                  <div className="p-2 flex flex-col gap-1.5 border-t border-line/40 bg-canvas">
+                    <div className="flex flex-col">
+                      <p className="truncate text-[11px] font-medium text-ink" title={item.name}>
+                        {item.name}
+                      </p>
+                      {item.tag && (
+                        <span className="truncate text-[10px] font-semibold text-accent" title={`#${item.tag}`}>
+                          #{item.tag}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Botones visibles permanentemente */}
+                    <div className="flex items-center gap-1 pt-0.5">
+                      {site.selectedId && site.selectedElementId ? (
+                        <button
+                          type="button"
+                          onClick={() => handleReplaceSelectedElement(item)}
+                          className="w-full rounded bg-accent py-1 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer text-center"
+                          title="Reemplazar imagen en el elemento seleccionado"
+                        >
+                          Reemplazar en selección
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleInsertAsImageBlock(item)}
+                            className="flex-1 rounded border border-accent/40 bg-accent/10 px-1.5 py-1 text-[10px] font-semibold text-accent hover:bg-accent hover:text-white transition-colors cursor-pointer text-center"
+                            title="Insertar como bloque componente en la página"
+                          >
+                            + Bloque
+                          </button>
+                          {item.kind === "image" && (
+                            <button
+                              type="button"
+                              onClick={() => handleInsertAsBanner(item)}
+                              className="flex-1 rounded border border-indigo-500/40 bg-indigo-500/10 px-1.5 py-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer text-center"
+                              title="Insertar como banner a todo el ancho"
+                            >
+                              + Banner
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {item.kind === "image" && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetAsPageBackground(item)}
+                          className="rounded border border-line bg-canvas px-1.5 py-1 text-[10px] text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
+                          title="Usar como fondo de página"
+                        >
+                          Fondo
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

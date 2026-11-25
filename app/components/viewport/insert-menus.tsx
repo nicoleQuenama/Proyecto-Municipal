@@ -20,6 +20,9 @@ import { MenuButton, type MenuItem } from "./menu-button";
 import { pill } from "./toolbar-parts";
 import { useViewport, type Tool } from "./viewport-context";
 
+import { useSite, useSiteDispatch } from "../site/site-context";
+import { BANNER_COMPONENT_ID, IMAGE_BLOCK_COMPONENT_ID } from "../site/component-templates";
+
 const SHAPES: { value: Tool; label: string; icon: ReactNode }[] = [
   { value: "rectangle", label: "Rectángulo", icon: <RectangleIcon /> },
   { value: "ellipse", label: "Elipse", icon: <EllipseIcon /> },
@@ -29,9 +32,11 @@ const SHAPES: { value: Tool; label: string; icon: ReactNode }[] = [
 
 const SHAPE_TOOLS = SHAPES.map((shape) => shape.value);
 
-/** El valor de cada opción es el id del comando que ejecuta. */
+/** El valor de cada opción es el id del comando o componente que ejecuta. */
 const MEDIA_ITEMS: MenuItem<string>[] = [
-  { value: "media.upload", label: "Subir desde el equipo", icon: <UploadIcon /> },
+  { value: "component.image-block", label: "Insertar Bloque de Imagen", icon: <ImageIcon /> },
+  { value: "component.banner-block", label: "Insertar Banner (ancho completo)", icon: <ImageIcon /> },
+  { value: "media.upload", label: "Subir desde el equipo", icon: <UploadIcon />, dividerBefore: true },
   { value: "media.image-url", label: "Imagen desde URL", icon: <LinkIcon /> },
   { value: "media.video-url", label: "Video desde URL", icon: <VideoIcon />, dividerBefore: true },
 ];
@@ -40,6 +45,23 @@ const MEDIA_ITEMS: MenuItem<string>[] = [
 export function InsertMenus() {
   const { tool, setTool } = useViewport();
   const { runCommand, shortcutOf } = useCommands();
+  const { currentPageId } = useSite();
+  const dispatch = useSiteDispatch();
+
+  const handleSelectMedia = (value: string) => {
+    if (value === "component.image-block") {
+      const blockId = crypto.randomUUID();
+      dispatch({ type: "block/add", id: blockId, componentId: IMAGE_BLOCK_COMPONENT_ID, pageId: currentPageId });
+      return;
+    }
+    if (value === "component.banner-block") {
+      const blockId = crypto.randomUUID();
+      dispatch({ type: "block/add", id: blockId, componentId: BANNER_COMPONENT_ID, pageId: currentPageId });
+      dispatch({ type: "block/box", pageId: currentPageId, blockId, patch: { span: "width" } });
+      return;
+    }
+    runCommand(value);
+  };
 
   const hintOf = (commandId: string) => {
     const shortcut = shortcutOf(commandId);
@@ -65,7 +87,7 @@ export function InsertMenus() {
       <MenuButton
         label="Imágenes y videos"
         items={mediaItems}
-        onSelect={runCommand}
+        onSelect={handleSelectMedia}
         footer="También puedes arrastrar imágenes o enlaces al lienzo. Los videos, solo por URL."
         className={`${pill} bg-accent/20 text-accent hover:bg-accent/30`}
       >
