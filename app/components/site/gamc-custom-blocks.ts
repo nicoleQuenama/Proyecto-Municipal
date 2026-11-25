@@ -1122,13 +1122,13 @@ export const ORGANIGRAMA_MUNICIPAL_HTML = `<section class="org-gamc" aria-labell
     </div>
     <h2 id="org-titulo" class="org-gamc__titulo">Organigrama Institucional</h2>
     <p class="org-gamc__intro">
-      Estructura jerárquica y operativa del GAMC. Explora el mapa interactivo de dependencias, desde el Despacho del Alcalde hasta las Secretarías, Direcciones y Departamentos técnicos.
+      Estructura jerárquica y operativa del GAMC. Explora el mapa interactivo de dependencias, desde el Despacho del Alcalde hasta las Secretarías, Direcciones, Departamentos y Empresas Descentralizadas.
     </p>
 
     <div class="org-gamc__barra-control">
       <div class="org-gamc__buscador-wrap">
         <span class="org-gamc__lupa-simbolo" aria-hidden="true">&#9906;</span>
-        <input id="org-buscar" type="search" placeholder="Buscar secretaría, dirección o unidad..." aria-label="Buscar en el organigrama" autocomplete="off">
+        <input id="org-buscar" type="search" placeholder="Buscar secretaría, dirección, unidad o trámite..." aria-label="Buscar en el organigrama" autocomplete="off">
         <button type="button" id="org-limpiar" class="org-gamc__limpiar-btn" aria-label="Borrar búsqueda" hidden="">&times;</button>
       </div>
 
@@ -1141,6 +1141,15 @@ export const ORGANIGRAMA_MUNICIPAL_HTML = `<section class="org-gamc" aria-labell
         </button>
       </div>
     </div>
+
+    <div class="org-gamc__filtros" role="group" aria-label="Filtrar por nivel">
+      <button type="button" class="org-gamc__filtro-chip is-activo" data-filtro="todos">Todos los niveles</button>
+      <button type="button" class="org-gamc__filtro-chip" data-filtro="secretaria">Secretarías</button>
+      <button type="button" class="org-gamc__filtro-chip" data-filtro="direccion">Direcciones</button>
+      <button type="button" class="org-gamc__filtro-chip" data-filtro="departamento">Departamentos</button>
+      <button type="button" class="org-gamc__filtro-chip" data-filtro="descentralizada">Empresas Descentralizadas</button>
+    </div>
+
     <p id="org-estado" class="org-gamc__estado" aria-live="polite"></p>
   </header>
 
@@ -1152,6 +1161,9 @@ export const ORGANIGRAMA_MUNICIPAL_HTML = `<section class="org-gamc" aria-labell
       <span class="org-gamc__separador-herramientas"></span>
       <button type="button" data-accion="expandir" class="org-gamc__btn-texto">Expandir todo</button>
       <button type="button" data-accion="contraer" class="org-gamc__btn-texto">Contraer todo</button>
+      <span class="org-gamc__separador-herramientas"></span>
+      <button type="button" data-accion="exportar-svg" class="org-gamc__btn-texto" title="Exportar diagrama en formato vectorial">Descargar SVG</button>
+      <button type="button" data-accion="pantalla-completa" class="org-gamc__btn-texto" title="Alternar pantalla completa">Pantalla completa</button>
     </div>
 
     <div id="org-lienzo" class="org-gamc__lienzo"></div>
@@ -1164,13 +1176,36 @@ export const ORGANIGRAMA_MUNICIPAL_HTML = `<section class="org-gamc" aria-labell
 
   <aside id="org-detalle" class="org-gamc__detalle" aria-live="polite" hidden="">
     <div class="org-gamc__detalle-cabecera">
-      <span id="org-tipo-badge" class="org-gamc__badge-nivel"></span>
-      <p id="org-ruta" class="org-gamc__ruta"></p>
+      <div class="org-gamc__detalle-badges">
+        <span id="org-tipo-badge" class="org-gamc__badge-nivel"></span>
+        <span id="org-sigla-badge" class="org-gamc__badge-sigla" hidden=""></span>
+      </div>
+      <button type="button" id="org-detalle-cerrar" class="org-gamc__detalle-cerrar-btn" aria-label="Cerrar ficha de detalle">&times;</button>
     </div>
+    <p id="org-ruta" class="org-gamc__ruta"></p>
     <div class="org-gamc__detalle-cuerpo">
       <div class="org-gamc__detalle-info">
         <h3 id="org-nombre" class="org-gamc__nombre-unidad"></h3>
         <p id="org-cuenta" class="org-gamc__cuenta-dependientes"></p>
+
+        <div class="org-gamc__ficha-grid">
+          <div class="org-gamc__ficha-item">
+            <span class="org-gamc__ficha-label">Ubicación / Piso</span>
+            <strong id="org-ficha-piso" class="org-gamc__ficha-valor">-</strong>
+          </div>
+          <div class="org-gamc__ficha-item">
+            <span class="org-gamc__ficha-label">Horario de Atención</span>
+            <strong id="org-ficha-horario" class="org-gamc__ficha-valor">-</strong>
+          </div>
+          <div class="org-gamc__ficha-item">
+            <span class="org-gamc__ficha-label">Contacto / Interno</span>
+            <strong id="org-ficha-contacto" class="org-gamc__ficha-valor">-</strong>
+          </div>
+          <div class="org-gamc__ficha-item org-gamc__ficha-item--full">
+            <span class="org-gamc__ficha-label">Trámites y Servicios</span>
+            <p id="org-ficha-tramites" class="org-gamc__ficha-desc">-</p>
+          </div>
+        </div>
       </div>
       <div class="org-gamc__detalle-acciones">
         <button type="button" data-detalle="superior" class="org-gamc__accion-btn">Ir a nivel superior</button>
@@ -1193,6 +1228,7 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   --gamc-superficie: #f8fafc;
   --gamc-acento-morado: #462d81;
   --gamc-acento-teal: #0da593;
+  --gamc-acento-naranja: #ea580c;
   font-family: inherit;
   color: var(--gamc-marino);
   padding: 16px 8px 32px;
@@ -1243,7 +1279,7 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   font-size: 15px;
   line-height: 1.5;
   color: var(--gamc-texto-suave);
-  max-width: 720px;
+  max-width: 760px;
 }
 
 .org-gamc__barra-control {
@@ -1252,6 +1288,7 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 12px;
 }
 
 .org-gamc__buscador-wrap {
@@ -1334,6 +1371,39 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
+.org-gamc__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.org-gamc__filtro-chip {
+  padding: 6px 14px;
+  background: #ffffff;
+  border: 1px solid var(--gamc-borde-suave);
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gamc-texto);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.org-gamc__filtro-chip:hover {
+  border-color: var(--gamc-primario);
+  color: var(--gamc-primario);
+  background: var(--gamc-primario-suave);
+}
+
+.org-gamc__filtro-chip.is-activo {
+  background: var(--gamc-marino);
+  border-color: var(--gamc-marino);
+  color: #ffffff;
+  font-weight: 700;
+}
+
 .org-gamc__estado {
   min-height: 20px;
   margin: 6px 0 0;
@@ -1354,7 +1424,7 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
 }
 
 .org-gamc__lienzo {
-  height: 600px;
+  height: 620px;
   cursor: grab;
 }
 
@@ -1419,7 +1489,7 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  max-width: 70%;
+  max-width: 75%;
   margin: 0;
   padding: 8px 14px;
   list-style: none;
@@ -1525,6 +1595,13 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   flex: 1;
 }
 
+.org-nodo__cab-fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .org-nodo__nombre {
   font-size: 13px;
   font-weight: 800;
@@ -1534,6 +1611,17 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex: 1;
+}
+
+.org-nodo__sigla {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gamc-primario-hover);
+  background: var(--gamc-primario-suave);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 .org-nodo__subtitulo {
@@ -1543,36 +1631,70 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   margin-top: 4px;
 }
 
+.org-nodo__piso-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
+/* Boton de expandir / contraer en d3-org-chart */
+.node-button-foreign-object {
+  overflow: visible !important;
+}
+
+.node-button-div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: all !important;
+}
+
 .org-nodo__alternar-btn {
-  position: absolute;
-  bottom: -11px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 10px;
+  justify-content: center;
+  gap: 5px;
   background: #ffffff;
   border: 1.5px solid var(--gamc-primario);
   border-radius: 9999px;
-  font-size: 10px;
-  font-weight: 800;
+  padding: 3px 12px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--gamc-primario);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 167, 214, 0.2);
-  transition: all 0.15s ease;
-  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 167, 214, 0.2);
+  transition: all 0.18s ease;
   white-space: nowrap;
+  pointer-events: all;
+  user-select: none;
 }
 
 .org-nodo__alternar-btn:hover {
   background: var(--gamc-primario);
   color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 167, 214, 0.35);
+  transform: translateY(-1px);
+}
+
+.org-nodo__alternar-btn.is-abierto {
+  background: #f8fafc;
+  border-color: var(--gamc-borde);
+  color: var(--gamc-texto-suave);
+}
+
+.org-nodo__alternar-btn.is-abierto:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
 }
 
 .org-nodo__alternar-simbolo {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1;
 }
@@ -1605,6 +1727,10 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   cursor: pointer;
 }
 
+.org-gamc__arbol-grupo-cabecera:hover {
+  background: var(--gamc-primario-suave);
+}
+
 .org-gamc__arbol-grupo-titulo {
   font-size: 14px;
   font-weight: 800;
@@ -1612,7 +1738,7 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
 }
 
 .org-gamc__arbol-hijos-lista {
-  padding: 10px 18px 14px 34px;
+  padding: 10px 18px 14px 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1623,11 +1749,12 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: #ffffff;
   border: 1px solid var(--gamc-borde-suave);
   border-radius: 8px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .org-gamc__arbol-item:hover {
@@ -1635,20 +1762,27 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   background: var(--gamc-primario-suave);
 }
 
+/* Ficha de detalle institucional */
 .org-gamc__detalle {
   margin-top: 16px;
-  padding: 20px 24px;
+  padding: 24px;
   background: #ffffff;
   border: 1.5px solid var(--gamc-borde-suave);
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
 .org-gamc__detalle-cabecera {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.org-gamc__detalle-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .org-gamc__badge-nivel {
@@ -1660,45 +1794,109 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   letter-spacing: 0.04em;
 }
 
+.org-gamc__badge-sigla {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--gamc-primario-suave);
+  color: var(--gamc-primario-hover);
+  border: 1px solid rgba(0, 167, 214, 0.3);
+}
+
+.org-gamc__detalle-cerrar-btn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--gamc-texto-suave);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.org-gamc__detalle-cerrar-btn:hover {
+  color: var(--gamc-marino);
+}
+
 .org-gamc__ruta {
-  margin: 0;
+  margin: 0 0 16px;
   font-size: 12px;
   color: var(--gamc-texto-suave);
+  line-height: 1.4;
 }
 
 .org-gamc__detalle-cuerpo {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 16px;
 }
 
 .org-gamc__nombre-unidad {
   margin: 0 0 4px;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--gamc-marino);
 }
 
 .org-gamc__cuenta-dependientes {
-  margin: 0;
+  margin: 0 0 16px;
   font-size: 13px;
   color: var(--gamc-texto-suave);
+}
+
+.org-gamc__ficha-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: var(--gamc-superficie);
+  border: 1px solid var(--gamc-borde-suave);
+  border-radius: 12px;
+}
+
+.org-gamc__ficha-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.org-gamc__ficha-item--full {
+  grid-column: 1 / -1;
+}
+
+.org-gamc__ficha-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gamc-texto-suave);
+}
+
+.org-gamc__ficha-valor {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gamc-marino);
+}
+
+.org-gamc__ficha-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--gamc-texto);
 }
 
 .org-gamc__detalle-acciones {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .org-gamc__accion-btn {
-  padding: 8px 14px;
+  padding: 9px 16px;
   background: #ffffff;
   border: 1.5px solid var(--gamc-borde-suave);
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--gamc-marino);
   cursor: pointer;
@@ -1731,27 +1929,29 @@ export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
   .org-gamc__btn-texto {
     display: none;
   }
-  .org-gamc__detalle-cuerpo {
-    flex-direction: column;
-    align-items: flex-start;
+  .org-gamc__ficha-grid {
+    grid-template-columns: 1fr;
   }
 }`;
 
 export const ORGANIGRAMA_MUNICIPAL_TS = `import { OrgChart } from "d3-org-chart";
 
-type Tipo = "despacho" | "secretaria" | "direccion" | "departamento" | "division";
+type Tipo = "despacho" | "secretaria" | "direccion" | "departamento" | "division" | "descentralizada";
 
 interface Unidad {
   nombre: string;
   tipo: Tipo;
+  sigla?: string;
+  piso?: string;
+  horario?: string;
+  contacto?: string;
+  tramites?: string;
   hijos?: Unidad[];
 }
 
-interface Nodo {
+interface Nodo extends Unidad {
   id: string;
   parentId: string | null;
-  nombre: string;
-  tipo: Tipo;
   hijos: number;
   total: number;
   ruta: string[];
@@ -1762,148 +1962,155 @@ interface Nodo {
 export const ORGANIGRAMA: Unidad = {
   nombre: "Alcalde Municipal",
   tipo: "despacho",
+  sigla: "MAE",
+  piso: "Piso 12 · Despacho",
+  horario: "08:00 - 16:00 (Continuo)",
+  contacto: "Línea Central: 151 / 4258030",
+  tramites: "Máxima Autoridad Ejecutiva del GAMC. Dirección general de la gestión municipal, promulgación de decretos y audiencias públicas.",
   hijos: [
+    {
+      nombre: "Asesoría General del Despacho",
+      tipo: "direccion",
+      sigla: "AGD",
+      piso: "Piso 12",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 1201",
+      tramites: "Asesoramiento técnico, político y estratégico al Alcalde Municipal.",
+    },
     {
       nombre: "Dirección de Gabinete y Protocolo",
       tipo: "direccion",
+      sigla: "DGP",
+      piso: "Piso 12",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 1202",
+      tramites: "Coordinación de agenda del Alcalde, relaciones institucionales y actos protocolares.",
       hijos: [
-        { nombre: "Departamento de Protocolo", tipo: "departamento" },
-        { nombre: "Dirección de Transparencia y Lucha contra la Corrupción", tipo: "direccion" },
-      ],
-    },
-    { nombre: "Dirección de Auditoría Interna", tipo: "direccion" },
-    {
-      nombre: "Secretaría de Desarrollo de Infraestructura Territorial",
-      tipo: "secretaria",
-      hijos: [
-        { nombre: "Departamento de Gestión de Riesgos", tipo: "departamento" },
-        { nombre: "Departamento de Administración de Proyectos", tipo: "departamento" },
-        {
-          nombre: "Dirección de Obras Públicas",
-          tipo: "direccion",
-          hijos: [
-            {
-              nombre: "Departamento de Infraestructura y Mejoramiento de Barrios",
-              tipo: "departamento",
-              hijos: [
-                { nombre: "División de Construcción", tipo: "division" },
-                { nombre: "División de Mantenimiento", tipo: "division" },
-              ],
-            },
-            {
-              nombre: "Departamento de Obras Viales",
-              tipo: "departamento",
-              hijos: [
-                { nombre: "División de Asfaltos", tipo: "division" },
-                { nombre: "División de Señalización y Red Vial", tipo: "division" },
-              ],
-            },
-          ],
-        },
-        {
-          nombre: "Dirección de Movilidad Urbana",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Semaforización", tipo: "departamento" },
-            { nombre: "Departamento de Tráfico y Vialidad", tipo: "departamento" },
-          ],
-        },
+        { nombre: "Departamento de Protocolo y Eventos Cívicos", tipo: "departamento", piso: "Piso 12", contacto: "Interno: 1205", tramites: "Organización de ceremonias oficiales y actos cívicos municipales." },
+        { nombre: "Departamento de Comunicación e Imagen Corporativa", tipo: "departamento", piso: "Piso 12", contacto: "Interno: 1208", tramites: "Prensa, difusión oficial, redes sociales y campañas informativas municipales." },
       ],
     },
     {
-      nombre: "Secretaría de Salud",
-      tipo: "secretaria",
-      hijos: [
-        {
-          nombre: "Dirección de Hospitales de Segundo Nivel",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Hospital del Norte", tipo: "departamento" },
-            { nombre: "Hospital del Sur", tipo: "departamento" },
-          ],
-        },
-        {
-          nombre: "Dirección de Centros de Salud de Primer Nivel",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Red de Centros de Salud Distrito 1 a 7", tipo: "departamento" },
-            { nombre: "Red de Centros de Salud Distrito 8 a 14", tipo: "departamento" },
-          ],
-        },
-        {
-          nombre: "Dirección de Promoción y Prevención de Salud",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Programas de Salud", tipo: "departamento" },
-            { nombre: "Departamento de Epidemiología", tipo: "departamento" },
-          ],
-        },
-      ],
+      nombre: "Dirección de Transparencia y Lucha contra la Corrupción",
+      tipo: "direccion",
+      sigla: "DTLCC",
+      piso: "Piso 11",
+      horario: "08:00 - 16:00",
+      contacto: "Línea Anticorrupción: 4255320",
+      tramites: "Recepción y procesamiento de denuncias por hechos de corrupción, control de ética pública y acceso a información.",
     },
     {
-      nombre: "Secretaría de Desarrollo Humano, Género y Generacional",
-      tipo: "secretaria",
-      hijos: [
-        {
-          nombre: "Dirección de Género y Asuntos Generacionales",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Niñez y Adolescencia (Defensorías)", tipo: "departamento" },
-            { nombre: "Departamento del Adulto Mayor", tipo: "departamento" },
-            { nombre: "Departamento de Personas con Discapacidad (UMADIS)", tipo: "departamento" },
-          ],
-        },
-        {
-          nombre: "Dirección de Educación y Deporte",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Apoyo a Unidades Educativas", tipo: "departamento" },
-            { nombre: "Departamento de Fomento al Deporte", tipo: "departamento" },
-          ],
-        },
-      ],
+      nombre: "Dirección de Auditoría Interna",
+      tipo: "direccion",
+      sigla: "DAI",
+      piso: "Piso 11",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 1104",
+      tramites: "Auditorías financieras, operacionales y de cumplimiento de normas de control gubernamental.",
     },
     {
-      nombre: "Secretaría de Medio Ambiente y Protección de la Madre Tierra",
-      tipo: "secretaria",
+      nombre: "Dirección de Tecnologías de Información y Comunicación",
+      tipo: "direccion",
+      sigla: "DTIC",
+      piso: "Piso 10",
+      horario: "08:00 - 16:00",
+      contacto: "Soporte: 4258035",
+      tramites: "Desarrollo y administración de sistemas informáticos, plataforma digital del GAMC y redes municipales.",
       hijos: [
-        {
-          nombre: "Dirección de Medio Ambiente",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Calidad Ambiental", tipo: "departamento" },
-            { nombre: "Departamento de Recursos Naturales y Áreas Protegidas", tipo: "departamento" },
-          ],
-        },
-        {
-          nombre: "Dirección de Gestión de Residuos y Saneamiento",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Residuos Sólidos", tipo: "departamento" },
-            { nombre: "Departamento de Agua y Alcantarillado Rural", tipo: "departamento" },
-          ],
-        },
+        { nombre: "Departamento de Sistemas y Plataformas Digitales", tipo: "departamento", piso: "Piso 10", contacto: "Interno: 1002", tramites: "Portal web, trámites en línea y modernización de servicios digitales." },
+        { nombre: "Departamento de Redes, Telecomunicaciones y Seguridad", tipo: "departamento", piso: "Piso 10", contacto: "Interno: 1005", tramites: "Infraestructura de servidores, conectividad y seguridad de la información." },
       ],
     },
     {
       nombre: "Secretaría General y de Gobernabilidad",
       tipo: "secretaria",
+      sigla: "SGG",
+      piso: "Piso 11",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 1101",
+      tramites: "Gobernabilidad territorial, concertación social, seguridad ciudadana y orden público.",
       hijos: [
         {
-          nombre: "Dirección de Gobernabilidad",
+          nombre: "Dirección de Gobernabilidad y Diálogo Social",
           tipo: "direccion",
+          sigla: "DGDS",
+          piso: "Piso 11",
+          contacto: "Interno: 1110",
+          tramites: "Prevención de conflictos y diálogo con organizaciones sociales.",
           hijos: [
-            { nombre: "Departamento de Concertación y Diálogo Ciudadano", tipo: "departamento" },
-            { nombre: "Departamento de Relacionamiento con Juntas Vecinales", tipo: "departamento" },
+            { nombre: "Departamento de Concertación y Diálogo Ciudadano", tipo: "departamento", piso: "Piso 11", tramites: "Mesas de concertación ciudadana y mediación vecinal." },
+            { nombre: "Departamento de Relacionamiento con Juntas Vecinales y OTBs", tipo: "departamento", piso: "Piso 11", tramites: "Personerías jurídicas de OTBs, registro de directivas y audiencias distritales." },
           ],
         },
         {
           nombre: "Dirección de Asuntos Jurídicos",
           tipo: "direccion",
+          sigla: "DAJ",
+          piso: "Piso 11",
+          contacto: "Interno: 1120",
+          tramites: "Patrocinio legal de procesos municipales y emisión de criterios legales.",
           hijos: [
-            { nombre: "Departamento de Procesos Constitucionales", tipo: "departamento" },
-            { nombre: "Departamento de Contratos y Convenios", tipo: "departamento" },
-            { nombre: "Departamento de Unidad Jurídica", tipo: "departamento" },
+            { nombre: "Departamento de Contratos, Convenios y Licitaciones", tipo: "departamento", piso: "Piso 11", tramites: "Elaboración y revisión legal de contratos y convenios intergubernamentales." },
+            { nombre: "Departamento de Procesos Constitucionales y Contenciosos", tipo: "departamento", piso: "Piso 11", tramites: "Defensa jurídica del municipio en fueros judiciales." },
+          ],
+        },
+        {
+          nombre: "Dirección de Seguridad Ciudadana",
+          tipo: "direccion",
+          sigla: "DSC",
+          piso: "Planta Baja · Módulo Seguridad",
+          contacto: "Emergencias: 911 / 4252020",
+          tramites: "Planes integrales de seguridad ciudadana, monitoreo de cámaras y control del orden.",
+          hijos: [
+            { nombre: "Intendencia Municipal y Defensa al Consumidor", tipo: "departamento", piso: "Planta Baja", tramites: "Control de pesos, medidas, inocuidad alimentaria y ordenamiento de mercados." },
+            { nombre: "Guardia Municipal de Cochabamba", tipo: "departamento", piso: "Planta Baja", tramites: "Patrullaje preventivo, despeje de aceras y apoyo operativo en eventos." },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Finanzas y Administración",
+      tipo: "secretaria",
+      sigla: "SFA",
+      piso: "Piso 9",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 901 / 4258040",
+      tramites: "Administración financiera, presupuesto municipal, tesorería, contrataciones estatales y recursos humanos.",
+      hijos: [
+        {
+          nombre: "Dirección de Finanzas y Contabilidad",
+          tipo: "direccion",
+          sigla: "DFC",
+          piso: "Piso 9",
+          contacto: "Interno: 910",
+          tramites: "Gestión contable, balances financieros y programación de pagos a proveedores.",
+          hijos: [
+            { nombre: "Departamento de Presupuesto y Contabilidad", tipo: "departamento", piso: "Piso 9", tramites: "Formulación presupuestaria y estados financieros oficiales." },
+            { nombre: "Departamento de Tesorería y Crédito Público", tipo: "departamento", piso: "Piso 9", tramites: "Flujo de fondos, pago a contratistas y gestión crediticia municipal." },
+          ],
+        },
+        {
+          nombre: "Dirección Administrativa y Bienes",
+          tipo: "direccion",
+          sigla: "DAB",
+          piso: "Piso 9",
+          contacto: "Interno: 920",
+          tramites: "Procesos de contratación de obras, bienes y servicios (SICOES) y custodia patrimonial.",
+          hijos: [
+            { nombre: "Departamento de Contrataciones Estatales", tipo: "departamento", piso: "Piso 9", tramites: "Licitaciones públicas, contrataciones menores y convocatorias ANPE." },
+            { nombre: "Departamento de Bienes Municipales y Activos Fijos", tipo: "departamento", piso: "Piso 9", tramites: "Inventario general, altas y bajas de activos e infraestructura comunal." },
+          ],
+        },
+        {
+          nombre: "Dirección de Recursos Humanos",
+          tipo: "direccion",
+          sigla: "DRH",
+          piso: "Piso 9",
+          contacto: "Interno: 930",
+          tramites: "Administración del personal municipal, planillas, convocatorias de empleo y bienestar laboral.",
+          hijos: [
+            { nombre: "Departamento de Planillas y Selección", tipo: "departamento", piso: "Piso 9", tramites: "Planillas de sueldos, aportes de ley y reclutamiento de servidores públicos." },
+            { nombre: "Departamento de Capacitación y Bienestar Laboral", tipo: "departamento", piso: "Piso 9", tramites: "Planes de inducción, capacitación funcionaria y salud ocupacional." },
           ],
         },
       ],
@@ -1911,37 +2118,335 @@ export const ORGANIGRAMA: Unidad = {
     {
       nombre: "Secretaría de Desarrollo Urbano y Catastro",
       tipo: "secretaria",
+      sigla: "SDUC",
+      piso: "Piso 5",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 501 / 4258050",
+      tramites: "Planificación territorial, catastro municipal, administración de uso de suelos y recaudaciones.",
       hijos: [
-        { nombre: "Mi Casa Segura", tipo: "direccion" },
-        {
-          nombre: "Dirección de Recaudaciones y Dinamización Económica",
-          tipo: "direccion",
-          hijos: [
-            { nombre: "Departamento de Atención al Contribuyente", tipo: "departamento" },
-            { nombre: "Departamento de Fiscalización", tipo: "departamento" },
-            { nombre: "Departamento Legal Tributario", tipo: "departamento" },
-            { nombre: "Departamento de Control de Recaudaciones", tipo: "departamento" },
-            { nombre: "Departamento de Servicio de Asistencia, Liquidación y Recaudación", tipo: "departamento" },
-          ],
-        },
         {
           nombre: "Dirección de Administración Geográfica y Catastro",
           tipo: "direccion",
+          sigla: "DAGC",
+          piso: "Piso 5",
+          contacto: "Interno: 510",
+          tramites: "Certificados catastrales, planos de lote, actualización de datos técnicos de inmuebles.",
           hijos: [
-            { nombre: "Departamento de Gestión Catastral", tipo: "departamento" },
-            { nombre: "Departamento de Servicios Catastrales", tipo: "departamento" },
-            { nombre: "Departamento de Cartografía", tipo: "departamento" },
-            { nombre: "Departamento de Informática Catastral e Inteligencia Fiscal", tipo: "departamento" },
+            { nombre: "Departamento de Gestión Catastral", tipo: "departamento", piso: "Piso 5", tramites: "Emisión de avalúos catastrales y asignación de código catastral." },
+            { nombre: "Departamento de Cartografía y GIS Municipal", tipo: "departamento", piso: "Piso 5", tramites: "Mapas temáticos, ortofotos territoriales y georreferenciación." },
           ],
         },
         {
           nombre: "Dirección de Urbanismo",
           tipo: "direccion",
+          sigla: "DU",
+          piso: "Piso 5",
+          contacto: "Interno: 520",
+          tramites: "Aprobación de planos de construcción, licencias urbanísticas y regulación de fraccionamientos.",
           hijos: [
-            { nombre: "Departamento de Control de Edificaciones", tipo: "departamento" },
-            { nombre: "División de Regulación de Edificaciones", tipo: "division" },
-            { nombre: "Departamento de Administración Urbana", tipo: "departamento" },
+            { nombre: "Departamento de Control de Edificaciones", tipo: "departamento", piso: "Piso 5", tramites: "Fiscalización de construcciones, permisos de obra y visado de planos." },
+            { nombre: "Departamento de Administración Urbana", tipo: "departamento", piso: "Piso 5", tramites: "Aprobación de urbanizaciones, subdivisiones y rasantes de vía." },
           ],
+        },
+        {
+          nombre: "Dirección de Recaudaciones y Dinamización Económica",
+          tipo: "direccion",
+          sigla: "DR",
+          piso: "Piso 3 · Ventanilla Única",
+          contacto: "Atención al Contribuyente: 4258060",
+          tramites: "Cobro de impuestos a bienes inmuebles, vehículos, patentes de funcionamiento y planes de pago.",
+          hijos: [
+            { nombre: "Departamento de Atención al Contribuyente", tipo: "departamento", piso: "Piso 3", tramites: "Liquidación tributaria, prescripciones y emisión de proformas." },
+            { nombre: "Departamento de Fiscalización Tributaria", tipo: "departamento", piso: "Piso 3", tramites: "Control fiscal, auditorías tributarias municipales y cobranza coactiva." },
+          ],
+        },
+        {
+          nombre: "Unidad Municipal Mi Casa Segura",
+          tipo: "direccion",
+          sigla: "MCS",
+          piso: "Piso 4",
+          contacto: "Línea Directa: 4258045",
+          tramites: "Programa especial de regularización técnica y legal de bienes inmuebles y construcciones fuera de norma.",
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Desarrollo de Infraestructura Territorial",
+      tipo: "secretaria",
+      sigla: "SDIT",
+      piso: "Piso 8",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 801 / 4258080",
+      tramites: "Construcción y mantenimiento de obras públicas, infraestructura vial, puentes y movilidad urbana.",
+      hijos: [
+        {
+          nombre: "Dirección de Obras Públicas",
+          tipo: "direccion",
+          sigla: "DOP",
+          piso: "Piso 8",
+          contacto: "Interno: 810",
+          tramites: "Ejecución y supervisión técnica de obras municipales en los 14 distritos.",
+          hijos: [
+            {
+              nombre: "Departamento de Infraestructura y Mejoramiento de Barrios",
+              tipo: "departamento",
+              piso: "Piso 8",
+              tramites: "Parques, canchas deportivas, centros comunitarios y sedes vecinales.",
+              hijos: [
+                { nombre: "División de Construcción de Infraestructura", tipo: "division", piso: "Piso 8", tramites: "Supervisión de obras civiles de equipamiento urbano." },
+                { nombre: "División de Mantenimiento de Edificaciones Públicas", tipo: "division", piso: "Piso 8", tramites: "Refacción y preservación de inmuebles municipales." },
+              ],
+            },
+            {
+              nombre: "Departamento de Obras Viales",
+              tipo: "departamento",
+              piso: "Piso 8",
+              tramites: "Apertura de vías, empedrados, pavimentos y puentes vehiculares.",
+              hijos: [
+                { nombre: "División de Asfaltos y Bacheo", tipo: "division", piso: "Piso 8", tramites: "Planta de asfalto municipal y cuadrillas de bacheo distrital." },
+                { nombre: "División de Señalización y Red Vial", tipo: "division", piso: "Piso 8", tramites: "Pintado de calzadas, reductores de velocidad y letreros viales." },
+              ],
+            },
+          ],
+        },
+        {
+          nombre: "Dirección de Movilidad Urbana",
+          tipo: "direccion",
+          sigla: "DMU",
+          piso: "Piso 7",
+          contacto: "Interno: 720",
+          tramites: "Ordenamiento del transporte público, semaforización y ciclovías.",
+          hijos: [
+            { nombre: "Departamento de Semaforización y Tecnología Vial", tipo: "departamento", piso: "Piso 7", tramites: "Mantenimiento y sincronización de red semafórica." },
+            { nombre: "Departamento de Tráfico y Vialidad", tipo: "departamento", piso: "Piso 7", tramites: "Rutas de transporte público, paradas autorizadas y permisos de circulación." },
+          ],
+        },
+        {
+          nombre: "Departamento de Gestión de Riesgos y Desastres (UGR)",
+          tipo: "departamento",
+          sigla: "UGR",
+          piso: "Piso 8 · Base UGR",
+          contacto: "Emergencias UGR: 4255322",
+          tramites: "Atención inmediata a inundaciones, torrenteras, deslizamientos y contingencias climáticas.",
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Salud",
+      tipo: "secretaria",
+      sigla: "SS",
+      piso: "Piso 6",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 601 / 4258066",
+      tramites: "Rectoría del sistema municipal de salud, centros de primer nivel y hospitales de segundo nivel.",
+      hijos: [
+        {
+          nombre: "Dirección de Hospitales de Segundo Nivel",
+          tipo: "direccion",
+          sigla: "DHSN",
+          piso: "Piso 6",
+          contacto: "Interno: 610",
+          tramites: "Coordinación y provisión de equipamiento e insumos a hospitales municipales.",
+          hijos: [
+            { nombre: "Hospital del Norte", tipo: "departamento", piso: "Av. Circunvalación", tramites: "Atención médica especializada, internación, cirugía y farmacia municipal." },
+            { nombre: "Hospital del Sur", tipo: "departamento", piso: "Zona Tamborada", tramites: "Emergencias 24h, maternidad, pediatría y banco de sangre." },
+            { nombre: "Hospital Cochabamba", tipo: "departamento", piso: "Zona Central", tramites: "Medicina interna, traumatología y consulta ambulatoria." },
+          ],
+        },
+        {
+          nombre: "Dirección de Centros de Salud de Primer Nivel",
+          tipo: "direccion",
+          sigla: "DCSPN",
+          piso: "Piso 6",
+          contacto: "Interno: 620",
+          tramites: "Gestión de la red de postas sanitarias y centros integrales en los distritos.",
+          hijos: [
+            { nombre: "Red de Centros de Salud Distritos 1 a 7", tipo: "departamento", piso: "Piso 6", tramites: "Atención médica preventiva, vacunas del PAI y control prenatal." },
+            { nombre: "Red de Centros de Salud Distritos 8 a 14", tipo: "departamento", piso: "Piso 6", tramites: "Consultas de medicina general, odontología y enfermería distrital." },
+          ],
+        },
+        {
+          nombre: "Dirección de Promoción y Prevención de Salud",
+          tipo: "direccion",
+          sigla: "DPPS",
+          piso: "Piso 6",
+          contacto: "Interno: 630",
+          tramites: "Campañas de vacunación comunitaria, nutrición infantil y prevención de epidemias.",
+          hijos: [
+            { nombre: "Departamento de Programas de Salud Comunitaria", tipo: "departamento", piso: "Piso 6", tramites: "Ferias de salud preventiva y brigadas médicas móviles." },
+            { nombre: "Departamento de Vigilancia Epidemiológica", tipo: "departamento", piso: "Piso 6", tramites: "Monitoreo de brotes epidemiológicos y control de vectores (dengue, rabia)." },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Medio Ambiente y Protección de la Madre Tierra",
+      tipo: "secretaria",
+      sigla: "SMAPMT",
+      piso: "Piso 7",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 701 / 4258070",
+      tramites: "Preservación ambiental, control de contaminación, áreas protegidas, saneamiento y zoonosis.",
+      hijos: [
+        {
+          nombre: "Dirección de Medio Ambiente",
+          tipo: "direccion",
+          sigla: "DMA",
+          piso: "Piso 7",
+          contacto: "Interno: 710",
+          tramites: "Licencias ambientales, monitoreo de ruidos molestos, calidad del aire y emisiones.",
+          hijos: [
+            { nombre: "Departamento de Calidad Ambiental", tipo: "departamento", piso: "Piso 7", tramites: "Medición de gases de escape vehicular y fuentes industriales fijas." },
+            { nombre: "Departamento de Recursos Naturales y Áreas Protegidas", tipo: "departamento", piso: "Piso 7", tramites: "Protección del Parque Tunari, Serranía de San Pedro y Laguna Alalay." },
+          ],
+        },
+        {
+          nombre: "Dirección de Gestión de Residuos y Saneamiento",
+          tipo: "direccion",
+          sigla: "DGRS",
+          piso: "Piso 7",
+          contacto: "Interno: 715",
+          tramites: "Políticas de reciclaje, disposición final de residuos y saneamiento básico rural.",
+          hijos: [
+            { nombre: "Departamento de Residuos Sólidos y Reciclaje", tipo: "departamento", piso: "Piso 7", tramites: "Puntos verdes distritales y educación ambiental para separación de basura." },
+            { nombre: "Departamento de Saneamiento Básico Rural", tipo: "departamento", piso: "Piso 7", tramites: "Sistemas de agua potable comunitaria en zonas periurbanas." },
+          ],
+        },
+        {
+          nombre: "Dirección de Zoonosis y Bienestar Animal",
+          tipo: "direccion",
+          sigla: "DZBA",
+          piso: "Sede La Chimba",
+          contacto: "Zoonosis: 4253322",
+          tramites: "Campañas de esterilización canina y felina, adopciones responsables y vacunación antirrábica.",
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Desarrollo Humano, Género y Generacional",
+      tipo: "secretaria",
+      sigla: "SDHGG",
+      piso: "Piso 4",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 401 / 4258042",
+      tramites: "Protección de grupos vulnerables, defensorías de la niñez, educación, deportes y equidad de género.",
+      hijos: [
+        {
+          nombre: "Dirección de Género y Asuntos Generacionales",
+          tipo: "direccion",
+          sigla: "DGAG",
+          piso: "Piso 4",
+          contacto: "Línea Gratuita DNA: 156",
+          tramites: "Atención psicológica, social y legal a menores, mujeres, adultos mayores y personas con discapacidad.",
+          hijos: [
+            { nombre: "Departamento de Niñez y Adolescencia (Defensorías DNA)", tipo: "departamento", piso: "Piso 4", tramites: "Permisos de viaje para menores y atención integral a víctimas de violencia." },
+            { nombre: "Departamento del Adulto Mayor", tipo: "departamento", piso: "Piso 4", tramites: "Asistencia legal al adulto mayor, clubes distritales y actividades recreativas." },
+            { nombre: "Departamento de Personas con Discapacidad (UMADIS)", tipo: "departamento", piso: "Piso 4", tramites: "Calificación de discapacidad y pago de bono municipal mensual." },
+          ],
+        },
+        {
+          nombre: "Dirección de Educación y Deporte",
+          tipo: "direccion",
+          sigla: "DED",
+          piso: "Piso 4",
+          contacto: "Interno: 420",
+          tramites: "Desayuno escolar complementario, mantenimiento de escuelas y escuelas deportivas gratuitas.",
+          hijos: [
+            { nombre: "Departamento de Apoyo a Unidades Educativas", tipo: "departamento", piso: "Piso 4", tramites: "Distribución del alimento complementario escolar y mobiliario estudiantil." },
+            { nombre: "Departamento de Fomento al Deporte", tipo: "departamento", piso: "Piso 4", tramites: "Gestión de coliseos, piscinas municipales y torneos estudiantiles distritales." },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Desarrollo Productivo, Turismo y Cultura",
+      tipo: "secretaria",
+      sigla: "SDPTC",
+      piso: "Piso 2",
+      horario: "08:00 - 16:00",
+      contacto: "Interno: 201 / 4258022",
+      tramites: "Fomento económico, reactivación de microempresas, ferias productivas, promoción cultural y turística.",
+      hijos: [
+        {
+          nombre: "Dirección de Cultura y Patrimonio Histórico",
+          tipo: "direccion",
+          sigla: "DCPH",
+          piso: "Casona Santiváñez",
+          contacto: "Cultura: 4255325",
+          tramites: "Administración de teatros municipales, bibliotecas, casonas coloniales y museos de la ciudad.",
+          hijos: [
+            { nombre: "Departamento de Teatros y Museos Municipales", tipo: "departamento", piso: "Piso 2", tramites: "Préstamo y reserva de salas de teatro, exposiciones artísticas y conciertos." },
+            { nombre: "Departamento de Patrimonio Histórico e Inmaterial", tipo: "departamento", piso: "Piso 2", tramites: "Catalogación patrimonial del Centro Histórico y festividades folclóricas." },
+          ],
+        },
+        {
+          nombre: "Dirección de Turismo",
+          tipo: "direccion",
+          sigla: "DTUR",
+          piso: "Piso 2",
+          contacto: "Turismo: 4258025",
+          tramites: "Información turística en casetas, rutas gastronómicas, turismo de convenciones y ferias.",
+          hijos: [
+            { nombre: "Departamento de Promoción Turística y Rutas Patrimoniales", tipo: "departamento", piso: "Piso 2", tramites: "Guías turísticas oficiales, recorridos históricos y señalización turística." },
+          ],
+        },
+        {
+          nombre: "Dirección de Desarrollo Productivo y Emprendedurismo",
+          tipo: "direccion",
+          sigla: "DDPE",
+          piso: "Piso 2",
+          contacto: "Interno: 230",
+          tramites: "Incubadora de empresas municipales, capacitación técnica a productores y ferias distritales.",
+          hijos: [
+            { nombre: "Departamento de Microempresas y Ferias Productivas", tipo: "departamento", piso: "Piso 2", tramites: "Organización de ferias francas, mercados sobre ruedas y ferias gastronómicas." },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Empresas Descentralizadas Municipales",
+      tipo: "descentralizada",
+      sigla: "EMPRESAS",
+      piso: "Sedes Descentralizadas",
+      horario: "Atención Continua y Emergencias 24h",
+      contacto: "Central de Servicios: 151",
+      tramites: "Entidades públicas descentralizadas bajo tuición municipal encargadas de servicios básicos y mantenimiento integral.",
+      hijos: [
+        {
+          nombre: "SEMAPA - Servicio Municipal de Agua Potable y Alcantarillado",
+          tipo: "descentralizada",
+          sigla: "SEMAPA",
+          piso: "Sede Central: Parque Excombatientes",
+          horario: "08:00 - 16:00 · Reclamos 24h",
+          contacto: "Línea Gratuita: 800108822",
+          tramites: "Instalación de nuevas conexiones de agua potable y alcantarillado sanitario, atención de fugas y facturación.",
+        },
+        {
+          nombre: "EMSA - Empresa Municipal de Servicios de Aseo",
+          tipo: "descentralizada",
+          sigla: "EMSA",
+          piso: "Sede Operativa: Av. Killman",
+          horario: "Atención 24h",
+          contacto: "Reclamos: 4253325 / 4253326",
+          tramites: "Barrido urbano, recolección domiciliaria de residuos, recojo de escombros y poda programada.",
+        },
+        {
+          nombre: "EMAC - Empresa Municipal de Áreas Verdes y Recreación",
+          tipo: "descentralizada",
+          sigla: "EMAC",
+          piso: "Vivero Municipal: Av. Guayacán",
+          horario: "07:30 - 15:30",
+          contacto: "Vivero: 4258075",
+          tramites: "Mantenimiento de áreas verdes, forestación de avenidas, donación de plantines y podas controladas.",
+        },
+        {
+          nombre: "PROMAN - Programa Municipal de Mantenimiento Integral",
+          tipo: "descentralizada",
+          sigla: "PROMAN",
+          piso: "Campamento Central: Av. Blanco Galindo",
+          horario: "08:00 - 16:00",
+          contacto: "Campamento: 4258088",
+          tramites: "Mantenimiento preventivo y correctivo de puentes, pasos a desnivel, torrenteras y obras mayores.",
         },
       ],
     },
@@ -1958,31 +2463,38 @@ const TIPOS: Record<Tipo, { etiqueta: string; rol: string; fondo: string; trazo:
   },
   secretaria: {
     etiqueta: "Secretaría Municipal",
-    rol: "Nivel Ejecutivo",
+    rol: "Nivel Ejecutivo y Rector",
     fondo: "#e6f6fb",
     trazo: "#00a7d6",
     textoColor: "#008bb3",
   },
   direccion: {
     etiqueta: "Dirección",
-    rol: "Nivel Operativo",
+    rol: "Nivel Operativo y Gestión",
     fondo: "#ecfdf5",
     trazo: "#0da593",
     textoColor: "#059669",
   },
   departamento: {
     etiqueta: "Departamento",
-    rol: "Área Técnica",
+    rol: "Área Técnica Especializada",
     fondo: "#faf5ff",
     trazo: "#462d81",
     textoColor: "#462d81",
   },
   division: {
-    etiqueta: "División",
-    rol: "Unidad Especializada",
+    etiqueta: "División / Unidad",
+    rol: "Unidad Operativa de Campo",
     fondo: "#f8fafc",
     trazo: "#64748b",
     textoColor: "#475569",
+  },
+  descentralizada: {
+    etiqueta: "Empresa Descentralizada",
+    rol: "Entidad Municipal Autárquica",
+    fondo: "#fff7ed",
+    trazo: "#ea580c",
+    textoColor: "#c2410c",
   },
 };
 
@@ -1994,6 +2506,7 @@ function aplanar(unidad: Unidad, parentId: string | null = null, ancestros: stri
   const id = \`u-\${++idContador}\`;
   const ruta = [...ancestros, unidad.nombre];
   const nodo: Nodo = {
+    ...unidad,
     id,
     parentId,
     nombre: unidad.nombre,
@@ -2041,29 +2554,38 @@ let seleccion: string | null = null;
 
 const grafico = new OrgChart()
   .container("#org-lienzo")
-  .svgHeight(lienzo.clientHeight || 580)
+  .svgHeight(lienzo.clientHeight || 620)
   .svgWidth(lienzo.clientWidth || 920)
   .data(nodos)
-  .nodeWidth(() => 230)
+  .nodeWidth(() => 240)
   .nodeHeight(() => 110)
-  .childrenMargin(() => 42)
-  .siblingsMargin(() => 16)
-  .neighbourMargin(() => 20)
+  .childrenMargin(() => 45)
+  .siblingsMargin(() => 20)
+  .neighbourMargin(() => 22)
   .compact(false)
   .duration(280)
-  .buttonContent(() => "")
-  .onNodeClick(() => {})
+  .nodeButtonWidth(() => 140)
+  .nodeButtonHeight(() => 28)
+  .nodeButtonX(() => -70)
+  .nodeButtonY(() => -14)
+  .buttonContent((d: { node: { data: Nodo; children?: unknown[]; _children?: unknown[] } }) => {
+    const node = d.node;
+    const hasChildren = (node.children && node.children.length > 0) || (node._children && node._children.length > 0);
+    if (!hasChildren) return "";
+    const isExpanded = Boolean(node.children && node.children.length > 0);
+    const count = node.data.hijos || (node.children?.length) || (node._children?.length) || 0;
+    return \`<div class="org-nodo__alternar-btn \${isExpanded ? "is-abierto" : ""}">
+      <span class="org-nodo__alternar-simbolo">\${isExpanded ? "−" : "+"}</span>
+      <span>\${isExpanded ? "Contraer" : \`\${count} dependencias\`}</span>
+    </div>\`;
+  })
+  .onNodeClick((d: { data: Nodo }) => {
+    elegir(d.data.id);
+  })
   .nodeContent((d: { data: Nodo; width: number; height: number }) => {
     const nodo = d.data;
     const tipo = TIPOS[nodo.tipo];
     const tieneHijos = nodo.hijos > 0;
-    const btnAlternar = tieneHijos
-      ? \`<button type="button" class="org-nodo__alternar-btn \${nodo._expanded ? "is-abierto" : ""}" data-alternar="\${nodo.id}" aria-label="\${nodo._expanded ? "Contraer" : "Expandir"} \${escapar(nodo.nombre)}">
-          <span class="org-nodo__alternar-simbolo">\${nodo._expanded ? "−" : "+"}</span>
-          <span>\${nodo._expanded ? "Contraer" : \`\${nodo.hijos} dependencias\`}</span>
-        </button>\`
-      : "";
-
     const clases = [
       "org-nodo",
       nodo._highlighted ? "is-coincide" : "",
@@ -2077,11 +2599,14 @@ const grafico = new OrgChart()
           \${tieneHijos ? \`<span class="org-nodo__nivel-badge">\${nodo.hijos}</span>\` : ""}
         </div>
         <div class="org-nodo__cuerpo">
-          <strong class="org-nodo__nombre">\${escapar(nodo.nombre)}</strong>
+          <div class="org-nodo__cab-fila">
+            <strong class="org-nodo__nombre">\${escapar(nodo.nombre)}</strong>
+            \${nodo.sigla ? \`<span class="org-nodo__sigla">\${escapar(nodo.sigla)}</span>\` : ""}
+          </div>
           <span class="org-nodo__subtitulo">\${tipo.rol}</span>
+          \${nodo.piso ? \`<span class="org-nodo__piso-badge">\${escapar(nodo.piso)}</span>\` : ""}
         </div>
       </div>
-      \${btnAlternar}
     </div>\`;
   });
 
@@ -2093,7 +2618,7 @@ function dibujar(ajustar = false) {
 function abrirAncestros(nodo: Nodo) {
   let padre = nodo.parentId ? porId.get(nodo.parentId) : undefined;
   while (padre) {
-    padre._expanded = true;
+    grafico.setExpanded(padre.id, true);
     padre = padre.parentId ? porId.get(padre.parentId) : undefined;
   }
 }
@@ -2101,42 +2626,50 @@ function abrirAncestros(nodo: Nodo) {
 const descendientes = (nodo: Nodo): Nodo[] =>
   nodos.filter((otro) => otro.parentId === nodo.id).flatMap((hijo) => [hijo, ...descendientes(hijo)]);
 
-function reiniciar() {
-  nodos.forEach((nodo) => {
-    nodo._expanded = false;
-    nodo._highlighted = false;
-  });
-  raiz._expanded = true;
-}
-
 function buscar(texto: string) {
   const q = normalizar(texto.trim());
   limpiar.hidden = q === "";
-  reiniciar();
 
   if (q === "") {
     estado.textContent = "";
+    nodos.forEach((n) => (n._highlighted = false));
+    grafico.clearHighlighting().render();
   } else {
-    const coincidencias = nodos.filter((nodo) => normalizar(nodo.nombre).includes(q));
+    const coincidencias = nodos.filter(
+      (nodo) =>
+        normalizar(nodo.nombre).includes(q) ||
+        (nodo.sigla && normalizar(nodo.sigla).includes(q)) ||
+        (nodo.tramites && normalizar(nodo.tramites).includes(q))
+    );
+
+    nodos.forEach((n) => (n._highlighted = false));
     coincidencias.forEach((nodo) => {
       nodo._highlighted = true;
       abrirAncestros(nodo);
     });
+
     estado.textContent =
       coincidencias.length === 0
         ? "No se encontraron dependencias con ese término."
         : \`\${coincidencias.length} dependencias localizadas en el organigrama.\`;
+
+    if (coincidencias.length > 0) {
+      grafico.setHighlighted(coincidentesId(coincidencias));
+    }
   }
 
-  dibujar(true);
+  dibujar(q !== "");
   generarVistaArbol();
+}
+
+function coincidentesId(lista: Nodo[]): string {
+  return lista[0].id;
 }
 
 function elegir(id: string) {
   const nodo = porId.get(id);
   if (!nodo) return;
   seleccion = id;
-  if (nodo.hijos > 0 && !nodo._expanded) nodo._expanded = true;
 
   const tipo = TIPOS[nodo.tipo];
   detalle.hidden = false;
@@ -2147,17 +2680,30 @@ function elegir(id: string) {
   badge.style.color = tipo.textoColor;
   badge.style.border = \`1px solid \${tipo.trazo}\`;
 
+  const siglaBadge = $("org-sigla-badge");
+  if (nodo.sigla) {
+    siglaBadge.textContent = nodo.sigla;
+    siglaBadge.hidden = false;
+  } else {
+    siglaBadge.hidden = true;
+  }
+
   $("org-ruta").textContent = nodo.ruta.join("  ›  ");
   $("org-nombre").textContent = nodo.nombre;
   $("org-cuenta").textContent =
     nodo.hijos === 0
-      ? "Unidad operativa final (sin dependencias asignadas)."
+      ? "Unidad operativa de atención y ejecución directa."
       : \`\${nodo.hijos} \${nodo.hijos === 1 ? "dependencia directa" : "dependencias directas"} · \${nodo.total} en total bajo esta área.\`;
+
+  $("org-ficha-piso").textContent = nodo.piso ?? "Edificio Central GAMC";
+  $("org-ficha-horario").textContent = nodo.horario ?? "08:00 - 16:00 (Continuo)";
+  $("org-ficha-contacto").textContent = nodo.contacto ?? "Línea Central GAMC: 151 / 4258030";
+  $("org-ficha-tramites").textContent = nodo.tramites ?? "Atención de trámites institucionales del área, resoluciones y servicios al ciudadano.";
 
   detalle.querySelector<HTMLButtonElement>('[data-detalle="superior"]')!.disabled = nodo.parentId === null;
   detalle.querySelector<HTMLButtonElement>('[data-detalle="rama"]')!.disabled = nodo.hijos === 0;
 
-  dibujar();
+  grafico.setHighlighted(id).render();
 }
 
 function generarVistaArbol() {
@@ -2168,7 +2714,7 @@ function generarVistaArbol() {
   rootDiv.className = "org-gamc__arbol-item";
   rootDiv.style.borderColor = "var(--gamc-primario)";
   rootDiv.style.background = "var(--gamc-primario-suave)";
-  rootDiv.innerHTML = \`<div><strong style="font-size:15px;color:var(--gamc-marino)">\${raiz.nombre}</strong><br><small style="color:var(--gamc-texto-suave)">Máxima Autoridad Ejecutiva Municipal</small></div><span class="org-gamc__badge-nivel" style="background:#0f172a;color:#ffffff">\${TIPOS[raiz.tipo].etiqueta}</span>\`;
+  rootDiv.innerHTML = \`<div><strong style="font-size:15px;color:var(--gamc-marino)">\${raiz.nombre}</strong><br><small style="color:var(--gamc-texto-suave)">Máxima Autoridad Ejecutiva Municipal · \${raiz.piso ?? ""}</small></div><span class="org-gamc__badge-nivel" style="background:#0f172a;color:#ffffff">\${TIPOS[raiz.tipo].etiqueta}</span>\`;
   rootDiv.addEventListener("click", () => elegir(raiz.id));
   arbolNiveles.appendChild(rootDiv);
 
@@ -2178,7 +2724,7 @@ function generarVistaArbol() {
 
     const cab = document.createElement("div");
     cab.className = "org-gamc__arbol-grupo-cabecera";
-    cab.innerHTML = \`<div class="org-gamc__arbol-grupo-titulo">\${sec.nombre}</div><span class="org-gamc__badge-nivel" style="background:\${TIPOS[sec.tipo].fondo};color:\${TIPOS[sec.tipo].textoColor};border:1px solid \${TIPOS[sec.tipo].trazo}">\${TIPOS[sec.tipo].etiqueta}</span>\`;
+    cab.innerHTML = \`<div class="org-gamc__arbol-grupo-titulo">\${sec.nombre} \${sec.sigla ? \`<span style="font-size:11px;font-weight:700;color:var(--gamc-primario-hover)">(\${sec.sigla})</span>\` : ""}</div><span class="org-gamc__badge-nivel" style="background:\${TIPOS[sec.tipo].fondo};color:\${TIPOS[sec.tipo].textoColor};border:1px solid \${TIPOS[sec.tipo].trazo}">\${TIPOS[sec.tipo].etiqueta}</span>\`;
     cab.addEventListener("click", () => elegir(sec.id));
     grupo.appendChild(cab);
 
@@ -2190,7 +2736,7 @@ function generarVistaArbol() {
       subHijos.forEach((sub) => {
         const item = document.createElement("div");
         item.className = "org-gamc__arbol-item";
-        item.innerHTML = \`<span>\${sub.nombre}</span><span style="font-size:10px;font-weight:700;color:\${TIPOS[sub.tipo].textoColor}">\${TIPOS[sub.tipo].etiqueta}</span>\`;
+        item.innerHTML = \`<div><strong style="font-size:13px;color:var(--gamc-marino)">\${sub.nombre}</strong><br><small style="color:var(--gamc-texto-suave)">\${sub.piso ?? ""}</small></div><span style="font-size:10px;font-weight:700;color:\${TIPOS[sub.tipo].textoColor}">\${TIPOS[sub.tipo].etiqueta}</span>\`;
         item.addEventListener("click", () => elegir(sub.id));
         lista.appendChild(item);
       });
@@ -2229,27 +2775,29 @@ limpiar.addEventListener("click", () => {
   buscador.focus();
 });
 
-lienzo.addEventListener("click", (e) => {
-  const objetivo = e.target as HTMLElement;
-  const alternar = objetivo.closest<HTMLElement>("[data-alternar]");
-  if (alternar) {
-    const nodo = porId.get(alternar.dataset.alternar!);
-    if (nodo) {
-      nodo._expanded = !nodo._expanded;
-      dibujar();
-    }
-    return;
-  }
-  const tarjeta = objetivo.closest<HTMLElement>("[data-id]");
-  if (tarjeta) elegir(tarjeta.dataset.id!);
+$("org-detalle-cerrar")?.addEventListener("click", () => {
+  detalle.hidden = true;
+  seleccion = null;
+  grafico.clearHighlighting().render();
 });
 
-lienzo.addEventListener("keydown", (e) => {
-  const tarjeta = (e.target as HTMLElement).closest<HTMLElement>("[data-id]");
-  if (tarjeta && (e.key === "Enter" || e.key === " ")) {
-    e.preventDefault();
-    elegir(tarjeta.dataset.id!);
-  }
+document.querySelectorAll<HTMLButtonElement>("[data-filtro]").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll("[data-filtro]").forEach((c) => c.classList.remove("is-activo"));
+    chip.classList.add("is-activo");
+    const filtro = chip.dataset.filtro;
+    if (filtro === "todos") {
+      grafico.clearHighlighting();
+      grafico.fit();
+      return;
+    }
+    const coincidentes = nodos.filter((n) => n.tipo === filtro);
+    coincidentes.forEach((n) => abrirAncestros(n));
+    grafico.render();
+    if (coincidentes.length > 0) {
+      grafico.setHighlighted(coincidentes[0].id).render();
+    }
+  });
 });
 
 const ACCIONES: Record<string, () => void> = {
@@ -2257,19 +2805,33 @@ const ACCIONES: Record<string, () => void> = {
   alejar: () => grafico.zoomOut(),
   ajustar: () => grafico.fit(),
   expandir: () => {
-    nodos.forEach((nodo) => (nodo._expanded = nodo.hijos > 0));
-    dibujar(true);
+    grafico.expandAll().fit();
   },
   contraer: () => {
     seleccion = null;
     detalle.hidden = true;
     buscador.value = "";
+    grafico.collapseAll().fit();
     buscar("");
+  },
+  "exportar-svg": () => {
+    const fn = (grafico as unknown as { exportSvg?: () => void }).exportSvg;
+    if (typeof fn === "function") fn.call(grafico);
+  },
+  "pantalla-completa": () => {
+    if (!document.fullscreenElement) {
+      contenedorDiagrama.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
   },
 };
 
 document.querySelectorAll<HTMLElement>("[data-accion]").forEach((boton) =>
-  boton.addEventListener("click", () => ACCIONES[boton.dataset.accion!]())
+  boton.addEventListener("click", () => {
+    const accion = boton.dataset.accion;
+    if (accion && ACCIONES[accion]) ACCIONES[accion]();
+  })
 );
 
 detalle.addEventListener("click", (e) => {
@@ -2281,11 +2843,11 @@ detalle.addEventListener("click", (e) => {
     elegir(nodo.parentId);
     grafico.setCentered(nodo.parentId).render();
   } else if (boton.dataset.detalle === "rama") {
-    [nodo, ...descendientes(nodo)].forEach((otro) => (otro._expanded = otro.hijos > 0));
+    grafico.setExpanded(nodo.id, true).render();
+    [nodo, ...descendientes(nodo)].forEach((otro) => grafico.setExpanded(otro.id, true));
     dibujar(true);
   } else if (boton.dataset.detalle === "centrar") {
     abrirAncestros(nodo);
-    dibujar();
     grafico.setCentered(nodo.id).render();
   }
 });
@@ -2303,7 +2865,6 @@ window.addEventListener("resize", () => {
   redimension = window.setTimeout(() => dibujar(), 250);
 });
 
-reiniciar();
 dibujar(true);
 generarVistaArbol();
 `;

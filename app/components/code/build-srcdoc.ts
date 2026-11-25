@@ -216,7 +216,7 @@ export function buildSrcDoc(code: CodeSource, libraries: Library[], origin: stri
 <script>${inside("script", CONSOLE_BRIDGE)}</script>
 <script>${API_BRIDGE}</script>
 ${code.tailwind ? `<script src="${origin}/api/vendor/tailwind"></script>` : ""}
-${libraries.length > 0 ? `<script type="importmap">${inside("script", importMap)}</script>` : ""}
+<script type="importmap">${inside("script", importMap)}</script>
 <style${code.tailwind ? ' type="text/tailwindcss"' : ""}>
 html, body { margin: 0; height: auto !important; min-height: 0 !important; }
 ${variables}
