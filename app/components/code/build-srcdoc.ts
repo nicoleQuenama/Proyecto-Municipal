@@ -19,10 +19,20 @@ export interface SharedAssets {
   functions: SharedFunction[];
 }
 
-/** Avisa a la página de cuánto mide el contenido para que el iframe se ajuste. */
+/**
+ * Avisa a la página de cuánto mide el contenido para que el iframe se ajuste. Se mide el `body`, no el `html`:
+ * `documentElement.scrollHeight` nunca baja de la altura del propio iframe, así que un iframe que llegó a ser más
+ * alto que su contenido (o que fue redimensionado) no volvería a encogerse y dejaría un hueco vacío debajo.
+ */
 const SIZE_REPORTER = `
-  const report = () => parent.postMessage({ type: "${SIZE_MESSAGE}", height: document.documentElement.scrollHeight }, "*");
-  new ResizeObserver(report).observe(document.documentElement);
+  const report = () => {
+    const body = document.body;
+    const style = getComputedStyle(body);
+    const margins = (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+    const height = Math.max(body.scrollHeight, body.getBoundingClientRect().height) + margins;
+    parent.postMessage({ type: "${SIZE_MESSAGE}", height }, "*");
+  };
+  new ResizeObserver(report).observe(document.body);
   addEventListener("load", report);
   report();
 `;
