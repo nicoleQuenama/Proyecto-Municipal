@@ -236,6 +236,13 @@ export function elementBaseCss(
   ];
 
   const unlayeredRules: string[] = [];
+  unlayeredRules.push(
+    rule(section, [
+      "width: 100% !important",
+      "box-sizing: border-box !important",
+      ...(def.height > 0 ? [`min-height: ${def.height}px !important`] : []),
+    ])
+  );
   if (cols !== null) {
     unlayeredRules.push(
       rule(section, [
@@ -282,16 +289,18 @@ export function elementBaseCss(
         "min-width: 0 !important",
         "box-sizing: border-box !important",
       ]),
-      rule(`${section} > [data-el]:not([data-backdrop]) > [data-el]:is([data-target*="image"], [data-kind="image"])`, [
+      rule(`${section} [data-el]:is([data-target*="image"], [data-kind="image"])`, [
         "min-height: 120px !important",
+        "width: 100% !important",
+        "min-width: 0 !important",
       ]),
       rule(`${section}[class*="grid"] > [data-el]:not([data-backdrop])`, [
         "width: 100% !important",
       ]),
-      rule(`${section}[class*="flex-row"] > [data-el]:not([data-backdrop])`, [
-        device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 220px !important",
+      rule(`${section}[class*="flex"]:not([class*="flex-col"]) > [data-el]:not([data-backdrop])`, [
+        device === "mobile" ? "flex: 1 1 100% !important" : "flex: 1 1 240px !important",
         device === "mobile" ? "width: 100% !important" : "width: auto !important",
-        "min-width: 0 !important",
+        device === "mobile" ? "min-width: 0 !important" : "min-width: 200px !important",
       ]),
     );
   }

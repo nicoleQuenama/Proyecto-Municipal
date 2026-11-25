@@ -158,7 +158,7 @@ const RENDERERS: Record<ElementKind, Renderer> = {
       />
     ) : (
       <div
-        className="flex h-full w-full items-center justify-center border border-dashed border-slate-400 bg-slate-200 p-2 text-center text-xs text-slate-500"
+        className="flex h-full w-full min-h-[120px] min-w-full items-center justify-center border border-dashed border-slate-400 bg-slate-200 p-2 text-center text-xs text-slate-500"
         style={{ borderRadius: inherit ? "inherit" : element.radius }}
       >
         Haz clic o suelta una imagen
@@ -364,18 +364,27 @@ function PositionedElement({
         onClick={interactive ? follow : undefined}
         style={{
           ...boundStyle,
-          ...(isFlow && isTopChild && !isBackdropEl
+          ...(!isFlow
             ? {
-                width: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? undefined : "100%",
-                minWidth: 0,
-                maxWidth: "100%",
+                position: "absolute",
+                left: element.x,
+                top: element.y,
+                width: shown.width,
+                height: shown.height,
               }
-            : {}),
-          ...(element.kind === "image" && isFlow
-            ? {
-                minHeight: element.height > 0 ? element.height : 120,
-              }
-            : {}),
+            : isTopChild
+              ? {
+                  flex: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? "1 1 240px" : undefined,
+                  minWidth: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? 200 : 0,
+                  maxWidth: "100%",
+                  width: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? undefined : "100%",
+                }
+              : {
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  ...(element.kind === "image" ? { minHeight: element.height > 0 ? element.height : 120, width: "100%" } : {}),
+                }),
           ...(activeLink
             ? {
                 color: "var(--color-primario, #00A7D6)",
@@ -449,18 +458,27 @@ function PositionedElement({
         style={{
           ...boundStyle,
           ...(element.fill && element.fill !== "transparent" ? { background: element.fill } : {}),
-          ...(isFlow && isTopChild && !isBackdropEl
+          ...(!isFlow
             ? {
-                width: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? undefined : "100%",
-                minWidth: 0,
-                maxWidth: "100%",
+                position: "absolute",
+                left: element.x,
+                top: element.y,
+                width: shown.width,
+                height: shown.height,
               }
-            : {}),
-          ...(element.kind === "image" && isFlow
-            ? {
-                minHeight: element.height > 0 ? element.height : 120,
-              }
-            : {}),
+            : isTopChild
+              ? {
+                  flex: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? "none" : "1 1 240px",
+                  minWidth: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? 0 : 200,
+                  maxWidth: "100%",
+                  width: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? "100%" : undefined,
+                }
+              : {
+                  width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  ...(element.kind === "image" ? { minHeight: element.height > 0 ? element.height : 120, width: "100%" } : {}),
+                }),
         }}
         className={`group/element [&_iframe]:pointer-events-none [&_video]:pointer-events-none ${custom} ${
           canReorder ? "cursor-grab active:cursor-grabbing" : gestures && !isFlow ? "cursor-move touch-none select-none" : ""
@@ -748,7 +766,22 @@ export function ComponentView({
     return def.elements.some((e) => /-opt\d+-/.test(e.id));
   }, [def.elements]);
 
-  const [activeOptionKey, setActiveOptionKey] = useState<string>("opt1");
+  const initialOptionKey = useMemo(() => {
+    for (const el of def.elements) {
+      const match = el.id.match(/-opt(\d+)-/);
+      if (match) return `opt${match[1]}`;
+    }
+    return "opt1";
+  }, [def.elements]);
+
+  const [activeOptionKey, setActiveOptionKey] = useState<string>(initialOptionKey);
+
+  useEffect(() => {
+    setActiveOptionKey((prev) => {
+      const exists = def.elements.some((el) => el.id.includes(`-${prev}-`));
+      return exists ? prev : initialOptionKey;
+    });
+  }, [def.elements, initialOptionKey]);
 
   // Si se selecciona un elemento de una opción en el lienzo, cambiar a esa opción
   useEffect(() => {
@@ -806,8 +839,11 @@ export function ComponentView({
       onPointerCancel={interaction?.gestures?.endDrag}
       {...(hasOptionElements ? { "data-active-option": activeOptionKey } : {})}
       {...(interaction ? { "data-canvas": "", "data-target": targetKey(interaction.blockId, SECTION_KEY) } : {})}
-      className={`${interaction ? "" : "relative shrink-0"} ${interaction?.classes[SECTION_KEY] ?? ""}`}
-      style={interaction ? undefined : { width: def.width, height: def.height }}
+      className={`w-full relative ${interaction ? "" : "shrink-0"} ${interaction?.classes[SECTION_KEY] ?? ""}`}
+      style={{
+        ...(interaction ? {} : { width: def.width }),
+        minHeight: def.height > 0 ? def.height : undefined,
+      }}
     >
       {/* En la página, la posición, el tamaño y los estilos base van en CSS (capa de menor prioridad); en miniaturas, en línea. */}
       {interaction && (
