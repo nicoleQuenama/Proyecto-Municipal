@@ -721,7 +721,7 @@ export function MediaTab() {
         </div>
       )}
 
-      {/* Galería de archivos (Grid 2 columnas tipo Canva) */}
+      {/* Galería de archivos (Grid 2 columnas) */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-[11px] text-ink-dim">
           <span>
@@ -756,16 +756,36 @@ export function MediaTab() {
                   <div
                     onClick={() => handleApplyToSelection(item)}
                     title="Haz clic para aplicar al elemento seleccionado o insertar"
-                    className="relative aspect-4/3 w-full cursor-pointer overflow-hidden bg-slate-900"
+                    style={{ aspectRatio: "4/3", minHeight: "110px" }}
+                    className="relative aspect-[4/3] w-full min-h-[110px] cursor-pointer overflow-hidden bg-slate-900"
                   >
                     {item.kind === "image" ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.src}
-                        alt={item.name}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      />
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.src}
+                          alt={item.name}
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = "none";
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = "flex";
+                          }}
+                          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                        />
+                        <div
+                          style={{ display: "none" }}
+                          className="h-full w-full flex-col items-center justify-center bg-slate-800 p-2 text-center text-ink-dim"
+                        >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-1 opacity-50">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <path d="M21 15l-5-5L5 21" />
+                          </svg>
+                          <span className="text-[9px] opacity-70">Imagen no disponible</span>
+                        </div>
+                      </>
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-slate-950 text-white">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -998,7 +1018,7 @@ export function MediaTab() {
                         key={match.id}
                         className="group relative flex flex-col overflow-hidden rounded-md border border-line bg-canvas"
                       >
-                        <div className="relative aspect-4/3 w-full bg-slate-900">
+                        <div style={{ aspectRatio: "4/3", minHeight: "60px" }} className="relative aspect-[4/3] w-full min-h-[60px] bg-slate-900">
                           {match.kind === "image" ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={match.src} alt={match.name} className="h-full w-full object-cover" />
@@ -1233,7 +1253,7 @@ export function MediaTab() {
                                   : "border-line bg-canvas hover:border-ink/30"
                               } cursor-pointer`}
                             >
-                              <div className="aspect-4/3 w-full bg-slate-900">
+                              <div style={{ aspectRatio: "4/3", minHeight: "50px" }} className="aspect-[4/3] w-full min-h-[50px] bg-slate-900">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={candidate.src} alt={candidate.name} className="h-full w-full object-cover" />
                               </div>

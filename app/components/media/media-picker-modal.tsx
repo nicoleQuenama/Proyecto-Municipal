@@ -295,7 +295,7 @@ export function MediaPickerModal({
                         : "border-line bg-canvas hover:border-accent/70 hover:shadow-sm"
                     }`}
                   >
-                    <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-900">
+                    <div style={{ aspectRatio: "4/3", minHeight: "90px" }} className="relative aspect-[4/3] w-full min-h-[90px] overflow-hidden bg-slate-900">
                       {item.kind === "image" ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img

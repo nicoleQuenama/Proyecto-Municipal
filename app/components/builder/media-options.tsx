@@ -47,7 +47,7 @@ export function MediaOptions({ element, kind, onChange }: { element: CanvasEleme
       {isImageOrFrame && (
         <div className="rounded-lg border border-line bg-canvas/30 p-2.5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-ink-bright">Recorte y enfoque estilo Canva</span>
+            <span className="text-[11px] font-semibold text-ink-bright">Recorte y enfoque</span>
             {(element.objectPosition || (element.imageZoom && element.imageZoom !== 1) || element.flipH || element.flipV) && (
               <button
                 type="button"

@@ -17,14 +17,14 @@ interface ToolItem {
 }
 
 const TOOLS: ToolItem[] = [
-  // Marcos (estilo Canva)
+  // Marcos de imagen
   {
     id: "frame-circle",
     kind: "ellipse",
     category: "frames",
     label: "Marco Circular",
     desc: "Avatar o foto redonda con recorte",
-    badge: "Canva",
+    badge: "Marco",
     icon: (
       <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-dashed border-sky-400 bg-sky-500/10 text-sky-400">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -41,7 +41,7 @@ const TOOLS: ToolItem[] = [
     category: "frames",
     label: "Marco Rectangular",
     desc: "Foto de tarjeta con bordes curvos",
-    badge: "Canva",
+    badge: "Marco",
     icon: (
       <div className="flex h-7 w-8 items-center justify-center rounded-lg border-2 border-dashed border-sky-400 bg-sky-500/10 text-sky-400">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -58,7 +58,7 @@ const TOOLS: ToolItem[] = [
     category: "frames",
     label: "Marco Cuadrado",
     desc: "Miniatura o foto cuadrada 1:1",
-    badge: "Canva",
+    badge: "Marco",
     icon: (
       <div className="flex h-7 w-7 items-center justify-center rounded-md border-2 border-dashed border-sky-400 bg-sky-500/10 text-sky-400">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -201,7 +201,7 @@ interface ElementToolbarProps {
   onAdd: (kind: ElementKind, overrides?: Partial<CanvasElement>) => void;
 }
 
-/** Barra lateral izquierda del constructor: herramientas visuales categorizadas y claras tipo Canva. */
+/** Barra lateral izquierda del constructor: herramientas visuales categorizadas y claras. */
 export function ElementToolbar({ onAdd }: ElementToolbarProps) {
   const [filter, setFilter] = useState<CategoryFilter>("all");
   const [query, setQuery] = useState("");

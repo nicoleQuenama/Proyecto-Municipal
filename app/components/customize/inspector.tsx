@@ -1138,7 +1138,7 @@ function ScopeEditor({ pageId, block, def, scope }: ScopeEditorProps) {
                 </div>
                 <p className="text-[10px] text-ink-dim">
                   {block.locked
-                    ? "Esta sección está bloqueada: su posición y contenido están fijos estilo Canva."
+                    ? "Esta sección está bloqueada: su posición y contenido están fijos."
                     : "Cambia la posición de esta sección respecto a las demás en el orden vertical de la página."}
                 </p>
               </div>

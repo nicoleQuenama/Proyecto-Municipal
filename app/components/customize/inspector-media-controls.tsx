@@ -206,7 +206,7 @@ export function InspectorMediaControls({
 
       {/* Controles estilo Canva de orientación, zoom y punto focal */}
       {element.src && (
-        <Collapsible title="Ajuste y recorte estilo Canva" defaultOpen>
+        <Collapsible title="Ajuste y recorte de imagen" defaultOpen>
           <MediaOptions
             element={element}
             kind={element.kind === "video" ? "video" : "image"}
