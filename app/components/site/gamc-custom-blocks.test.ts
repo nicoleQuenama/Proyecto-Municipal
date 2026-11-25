@@ -81,14 +81,15 @@ describe("GAMC Custom Blocks", () => {
       }
     });
 
-    it("devuelve estructura limpia por niveles sin coronas ni esquemas artificiales", () => {
+    it("devuelve estructura dinámica desplegable (d3-org-chart) sin coronas ni esquemas artificiales", () => {
       const code = getOrganigramaMunicipalCode();
       expect(code.tailwind).toBe(true);
       expect(code.html).toContain("org-gamc");
       expect(code.js).not.toContain("corona");
-      expect(code.js).toContain("DEPENDENCIAS");
-      expect(code.js).toContain("despacho-alcalde");
-      expect(code.js).toContain("sec-finanzas");
+      expect(code.js).toContain("OrgChart");
+      expect(code.js).toContain("ORGANIGRAMA");
+      expect(code.js).toContain("Alcalde Municipal");
+      expect(code.js).toContain("d3-org-chart");
     });
   });
 });

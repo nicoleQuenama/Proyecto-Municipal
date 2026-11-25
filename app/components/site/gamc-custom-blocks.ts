@@ -3,7 +3,7 @@ import type { CodeSource } from "./types.ts";
 /**
  * Bloques institucionales personalizados para el portal del GAMC:
  * 1. Edificio Municipal: Sede central de 13 pisos con directorio interactivo accesible y ficha de trámites por piso.
- * 2. Organigrama Institucional: Estructura jerárquica clara por niveles institucionales con búsqueda y filtrado dinámico.
+ * 2. Organigrama Institucional: Estructura jerárquica interactiva y desplegable (d3-org-chart) con diseño limpio, sobrio y sin ilustraciones artificiales.
  */
 
 export const EDIFICIO_MUNICIPAL_HTML = `<section class="edificio-gamc" aria-labelledby="edificio-titulo">
@@ -234,7 +234,6 @@ export const EDIFICIO_MUNICIPAL_CSS = `.edificio-gamc {
   border: 0;
 }
 
-/* Cuerpo en 2 columnas: Directorio y Detalle */
 .edificio-gamc__cuerpo {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -359,7 +358,6 @@ export const EDIFICIO_MUNICIPAL_CSS = `.edificio-gamc {
   display: none !important;
 }
 
-/* Ficha Detallada */
 .edificio-gamc__detalle {
   background: var(--gamc-blanco);
   border: 1px solid var(--gamc-borde-suave);
@@ -980,7 +978,6 @@ function renderizarDirectorio(): void {
   contenedorLista.innerHTML = "";
   if (selectMovil) selectMovil.innerHTML = "";
 
-  // Mostrar los 13 pisos de forma descendente (13 al 1) como en un edificio real
   const pisosDescendentes = [...PISOS].reverse();
 
   pisosDescendentes.forEach((p) => {
@@ -1037,7 +1034,6 @@ function renderizarFichaPiso(p: PisoInfo): void {
       .join("");
   }
 
-  // Actualizar estado de botones anterior y siguiente
   if (btnAnterior) btnAnterior.disabled = p.piso <= 1;
   if (btnSiguiente) btnSiguiente.disabled = p.piso >= 13;
 }
@@ -1048,7 +1044,6 @@ function seleccionarPiso(num: number): void {
 
   pisoActivo = num;
 
-  // Actualizar clases activas en botones
   const botones = contenedorLista?.querySelectorAll(".edificio-gamc__piso-item");
   botones?.forEach((b) => {
     const esActivo = b.getAttribute("data-piso") === String(num);
@@ -1121,656 +1116,1196 @@ seleccionarPiso(1);
 
 export const ORGANIGRAMA_MUNICIPAL_HTML = `<section class="org-gamc" aria-labelledby="org-titulo">
   <header class="org-gamc__encabezado">
-    <div class="org-gamc__marca">
-      <span class="org-gamc__punto-estado" aria-hidden="true"></span>
-      <span>Estructura Orgánica Oficial · GAMC</span>
+    <div class="org-gamc__insignia">
+      <span class="org-gamc__insignia-punto" aria-hidden="true"></span>
+      <span>Estructura Oficial · Gobierno Autónomo Municipal de Cochabamba</span>
     </div>
     <h2 id="org-titulo" class="org-gamc__titulo">Organigrama Institucional</h2>
-    <p class="org-gamc__subtitulo">
-      Estructura jerárquica del Gobierno Autónomo Municipal de Cochabamba. Conoce los niveles de decisión ejecutiva, secretarías municipales y direcciones operativas.
+    <p class="org-gamc__intro">
+      Estructura jerárquica y operativa del GAMC. Explora el mapa interactivo de dependencias, desde el Despacho del Alcalde hasta las Secretarías, Direcciones y Departamentos técnicos.
     </p>
 
-    <div class="org-gamc__controles">
+    <div class="org-gamc__barra-control">
       <div class="org-gamc__buscador-wrap">
         <span class="org-gamc__lupa-simbolo" aria-hidden="true">&#9906;</span>
-        <input type="search" id="org-busqueda" placeholder="Buscar dependencia, secretaría o dirección..." aria-label="Buscar en el organigrama" autocomplete="off">
-        <button type="button" id="org-limpiar-busqueda" class="org-gamc__limpiar-btn" aria-label="Limpiar búsqueda" hidden="">&times;</button>
+        <input id="org-buscar" type="search" placeholder="Buscar secretaría, dirección o unidad..." aria-label="Buscar en el organigrama" autocomplete="off">
+        <button type="button" id="org-limpiar" class="org-gamc__limpiar-btn" aria-label="Borrar búsqueda" hidden="">&times;</button>
       </div>
 
-      <nav class="org-gamc__filtros" aria-label="Filtrar por nivel orgánico">
-        <button type="button" class="org-gamc__filtro-btn is-activo" data-nivel="todos">Todos los niveles</button>
-        <button type="button" class="org-gamc__filtro-btn" data-nivel="directivo">Nivel Directivo</button>
-        <button type="button" class="org-gamc__filtro-btn" data-nivel="ejecutivo">Secretarías Municipales</button>
-        <button type="button" class="org-gamc__filtro-btn" data-nivel="operativo">Direcciones Operativas</button>
-      </nav>
+      <div class="org-gamc__selector-vista" role="group" aria-label="Modo de visualización">
+        <button type="button" id="org-btn-vista-diagrama" class="org-gamc__vista-btn is-activo" aria-pressed="true">
+          <span>Diagrama Dinámico</span>
+        </button>
+        <button type="button" id="org-btn-vista-arbol" class="org-gamc__vista-btn" aria-pressed="false">
+          <span>Estructura por Niveles</span>
+        </button>
+      </div>
     </div>
+    <p id="org-estado" class="org-gamc__estado" aria-live="polite"></p>
   </header>
 
-  <div class="org-gamc__estructura">
-    <!-- Nivel 1: Directivo Superior -->
-    <div class="org-gamc__seccion-nivel" data-seccion-nivel="directivo">
-      <div class="org-gamc__nivel-encabezado">
-        <span class="org-gamc__nivel-indicador org-gamc__nivel-indicador--marino"></span>
-        <h3 class="org-gamc__nivel-titulo">Nivel Directivo Superior</h3>
-      </div>
-      <div class="org-gamc__rejilla org-gamc__rejilla--directivo" id="org-rejilla-directivo"></div>
+  <div id="org-contenedor-diagrama" class="org-gamc__diagrama-marco">
+    <div class="org-gamc__herramientas" role="toolbar" aria-label="Herramientas de navegación del diagrama">
+      <button type="button" data-accion="acercar" title="Acercar zoom" aria-label="Acercar zoom">+</button>
+      <button type="button" data-accion="alejar" title="Alejar zoom" aria-label="Alejar zoom">&minus;</button>
+      <button type="button" data-accion="ajustar" title="Ajustar diagrama a pantalla" aria-label="Ajustar a la pantalla">Ajustar</button>
+      <span class="org-gamc__separador-herramientas"></span>
+      <button type="button" data-accion="expandir" class="org-gamc__btn-texto">Expandir todo</button>
+      <button type="button" data-accion="contraer" class="org-gamc__btn-texto">Contraer todo</button>
     </div>
 
-    <!-- Nivel 2: Secretarías Municipales -->
-    <div class="org-gamc__seccion-nivel" data-seccion-nivel="ejecutivo">
-      <div class="org-gamc__nivel-encabezado">
-        <span class="org-gamc__nivel-indicador org-gamc__nivel-indicador--celeste"></span>
-        <h3 class="org-gamc__nivel-titulo">Secretarías Municipales (Nivel Ejecutivo)</h3>
-      </div>
-      <div class="org-gamc__rejilla org-gamc__rejilla--secretarias" id="org-rejilla-secretarias"></div>
-    </div>
-
-    <!-- Nivel 3: Direcciones Operativas y Desconcentradas -->
-    <div class="org-gamc__seccion-nivel" data-seccion-nivel="operativo">
-      <div class="org-gamc__nivel-encabezado">
-        <span class="org-gamc__nivel-indicador org-gamc__nivel-indicador--teal"></span>
-        <h3 class="org-gamc__nivel-titulo">Direcciones Operativas y Unidades Desconcentradas</h3>
-      </div>
-      <div class="org-gamc__rejilla org-gamc__rejilla--operativo" id="org-rejilla-operativo"></div>
-    </div>
+    <div id="org-lienzo" class="org-gamc__lienzo"></div>
+    <ul id="org-leyenda" class="org-gamc__leyenda" aria-label="Niveles jerárquicos"></ul>
   </div>
+
+  <div id="org-contenedor-arbol" class="org-gamc__arbol-marco" hidden="">
+    <div id="org-arbol-niveles" class="org-gamc__arbol-niveles"></div>
+  </div>
+
+  <aside id="org-detalle" class="org-gamc__detalle" aria-live="polite" hidden="">
+    <div class="org-gamc__detalle-cabecera">
+      <span id="org-tipo-badge" class="org-gamc__badge-nivel"></span>
+      <p id="org-ruta" class="org-gamc__ruta"></p>
+    </div>
+    <div class="org-gamc__detalle-cuerpo">
+      <div class="org-gamc__detalle-info">
+        <h3 id="org-nombre" class="org-gamc__nombre-unidad"></h3>
+        <p id="org-cuenta" class="org-gamc__cuenta-dependientes"></p>
+      </div>
+      <div class="org-gamc__detalle-acciones">
+        <button type="button" data-detalle="superior" class="org-gamc__accion-btn">Ir a nivel superior</button>
+        <button type="button" data-detalle="rama" class="org-gamc__accion-btn">Expandir dependencias</button>
+        <button type="button" data-detalle="centrar" class="org-gamc__accion-btn org-gamc__accion-btn--primario">Centrar en diagrama</button>
+      </div>
+    </div>
+  </aside>
 </section>`;
 
 export const ORGANIGRAMA_MUNICIPAL_CSS = `.org-gamc {
-  --gamc-celeste: #00a7d6;
-  --gamc-celeste-hover: #008bb3;
-  --gamc-celeste-suave: #e6f6fb;
+  --gamc-primario: #00a7d6;
+  --gamc-primario-hover: #008bb3;
+  --gamc-primario-suave: #e6f6fb;
   --gamc-marino: #0f172a;
   --gamc-texto: #334155;
   --gamc-texto-suave: #64748b;
   --gamc-borde: #cbd5e1;
   --gamc-borde-suave: #e2e8f0;
   --gamc-superficie: #f8fafc;
-  --gamc-blanco: #ffffff;
-  --gamc-teal: #0da593;
-  --gamc-morado: #462d81;
+  --gamc-acento-morado: #462d81;
+  --gamc-acento-teal: #0da593;
   font-family: inherit;
   color: var(--gamc-marino);
   padding: 16px 8px 32px;
-  max-width: 1080px;
+  max-width: 1100px;
   margin: 0 auto 48px;
   position: relative;
   clear: both;
 }
 
 .org-gamc__encabezado {
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
-.org-gamc__marca {
+.org-gamc__insignia {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--gamc-celeste-suave);
-  color: var(--gamc-celeste-hover);
+  padding: 5px 14px;
+  background: var(--gamc-primario-suave);
+  color: var(--gamc-primario-hover);
+  border-radius: 9999px;
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   border: 1px solid rgba(0, 167, 214, 0.2);
 }
 
-.org-gamc__punto-estado {
+.org-gamc__insignia-punto {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--gamc-celeste);
+  background: var(--gamc-primario);
   display: inline-block;
 }
 
 .org-gamc__titulo {
+  margin: 0 0 8px;
   font-size: 32px;
   font-weight: 800;
-  letter-spacing: -0.02em;
   color: var(--gamc-marino);
-  margin: 0 0 8px;
+  letter-spacing: -0.02em;
 }
 
-.org-gamc__subtitulo {
+.org-gamc__intro {
+  margin: 0 0 18px;
   font-size: 15px;
-  color: var(--gamc-texto-suave);
   line-height: 1.5;
-  margin: 0 0 20px;
-  max-width: 780px;
+  color: var(--gamc-texto-suave);
+  max-width: 720px;
 }
 
-.org-gamc__controles {
+.org-gamc__barra-control {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
 .org-gamc__buscador-wrap {
   position: relative;
-  max-width: 500px;
-}
-
-.org-gamc__lupa-simbolo {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--gamc-texto-suave);
-  font-size: 16px;
-  pointer-events: none;
-}
-
-.org-gamc__buscador-wrap input {
-  width: 100%;
-  height: 44px;
-  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 260px;
+  max-width: 480px;
+  background: #ffffff;
   border: 1px solid var(--gamc-borde);
-  padding: 0 38px 0 38px;
-  font-size: 14px;
-  color: var(--gamc-marino);
-  background: var(--gamc-blanco);
+  border-radius: 10px;
+  padding: 0 12px;
   transition: border-color 0.15s, box-shadow 0.15s;
-  box-sizing: border-box;
 }
 
-.org-gamc__buscador-wrap input:focus {
-  outline: none;
-  border-color: var(--gamc-celeste);
+.org-gamc__buscador-wrap:focus-within {
+  border-color: var(--gamc-primario);
   box-shadow: 0 0 0 3px rgba(0, 167, 214, 0.15);
 }
 
+.org-gamc__lupa-simbolo {
+  font-size: 16px;
+  color: var(--gamc-texto-suave);
+  margin-right: 8px;
+  line-height: 1;
+  user-select: none;
+}
+
+.org-gamc__buscador-wrap input {
+  flex: 1;
+  height: 42px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--gamc-marino);
+  outline: none;
+}
+
 .org-gamc__limpiar-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   background: none;
   border: none;
+  padding: 4px;
+  font-size: 18px;
   color: var(--gamc-texto-suave);
-  font-size: 20px;
   cursor: pointer;
   line-height: 1;
-  padding: 4px;
 }
 
-.org-gamc__filtros {
+.org-gamc__selector-vista {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
+  background: var(--gamc-superficie);
+  padding: 4px;
+  border: 1px solid var(--gamc-borde-suave);
+  border-radius: 10px;
 }
 
-.org-gamc__filtro-btn {
-  padding: 7px 14px;
-  border-radius: 9999px;
-  border: 1px solid var(--gamc-borde);
-  background: var(--gamc-blanco);
+.org-gamc__vista-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
   font-size: 13px;
   font-weight: 600;
   color: var(--gamc-texto);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
-.org-gamc__filtro-btn:hover {
-  border-color: var(--gamc-celeste);
-  background: var(--gamc-celeste-suave);
-  color: var(--gamc-celeste-hover);
+.org-gamc__vista-btn:hover {
+  color: var(--gamc-primario);
 }
 
-.org-gamc__filtro-btn.is-activo {
-  background: var(--gamc-marino);
-  color: var(--gamc-blanco);
-  border-color: var(--gamc-marino);
-}
-
-/* Estructura por niveles */
-.org-gamc__estructura {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.org-gamc__seccion-nivel[hidden] {
-  display: none !important;
-}
-
-.org-gamc__nivel-encabezado {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--gamc-borde-suave);
-}
-
-.org-gamc__nivel-indicador {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-}
-
-.org-gamc__nivel-indicador--marino {
-  background: var(--gamc-marino);
-}
-
-.org-gamc__nivel-indicador--celeste {
-  background: var(--gamc-celeste);
-}
-
-.org-gamc__nivel-indicador--teal {
-  background: var(--gamc-teal);
-}
-
-.org-gamc__nivel-titulo {
-  font-size: 18px;
-  font-weight: 700;
+.org-gamc__vista-btn.is-activo {
+  background: #ffffff;
   color: var(--gamc-marino);
-  margin: 0;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
-.org-gamc__rejilla {
-  display: grid;
-  gap: 16px;
-}
-
-.org-gamc__rejilla--directivo {
-  grid-template-columns: 1fr;
-}
-
-.org-gamc__rejilla--secretarias {
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-}
-
-.org-gamc__rejilla--operativo {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-}
-
-/* Tarjetas de dependencias */
-.org-gamc__tarjeta {
-  background: var(--gamc-blanco);
-  border: 1px solid var(--gamc-borde-suave);
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-.org-gamc__tarjeta:hover {
-  border-color: var(--gamc-celeste);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-}
-
-.org-gamc__tarjeta--destacada {
-  border-left: 5px solid var(--gamc-marino);
-  background: linear-gradient(180deg, #ffffff 0%, var(--gamc-superficie) 100%);
-}
-
-.org-gamc__tarjeta--secretaria {
-  border-left: 5px solid var(--gamc-celeste);
-}
-
-.org-gamc__tarjeta--operativa {
-  border-left: 5px solid var(--gamc-teal);
-}
-
-.org-gamc__tarjeta-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.org-gamc__tarjeta-badge {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--gamc-superficie);
-  color: var(--gamc-texto-suave);
-}
-
-.org-gamc__tarjeta-ubicacion {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--gamc-celeste-hover);
-  background: var(--gamc-celeste-suave);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.org-gamc__tarjeta-titulo {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--gamc-marino);
-  margin: 0 0 4px;
-  line-height: 1.3;
-}
-
-.org-gamc__tarjeta-titular {
+.org-gamc__estado {
+  min-height: 20px;
+  margin: 6px 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--gamc-celeste-hover);
-  margin: 0 0 10px;
+  color: var(--gamc-primario);
 }
 
-.org-gamc__tarjeta-desc {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--gamc-texto);
-  margin: 0 0 14px;
-  flex: 1;
+.org-gamc__diagrama-marco {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  background-image: radial-gradient(var(--gamc-borde-suave) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 1.5px solid var(--gamc-borde-suave);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
 }
 
-.org-gamc__dependencias-wrap {
-  border-top: 1px solid var(--gamc-borde-suave);
-  padding-top: 10px;
-  margin-top: auto;
+.org-gamc__lienzo {
+  height: 600px;
+  cursor: grab;
 }
 
-.org-gamc__dependencias-rotulo {
-  font-size: 11px;
+.org-gamc__lienzo:active {
+  cursor: grabbing;
+}
+
+.org-gamc__herramientas {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--gamc-borde-suave);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+
+.org-gamc__herramientas button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
   font-weight: 700;
-  text-transform: uppercase;
-  color: var(--gamc-texto-suave);
-  display: block;
-  margin-bottom: 6px;
+  color: var(--gamc-marino);
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.org-gamc__chips-lista {
+.org-gamc__herramientas button:hover {
+  background: var(--gamc-superficie);
+}
+
+.org-gamc__btn-texto {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.org-gamc__separador-herramientas {
+  width: 1px;
+  height: 18px;
+  background: var(--gamc-borde-suave);
+  margin: 0 4px;
+}
+
+.org-gamc__leyenda {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
+  gap: 6px 14px;
+  max-width: 70%;
+  margin: 0;
+  padding: 8px 14px;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gamc-marino);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--gamc-borde-suave);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+
+.org-gamc__leyenda li {
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
-.org-gamc__chip {
+.org-gamc__leyenda-punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.org-gamc__lienzo path.link {
+  stroke: #00a7d6 !important;
+  stroke-width: 2px !important;
+  stroke-opacity: 0.6 !important;
+}
+
+/* Tarjeta de cada nodo en el diagrama */
+.org-nodo-tarjeta {
+  position: relative;
+  box-sizing: border-box;
+  padding: 0 4px;
+  font-family: inherit;
+}
+
+.org-nodo {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 110px;
+  background: #ffffff;
+  border: 1.5px solid var(--gamc-borde-suave);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.org-nodo:hover {
+  border-color: var(--gamc-primario);
+  box-shadow: 0 6px 18px rgba(0, 167, 214, 0.18);
+  transform: translateY(-2px);
+}
+
+.org-nodo.is-activo {
+  border-color: var(--gamc-primario);
+  box-shadow: 0 0 0 2.5px var(--gamc-primario);
+}
+
+.org-nodo.is-coincide {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+}
+
+.org-nodo__nivel-barra {
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.org-nodo__nivel-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-nodo__nivel-badge {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  margin-left: 6px;
+}
+
+.org-nodo__cuerpo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 14px;
+  flex: 1;
+}
+
+.org-nodo__nombre {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--gamc-marino);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.org-nodo__subtitulo {
   font-size: 11px;
   font-weight: 600;
-  background: var(--gamc-superficie);
-  color: var(--gamc-marino);
+  color: var(--gamc-texto-suave);
+  margin-top: 4px;
+}
+
+.org-nodo__alternar-btn {
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1.5px solid var(--gamc-primario);
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gamc-primario);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 167, 214, 0.2);
+  transition: all 0.15s ease;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.org-nodo__alternar-btn:hover {
+  background: var(--gamc-primario);
+  color: #ffffff;
+}
+
+.org-nodo__alternar-simbolo {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.org-gamc__arbol-marco {
+  background: #ffffff;
+  border: 1.5px solid var(--gamc-borde-suave);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.org-gamc__arbol-niveles {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.org-gamc__arbol-grupo {
   border: 1px solid var(--gamc-borde-suave);
-  padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.org-gamc__tarjeta[hidden] {
-  display: none !important;
+.org-gamc__arbol-grupo-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--gamc-superficie);
+  cursor: pointer;
 }
-`;
 
-export const ORGANIGRAMA_MUNICIPAL_TS = `interface OrganoDirectivo {
-  id: string;
+.org-gamc__arbol-grupo-titulo {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gamc-marino);
+}
+
+.org-gamc__arbol-hijos-lista {
+  padding: 10px 18px 14px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--gamc-borde-suave);
+}
+
+.org-gamc__arbol-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid var(--gamc-borde-suave);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.org-gamc__arbol-item:hover {
+  border-color: var(--gamc-primario);
+  background: var(--gamc-primario-suave);
+}
+
+.org-gamc__detalle {
+  margin-top: 16px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1.5px solid var(--gamc-borde-suave);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.org-gamc__detalle-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.org-gamc__badge-nivel {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.org-gamc__ruta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gamc-texto-suave);
+}
+
+.org-gamc__detalle-cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.org-gamc__nombre-unidad {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--gamc-marino);
+}
+
+.org-gamc__cuenta-dependientes {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gamc-texto-suave);
+}
+
+.org-gamc__detalle-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.org-gamc__accion-btn {
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1.5px solid var(--gamc-borde-suave);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gamc-marino);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.org-gamc__accion-btn:hover:not(:disabled) {
+  border-color: var(--gamc-primario);
+  color: var(--gamc-primario);
+}
+
+.org-gamc__accion-btn--primario {
+  background: var(--gamc-primario);
+  border-color: var(--gamc-primario);
+  color: #ffffff;
+}
+
+.org-gamc__accion-btn--primario:hover:not(:disabled) {
+  background: var(--gamc-primario-hover);
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .org-gamc__lienzo {
+    height: 480px;
+  }
+  .org-gamc__leyenda {
+    display: none;
+  }
+  .org-gamc__btn-texto {
+    display: none;
+  }
+  .org-gamc__detalle-cuerpo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}`;
+
+export const ORGANIGRAMA_MUNICIPAL_TS = `import { OrgChart } from "d3-org-chart";
+
+type Tipo = "despacho" | "secretaria" | "direccion" | "departamento" | "division";
+
+interface Unidad {
   nombre: string;
-  titular?: string;
-  nivel: "directivo" | "ejecutivo" | "operativo";
-  ubicacion: string;
-  descripcion: string;
-  dependencias?: string[];
+  tipo: Tipo;
+  hijos?: Unidad[];
 }
 
-export const DEPENDENCIAS: OrganoDirectivo[] = [
-  // Nivel Directivo Superior
-  {
-    id: "despacho-alcalde",
-    nombre: "Despacho del Alcalde Municipal",
-    titular: "Lic. Manfred Reyes Villa",
-    nivel: "directivo",
-    ubicacion: "Piso 13 · Edificio Central",
-    descripcion: "Máxima Autoridad Ejecutiva del Gobierno Autónomo Municipal de Cochabamba. Dirección estratégica, planificación de políticas públicas y coordinación general del gabinete municipal.",
-    dependencias: ["Secretaría General", "Dirección de Transparencia", "Dirección de Auditoría Interna", "Jefatura de Gabinete"],
-  },
-  {
-    id: "secretaria-general",
-    nombre: "Secretaría General y Coordinación de Gabinete",
-    nivel: "directivo",
-    ubicacion: "Piso 12 · Edificio Central",
-    descripcion: "Coordinación ejecutiva del gabinete de secretarios, relacionamiento con el Concejo Municipal y gestión de convenios interinstitucionales.",
-    dependencias: ["Dirección de Comunicación Institucional", "Unidad de Relaciones Internacionales", "Gabinete de Despacho"],
-  },
-  {
-    id: "transparencia-control",
-    nombre: "Dirección de Transparencia y Lucha Contra la Corrupción",
-    nivel: "directivo",
-    ubicacion: "Piso 11 · Edificio Central",
-    descripcion: "Garantía de probidad administrativa, prevención y procesamiento de denuncias por hechos irregulares y facilitación del acceso ciudadano a la información.",
-    dependencias: ["Unidad de Ética Pública", "Unidad de Procesamiento de Denuncias", "Oficina de Acceso a la Información"],
-  },
+interface Nodo {
+  id: string;
+  parentId: string | null;
+  nombre: string;
+  tipo: Tipo;
+  hijos: number;
+  total: number;
+  ruta: string[];
+  _expanded?: boolean;
+  _highlighted?: boolean;
+}
 
-  // Secretarías Municipales (Nivel Ejecutivo)
-  {
-    id: "sec-finanzas",
-    nombre: "Secretaría de Finanzas y Administración Tributaria",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 10 · Edificio Central",
-    descripcion: "Gestión financiera, formulación del POA y presupuesto municipal, tesorería central y política tributaria local.",
-    dependencias: ["Dirección de Recaudaciones (RUAT)", "Dirección de Presupuestos", "Dirección de Contabilidad y Tesorería", "Almacenes Centrales"],
-  },
-  {
-    id: "sec-planificacion",
-    nombre: "Secretaría de Planificación y Urbanismo",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 09 · Edificio Central",
-    descripcion: "Plan Regulador de Cochabamba, fiscalización del Código de Urbanismo, aprobación de proyectos arquitectónicos y desarrollo urbano.",
-    dependencias: ["Dirección de Urbanismo", "Departamento de Plan Regulador", "Unidad de Proyectos Urbanísticos Especiales"],
-  },
-  {
-    id: "sec-catastro",
-    nombre: "Secretaría de Administración Territorial y Catastro",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 08 · Edificio Central",
-    descripcion: "Administración del suelo urbano, emisión de registros catastrales, certificación georreferenciada, topografía y línea y nivel.",
-    dependencias: ["Dirección de Catastro Municipal", "Departamento de Topografía y Geodesia", "Unidad de Regularización de Inmuebles"],
-  },
-  {
-    id: "sec-infraestructura",
-    nombre: "Secretaría de Infraestructura y Obras Públicas",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 07 · Edificio Central",
-    descripcion: "Construcción y mantenimiento de la red vial urbana, distribuidores, puentes, drenaje pluvial y equipamiento comunal.",
-    dependencias: ["Dirección de Obras Públicas", "Unidad de Emergencias Viales", "Departamento de Contrataciones Técnicas"],
-  },
-  {
-    id: "sec-movilidad",
-    nombre: "Secretaría de Movilidad Urbana y Seguridad Ciudadana",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 06 · Edificio Central",
-    descripcion: "Regulación técnica del transporte, semaforización moderna, ciclovías integradas y vigilancia preventiva municipal.",
-    dependencias: ["Dirección de Movilidad Urbana", "Departamento de Señalización", "Dirección de Seguridad Ciudadana"],
-  },
-  {
-    id: "sec-medioambiente",
-    nombre: "Secretaría de Medio Ambiente y Protección a la Madre Tierra",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 05 · Edificio Central",
-    descripcion: "Protección ambiental de la cuenca, arborización masiva, calidad del aire y gestión integral de lagunas y serranías.",
-    dependencias: ["Dirección de Gestión Ambiental", "Departamento de Recursos Naturales", "Unidad Forestal Municipal"],
-  },
-  {
-    id: "sec-salud",
-    nombre: "Secretaría Municipal de Salud",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 04 · Edificio Central",
-    descripcion: "Administración de la red de centros de salud y hospitales de primer nivel, control epidemiológico y programas de salud escolar.",
-    dependencias: ["Dirección de Gestión Hospitalaria", "Unidad de Epidemiología", "Programa de Salud Escolar y Comunitaria"],
-  },
-  {
-    id: "sec-desarrollo-humano",
-    nombre: "Secretaría de Desarrollo Humano, Género y Generacional",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 03 · Edificio Central",
-    descripcion: "Protección integral a la niñez, juventud, adultos mayores y personas con discapacidad a través de servicios sociales especializados.",
-    dependencias: ["Defensorías de la Niñez y Adolescencia", "Departamento del Adulto Mayor", "Unidad UMADIS", "Servicios Legales Integrales (SLIM)"],
-  },
-  {
-    id: "sec-gobernabilidad",
-    nombre: "Secretaría de Gobernabilidad y Asuntos Jurídicos",
-    nivel: "ejecutivo",
-    ubicacion: "Piso 11 · Edificio Central",
-    descripcion: "Diálogo y resolución de conflictos sociales distritales, defensa jurídica del municipio y relacionamiento con juntas vecinales.",
-    dependencias: ["Dirección de Asuntos Jurídicos", "Dirección de Gobernabilidad", "Unidad de Mediación Vecinal"],
-  },
+export const ORGANIGRAMA: Unidad = {
+  nombre: "Alcalde Municipal",
+  tipo: "despacho",
+  hijos: [
+    {
+      nombre: "Dirección de Gabinete y Protocolo",
+      tipo: "direccion",
+      hijos: [
+        { nombre: "Departamento de Protocolo", tipo: "departamento" },
+        { nombre: "Dirección de Transparencia y Lucha contra la Corrupción", tipo: "direccion" },
+      ],
+    },
+    { nombre: "Dirección de Auditoría Interna", tipo: "direccion" },
+    {
+      nombre: "Secretaría de Desarrollo de Infraestructura Territorial",
+      tipo: "secretaria",
+      hijos: [
+        { nombre: "Departamento de Gestión de Riesgos", tipo: "departamento" },
+        { nombre: "Departamento de Administración de Proyectos", tipo: "departamento" },
+        {
+          nombre: "Dirección de Obras Públicas",
+          tipo: "direccion",
+          hijos: [
+            {
+              nombre: "Departamento de Infraestructura y Mejoramiento de Barrios",
+              tipo: "departamento",
+              hijos: [
+                { nombre: "División de Construcción", tipo: "division" },
+                { nombre: "División de Mantenimiento", tipo: "division" },
+              ],
+            },
+            {
+              nombre: "Departamento de Obras Viales",
+              tipo: "departamento",
+              hijos: [
+                { nombre: "División de Asfaltos", tipo: "division" },
+                { nombre: "División de Señalización y Red Vial", tipo: "division" },
+              ],
+            },
+          ],
+        },
+        {
+          nombre: "Dirección de Movilidad Urbana",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Semaforización", tipo: "departamento" },
+            { nombre: "Departamento de Tráfico y Vialidad", tipo: "departamento" },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Salud",
+      tipo: "secretaria",
+      hijos: [
+        {
+          nombre: "Dirección de Hospitales de Segundo Nivel",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Hospital del Norte", tipo: "departamento" },
+            { nombre: "Hospital del Sur", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Centros de Salud de Primer Nivel",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Red de Centros de Salud Distrito 1 a 7", tipo: "departamento" },
+            { nombre: "Red de Centros de Salud Distrito 8 a 14", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Promoción y Prevención de Salud",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Programas de Salud", tipo: "departamento" },
+            { nombre: "Departamento de Epidemiología", tipo: "departamento" },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Desarrollo Humano, Género y Generacional",
+      tipo: "secretaria",
+      hijos: [
+        {
+          nombre: "Dirección de Género y Asuntos Generacionales",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Niñez y Adolescencia (Defensorías)", tipo: "departamento" },
+            { nombre: "Departamento del Adulto Mayor", tipo: "departamento" },
+            { nombre: "Departamento de Personas con Discapacidad (UMADIS)", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Educación y Deporte",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Apoyo a Unidades Educativas", tipo: "departamento" },
+            { nombre: "Departamento de Fomento al Deporte", tipo: "departamento" },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Medio Ambiente y Protección de la Madre Tierra",
+      tipo: "secretaria",
+      hijos: [
+        {
+          nombre: "Dirección de Medio Ambiente",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Calidad Ambiental", tipo: "departamento" },
+            { nombre: "Departamento de Recursos Naturales y Áreas Protegidas", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Gestión de Residuos y Saneamiento",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Residuos Sólidos", tipo: "departamento" },
+            { nombre: "Departamento de Agua y Alcantarillado Rural", tipo: "departamento" },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría General y de Gobernabilidad",
+      tipo: "secretaria",
+      hijos: [
+        {
+          nombre: "Dirección de Gobernabilidad",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Concertación y Diálogo Ciudadano", tipo: "departamento" },
+            { nombre: "Departamento de Relacionamiento con Juntas Vecinales", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Asuntos Jurídicos",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Procesos Constitucionales", tipo: "departamento" },
+            { nombre: "Departamento de Contratos y Convenios", tipo: "departamento" },
+            { nombre: "Departamento de Unidad Jurídica", tipo: "departamento" },
+          ],
+        },
+      ],
+    },
+    {
+      nombre: "Secretaría de Desarrollo Urbano y Catastro",
+      tipo: "secretaria",
+      hijos: [
+        { nombre: "Mi Casa Segura", tipo: "direccion" },
+        {
+          nombre: "Dirección de Recaudaciones y Dinamización Económica",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Atención al Contribuyente", tipo: "departamento" },
+            { nombre: "Departamento de Fiscalización", tipo: "departamento" },
+            { nombre: "Departamento Legal Tributario", tipo: "departamento" },
+            { nombre: "Departamento de Control de Recaudaciones", tipo: "departamento" },
+            { nombre: "Departamento de Servicio de Asistencia, Liquidación y Recaudación", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Administración Geográfica y Catastro",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Gestión Catastral", tipo: "departamento" },
+            { nombre: "Departamento de Servicios Catastrales", tipo: "departamento" },
+            { nombre: "Departamento de Cartografía", tipo: "departamento" },
+            { nombre: "Departamento de Informática Catastral e Inteligencia Fiscal", tipo: "departamento" },
+          ],
+        },
+        {
+          nombre: "Dirección de Urbanismo",
+          tipo: "direccion",
+          hijos: [
+            { nombre: "Departamento de Control de Edificaciones", tipo: "departamento" },
+            { nombre: "División de Regulación de Edificaciones", tipo: "division" },
+            { nombre: "Departamento de Administración Urbana", tipo: "departamento" },
+          ],
+        },
+      ],
+    },
+  ],
+};
 
-  // Direcciones Operativas y Desconcentradas
-  {
-    id: "op-recaudaciones",
-    nombre: "Dirección de Recaudaciones y RUAT",
-    nivel: "operativo",
-    ubicacion: "Piso 02 · Edificio Central",
-    descripcion: "Atención al contribuyente para cobro de impuestos a inmuebles, vehículos y patentes comerciales.",
+const TIPOS: Record<Tipo, { etiqueta: string; rol: string; fondo: string; trazo: string; textoColor: string }> = {
+  despacho: {
+    etiqueta: "Despacho Alcaldía",
+    rol: "Máxima Autoridad Ejecutiva",
+    fondo: "#0f172a",
+    trazo: "#0f172a",
+    textoColor: "#00a7d6",
   },
-  {
-    id: "op-catastro-operativo",
-    nombre: "Plataforma de Catastro Urbano",
-    nivel: "operativo",
-    ubicacion: "Piso 08 · Edificio Central",
-    descripcion: "Ventanillas de tramitación de certificados catastrales, línea y nivel y fraccionamiento.",
+  secretaria: {
+    etiqueta: "Secretaría Municipal",
+    rol: "Nivel Ejecutivo",
+    fondo: "#e6f6fb",
+    trazo: "#00a7d6",
+    textoColor: "#008bb3",
   },
-  {
-    id: "op-intendencia",
-    nombre: "Intendencia Municipal de Cochabamba",
-    nivel: "operativo",
-    ubicacion: "Mercado Central / Oficinas Desconcentradas",
-    descripcion: "Control de higiene e inocuidad alimentaria en mercados, fiscalización de pesaje y defensa del consumidor.",
+  direccion: {
+    etiqueta: "Dirección",
+    rol: "Nivel Operativo",
+    fondo: "#ecfdf5",
+    trazo: "#0da593",
+    textoColor: "#059669",
   },
-  {
-    id: "op-defensorias",
-    nombre: "Red Distrital de Defensorías de la Niñez",
-    nivel: "operativo",
-    ubicacion: "Subalcaldías Distritales (Distritos 1 al 14)",
-    descripcion: "Atención multidisciplinaria descentralizada (legal, psicológica y social) para la niñez y familia en cada distrito.",
+  departamento: {
+    etiqueta: "Departamento",
+    rol: "Área Técnica",
+    fondo: "#faf5ff",
+    trazo: "#462d81",
+    textoColor: "#462d81",
   },
-  {
-    id: "op-emavra",
-    nombre: "Empresa Municipal de Áreas Verdes y Recreación (EMAVRA)",
-    nivel: "operativo",
-    ubicacion: "Parques y Viveros Municipales",
-    descripcion: "Mantenimiento y embellecimiento de plazas, parques infantiles, avenidas y áreas verdes de la ciudad.",
+  division: {
+    etiqueta: "División",
+    rol: "Unidad Especializada",
+    fondo: "#f8fafc",
+    trazo: "#64748b",
+    textoColor: "#475569",
   },
-  {
-    id: "op-emsa",
-    nombre: "Empresa Municipal de Servicios de Aseo (EMSA)",
-    nivel: "operativo",
-    ubicacion: "Instalaciones Operativas EMSA",
-    descripcion: "Recolección, barrido, transporte y tratamiento técnico de residuos sólidos en todo el municipio.",
-  },
-];
+};
 
-const rejillaDirectivo = document.getElementById("org-rejilla-directivo") as HTMLElement;
-const rejillaSecretarias = document.getElementById("org-rejilla-secretarias") as HTMLElement;
-const rejillaOperativo = document.getElementById("org-rejilla-operativo") as HTMLElement;
-const inputBusquedaOrg = document.getElementById("org-busqueda") as HTMLInputElement;
-const btnLimpiarOrg = document.getElementById("org-limpiar-busqueda") as HTMLButtonElement;
-const botonesFiltro = document.querySelectorAll<HTMLButtonElement>(".org-gamc__filtro-btn");
-const seccionesNivel = document.querySelectorAll<HTMLElement>(".org-gamc__seccion-nivel");
+let idContador = 0;
+const nodos: Nodo[] = [];
+const porId = new Map<string, Nodo>();
 
-function crearTarjetaHTML(item: OrganoDirectivo): string {
-  const claseTipo =
-    item.nivel === "directivo"
-      ? "org-gamc__tarjeta--destacada"
-      : item.nivel === "ejecutivo"
-      ? "org-gamc__tarjeta--secretaria"
-      : "org-gamc__tarjeta--operativa";
+function aplanar(unidad: Unidad, parentId: string | null = null, ancestros: string[] = []): Nodo {
+  const id = \`u-\${++idContador}\`;
+  const ruta = [...ancestros, unidad.nombre];
+  const nodo: Nodo = {
+    id,
+    parentId,
+    nombre: unidad.nombre,
+    tipo: unidad.tipo,
+    hijos: unidad.hijos ? unidad.hijos.length : 0,
+    total: 0,
+    ruta,
+    _expanded: parentId === null || unidad.tipo === "secretaria",
+    _highlighted: false,
+  };
+  nodos.push(nodo);
+  porId.set(id, nodo);
 
-  const rotuloNivel =
-    item.nivel === "directivo"
-      ? "Nivel Directivo"
-      : item.nivel === "ejecutivo"
-      ? "Secretaría Municipal"
-      : "Dirección Operativa";
+  let cuentaTotal = 0;
+  if (unidad.hijos) {
+    unidad.hijos.forEach((hijo) => {
+      const descendiente = aplanar(hijo, id, ruta);
+      cuentaTotal += 1 + descendiente.total;
+    });
+  }
+  nodo.total = cuentaTotal;
+  return nodo;
+}
 
-  return \`<article class="org-gamc__tarjeta \${claseTipo}" data-id="\${item.id}" data-nivel="\${item.nivel}">
-    <div class="org-gamc__tarjeta-meta">
-      <span class="org-gamc__tarjeta-badge">\${rotuloNivel}</span>
-      <span class="org-gamc__tarjeta-ubicacion">\${item.ubicacion}</span>
-    </div>
-    <h4 class="org-gamc__tarjeta-titulo">\${item.nombre}</h4>
-    \${item.titular ? \`<div class="org-gamc__tarjeta-titular">\${item.titular}</div>\` : ""}
-    <p class="org-gamc__tarjeta-desc">\${item.descripcion}</p>
-    \${
-      item.dependencias && item.dependencias.length > 0
-        ? \`<div class="org-gamc__dependencias-wrap">
-            <span class="org-gamc__dependencias-rotulo">Dependencias a su cargo:</span>
-            <div class="org-gamc__chips-lista">
-              \${item.dependencias.map((dep) => \`<span class="org-gamc__chip">\${dep}</span>\`).join("")}
-            </div>
-          </div>\`
-        : ""
+const raiz = aplanar(ORGANIGRAMA);
+
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const lienzo = $("org-lienzo");
+const buscador = $<HTMLInputElement>("org-buscar");
+const limpiar = $<HTMLButtonElement>("org-limpiar");
+const estado = $("org-estado");
+const detalle = $("org-detalle");
+const leyenda = $("org-leyenda");
+
+const contenedorDiagrama = $("org-contenedor-diagrama");
+const contenedorArbol = $("org-contenedor-arbol");
+const btnVistaDiagrama = $<HTMLButtonElement>("org-btn-vista-diagrama");
+const btnVistaArbol = $<HTMLButtonElement>("org-btn-vista-arbol");
+const arbolNiveles = $("org-arbol-niveles");
+
+const escapar = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const normalizar = (t: string) => t.normalize("NFD").replace(/\\p{M}/gu, "").toLowerCase();
+
+let seleccion: string | null = null;
+
+const grafico = new OrgChart()
+  .container("#org-lienzo")
+  .svgHeight(lienzo.clientHeight || 580)
+  .svgWidth(lienzo.clientWidth || 920)
+  .data(nodos)
+  .nodeWidth(() => 230)
+  .nodeHeight(() => 110)
+  .childrenMargin(() => 42)
+  .siblingsMargin(() => 16)
+  .neighbourMargin(() => 20)
+  .compact(false)
+  .duration(280)
+  .buttonContent(() => "")
+  .onNodeClick(() => {})
+  .nodeContent((d: { data: Nodo; width: number; height: number }) => {
+    const nodo = d.data;
+    const tipo = TIPOS[nodo.tipo];
+    const tieneHijos = nodo.hijos > 0;
+    const btnAlternar = tieneHijos
+      ? \`<button type="button" class="org-nodo__alternar-btn \${nodo._expanded ? "is-abierto" : ""}" data-alternar="\${nodo.id}" aria-label="\${nodo._expanded ? "Contraer" : "Expandir"} \${escapar(nodo.nombre)}">
+          <span class="org-nodo__alternar-simbolo">\${nodo._expanded ? "−" : "+"}</span>
+          <span>\${nodo._expanded ? "Contraer" : \`\${nodo.hijos} dependencias\`}</span>
+        </button>\`
+      : "";
+
+    const clases = [
+      "org-nodo",
+      nodo._highlighted ? "is-coincide" : "",
+      nodo.id === seleccion ? "is-activo" : "",
+    ].join(" ");
+
+    return \`<div class="org-nodo-tarjeta" style="width:\${d.width}px;height:\${d.height}px">
+      <div class="\${clases}" data-id="\${nodo.id}" role="button" tabindex="0">
+        <div class="org-nodo__nivel-barra" style="background:\${tipo.trazo}">
+          <span class="org-nodo__nivel-texto">\${tipo.etiqueta}</span>
+          \${tieneHijos ? \`<span class="org-nodo__nivel-badge">\${nodo.hijos}</span>\` : ""}
+        </div>
+        <div class="org-nodo__cuerpo">
+          <strong class="org-nodo__nombre">\${escapar(nodo.nombre)}</strong>
+          <span class="org-nodo__subtitulo">\${tipo.rol}</span>
+        </div>
+      </div>
+      \${btnAlternar}
+    </div>\`;
+  });
+
+function dibujar(ajustar = false) {
+  grafico.svgWidth(lienzo.clientWidth || 920).data(nodos).render();
+  if (ajustar) grafico.fit();
+}
+
+function abrirAncestros(nodo: Nodo) {
+  let padre = nodo.parentId ? porId.get(nodo.parentId) : undefined;
+  while (padre) {
+    padre._expanded = true;
+    padre = padre.parentId ? porId.get(padre.parentId) : undefined;
+  }
+}
+
+const descendientes = (nodo: Nodo): Nodo[] =>
+  nodos.filter((otro) => otro.parentId === nodo.id).flatMap((hijo) => [hijo, ...descendientes(hijo)]);
+
+function reiniciar() {
+  nodos.forEach((nodo) => {
+    nodo._expanded = false;
+    nodo._highlighted = false;
+  });
+  raiz._expanded = true;
+}
+
+function buscar(texto: string) {
+  const q = normalizar(texto.trim());
+  limpiar.hidden = q === "";
+  reiniciar();
+
+  if (q === "") {
+    estado.textContent = "";
+  } else {
+    const coincidencias = nodos.filter((nodo) => normalizar(nodo.nombre).includes(q));
+    coincidencias.forEach((nodo) => {
+      nodo._highlighted = true;
+      abrirAncestros(nodo);
+    });
+    estado.textContent =
+      coincidencias.length === 0
+        ? "No se encontraron dependencias con ese término."
+        : \`\${coincidencias.length} dependencias localizadas en el organigrama.\`;
+  }
+
+  dibujar(true);
+  generarVistaArbol();
+}
+
+function elegir(id: string) {
+  const nodo = porId.get(id);
+  if (!nodo) return;
+  seleccion = id;
+  if (nodo.hijos > 0 && !nodo._expanded) nodo._expanded = true;
+
+  const tipo = TIPOS[nodo.tipo];
+  detalle.hidden = false;
+
+  const badge = $("org-tipo-badge");
+  badge.textContent = tipo.etiqueta;
+  badge.style.backgroundColor = tipo.fondo;
+  badge.style.color = tipo.textoColor;
+  badge.style.border = \`1px solid \${tipo.trazo}\`;
+
+  $("org-ruta").textContent = nodo.ruta.join("  ›  ");
+  $("org-nombre").textContent = nodo.nombre;
+  $("org-cuenta").textContent =
+    nodo.hijos === 0
+      ? "Unidad operativa final (sin dependencias asignadas)."
+      : \`\${nodo.hijos} \${nodo.hijos === 1 ? "dependencia directa" : "dependencias directas"} · \${nodo.total} en total bajo esta área.\`;
+
+  detalle.querySelector<HTMLButtonElement>('[data-detalle="superior"]')!.disabled = nodo.parentId === null;
+  detalle.querySelector<HTMLButtonElement>('[data-detalle="rama"]')!.disabled = nodo.hijos === 0;
+
+  dibujar();
+}
+
+function generarVistaArbol() {
+  arbolNiveles.innerHTML = "";
+  const secretarias = nodos.filter((n) => n.parentId === raiz.id);
+
+  const rootDiv = document.createElement("div");
+  rootDiv.className = "org-gamc__arbol-item";
+  rootDiv.style.borderColor = "var(--gamc-primario)";
+  rootDiv.style.background = "var(--gamc-primario-suave)";
+  rootDiv.innerHTML = \`<div><strong style="font-size:15px;color:var(--gamc-marino)">\${raiz.nombre}</strong><br><small style="color:var(--gamc-texto-suave)">Máxima Autoridad Ejecutiva Municipal</small></div><span class="org-gamc__badge-nivel" style="background:#0f172a;color:#ffffff">\${TIPOS[raiz.tipo].etiqueta}</span>\`;
+  rootDiv.addEventListener("click", () => elegir(raiz.id));
+  arbolNiveles.appendChild(rootDiv);
+
+  secretarias.forEach((sec) => {
+    const grupo = document.createElement("div");
+    grupo.className = "org-gamc__arbol-grupo";
+
+    const cab = document.createElement("div");
+    cab.className = "org-gamc__arbol-grupo-cabecera";
+    cab.innerHTML = \`<div class="org-gamc__arbol-grupo-titulo">\${sec.nombre}</div><span class="org-gamc__badge-nivel" style="background:\${TIPOS[sec.tipo].fondo};color:\${TIPOS[sec.tipo].textoColor};border:1px solid \${TIPOS[sec.tipo].trazo}">\${TIPOS[sec.tipo].etiqueta}</span>\`;
+    cab.addEventListener("click", () => elegir(sec.id));
+    grupo.appendChild(cab);
+
+    const subHijos = nodos.filter((n) => n.parentId === sec.id);
+    if (subHijos.length > 0) {
+      const lista = document.createElement("div");
+      lista.className = "org-gamc__arbol-hijos-lista";
+
+      subHijos.forEach((sub) => {
+        const item = document.createElement("div");
+        item.className = "org-gamc__arbol-item";
+        item.innerHTML = \`<span>\${sub.nombre}</span><span style="font-size:10px;font-weight:700;color:\${TIPOS[sub.tipo].textoColor}">\${TIPOS[sub.tipo].etiqueta}</span>\`;
+        item.addEventListener("click", () => elegir(sub.id));
+        lista.appendChild(item);
+      });
+      grupo.appendChild(lista);
     }
-  </article>\`;
-}
 
-function renderizarOrganigrama(): void {
-  const directivos = DEPENDENCIAS.filter((d) => d.nivel === "directivo");
-  const secretarias = DEPENDENCIAS.filter((d) => d.nivel === "ejecutivo");
-  const operativos = DEPENDENCIAS.filter((d) => d.nivel === "operativo");
-
-  if (rejillaDirectivo) rejillaDirectivo.innerHTML = directivos.map(crearTarjetaHTML).join("");
-  if (rejillaSecretarias) rejillaSecretarias.innerHTML = secretarias.map(crearTarjetaHTML).join("");
-  if (rejillaOperativo) rejillaOperativo.innerHTML = operativos.map(crearTarjetaHTML).join("");
-}
-
-function aplicarFiltros(): void {
-  const q = inputBusquedaOrg ? inputBusquedaOrg.value.trim().toLowerCase() : "";
-  const filtroActivo = document.querySelector(".org-gamc__filtro-btn.is-activo")?.getAttribute("data-nivel") || "todos";
-
-  if (btnLimpiarOrg) btnLimpiarOrg.hidden = q.length === 0;
-
-  // Filtrar secciones por nivel
-  seccionesNivel.forEach((sec) => {
-    const nivelSec = sec.getAttribute("data-seccion-nivel");
-    const coincideNivel = filtroActivo === "todos" || filtroActivo === nivelSec;
-    sec.hidden = !coincideNivel;
-  });
-
-  // Filtrar tarjetas por búsqueda
-  const tarjetas = document.querySelectorAll<HTMLElement>(".org-gamc__tarjeta");
-  tarjetas.forEach((tarjeta) => {
-    const id = tarjeta.getAttribute("data-id");
-    const item = DEPENDENCIAS.find((d) => d.id === id);
-    if (!item) return;
-
-    const coincideTexto =
-      q.length === 0 ||
-      item.nombre.toLowerCase().includes(q) ||
-      (item.titular && item.titular.toLowerCase().includes(q)) ||
-      item.descripcion.toLowerCase().includes(q) ||
-      item.ubicacion.toLowerCase().includes(q) ||
-      (item.dependencias && item.dependencias.some((dep) => dep.toLowerCase().includes(q)));
-
-    tarjeta.hidden = !coincideTexto;
+    arbolNiveles.appendChild(grupo);
   });
 }
 
-botonesFiltro.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    botonesFiltro.forEach((b) => b.classList.remove("is-activo"));
-    btn.classList.add("is-activo");
-    aplicarFiltros();
-  });
+btnVistaDiagrama.addEventListener("click", () => {
+  btnVistaDiagrama.classList.add("is-activo");
+  btnVistaArbol.classList.remove("is-activo");
+  contenedorDiagrama.hidden = false;
+  contenedorArbol.hidden = true;
+  dibujar(true);
 });
 
-if (inputBusquedaOrg) {
-  inputBusquedaOrg.addEventListener("input", aplicarFiltros);
-}
+btnVistaArbol.addEventListener("click", () => {
+  btnVistaArbol.classList.add("is-activo");
+  btnVistaDiagrama.classList.remove("is-activo");
+  contenedorDiagrama.hidden = true;
+  contenedorArbol.hidden = false;
+  generarVistaArbol();
+});
 
-if (btnLimpiarOrg) {
-  btnLimpiarOrg.addEventListener("click", () => {
-    inputBusquedaOrg.value = "";
-    inputBusquedaOrg.dispatchEvent(new Event("input"));
-    inputBusquedaOrg.focus();
-  });
-}
+let espera: number | undefined;
+buscador.addEventListener("input", () => {
+  window.clearTimeout(espera);
+  espera = window.setTimeout(() => buscar(buscador.value), 160);
+});
 
-renderizarOrganigrama();
+limpiar.addEventListener("click", () => {
+  buscador.value = "";
+  buscar("");
+  buscador.focus();
+});
+
+lienzo.addEventListener("click", (e) => {
+  const objetivo = e.target as HTMLElement;
+  const alternar = objetivo.closest<HTMLElement>("[data-alternar]");
+  if (alternar) {
+    const nodo = porId.get(alternar.dataset.alternar!);
+    if (nodo) {
+      nodo._expanded = !nodo._expanded;
+      dibujar();
+    }
+    return;
+  }
+  const tarjeta = objetivo.closest<HTMLElement>("[data-id]");
+  if (tarjeta) elegir(tarjeta.dataset.id!);
+});
+
+lienzo.addEventListener("keydown", (e) => {
+  const tarjeta = (e.target as HTMLElement).closest<HTMLElement>("[data-id]");
+  if (tarjeta && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    elegir(tarjeta.dataset.id!);
+  }
+});
+
+const ACCIONES: Record<string, () => void> = {
+  acercar: () => grafico.zoomIn(),
+  alejar: () => grafico.zoomOut(),
+  ajustar: () => grafico.fit(),
+  expandir: () => {
+    nodos.forEach((nodo) => (nodo._expanded = nodo.hijos > 0));
+    dibujar(true);
+  },
+  contraer: () => {
+    seleccion = null;
+    detalle.hidden = true;
+    buscador.value = "";
+    buscar("");
+  },
+};
+
+document.querySelectorAll<HTMLElement>("[data-accion]").forEach((boton) =>
+  boton.addEventListener("click", () => ACCIONES[boton.dataset.accion!]())
+);
+
+detalle.addEventListener("click", (e) => {
+  const boton = (e.target as HTMLElement).closest<HTMLElement>("[data-detalle]");
+  const nodo = seleccion ? porId.get(seleccion) : undefined;
+  if (!boton || !nodo) return;
+  if (boton.dataset.detalle === "superior" && nodo.parentId) {
+    abrirAncestros(nodo);
+    elegir(nodo.parentId);
+    grafico.setCentered(nodo.parentId).render();
+  } else if (boton.dataset.detalle === "rama") {
+    [nodo, ...descendientes(nodo)].forEach((otro) => (otro._expanded = otro.hijos > 0));
+    dibujar(true);
+  } else if (boton.dataset.detalle === "centrar") {
+    abrirAncestros(nodo);
+    dibujar();
+    grafico.setCentered(nodo.id).render();
+  }
+});
+
+leyenda.innerHTML = (Object.values(TIPOS) as (typeof TIPOS)[Tipo][])
+  .map(
+    (tipo) =>
+      \`<li><span class="org-gamc__leyenda-punto" style="background:\${tipo.trazo}"></span>\${tipo.etiqueta}</li>\`
+  )
+  .join("");
+
+let redimension: number | undefined;
+window.addEventListener("resize", () => {
+  window.clearTimeout(redimension);
+  redimension = window.setTimeout(() => dibujar(), 250);
+});
+
+reiniciar();
+dibujar(true);
+generarVistaArbol();
 `;
 
 export function getEdificioMunicipalCode(): CodeSource {
