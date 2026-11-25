@@ -40,12 +40,16 @@ describe("GAMC Custom Blocks", () => {
       }
     });
 
-    it("devuelve objeto CodeSource completo con tailwind activo", () => {
+    it("devuelve objeto CodeSource completo con exactamente 13 pisos", () => {
       const code = getEdificioMunicipalCode();
       expect(code.tailwind).toBe(true);
       expect(code.html).toContain("edificio-gamc");
-      expect(code.css).toContain("--gamc-primario");
+      expect(code.css).toContain("--gamc-celeste");
       expect(code.js).toContain("PISOS");
+      expect(code.html).toContain("Pisos del Edificio (13)");
+      expect(code.js).toContain("piso: 13");
+      expect(code.js).not.toContain("piso: 14");
+      expect(code.js).not.toContain("piso: 23");
     });
   });
 
@@ -77,15 +81,14 @@ describe("GAMC Custom Blocks", () => {
       }
     });
 
-    it("devuelve objeto CodeSource completo y no contiene coronas ni estilos genéricos", () => {
+    it("devuelve estructura limpia por niveles sin coronas ni esquemas artificiales", () => {
       const code = getOrganigramaMunicipalCode();
       expect(code.tailwind).toBe(true);
       expect(code.html).toContain("org-gamc");
-      // Verifica que no se usen íconos de corona ni esquemas artificiales
       expect(code.js).not.toContain("corona");
-      expect(code.js).toContain("escudo");
-      expect(code.js).toContain("capitolio");
-      expect(code.js).toContain("brujula");
+      expect(code.js).toContain("DEPENDENCIAS");
+      expect(code.js).toContain("despacho-alcalde");
+      expect(code.js).toContain("sec-finanzas");
     });
   });
 });
