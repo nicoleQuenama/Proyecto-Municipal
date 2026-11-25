@@ -25,7 +25,7 @@ import type { LinkTarget } from "../navigation/types";
 import { INITIAL_STATE as INITIAL_TITLE } from "../title-editor/constants";
 import { setHidden } from "./hiding";
 import { purgeHidden } from "./hidden-items";
-import { BUILT_IN_COMPONENTS, EXAMPLE_COMPONENTS } from "./component-templates";
+import { BANNER_COMPONENT_ID, BUILT_IN_COMPONENTS, EXAMPLE_COMPONENTS } from "./component-templates";
 import { removeBlocks, removeComponent, removeElements, setTitleRemoved } from "./removal-rules";
 import { EMPTY_CODE } from "./code-defaults";
 import { patchComponentElement, resizeComponent } from "./component-scope-rules";
@@ -267,6 +267,12 @@ const HANDLERS: Handlers = {
         !comp.id.includes("footer") &&
         !comp.name.toLowerCase().includes("pie"));
 
+    const isBanner =
+      comp &&
+      (comp.id === BANNER_COMPONENT_ID ||
+        comp.id.toLowerCase().includes("banner") ||
+        comp.name.toLowerCase().includes("banner"));
+
     // Un bloque de código nace con un ejemplo que ya funciona. Cabeceras nacen con menú en tablet y móvil.
     const block = {
       id: action.id,
@@ -274,6 +280,7 @@ const HANDLERS: Handlers = {
       ...(slot ? { slot } : {}),
       ...(action.scope ? { scope: action.scope } : {}),
       ...(isNavHeader ? { adapt: { tablet: "menu" as const, mobile: "menu" as const } } : {}),
+      ...(isBanner ? { box: { span: "width" as const } } : {}),
       ...newBlockCode(comp, action.componentId),
     };
     const next = {
