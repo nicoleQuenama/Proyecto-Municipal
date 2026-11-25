@@ -750,14 +750,14 @@ export function MediaTab() {
                     e.dataTransfer.setData("text/uri-list", item.src);
                     e.dataTransfer.effectAllowed = "copy";
                   }}
-                  className="group relative flex flex-col overflow-hidden rounded-lg border border-line bg-canvas transition-all hover:border-accent hover:shadow-md"
+                  className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-canvas transition-all hover:border-accent hover:shadow-md"
                 >
-                  {/* Vista previa miniatura */}
+                  {/* Vista previa miniatura sin capas parpadeantes */}
                   <div
                     onClick={() => handleApplyToSelection(item)}
-                    title="Haz clic para aplicar al elemento seleccionado o insertar"
-                    style={{ aspectRatio: "4/3", minHeight: "110px" }}
-                    className="relative aspect-[4/3] w-full min-h-[110px] cursor-pointer overflow-hidden bg-slate-900"
+                    title={site.selectedElementId ? "Haz clic para reemplazar en el elemento seleccionado" : "Haz clic para insertar como bloque componente"}
+                    style={{ aspectRatio: "16/10", minHeight: "95px" }}
+                    className="relative aspect-[16/10] w-full min-h-[95px] cursor-pointer overflow-hidden bg-slate-900"
                   >
                     {item.kind === "image" ? (
                       <>
@@ -778,12 +778,12 @@ export function MediaTab() {
                           style={{ display: "none" }}
                           className="h-full w-full flex-col items-center justify-center bg-slate-800 p-2 text-center text-ink-dim"
                         >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-1 opacity-50">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-1 opacity-50">
                             <rect x="3" y="3" width="18" height="18" rx="2" />
                             <circle cx="8.5" cy="8.5" r="1.5" />
                             <path d="M21 15l-5-5L5 21" />
                           </svg>
-                          <span className="text-[9px] opacity-70">Imagen no disponible</span>
+                          <span className="text-[9px] opacity-70">No disponible</span>
                         </div>
                       </>
                     ) : (
@@ -795,105 +795,46 @@ export function MediaTab() {
                     )}
 
                     {/* Badge de tipo */}
-                    <span className="absolute top-1.5 left-1.5 rounded bg-black/60 px-1 py-0.5 text-[9px] font-bold text-white uppercase backdrop-blur-xs">
+                    <span className="absolute top-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase backdrop-blur-xs">
                       {item.kind === "image" ? "IMG" : "VID"}
                     </span>
 
-                    {/* Acciones en hover rápido */}
-                    <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                      <div className="flex items-center justify-between gap-1">
-                        {site.selectedId && site.selectedElementId ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReplaceSelectedElement(item);
-                            }}
-                            title="Reemplazar imagen en el elemento seleccionado"
-                            className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
-                          >
-                            Reemplazar
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleInsertAsImageBlock(item);
-                              }}
-                              title="Insertar como bloque componente"
-                              className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer"
-                            >
-                              + Bloque
-                            </button>
-                            {item.kind === "image" && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleInsertAsBanner(item);
-                                }}
-                                title="Insertar como banner a todo el ancho"
-                                className="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white hover:bg-indigo-500 cursor-pointer"
-                              >
-                                + Banner
-                              </button>
-                            )}
-                          </>
-                        )}
-
-                        {item.kind === "image" && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetAsPageBackground(item);
-                            }}
-                            title="Usar como fondo de página"
-                            className="rounded bg-white/20 p-1 text-[10px] text-white hover:bg-white/40 cursor-pointer"
-                          >
-                            Fondo
-                          </button>
-                        )}
-
-                        {isSuperAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRequestDelete(item);
-                            }}
-                            title="Eliminar de forma segura de la biblioteca"
-                            className="rounded bg-red-500/80 p-1 text-[10px] text-white hover:bg-red-500 cursor-pointer"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    {/* Botón de borrado para superadmin en esquina superior */}
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRequestDelete(item);
+                        }}
+                        title="Eliminar de forma segura de la biblioteca"
+                        className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded bg-black/60 text-[10px] text-white hover:bg-red-600 transition-colors cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
 
-                  {/* Nombre, etiqueta del archivo y botones visibles de insercion */}
+                  {/* Nombre, etiqueta y botones de acción permanentemente visibles (sin parpadeos) */}
                   <div className="p-2 flex flex-col gap-1.5 border-t border-line/40 bg-canvas">
-                    <div className="flex flex-col">
+                    <div className="flex items-center justify-between gap-1">
                       <p className="truncate text-[11px] font-medium text-ink" title={item.name}>
                         {item.name}
                       </p>
                       {item.tag && (
-                        <span className="truncate text-[10px] font-semibold text-accent" title={`#${item.tag}`}>
+                        <span className="shrink-0 rounded bg-accent/10 px-1 py-0.2 text-[9px] font-semibold text-accent" title={`#${item.tag}`}>
                           #{item.tag}
                         </span>
                       )}
                     </div>
 
-                    {/* Botones visibles permanentemente */}
+                    {/* Botones de acción directos, siempre visibles */}
                     <div className="flex items-center gap-1 pt-0.5">
                       {site.selectedId && site.selectedElementId ? (
                         <button
                           type="button"
                           onClick={() => handleReplaceSelectedElement(item)}
-                          className="w-full rounded bg-accent py-1 text-[10px] font-semibold text-white hover:bg-accent/90 cursor-pointer text-center"
+                          className="w-full rounded bg-accent py-1 text-[10px] font-semibold text-white hover:bg-accent/90 transition-colors cursor-pointer text-center shadow-xs"
                           title="Reemplazar imagen en el elemento seleccionado"
                         >
                           Reemplazar en selección
@@ -912,24 +853,23 @@ export function MediaTab() {
                             <button
                               type="button"
                               onClick={() => handleInsertAsBanner(item)}
-                              className="flex-1 rounded border border-indigo-500/40 bg-indigo-500/10 px-1.5 py-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer text-center"
+                              className="flex-1 rounded border border-indigo-500/40 bg-indigo-500/10 px-1.5 py-1 text-[10px] font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer text-center"
                               title="Insertar como banner a todo el ancho"
                             >
                               + Banner
                             </button>
                           )}
+                          {item.kind === "image" && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetAsPageBackground(item)}
+                              className="rounded border border-line bg-canvas px-1.5 py-1 text-[10px] text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer text-center"
+                              title="Usar como fondo de página"
+                            >
+                              Fondo
+                            </button>
+                          )}
                         </>
-                      )}
-
-                      {item.kind === "image" && (
-                        <button
-                          type="button"
-                          onClick={() => handleSetAsPageBackground(item)}
-                          className="rounded border border-line bg-canvas px-1.5 py-1 text-[10px] text-ink-dim hover:bg-hover hover:text-ink cursor-pointer"
-                          title="Usar como fondo de página"
-                        >
-                          Fondo
-                        </button>
                       )}
                     </div>
                   </div>
