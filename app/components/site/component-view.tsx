@@ -364,9 +364,12 @@ function PositionedElement({
     const isTopChild = !element.parentId;
     const isBackdropEl = Boolean(
       (interaction?.gestures && isBackdrop(element, interaction.gestures.size)) ||
-      (element.kind === "rect" && !element.parentId && (
+      ((element.kind === "rect" || element.kind === "image") && !element.parentId && (
         (element.role as string) === "background" ||
+        (element.role as string) === "banner" ||
         element.id.endsWith("-bg") ||
+        element.id === "banner-image" ||
+        element.id === "image-content" ||
         (element.x === 0 && element.y === 0 && element.width >= 600 && element.height >= 200)
       ))
     );
@@ -393,14 +396,22 @@ function PositionedElement({
         onClick={interactive ? follow : undefined}
         style={{
           ...boundStyle,
-          ...(!isFlow
+          ...(isBackdropEl
             ? {
                 position: "absolute",
-                left: element.x,
-                top: element.y,
-                width: shown.width,
-                height: shown.height,
+                left: 0,
+                top: 0,
+                width: "100%",
+                height: "100%",
               }
+            : !isFlow
+              ? {
+                  position: "absolute",
+                  left: element.x,
+                  top: element.y,
+                  width: shown.width,
+                  height: shown.height,
+                }
             : isTopChild
               ? {
                   flex: (interaction?.classes[SECTION_KEY] || "").includes("flex-row") ? "1 1 240px" : undefined,
@@ -444,9 +455,12 @@ function PositionedElement({
     const isTopChild = !element.parentId;
     const isBackdropEl = Boolean(
       (gestures && isBackdrop(element, gestures.size)) ||
-      (element.kind === "rect" && !element.parentId && (
+      ((element.kind === "rect" || element.kind === "image") && !element.parentId && (
         (element.role as string) === "background" ||
+        (element.role as string) === "banner" ||
         element.id.endsWith("-bg") ||
+        element.id === "banner-image" ||
+        element.id === "image-content" ||
         (element.x === 0 && element.y === 0 && element.width >= 600 && element.height >= 200)
       ))
     );
@@ -571,14 +585,22 @@ function PositionedElement({
         style={{
           ...boundStyle,
           ...(element.fill && element.fill !== "transparent" ? { background: element.fill } : {}),
-          ...(!isFlow
+          ...(isBackdropEl
             ? {
                 position: "absolute",
-                left: element.x,
-                top: element.y,
-                width: shown.width,
-                height: shown.height,
+                left: 0,
+                top: 0,
+                width: "100%",
+                height: "100%",
               }
+            : !isFlow
+              ? {
+                  position: "absolute",
+                  left: element.x,
+                  top: element.y,
+                  width: shown.width,
+                  height: shown.height,
+                }
             : isTopChild
               ? {
                   flex: (interaction?.classes[SECTION_KEY] || "").includes("flex-col") ? "none" : "1 1 240px",

@@ -12,8 +12,6 @@ import {
 } from "../media/media-usage";
 import { useCurrentPage, useSite, useSiteDispatch } from "../site/site-context";
 import {
-  BANNER_COMPONENT,
-  BANNER_COMPONENT_ID,
   IMAGE_BLOCK_COMPONENT,
   IMAGE_BLOCK_COMPONENT_ID,
 } from "../site/component-templates";
@@ -312,41 +310,7 @@ export function MediaTab() {
     showFeedback("Imagen insertada como componente en la página actual");
   };
 
-  // 2. Insertar imagen como banner a todo el ancho (full width)
-  const handleInsertAsBanner = (asset: ProjectMediaAsset) => {
-    if (!canEdit) return;
-    const blockId = crypto.randomUUID();
-    if (!site.components.some((c) => c.id === BANNER_COMPONENT_ID)) {
-      dispatch({
-        type: "component/save",
-        component: BANNER_COMPONENT,
-      });
-    }
-    dispatch({
-      type: "block/add",
-      id: blockId,
-      componentId: BANNER_COMPONENT_ID,
-      pageId: page.id,
-    });
-    dispatch({
-      type: "block/style",
-      pageId: page.id,
-      blockId,
-      elementIds: ["banner-image"],
-      patch: { src: asset.src, alt: asset.name },
-    });
-    dispatch({
-      type: "block/box",
-      pageId: page.id,
-      blockId,
-      patch: { span: "width" },
-    });
-    dispatch({
-      type: "block/select",
-      id: blockId,
-    });
-    showFeedback("Banner a todo el ancho insertado en la página actual");
-  };
+
 
   // 3. Reemplazar imagen en el elemento seleccionado
   const handleReplaceSelectedElement = (asset: ProjectMediaAsset) => {
@@ -407,23 +371,7 @@ export function MediaTab() {
 
 
 
-  // Usar como fondo de página
-  const handleSetAsPageBackground = (asset: ProjectMediaAsset) => {
-    if (!canEdit || asset.kind !== "image") return;
-    dispatch({
-      type: "page/backdrop",
-      pageId: page.id,
-      backdrop: {
-        kind: "image",
-        src: asset.src,
-        fit: "cover",
-        anchor: "mc",
-        fixed: false,
-        blur: 0,
-      },
-    });
-    showFeedback("Fondo de página actualizado");
-  };
+
 
   // Inicio de proceso de borrado seguro con verificación de uso en tiempo real
   const handleRequestDelete = (asset: ProjectMediaAsset) => {
@@ -832,49 +780,20 @@ export function MediaTab() {
                       )}
                     </div>
 
-                    {/* Botones de acción directos, siempre visibles */}
-                    <div className="flex items-center gap-1 pt-0.5">
-                      {site.selectedId && site.selectedElementId ? (
-                        <button
-                          type="button"
-                          onClick={() => handleReplaceSelectedElement(item)}
-                          className="w-full rounded bg-accent py-1 text-[10px] font-semibold text-white hover:bg-accent/90 transition-colors cursor-pointer text-center shadow-xs"
-                          title="Reemplazar imagen en el elemento seleccionado"
-                        >
-                          Reemplazar en selección
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleInsertAsImageBlock(item)}
-                            className="flex-1 rounded border border-accent/40 bg-accent/10 px-1.5 py-1 text-[10px] font-semibold text-accent hover:bg-accent hover:text-white transition-colors cursor-pointer text-center"
-                            title="Insertar como bloque componente en la página"
-                          >
-                            + Bloque
-                          </button>
-                          {item.kind === "image" && (
-                            <button
-                              type="button"
-                              onClick={() => handleInsertAsBanner(item)}
-                              className="flex-1 rounded border border-indigo-500/40 bg-indigo-500/10 px-1.5 py-1 text-[10px] font-semibold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer text-center"
-                              title="Insertar como banner a todo el ancho"
-                            >
-                              + Banner
-                            </button>
-                          )}
-                          {item.kind === "image" && (
-                            <button
-                              type="button"
-                              onClick={() => handleSetAsPageBackground(item)}
-                              className="rounded border border-line bg-canvas px-1.5 py-1 text-[10px] text-ink-dim hover:bg-hover hover:text-ink transition-colors cursor-pointer text-center"
-                              title="Usar como fondo de página"
-                            >
-                              Fondo
-                            </button>
-                          )}
-                        </>
-                      )}
+                    {/* Boton simple y directo de agregar o reemplazar */}
+                    <div className="pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleApplyToSelection(item)}
+                        className="w-full rounded border border-accent/40 bg-accent/10 py-1 text-[10px] font-semibold text-accent hover:bg-accent hover:text-white transition-colors cursor-pointer text-center shadow-xs"
+                        title={
+                          site.selectedId && site.selectedElementId
+                            ? "Reemplazar en el elemento seleccionado"
+                            : "Agregar a la página seleccionada"
+                        }
+                      >
+                        {site.selectedId && site.selectedElementId ? "Reemplazar en selección" : "+ Agregar"}
+                      </button>
                     </div>
                   </div>
                 </div>

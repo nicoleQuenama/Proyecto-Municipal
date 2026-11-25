@@ -5,11 +5,11 @@
  * cualquier clase (`bg-primario`, `rounded-full`…) o regla propia los reemplaza sin trucos. (Declarar una capa
  * propia con `@layer miCapa, theme, …` no sirve: el empaquetador de CSS descarta esa declaración.)
  */
-
 import { fluidFontSize } from "../responsive/fluid-text";
 import type { Device } from "../responsive/devices";
 import { parseResponsiveGridConfig } from "../customize/layout-presets";
 import { SECTION_KEY, type CanvasElement, type ComponentDef, type ElementKind } from "./types";
+import { BANNER_COMPONENT_ID, IMAGE_BLOCK_COMPONENT_ID } from "./component-templates";
 
 /** El texto: color, tamaño, peso, estilo y tipografía. */
 function textCss(element: CanvasElement): string[] {
@@ -140,14 +140,21 @@ export function elementBaseCss(
         ]
       : []),
     ...def.elements.map((element) => {
-      // Solo una figura rectangular sin texto ni contenedor padre que cubra toda la sección es un backdrop.
+      // Una figura rectangular o imagen de fondo sin texto ni contenedor padre que cubra toda la sección es un backdrop.
       const isBackdropElement =
         (navWide || !def.drawn || def.width >= 600) &&
-        element.kind === "rect" &&
+        (element.kind === "rect" || element.kind === "image") &&
         !element.text &&
         !element.parentId &&
         ((element.role as string) === "background" ||
+          (element.role as string) === "banner" ||
           element.id.endsWith("-bg") ||
+          element.id === "banner-image" ||
+          element.id === "image-content" ||
+          def.id === BANNER_COMPONENT_ID ||
+          def.id === IMAGE_BLOCK_COMPONENT_ID ||
+          def.id.toLowerCase().includes("banner") ||
+          def.name.toLowerCase().includes("banner") ||
           (element.x === 0 &&
             element.y === 0 &&
             element.width >= def.width * 0.85 &&

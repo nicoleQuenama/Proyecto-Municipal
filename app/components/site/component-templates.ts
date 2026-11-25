@@ -123,6 +123,7 @@ export const BANNER_COMPONENT: ComponentDef = {
       src: "",
       fit: "cover",
       alt: "Banner de imagen",
+      role: "image",
     }),
   ],
   links: {},

@@ -3,7 +3,8 @@ import { ZOOM_STEPS } from "./viewport-context";
 import { fitZoom } from "./fit-zoom";
 import { siteReducer } from "../site/site-reducer";
 import { INITIAL_SITE } from "../site/initial-site";
-import { BANNER_COMPONENT_ID, IMAGE_BLOCK_COMPONENT_ID } from "../site/component-templates";
+import { BANNER_COMPONENT, BANNER_COMPONENT_ID, IMAGE_BLOCK_COMPONENT_ID } from "../site/component-templates";
+import { elementBaseCss } from "../site/element-style";
 
 describe("zoom out y componente de bloque de imagen", () => {
   it("ZOOM_STEPS incluye el paso de zoom out al 5% para permitir alejar ampliamente el lienzo", () => {
@@ -47,7 +48,7 @@ describe("zoom out y componente de bloque de imagen", () => {
     });
   });
 
-  it("block/add resuelve BANNER_COMPONENT y permite configurarlo a todo el ancho (span: width)", () => {
+  it("block/add resuelve BANNER_COMPONENT y lo configura automaticamente a todo el ancho (span: width)", () => {
     let s = siteReducer(INITIAL_SITE, {
       type: "block/add",
       id: "test-banner-block",
@@ -55,12 +56,9 @@ describe("zoom out y componente de bloque de imagen", () => {
       pageId: "inicio",
     });
 
-    s = siteReducer(s, {
-      type: "block/box",
-      pageId: "inicio",
-      blockId: "test-banner-block",
-      patch: { span: "width" },
-    });
+    const page = s.pages.find((p) => p.id === "inicio");
+    expect(page?.blocks[0].componentId).toBe(BANNER_COMPONENT_ID);
+    expect(page?.blocks[0].box?.span).toBe("width");
 
     s = siteReducer(s, {
       type: "block/style",
@@ -70,9 +68,15 @@ describe("zoom out y componente de bloque de imagen", () => {
       patch: { src: "https://ejemplo.com/banner-feria.jpg", alt: "Feria Municipal" },
     });
 
-    const page = s.pages.find((p) => p.id === "inicio");
-    expect(page?.blocks[0].componentId).toBe(BANNER_COMPONENT_ID);
-    expect(page?.blocks[0].box?.span).toBe("width");
-    expect(page?.blocks[0].elements?.["banner-image"]?.src).toBe("https://ejemplo.com/banner-feria.jpg");
+    const updatedBlock = s.pages.find((p) => p.id === "inicio")?.blocks[0];
+    expect(updatedBlock?.elements?.["banner-image"]?.src).toBe("https://ejemplo.com/banner-feria.jpg");
+  });
+
+  it("elementBaseCss aplica ancho completo (width: 100% !important) al elemento banner-image para evitar margen derecho", () => {
+    const css = elementBaseCss("test-banner-block", BANNER_COMPONENT, false);
+    expect(css).toContain('[data-target="test-banner-block:banner-image"]');
+    expect(css).toContain("width: 100% !important");
+    expect(css).toContain("left: 0px !important");
+    expect(css).not.toContain("width: 1024px");
   });
 });
