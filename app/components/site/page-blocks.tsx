@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { FullBleedContext } from "../viewport/page-width";
 import { MIN_BLEED_WIDTH, visiblePaint } from "./full-bleed";
 import { canEditBlock } from "../auth/access";
@@ -59,7 +59,7 @@ import { PlacementGrip } from "../placement/placement-grip";
 import { LockClosedIcon, LockOpenIcon } from "../icons/lock-icons";
 import { reordersOnDrag, useFlowReorder } from "../placement/use-flow-reorder";
 import { usePlacementDrag } from "../placement/use-placement-drag";
-import { PLACE_KEY, SECTION_KEY, type BlockBox, type BlockInstance, type HideTarget, type Page } from "./types";
+import { PLACE_KEY, SECTION_KEY, type BlockBox, type BlockInstance, type ComponentDef, type HideTarget, type Page } from "./types";
 import { VisibilityEye } from "./visibility-eye";
 
 /** Las esquinas de la caja de un bloque: píxeles, o el valor de una variable de tamaño. */
@@ -118,6 +118,39 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     Boolean(def?.name.toLowerCase().includes("pie"));
   // Encabezado, barra de navegación o pie (o sección en flujo): su ancho lo decide la página, no sus manijas.
   const widthLocked = !!def && (flow || isNavOrFooter(def, isHeaderOrFooter));
+
+  const isSharedComponent = useMemo(() => {
+    if (!def) return false;
+    return pages.flatMap((p) => p.blocks).filter((b) => b.componentId === def.id).length > 1;
+  }, [pages, def]);
+
+  const saveComponent = useCallback(
+    (updated: ComponentDef): ComponentDef => {
+      if (!def) return updated;
+      if (isSharedComponent && block.scope !== "global" && !isHeaderOrFooter) {
+        const newComponentId = crypto.randomUUID();
+        const pageName = page?.name || "Página";
+        const forked: ComponentDef = {
+          ...updated,
+          id: newComponentId,
+          name: `${def.name} (${pageName})`,
+          styles: updated.styles ? { ...updated.styles } : undefined,
+        };
+        dispatch({ type: "component/save", component: forked });
+        dispatch({
+          type: "block/replace-component",
+          pageId: page.id,
+          blockId: block.id,
+          componentId: newComponentId,
+        });
+        return forked;
+      } else {
+        dispatch({ type: "component/save", component: updated });
+        return updated;
+      }
+    },
+    [def, isSharedComponent, block.scope, block.id, isHeaderOrFooter, page?.id, page?.name, dispatch],
+  );
 
   const isOverlay = block.placementMode === "overlay";
   // Encabezados y pies de página siempre se mantienen en el flujo de la página (arriba y abajo), nunca sobreponen.
@@ -318,19 +351,19 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onReorderFlow: editing && !isBlockLocked && !isHeaderOrFooter
       ? (elementId, direction) => {
           const updated = moveElementOrderInComponent(def, elementId, direction);
-          dispatch({ type: "component/save", component: updated });
+          saveComponent(updated);
         }
       : undefined,
     onReorderElement: editing && !isBlockLocked && !isHeaderOrFooter
       ? (sourceId, targetId, position) => {
           const updated = reorderElementInComponent(def, sourceId, targetId, position);
-          dispatch({ type: "component/save", component: updated });
+          saveComponent(updated);
         }
       : undefined,
     onDuplicateCard: editing && !isBlockLocked && !isHeaderOrFooter
       ? (elementId) => {
           const { component: updated, newCardId } = duplicateCardInComponent(def, elementId);
-          dispatch({ type: "component/save", component: updated });
+          saveComponent(updated);
           dispatch({ type: "element/select", id: newCardId });
         }
       : undefined,
@@ -343,7 +376,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
                   return { component: res.component, newCardId: res.newButtonId };
                 })()
               : addCardToComponent(def);
-          dispatch({ type: "component/save", component: updated });
+          saveComponent(updated);
           dispatch({ type: "element/select", id: newCardId });
         }
       : undefined,
@@ -351,7 +384,7 @@ function PageBlock({ page, block, interactive, slot }: PageBlockProps) {
     onDeleteCard: editing && !isBlockLocked && !isHeaderOrFooter
       ? (elementId) => {
           const updated = deleteCardFromComponent(def, elementId);
-          dispatch({ type: "component/save", component: updated });
+          saveComponent(updated);
           dispatch({ type: "element/select", id: null });
         }
       : undefined,

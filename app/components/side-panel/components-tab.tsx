@@ -54,21 +54,58 @@ export function ComponentsTab() {
 
       if (selectedDef.category === "buttons" && def.category === "buttons") {
         const { component: updated, newButtonId } = addButtonToComponent(selectedDef);
-        dispatch({ type: "component/save", component: updated });
+        const isShared = pages.flatMap((p) => p.blocks).filter((b) => b.componentId === selectedDef.id).length > 1;
+        if (isShared && selectedBlock && selectedBlock.scope !== "global" && page) {
+          const newComponentId = crypto.randomUUID();
+          const forked: ComponentDef = {
+            ...updated,
+            id: newComponentId,
+            name: `${selectedDef.name} (${page.name})`,
+            styles: updated.styles ? { ...updated.styles } : undefined,
+          };
+          dispatch({ type: "component/save", component: forked });
+          dispatch({
+            type: "block/replace-component",
+            pageId: page.id,
+            blockId: selectedBlock.id,
+            componentId: newComponentId,
+          });
+        } else {
+          dispatch({ type: "component/save", component: updated });
+        }
         dispatch({ type: "element/select", id: newButtonId });
         return;
       }
       if ((selectedDef.category === "cards" || slotRule.allowedCategories?.includes("cards")) && def.category === "cards") {
         const { component: updated, newCardId } = addCardToComponent(selectedDef);
-        dispatch({ type: "component/save", component: updated });
+        const isShared = pages.flatMap((p) => p.blocks).filter((b) => b.componentId === selectedDef.id).length > 1;
+        if (isShared && selectedBlock && selectedBlock.scope !== "global" && page) {
+          const newComponentId = crypto.randomUUID();
+          const forked: ComponentDef = {
+            ...updated,
+            id: newComponentId,
+            name: `${selectedDef.name} (${page.name})`,
+            styles: updated.styles ? { ...updated.styles } : undefined,
+          };
+          dispatch({ type: "component/save", component: forked });
+          dispatch({
+            type: "block/replace-component",
+            pageId: page.id,
+            blockId: selectedBlock.id,
+            componentId: newComponentId,
+          });
+        } else {
+          dispatch({ type: "component/save", component: updated });
+        }
         dispatch({ type: "element/select", id: newCardId });
         return;
       }
     }
     const blockId = crypto.randomUUID();
-    dispatch({ type: "block/add", id: blockId, componentId: def.id });
+    const targetPageId = page?.id ?? currentPageId;
+    dispatch({ type: "block/add", id: blockId, componentId: def.id, pageId: targetPageId });
     if (def.id === BANNER_COMPONENT_ID) {
-      dispatch({ type: "block/box", pageId: page?.id ?? currentPageId, blockId, patch: { span: "width" } });
+      dispatch({ type: "block/box", pageId: targetPageId, blockId, patch: { span: "width" } });
     }
   };
 
