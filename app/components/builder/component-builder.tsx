@@ -18,7 +18,7 @@ import { PropertiesPanel } from "./properties-panel";
 const newId = () => crypto.randomUUID();
 
 /** Qué abre el constructor: uno nuevo, o un componente existente o su copia. */
-export type BuilderTarget = "new" | ComponentDef;
+export type BuilderTarget = "new" | "new-canvas" | ComponentDef;
 
 interface ComponentBuilderProps {
   /** Componente a editar o copia a completar; sin él se empieza uno nuevo en blanco. */
@@ -61,7 +61,7 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
     dispatch({ type: "add", element: newElement(kind, newId(), { x: offset, y: offset, ...overrides }) });
   };
 
-  const save = () => {
+  const save = (asTemplate = false) => {
     const name = state.name.trim();
     if (!name) return setError("Por favor, ponle un nombre al componente.");
     if (isComponentNameTaken(components, name, initial?.id)) return setError("Ya existe un componente con ese nombre.");
@@ -86,6 +86,7 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
         elements: fitted.elements,
         links: pruneLinks(state.links, fitted.elements),
         custom: true,
+        templateFor: asTemplate || initial?.templateFor === "section" ? "section" : undefined,
       },
     });
     onClose();
@@ -106,6 +107,8 @@ export function ComponentBuilder({ initial, onClose }: ComponentBuilderProps) {
           onRedo={redo}
           onEdited={() => setError(null)}
           onSave={save}
+          onSaveTemplate={() => save(true)}
+          isTemplate={initial?.templateFor === "section"}
           onClose={onClose}
         />
 

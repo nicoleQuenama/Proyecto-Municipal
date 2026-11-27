@@ -23,7 +23,7 @@ export function ComponentsTab() {
     ...site.components,
     ...BUILT_IN_COMPONENTS.filter((b) => !site.components.some((c) => c.id === b.id)),
   ];
-  const components = allComponents.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID && c.templateFor !== "page");
+  const components = allComponents.filter((c) => !c.drawn && c.id !== CODE_COMPONENT_ID && !c.templateFor && c.codeKind !== "template");
   const dispatch = useSiteDispatch();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ComponentFilter>("all");
