@@ -1,5 +1,6 @@
 import { SECTION_KEY, type CanvasElement, type ComponentDef } from "./types.ts";
 import { newElement } from "./component-templates.ts";
+import { GAMC_BRAND_TOKENS } from "../auth/brand-manual.ts";
 
 export interface ContainerCardInfo {
   id: string;
@@ -186,9 +187,7 @@ export function duplicateCardInComponent(
   };
 }
 
-const CARD_COLORS = ["#ffffff", "#f8fafc", "#e6f6fb", "#00a7d6", "#462d81", "#34c3e8", "#f47b38", "#0da593"];
-
-/** Agrega una nueva tarjeta limpia y estilizada al contenedor. Si ya existen tarjetas, adapta su tamaño y posición pero con contenido y color individual nuevo. */
+/** Agrega una nueva tarjeta limpia y estilizada al contenedor respetando las reglas y colores institucionales. */
 export function addCardToComponent(
   def: ComponentDef,
   customTitle?: string,
@@ -196,10 +195,9 @@ export function addCardToComponent(
   const existingCards = getContainerCards(def);
   const index = existingCards.length;
   const newCardId = crypto.randomUUID();
-  const color = CARD_COLORS[index % CARD_COLORS.length];
   const title = customTitle || `Tarjeta ${index + 1}`;
 
-  // Si el componente ya tiene tarjetas existentes, adaptamos tamaño y posición pero con contenido limpio y color propio
+  // Si el componente ya tiene tarjetas existentes, adaptamos tamaño, posición y heredamos su estilo institucional
   if (existingCards.length > 0) {
     const lastCardInfo = existingCards[existingCards.length - 1];
     const lastRootEl = def.elements.find((e) => e.id === lastCardInfo.id);
@@ -240,16 +238,18 @@ export function addCardToComponent(
       const deltaX = nextX - lastRootEl.x;
       const deltaY = nextY - lastRootEl.y;
 
-      // La nueva tarjeta tiene las mismas proporciones de la cuadrícula, pero con su propio color y datos limpios
+      // Heredar el estilo visual de la tarjeta existente para mantener consistencia institucional
+      const cardFill = lastRootEl.fill ?? GAMC_BRAND_TOKENS.bgMain;
+
       const newCardRoot: CanvasElement = {
         ...lastRootEl,
         id: newCardId,
         x: nextX,
         y: nextY,
-        fill: color, // Color propio e individual
+        fill: cardFill,
       };
 
-      // Si la tarjeta previa tenía hijos, adaptamos la estructura con textos limpios (no duplicado exacto)
+      // Si la tarjeta previa tenía hijos, adaptamos la estructura con textos limpios y estilos heredados
       let newChildren: CanvasElement[] = [];
       if (lastKids.length > 0) {
         newChildren = lastKids.map((kid) => {
@@ -283,9 +283,26 @@ export function addCardToComponent(
             text: title,
             fontSize: 16,
             bold: true,
+            color: GAMC_BRAND_TOKENS.textPrimary,
           }),
         );
       }
+
+      const cardGroupIds = new Set([lastRootEl.id, ...lastKids.map((c) => c.id)]);
+      let lastIndex = -1;
+      for (let i = 0; i < def.elements.length; i++) {
+        if (cardGroupIds.has(def.elements[i].id)) {
+          lastIndex = i;
+        }
+      }
+
+      const insertIndex = lastIndex >= 0 ? lastIndex + 1 : def.elements.length;
+      const newElements = [
+        ...def.elements.slice(0, insertIndex),
+        newCardRoot,
+        ...newChildren,
+        ...def.elements.slice(insertIndex),
+      ];
 
       const newHeight = Math.max(def.height, nextY + lastRootEl.height + 24);
 
@@ -293,22 +310,24 @@ export function addCardToComponent(
         component: {
           ...def,
           height: newHeight,
-          elements: [...def.elements, newCardRoot, ...newChildren],
+          elements: newElements,
         },
         newCardId,
       };
     }
   }
 
-  // Plantilla limpia predeterminada si no hay tarjetas previas
+  // Plantilla predeterminada con estilos del manual de marca institucional GAMC
   const containerCard = newElement("rect", newCardId, {
     role: "container",
     x: 0,
     y: 0,
     width: 240,
     height: 190,
-    fill: color,
-    radius: 16,
+    fill: GAMC_BRAND_TOKENS.bgMain,
+    borderWidth: 1,
+    borderColor: GAMC_BRAND_TOKENS.borderSubtle,
+    radius: 12,
   });
 
   const iconElement = newElement("rect", crypto.randomUUID(), {
@@ -317,8 +336,8 @@ export function addCardToComponent(
     y: 16,
     width: 40,
     height: 40,
-    fill: "#ffffff",
-    radius: 10,
+    fill: GAMC_BRAND_TOKENS.primaryTint,
+    radius: 8,
   });
 
   const titleElement = newElement("text", crypto.randomUUID(), {
@@ -331,6 +350,7 @@ export function addCardToComponent(
     text: title,
     fontSize: 16,
     bold: true,
+    color: GAMC_BRAND_TOKENS.textPrimary,
   });
 
   const descElement = newElement("text", crypto.randomUUID(), {
@@ -342,7 +362,7 @@ export function addCardToComponent(
     height: 60,
     text: "Descripción del contenido o servicio de esta tarjeta.",
     fontSize: 13,
-    color: "#ffffff",
+    color: GAMC_BRAND_TOKENS.textSecondary,
   });
 
   return {

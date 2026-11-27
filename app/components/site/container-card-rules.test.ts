@@ -29,6 +29,7 @@ import {
 } from "./container-card-rules";
 import { SECTION_KEY, type ComponentDef } from "./types";
 import { newElement } from "./component-templates";
+import { GAMC_BRAND_TOKENS } from "../auth/brand-manual";
 
 const makeTestComponent = (): ComponentDef => ({
   id: "test-comp",
@@ -77,13 +78,42 @@ describe("container-card-rules", () => {
     expect(newChildren[0].text).toBe("Tarjeta Alfa");
   });
 
-  it("agrega una nueva tarjeta estilizada al contenedor", () => {
+  it("agrega una nueva tarjeta estilizada al contenedor heredando estilo institucional consistente", () => {
     const comp = makeTestComponent();
+    // Definimos estilo institucional en la tarjeta previa
+    const card2 = comp.elements.find((e) => e.id === "card-2")!;
+    card2.fill = "#FFFFFF";
+
     const { component: updated, newCardId } = addCardToComponent(comp, "Tarjeta Gamma");
     const cards = getContainerCards(updated);
     expect(cards).toHaveLength(3);
     expect(cards[2].id).toBe(newCardId);
     expect(cards[2].title).toBe("Tarjeta Gamma");
+
+    // Comprobamos que hereda el color del hermano y no usa colores aleatorios
+    const newRoot = updated.elements.find((e) => e.id === newCardId);
+    expect(newRoot?.fill).toBe("#FFFFFF");
+
+    // Agregar una 4ta y 5ta tarjeta también debe mantener consistencia
+    const { component: updated4, newCardId: id4 } = addCardToComponent(updated, "Tarjeta Delta");
+    const root4 = updated4.elements.find((e) => e.id === id4);
+    expect(root4?.fill).toBe("#FFFFFF");
+  });
+
+  it("crea tarjeta con reglas institucionales GAMC cuando el contenedor está vacío", () => {
+    const emptyComp: ComponentDef = { ...makeTestComponent(), elements: [] };
+    const { component: updated, newCardId } = addCardToComponent(emptyComp, "Primera Tarjeta");
+
+    const root = updated.elements.find((e) => e.id === newCardId);
+    expect(root?.fill).toBe(GAMC_BRAND_TOKENS.bgMain);
+    expect(root?.borderColor).toBe(GAMC_BRAND_TOKENS.borderSubtle);
+    expect(root?.radius).toBe(12);
+
+    const heading = updated.elements.find((e) => e.parentId === newCardId && e.role === "heading");
+    expect(heading?.color).toBe(GAMC_BRAND_TOKENS.textPrimary);
+
+    const desc = updated.elements.find((e) => e.parentId === newCardId && e.role === "text");
+    expect(desc?.color).toBe(GAMC_BRAND_TOKENS.textSecondary);
   });
 
   it("elimina una tarjeta y sus hijos", () => {
